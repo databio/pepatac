@@ -5,7 +5,6 @@ ATACseq  pipeline
 __author__="Jin Xu"
 __email__="xujin937@gmail.com"
 
-
 from argparse import ArgumentParser
 import os,re
 import sys
@@ -14,9 +13,6 @@ import subprocess
 import pypiper
 import yaml 
 from datetime import datetime
-
-
-
 
 # Argument Parsing from yaml file 
 # #######################################################################################
@@ -47,12 +43,29 @@ res.refGeene_TSS = os.path.join(pm.config.resources.ref_pref + ".refseq.TSS.txt"
 res.blacklist = os.path.join(pm.config.resources.ref_pref + ".blaklist.bed")
 
 output = os.path.join(args.output_parent, args.sample_name + "/")
-
+param.pipeline_outfolder = output
 
 ################################################################################
 print("Local input file: " + args.input[0]) 
 print("Local input file: " + args.input2[0]) 
 #ATACseq pipeline
+
+ngstk = pypiper.NGSTk(pm=pm)
+raw_folder = os.path.join(param.pipeline_outfolder, "raw/")
+fastq_folder = os.path.join(param.pipeline_outfolder, "fastq/")
+
+pm.timestamp("### Merge/link and fastq conversion: ")
+
+local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
+#cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
+#pm.run(cmd, unaligned_fastq, 
+#	follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
+#pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
+print(local_input_files)
+
+pm.report_result("File_mb", ngstk.get_file_size(local_input_files))
+pm.report_result("Read_type", args.single_or_paired)
+pm.report_result("Genome", args.genome_assembly)
 
 # Adaptor trimming
 pm.timestamp("### Adapter trimming: ")
@@ -60,8 +73,8 @@ pm.timestamp("### Adapter trimming: ")
 trimmed_fastq= output + args.sample_name + "_R1_trimmed.fq"
 trimmed_fastq_R2= output + args.sample_name + "_R2_trimmed.fq"
 cmd = tools.java +" -Xmx" + str(pm.mem) +" -jar " + tools.trimmo + " PE " + " -threads " + str(pm.cores) + " "
-cmd += args.input[0] + " "
-cmd += args.input2[0] + " " 
+cmd += local_input_files[0] + " "
+cmd += local_input_files[1] + " " 
 cmd += trimmed_fastq + " "
 cmd += output + args.sample_name + "_R1_unpaired.fq "
 cmd += trimmed_fastq_R2 + " "
@@ -75,15 +88,16 @@ cmd +=  "ILLUMINACLIP:"+ res.adaptor + ":2:30:10"
 #        pm.report_result("Trim_loss_rate", round((rr - n_trim) * 100 / rr, 2))
 pm.run(cmd, trimmed_fastq)
 # End of Adaptor trimming 
+
 # Mapping 
-mapping_sam= output + args.sample_name + ".sam"
+mapping_sam = output + args.sample_name + ".sam"
 cmd = tools.bowtie2 + " -p "  + str(param.bowtie2.p)
-cmd+= " --very-sensitive " + " -x " +  res.ref_pref 
-cmd+= " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_sam
-print(cmd)
-pm.run(cmd,mapping_sam)
-mapping_bam= output + args.sample_name + ".bam"
-cmd= tools.samtools + " view -Sb " + mapping_sam +  "> " + mapping_bam  
+cmd += " --very-sensitive " + " -x " +  res.ref_pref 
+cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_sam
+
+pm.run(cmd, mapping_sam)
+mapping_bam = output + args.sample_name + ".bam"
+cmd = tools.samtools + " view -Sb " + mapping_sam +  "> " + mapping_bam  
 
 pm.run(cmd,mapping_bam)
 # filter genome reads 
@@ -100,7 +114,7 @@ cmd3 =  tools.java + " -Xmx4G " +  " -jar " + tools.MarkDuplicates  + " INPUT=" 
 cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 cmd4 = tools.samtools + " index " + rmdup_bam 
 
-pm.run([cmd,cmd2,cmd3,cmd4],rmdup_bam)
+pm.run([cmd,cmd2,cmd3,cmd4], rmdup_bam)
 
 # remove sam file 
 cmd = "rm " + mapping_sam
@@ -114,15 +128,15 @@ bedGraph = output + args.sample_name + ".pe.q10.sort.rmdup.bedGraph"
 cmd = tools.bedtools + " genomecov " + " -bg "  + " -split " + " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph  
 norm_bedGraph = output + args.sample_name + ".pe.q10.sort.rmdup.bedGraph.norm"
 cmd2 = tools.norm_bedGraph +  " "  + bedGraph + " " + norm_bedGraph
-bw=  output + args.sample_name + ".pe.q10.rmdup.norm.bw"
+bw =  output + args.sample_name + ".pe.q10.rmdup.norm.bw"
 cmd3 = tools.bed2bigwig + " " + norm_bedGraph + " " + res.chrom_sizes + " " + bw 
-pm.run([cmd,cmd2,cmd3],bw)
+pm.run([cmd,cmd2,cmd3], bw)
 
 
 # TSS enrichment 
 Tss_enrich =  output +  args.sample_name + ".TssEnrichment" 
 cmd = tools.pyMakeVplot + " -a " + rmdup_bam + " -b " + res.refGeene_TSS + " -p ends -e 2000 -u -v -o " + Tss_enrich
-pm.run(cmd,Tss_enrich)
+pm.run(cmd, Tss_enrich)
 #python /seq/ATAC-seq/Code/pyMakeVplot.py -a $outdir_map/$output.pe.q10.sort.rmdup.bam -b /seq/chromosome/hg19/hg19_refseq_genes_TSS.txt -p ends -e 2000 -u -v -o $outdir_qc/$output.TSSenrich
 
 # fragment  distribution
@@ -134,7 +148,7 @@ fragL_dis1= output +  args.sample_name +  ".fragL.distribution.pdf"
 fragL_dis2= output +  args.sample_name +  ".fragL.distribution.txt"
 cmd2 = "Rscript " +  tools.fragment_length_dist_R + " " +  fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
 
-pm.run([cmd,cmd1,cmd2],fragL_dis1)
+pm.run([cmd,cmd1,cmd2], fragL_dis1)
 
 
 #perl /seq/ATAC-seq/Code/fragment_length_dist.pl $outdir_map/$output.pe.q10.sort.rmdup.bam $outdir_qc/$output.fragL.txt
@@ -154,7 +168,7 @@ pm.run(cmd, peak_file)
 
 
 # filter peaks in blacklist 
-filter_peak=  output +  args.sample_name + "_peaks.narrowPeak.rmBlacklist"
+filter_peak =  output +  args.sample_name + "_peaks.narrowPeak.rmBlacklist"
 cmd = tools.bedtools  + " intersect " + " -a " + peak_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
 
 pm.run(cmd,filter_peak)
