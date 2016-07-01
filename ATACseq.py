@@ -43,7 +43,7 @@ res.refGeene_TSS = os.path.join(pm.config.resources.ref_pref + ".refseq.TSS.txt"
 res.blacklist = os.path.join(pm.config.resources.ref_pref + ".blaklist.bed")
 
 output = os.path.join(args.output_parent, args.sample_name + "/")
-param.pipeline_outfolder = output
+param.outfolder = output
 
 ################################################################################
 print("Local input file: " + args.input[0]) 
@@ -51,8 +51,8 @@ print("Local input file: " + args.input2[0])
 #ATACseq pipeline
 
 ngstk = pypiper.NGSTk(pm=pm)
-raw_folder = os.path.join(param.pipeline_outfolder, "raw/")
-fastq_folder = os.path.join(param.pipeline_outfolder, "fastq/")
+raw_folder = os.path.join(param.outfolder, "raw/")
+fastq_folder = os.path.join(param.outfolder, "fastq/")
 
 pm.timestamp("### Merge/link and fastq conversion: ")
 
@@ -89,19 +89,24 @@ cmd +=  "ILLUMINACLIP:"+ res.adaptor + ":2:30:10"
 pm.run(cmd, trimmed_fastq)
 # End of Adaptor trimming 
 
-# Mapping 
-mapping_sam = output + args.sample_name + ".sam"
+# Mapping
+# Each (major) step should have its own subfolder
+map_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
+ngstk.make_dir(map_folder)
+mapping_sam = os.path.join(map_folder, args.sample_name + ".sam")
+
 cmd = tools.bowtie2 + " -p "  + str(param.bowtie2.p)
 cmd += " --very-sensitive " + " -x " +  res.ref_pref 
 cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_sam
-
 pm.run(cmd, mapping_sam)
-mapping_bam = output + args.sample_name + ".bam"
-cmd = tools.samtools + " view -Sb " + mapping_sam +  "> " + mapping_bam  
 
-pm.run(cmd,mapping_bam)
+# convert to bam
+mapping_bam = os.path.join(map_folder, args.sample_name + ".bam")
+cmd = tools.samtools + " view -Sb " + mapping_sam +  "> " + mapping_bam  
+pm.run(cmd, mapping_bam)
+
 # filter genome reads 
-filter_bam= output + args.sample_name + ".pe.q10.sort.bam"
+filter_bam = output + args.sample_name + ".pe.q10.sort.bam"
 cmd = "awk '$3!=\"chrM\"' "  + mapping_sam  + " | " + tools.samtools + " view -S -b -f 0x2 -q " 
 cmd += str(param.samtools.q) + "- | " + tools.samtools + " sort - -o " + filter_bam 
 chrM_bam = output + args.sample_name + ".chrM.bam"
