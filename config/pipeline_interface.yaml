@@ -1,0 +1,17 @@
+ATACseq.py:
+  name: ATACseq
+  looper_args: True
+  arguments:
+    "--sample-name": sample_name
+    "--genome": genome
+    "--input": read1
+    "--input2": read2
+    "-gs mm": null
+    "--single-or-paired": read_type
+  resources:
+    default:
+      file_size: "0"
+      cores: "8"
+      mem: "32000"
+      time: "2-00:00:00"
+      partition: "longq"

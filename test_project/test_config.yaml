@@ -1,0 +1,76 @@
+# This project config file describes all *project-specific variables*
+# Its primary purpose as as input to Looper, which will submit jobs as appropriate
+# for each sample in the project.
+# But it is also read by other tools, including:
+# - project sample loop (primary purpose)
+# - make_trackhubs scripts to produce web accessible results
+# - stats summary scripts
+# - analysis scripts requiring pointers to metadata, results, and other options.
+
+paths:
+  # output_dir: ABSOLUTE PATH to the parent, shared space where project results go
+  output_dir: test_out
+  # results and submission subdirs are subdirectors directories under parent output_dir
+  # results: where output sample folders will go
+  # submission: where cluster submit scripts and log files will go
+  results_subdir: results_pipeline
+  submission_subdir: submission
+  # pipelines_dir: ABSOLUTE PATH the directory where the Looper will find pipeline
+  # scripts (and accompanying pipeline config files) for submission.
+  pipelines_dir: ""
+
+metadata:
+  # Elements in this section can be absolute or relative.
+  # Typically, this project config file is stored with the project metadata, so
+  # relative paths are considered relative to this project config file.
+  # sample_annotation: one-row-per-sample metadata
+  sample_annotation: test_annotation.csv
+  # merge_table: input for samples with more than one input file
+  merge_table: null.csv
+  # compare_table: comparison pairs or groups, like normalization samples
+  compare_table: null.csv
+
+derived_columns: [read1, read2]
+
+data_sources:
+  # specify the ABSOLUTE PATH of input files using variable path expressions
+  # entries correspond to values in the data_source column in sample_annotation table
+  # {variable} can be used to replace environment variables or other sample_annotation columns
+  # If you use {variable} codes, you should quote the field so python can parse it.
+  test_data_R1: "test_data/{sample_name}_R1.fastq.gz"
+  test_data_R2: "test_data/{sample_name}_R2.fastq.gz"
+
+genomes:
+  human: hg19
+  mouse: mm10
+
+transcriptomes:
+  human: hg19_cdna
+  mouse: mm10_cdna
+
+compute:
+  # submission_template: the submission form which will be replaced with compute resource parameters
+  # Use this to change your cluster manager (SLURM, SGE, LFS, etc)
+  # Relative paths are relative to the pipelines_dir
+  submission_template: templates/slurm_template.sub
+  submission_command: sh
+  # To run on the localhost:
+  #submission_template: templates/localhost_template.sub
+  #submission_command: sh
+
+
+pipeline_config:
+  # pipeline configuration files used in project.
+  # Relative paths are relative to this project config file.
+  # Default (null) means use the generic config for the pipeline.
+  atacseq_pipeline.py: null
+  # Or you can point to a specific config to be used in this project:
+  # chipseq: chipseq_pipeline.yaml
+
+trackhubs:
+  trackhub_dir: projects/microtest/trackhubs
+  # url: if you include this, the make_trackhubs will produce a link to your track hub in the project folder.
+  url: http://www.example.com/
+
+username: user
+email: user@cemm.at

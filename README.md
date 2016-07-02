@@ -17,10 +17,18 @@ pip install --user https://github.com/epigen/pypiper/zipball/master
 pip install --user https://github.com/epigen/looper/zipball/master
 ```
 
-## Running
+## Running on a single sample
 
 See example command in [cmd.sh](cmd.sh) or run it with:
 
 ```
 ./cmd.sh
+```
+
+## Looping in a project
+
+Project data are in [test_project](test_project). Run the pipeline across all samples in the [annotation sheet](test_project/test_annotation.csv) with this command:
+
+```
+looper -c test_project/test_config.yaml
 ```
