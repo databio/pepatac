@@ -41,7 +41,7 @@ res.ref_genome_fasta = os.path.join(pm.config.resources.ref_pref + ".fa")
 res.chrom_sizes = os.path.join(pm.config.resources.ref_pref + ".chrsize")
 res.refGeene_TSS = os.path.join(pm.config.resources.ref_pref + ".refseq.TSS.txt")
 res.blacklist = os.path.join(pm.config.resources.ref_pref + ".blaklist.bed")
-
+res.chrM = os.path.join(pm.config.resources.ref_pref + "_chrM")
 output = os.path.join(args.output_parent, args.sample_name + "/")
 param.outfolder = output
 
@@ -89,28 +89,33 @@ cmd +=  "ILLUMINACLIP:"+ res.adaptor + ":2:30:10"
 pm.run(cmd, trimmed_fastq)
 # End of Adaptor trimming 
 
-# Mapping
+# Mapping to chrM first 
 # Each (major) step should have its own subfolder
-map_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
-ngstk.make_dir(map_folder)
-mapping_sam = os.path.join(map_folder, args.sample_name + ".sam")
+map_chrM_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "chrM")
+ngstk.make_dir(map_chrM_folder)
+mapping_chrM_sam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.sam")
 
 cmd = tools.bowtie2 + " -p "  + str(param.bowtie2.p)
-cmd += " --very-sensitive " + " -x " +  res.ref_pref 
-cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_sam
-pm.run(cmd, mapping_sam)
+cmd += " --very-sensitive " + " -x " +  res.chrM
+cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_chrM_sam
+pm.run(cmd, mapping_chrM_sam)
 
 # convert to bam
-mapping_bam = os.path.join(map_folder, args.sample_name + ".bam")
-cmd = tools.samtools + " view -Sb " + mapping_sam +  "> " + mapping_bam  
-pm.run(cmd, mapping_bam)
+mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.bam")
+cmd = tools.samtools + " view -Sb " + mapping_chrM_sam +  "> " + mapping_chrM_bam  
+pm.run(cmd, mapping_chrM_bam)
 
-# filter genome reads 
-filter_bam = output + args.sample_name + ".pe.q10.sort.bam"
-cmd = "awk '$3!=\"chrM\"' "  + mapping_sam  + " | " + tools.samtools + " view -S -b -f 0x2 -q " 
-cmd += str(param.samtools.q) + "- | " + tools.samtools + " sort - -o " + filter_bam 
-chrM_bam = output + args.sample_name + ".chrM.bam"
-cmd2 = "awk '$3==\"chrM\" || NF<10 ' " + mapping_sam + " | " + tools.samtools + " view -S -b - >" + chrM_bam
+# filter genome reads, which is not mapped to chrM 
+unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
+cmd = tools.samtools + " view -b -f 0 " +  mapping_bam + " > " + unmapchrM_bam
+unmap_fq1 =os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
+unmap_fq1 =os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
+cmd2= tools.bedtools + " bamtofastq  -i " + unmapchrM_bam + " -fq " + unmap_fq1	+ " -fq2 "  + unmap_fq2
+pm.run([cmd,cmd2],unmap_fq2)
+
+# Mapping to genome 
+#	Need to added
+#
  
 rmdup_bam =  output + args.sample_name + ".pe.q10.sort.rmdup.bam"
 Metrics_file = output+args.sample_name + "picard_metrics_bam.txt"
