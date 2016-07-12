@@ -131,7 +131,7 @@ pm.run(cmd, mapping_genom_bam)#	Need to added
 
 # End of mapping to genome 
  
-rmdup_bam =  os.path.join(map_genom_folder + args.sample_name + ".pe.q10.sort.rmdup.bam"
+rmdup_bam =  os.path.join(map_genom_folder + args.sample_name + ".pe.q10.sort.rmdup.bam")
 Metrics_file = os.path.join(map_genom_folder+args.sample_name + "picard_metrics_bam.txt")
 picard_log = os.path.join(map_genom_foler+args.sample_name + "picard_metrics_log.txt")
 cmd3 =  tools.java + " -Xmx4G " +  " -jar " + tools.MarkDuplicates  + " INPUT=" + filter_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file + " VALIDATION_STRINGENCY=LENIENT"
