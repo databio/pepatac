@@ -1,0 +1,27 @@
+# Pipeline started at 07-14 21:06:33
+
+ln	 test_out__liver__raw__liver_R1.fastq.gz	0:00:00.250000	 -1
+ln	 test_out__liver__raw__liver_R2.fastq.gz	0:00:00.250000	 -1
+/usr/bin/java	 test_out__liver__liver_R1_trimmed.fq	0:00:05.510000	 0.028552
+/seq/bowtie2-2.1.0/bowtie2	 test_out__liver__aligned_mm9chrM__liver.chrM.sam	0:00:05.510000	 0.005788
+/usr/local/bin/samtools	 test_out__liver__aligned_mm9chrM__liver.chrM.bam	0:00:00.250000	 -1
+/usr/local/bin/samtools	 test_out__liver__aligned_mm9chrM__liver.unmapchrM_R2.fastq	0:00:00.250000	 -1
+/seq/bedtools-master/bin/bedtools	 None	0:00:00.250000	 0.000228
+/seq/bowtie2-2.1.0/bowtie2	 test_out__liver__aligned_mm9genom__liver.genom.sam	0:00:15.770000	 0.005784
+/usr/local/bin/samtools	 test_out__liver__aligned_mm9genom__liver.genom.bam	0:00:00.250000	 -1
+/usr/local/bin/samtools	 test_out__liver__aligned_mm9genom__liver.pe.q10.sort.rmdup.bam	0:00:00.250000	 -1
+/seq/bedtools-master/bin/bedtools	 None	0:00:00.250000	 0.000228
+/usr/bin/java	 None	0:00:05.510000	 -1
+/usr/local/bin/samtools	 None	0:00:00.250000	 0.000168
+/seq/ATAC-seq/Code/bam2bed_shift.pl	 test_out__liver__aligned_mm9genom__liver.pe.q10.sort.rmdup.bed	0:00:00.250000	 0.00016
+/seq/bedtools-master/bin/bedtools	 test_out__liver__aligned_mm9genom__liver.pe.q10.rmdup.norm.bw	0:00:15.770000	 -1
+/seq/scripts/norm_bedGraph.pl	 None	0:00:00.250000	 8e-06
+/seq/ucsc/bedGraphToBigWig	 None	0:00:00.250000	 0.00014
+/seq/ATAC-seq/Code/pyMakeVplot.py	 test_out__liver__QC_mm9__liver.TssEnrichment	0:00:05.510000	 0.034016
+perl	 test_out__liver__QC_mm9__liver.fragL.distribution.pdf	0:00:00.250000	 8e-06
+sort	 None	0:00:00.250000	 -1
+Rscript	 None	0:00:00.250000	 0.000164
+/usr/bin/macs2	 test_out__liver__peak_calling_mm9__liver_peaks.narrowPeak	0:00:00.250000	 0.000188
+/seq/bedtools-master/bin/bedtools	 test_out__liver__peak_calling_mm9__liver_peaks.narrowPeak.rmBlacklist	0:00:00.250000	 -1
+# Pipeline started at 07-14 21:09:50
+
