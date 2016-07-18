@@ -107,6 +107,10 @@ mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.bam")
 cmd = tools.samtools + " view -Sb " + mapping_chrM_sam +  "> " + mapping_chrM_bam  
 pm.run(cmd, mapping_chrM_bam)
 
+# clean up sam files
+pm.run(cmd, mapping_chrM_sam)
+
+
 # filter genome reads, which is not mapped to chrM 
 unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
 cmd = tools.samtools + " view -b -f 0 " +  mapping_chrM_bam + " > " + unmapchrM_bam
@@ -131,6 +135,9 @@ mapping_genom_bam = os.path.join(map_genom_folder, args.sample_name + ".genom.ba
 cmd = tools.samtools + " view -Sb " + mapping_genom_sam 
 cmd += " | " + tools.samtools + " sort -  -o " + mapping_genom_bam  
 pm.run(cmd, mapping_genom_bam)#	Need to added
+
+# clean up sam files
+pm.clean_add(mapping_genom_sam)
 
 # End of mapping to genome 
  
