@@ -97,7 +97,7 @@ map_chrM_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembl
 ngstk.make_dir(map_chrM_folder)
 mapping_chrM_sam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.sam")
 
-cmd = tools.bowtie2 + " -p "  + str(param.bowtie2.p)
+cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
 cmd += " --very-sensitive " + " -x " +  res.chrM
 cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_chrM_sam
 pm.run(cmd, mapping_chrM_sam)
@@ -108,7 +108,7 @@ cmd = tools.samtools + " view -Sb " + mapping_chrM_sam +  "> " + mapping_chrM_ba
 pm.run(cmd, mapping_chrM_bam)
 
 # clean up sam files
-pm.run(cmd, mapping_chrM_sam)
+pm.clean_add(mapping_chrM_sam)
 
 
 # filter genome reads, which is not mapped to chrM 
@@ -125,7 +125,7 @@ map_genom_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assemb
 ngstk.make_dir(map_genom_folder)
 mapping_genom_sam = os.path.join(map_genom_folder, args.sample_name + ".genom.sam")
 
-cmd = tools.bowtie2 + " -p "  + str(param.bowtie2.p)
+cmd = tools.bowtie2 + " -p " + str(pm.cores) # + str(param.bowtie2.p)
 cmd += " --very-sensitive " + " -x " +  res.ref_pref
 cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_genom_sam
 pm.run(cmd, mapping_genom_sam)
