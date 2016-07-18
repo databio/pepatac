@@ -113,7 +113,7 @@ pm.clean_add(mapping_chrM_sam)
 
 # filter genome reads, which is not mapped to chrM 
 unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
-cmd = tools.samtools + " view -b -f 0 " +  mapping_chrM_bam + " > " + unmapchrM_bam
+cmd = tools.samtools + " view -b -F 2  " +  mapping_chrM_bam + " > " + unmapchrM_bam
 unmap_fq1 =os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
 unmap_fq2 =os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
 cmd2= tools.bedtools + " bamtofastq  -i " + unmapchrM_bam + " -fq " + unmap_fq1	+ " -fq2 "  + unmap_fq2
