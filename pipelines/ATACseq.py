@@ -97,7 +97,7 @@ map_chrM_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembl
 ngstk.make_dir(map_chrM_folder)
 mapping_chrM_sam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.sam")
 
-cmd = tools.bowtie2 + " -p "  + str(param.bowtie2.p)
+cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
 cmd += " --very-sensitive " + " -x " +  res.chrM
 cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_chrM_sam
 pm.run(cmd, mapping_chrM_sam)
@@ -107,9 +107,13 @@ mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.bam")
 cmd = tools.samtools + " view -Sb " + mapping_chrM_sam +  "> " + mapping_chrM_bam  
 pm.run(cmd, mapping_chrM_bam)
 
+# clean up sam files
+pm.clean_add(mapping_chrM_sam)
+
+
 # filter genome reads, which is not mapped to chrM 
 unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
-cmd = tools.samtools + " view -b -f 0 " +  mapping_chrM_bam + " > " + unmapchrM_bam
+cmd = tools.samtools + " view -b -F 2  " +  mapping_chrM_bam + " > " + unmapchrM_bam
 unmap_fq1 =os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
 unmap_fq2 =os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
 cmd2= tools.bedtools + " bamtofastq  -i " + unmapchrM_bam + " -fq " + unmap_fq1	+ " -fq2 "  + unmap_fq2
@@ -121,7 +125,7 @@ map_genom_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assemb
 ngstk.make_dir(map_genom_folder)
 mapping_genom_sam = os.path.join(map_genom_folder, args.sample_name + ".genom.sam")
 
-cmd = tools.bowtie2 + " -p "  + str(param.bowtie2.p)
+cmd = tools.bowtie2 + " -p " + str(pm.cores) # + str(param.bowtie2.p)
 cmd += " --very-sensitive " + " -x " +  res.ref_pref
 cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_genom_sam
 pm.run(cmd, mapping_genom_sam)
@@ -131,6 +135,9 @@ mapping_genom_bam = os.path.join(map_genom_folder, args.sample_name + ".genom.ba
 cmd = tools.samtools + " view -Sb " + mapping_genom_sam 
 cmd += " | " + tools.samtools + " sort -  -o " + mapping_genom_bam  
 pm.run(cmd, mapping_genom_bam)#	Need to added
+
+# clean up sam files
+pm.clean_add(mapping_genom_sam)
 
 # End of mapping to genome 
  

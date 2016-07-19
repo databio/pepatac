@@ -33,8 +33,6 @@ resources:
   adaptor:     /home/jinxu/software/Trimmomatic-0.36/adapters/NexteraPE-PE.fa # Including potential ATACseq adaptor.  
 parameters:
   # parameters passed to bioinformatic tools, subclassed by tool
-  bowtie2:
-        p: 10
   
   samtools:
          q: 10
