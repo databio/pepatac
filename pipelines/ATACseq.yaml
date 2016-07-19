@@ -23,9 +23,11 @@ tools:
   bed2bigwig: /seq/ucsc/bedGraphToBigWig
 #User configure 
 resources:
-  # reference information set up , using  mm9 for example 
-  #  changed using referen prefix 
-  ref_pref: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9_all 
+# reference information set up , using  mm9 for example 
+#  changed using referen prefix 
+#  hard code for hg19 now      
+  ref_pref: /home/jinxu/DB/hg19/hg19_all 
+# ref_pref: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9_all 
 # make all below with the same name prefix by ref_pref
 #  ref_size: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9_all.chrsize
 #  refGene_TSS: /seq/ATAC-seq/Data/mm9_refseq_genes_TSS.txt 
