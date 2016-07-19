@@ -1,0 +1,46 @@
+# configure file for ATACseq pipeline based on pypiper
+#system configure
+tools:
+
+# basic tools 
+  java:  /usr/bin/java
+  # absolute paths to required tools
+
+# public tools 
+  bowtie2:    /seq/bowtie2-2.1.0/bowtie2 
+  samtools:  /usr/local/bin/samtools
+  bedtools: /seq/bedtools-master/bin/bedtools
+  macs2: /usr/bin/macs2
+  MarkDuplicates:  /seq/picard-tools-1.79/MarkDuplicates.jar
+# private tools
+ # adapterTrim: /usr/local/bin/atacseq_tools/adapterTrimmingModified  
+  trimmo: /home/jinxu/software/Trimmomatic-0.36/trimmomatic-0.36.jar
+  norm_bedGraph:     /seq/scripts/norm_bedGraph.pl 
+  pyMakeVplot: /seq/ATAC-seq/Code/pyMakeVplot.py
+  fragment_length_dist_pl: /seq/ATAC-seq/Code/fragment_length_dist.pl
+  fragment_length_dist_R: /seq/ATAC-seq/Code/fragment_length_dist.R
+  bam2bed_shift: /seq/ATAC-seq/Code/bam2bed_shift.pl
+  bed2bigwig: /seq/ucsc/bedGraphToBigWig
+#User configure 
+resources:
+  # reference information set up , using  mm9 for example 
+  #  changed using referen prefix 
+  ref_pref: /home/jinxu/DB/hg19/hg19_all 
+# make all below with the same name prefix by ref_pref
+#  ref_size: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9_all.chrsize
+#  refGene_TSS: /seq/ATAC-seq/Data/mm9_refseq_genes_TSS.txt 
+#  blacklist: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9-blacklist.bed
+  adaptor:     /home/jinxu/software/Trimmomatic-0.36/adapters/NexteraPE-PE.fa # Including potential ATACseq adaptor.  
+parameters:
+  # parameters passed to bioinformatic tools, subclassed by tool
+  bowtie2:
+        p: 10
+  
+  samtools:
+         q: 10
+  macs2: 
+         f: BED
+         q: 0.01
+         shift: 0 
+        # gsize: mm # should be used in commond line
+
