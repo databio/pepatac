@@ -55,12 +55,13 @@ raw_folder = os.path.join(param.outfolder, "raw/")
 fastq_folder = os.path.join(param.outfolder, "fastq/")
 
 pm.timestamp("### Merge/link and fastq conversion: ")
-
+# This command will merge multiple inputs so you can use multiple sequencing lanes
+# in a single pipeline run. 
 local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
-#cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
-#pm.run(cmd, unaligned_fastq, 
-#	follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
-#pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
+cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
+pm.run(cmd, unaligned_fastq, 
+	follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
+pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 print(local_input_files)
 
 pm.report_result("File_mb", ngstk.get_file_size(local_input_files))
