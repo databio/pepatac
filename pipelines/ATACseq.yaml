@@ -23,6 +23,7 @@ tools:
   bed2bigwig: /seq/ucsc/bedGraphToBigWig
 #User configure 
 resources:
+  genomes: /seq/genomes/
 # reference information set up , using  mm9 for example 
 #  changed using referen prefix 
 #  hard code for hg19 now      
