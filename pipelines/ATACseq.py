@@ -34,18 +34,43 @@ else:
 pm = pypiper.PipelineManager(name = "ATACseq", outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name)), args = args)
 ngstk = pypiper.NGSTk(pm=pm)
 
+# Do some cores math for split processes
+# 50/50 split
+pm.cores50a = int(pm.cores) / 2 + int(pm.cores) % 2
+pm.cores50 = int(pm.cores) / 2
+
+# 75/25 split
+pm.cores25 = int(pm.cores) / 4
+pm.cores75 = int(pm.cores) - int(pm.cores25)
+
+
 # Convenience alias 
 tools = pm.config.tools
 param = pm.config.parameters
 res = pm.config.resources
+
+def get_bowtie2_index(genomes_folder, genome_assembly):
+	"""
+	Retuns the bowtie2 index prefix (to be passed to bowtie2) for a genome assembly that follows
+	the folder structure produced by build_reference.py.
+
+	"""
+	return(os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2", genome_assembly))
+
+# bowtie2 indexes
 
 # Set up reference resource according to genome prefix.
 res.ref_genome_fasta = os.path.join(pm.config.resources.ref_pref + ".fa")
 res.chrom_sizes = os.path.join(pm.config.resources.ref_pref + ".chrsize")
 res.refGeene_TSS = os.path.join(pm.config.resources.ref_pref + ".refseq.TSS.txt")
 res.blacklist = os.path.join(pm.config.resources.ref_pref + ".blaklist.bed")
-res.chrM = os.path.join(pm.config.resources.ref_pref + "_chrM")
-res.rDNA = os.path.join(pm.config.resources.genomes, args.genome_assembly + "_rDNA")
+#res.chrM = os.path.join(pm.config.resources.ref_pref + "_chrM")
+# new 2x chrm assembly:
+#res.chrM = os.path.join(pm.config.resources.genomes, args.genome_assembly + "_chrM2x", "indexed_bowtie2/", args.genome_assembly + "_chrM2x")
+#res.rDNA = os.path.join(pm.config.resources.genomes, args.genome_assembly + "_rDNA", "indexed_bowtie2/", args.genome_assembly + "_rDNA")
+res.bt2_chrM = get_bowtie2_index(res.genomes, args.genome_assembly + "_chrM2x")
+res.bt2_rDNA = get_bowtie2_index(res.genomes, args.genome_assembly + "_rDNA")
+
 output = os.path.join(args.output_parent, args.sample_name + "/")
 param.outfolder = output
 
@@ -57,7 +82,8 @@ pm.report_result("File_mb", ngstk.get_file_size([args.input, args.input2]))
 pm.report_result("Read_type", args.single_or_paired)
 pm.report_result("Genome", args.genome_assembly)
 
-#ATACseq pipeline
+# ATACseq pipeline
+# Each (major) step should have its own subfolder
 
 raw_folder = os.path.join(param.outfolder, "raw/")
 fastq_folder = os.path.join(param.outfolder, "fastq/")
@@ -69,14 +95,14 @@ local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, a
 cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
 pm.run(cmd, unaligned_fastq, 
 	follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
-pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
+pm.clean_add(out_fastq_pre + "*.fastq", conditional = True)
 print(local_input_files)
 
 # Adaptor trimming
 pm.timestamp("### Adapter trimming: ")
 
-trimmed_fastq= output + args.sample_name + "_R1_trimmed.fq"
-trimmed_fastq_R2= output + args.sample_name + "_R2_trimmed.fq"
+trimmed_fastq = output + args.sample_name + "_R1_trimmed.fq"
+trimmed_fastq_R2 = output + args.sample_name + "_R2_trimmed.fq"
 cmd = tools.java +" -Xmx" + str(pm.mem) +" -jar " + tools.trimmo + " PE " + " -threads " + str(pm.cores) + " "
 cmd += local_input_files[0] + " "
 cmd += local_input_files[1] + " " 
@@ -100,13 +126,15 @@ pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional = True)
 # End of Adaptor trimming 
 
 # Mapping to chrM first 
-# Each (major) step should have its own subfolder
+pm.timestamp("### Map to chrM")
+#if os.path.exists(os.path.dirname(res.bt2_chrM)):
+
 map_chrM_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_chrM")
 ngstk.make_dir(map_chrM_folder)
-mapping_chrM_sam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.sam")
+
 
 def check_alignment_chrM():
-	ar = ngstk.count_mapped_reads(mapping_chrM_sam, args.paired_end)
+	ar = ngstk.count_mapped_reads(mapping_chrM_bam, args.paired_end)
 	pm.report_result("Aligned_reads_chrM", ar)
 	tr = float(pm.get_stat("Trimmed_reads"))
 	pm.report_result("Alignment_rate_chrM", round(float(ar) *
@@ -114,22 +142,37 @@ def check_alignment_chrM():
 	#rr = float(pm.get_stat("Raw_reads"))
 	#pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
 
-cmd = tools.bowtie2 + " -p " + str(pm.cores)
-cmd += " --very-sensitive " + " -x " +  res.chrM
-cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_chrM_sam
-pm.run(cmd, mapping_chrM_sam, follow = check_alignment_chrM)
+# mapping_chrM_sam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.sam")
+# cmd = tools.bowtie2 + " -p " + str(pm.cores)
+# cmd += " -k 1"  # Return only 1 alignment on the mitochondria. Deals with 2x circular fix.
+# cmd += " --very-sensitive " + " -x " +  res.bt2_chrM
+# cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2 + " -S " + mapping_chrM_sam
+# pm.run(cmd, mapping_chrM_sam, follow = check_alignment_chrM)
+# # convert to bam
+# mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.bam")
+# cmd = tools.samtools + " view -Sb -@ " + str(pm.cores)
+# cmd += " " + mapping_chrM_sam + " > " + mapping_chrM_bam
+# pm.run(cmd, mapping_chrM_bam)
 
-# convert to bam
-mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".chrM.bam")
-cmd = tools.samtools + " view -Sb " + mapping_chrM_sam +  "> " + mapping_chrM_bam  
-pm.run(cmd, mapping_chrM_bam)
+# # clean up sam files
+# pm.clean_add(mapping_chrM_sam)
 
-# clean up sam files
-pm.clean_add(mapping_chrM_sam)
+mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + "_chrM.bam")
+# combine all in one
+cmd = tools.bowtie2 + " -p " + str(pm.cores75)
+cmd += " -k 1"  # Return only 1 alignment on the mitochondria. Deals with 2x circular fix.
+cmd += " --very-sensitive " + " -x " +  res.bt2_chrM
+cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2
+cmd += " | samtools view -bS - -@ " + str(pm.cores25)
+cmd += " > " + mapping_chrM_bam
+pm.run(cmd, mapping_chrM_bam, follow = check_alignment_chrM)
 
-# filter genome reads, which is not mapped to chrM 
+
+
+
+# filter genome reads that are not mapped to chrM 
 unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
-cmd = tools.samtools + " view -b -F 2  " +  mapping_chrM_bam + " > " + unmapchrM_bam
+cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -F 2  " +  mapping_chrM_bam + " > " + unmapchrM_bam
 # -F 2 filters "read mapped in proper pair"
 unmap_fq1 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
 unmap_fq2 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
@@ -138,7 +181,8 @@ pm.run([cmd,cmd2],unmap_fq2)
 
 
 # Map to rDNA
-if os.path.exists(res.rDNA):
+if os.path.exists(os.path.dirname(res.bt2_rDNA)):
+	pm.timestamp("### Map to rDNA")
 	def check_alignment_rDNA():
 		ar = ngstk.count_mapped_reads(mapping_rDNA_sam, args.paired_end)
 		pm.report_result("Aligned_reads_rDNA", ar)
@@ -153,13 +197,20 @@ if os.path.exists(res.rDNA):
 	mapping_rDNA_sam = os.path.join(map_rDNA_folder, args.sample_name + "_rDNA.sam")
 
 	cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
-	cmd += " --very-sensitive " + " -x " +  res.rDNA
+	cmd += " --very-sensitive " + " -x " +  res.bt2_rDNA
 	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_rDNA_sam
 	pm.run(cmd, mapping_rDNA_sam, follow = check_alignment_rDNA)
 
+	# convert to bam
+	mapping_rDNA_bam = os.path.join(map_rDNA_folder, args.sample_name + "_rDNA.bam")
+	cmd = tools.samtools + " view -Sb -@ " + str(pm.cores)
+	cmd += " " + mapping_rDNA_sam + " > " + mapping_rDNA_bam
+	pm.run(cmd, mapping_rDNA_bam)
+
 	# filter genome reads not mapped to rDNA 
 	unmap_bam = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA.bam")
-	cmd = tools.samtools + " view -b -F 2  " +  mapping_rDNA_bam + " > " + unmap_bam
+	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -F 2  "
+	cmd +=  mapping_rDNA_bam + " > " + unmap_bam
 	# -F 2 filters "read mapped in proper pair"
 	unmap_fq1 = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA_R1.fastq")
 	unmap_fq2 = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA_R2.fastq")
@@ -167,9 +218,10 @@ if os.path.exists(res.rDNA):
 	pm.run([cmd,cmd2],unmap_fq2)
 
 # Mapping to genome 
+pm.timestamp("### Map to genome")
 
 def check_alignment_genome():
-	ar = ngstk.count_mapped_reads(mapping_genom_sam, args.paired_end)
+	ar = ngstk.count_mapped_reads(mapping_genome_sam, args.paired_end)
 	pm.report_result("Aligned_reads", ar)
 	rr = float(pm.get_stat("Raw_reads"))
 	tr = float(pm.get_stat("Trimmed_reads"))
@@ -177,30 +229,34 @@ def check_alignment_genome():
  100 / float(tr), 2))
 	pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
 
-map_genom_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "genom")
-ngstk.make_dir(map_genom_folder)
-mapping_genom_sam = os.path.join(map_genom_folder, args.sample_name + ".genom.sam")
+map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "genome")
+ngstk.make_dir(map_genome_folder)
+mapping_genome_sam = os.path.join(map_genome_folder, args.sample_name + ".genome.sam")
 
 cmd = tools.bowtie2 + " -p " + str(pm.cores) # + str(param.bowtie2.p)
 cmd += " --very-sensitive " + " -x " +  res.ref_pref
-cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_genom_sam
-pm.run(cmd, mapping_genom_sam, follow = check_alignment_genome)
+cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_genome_sam
+pm.run(cmd, mapping_genome_sam, follow = check_alignment_genome)
 
 # convert to bam
-mapping_genom_bam = os.path.join(map_genom_folder, args.sample_name + ".genom.bam")
-cmd = tools.samtools + " view -Sb " + mapping_genom_sam 
-cmd += " | " + tools.samtools + " sort -  -o " + mapping_genom_bam  
-pm.run(cmd, mapping_genom_bam)#	Need to added
+mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + ".genome.bam")
+
+# Filter only properly paired
+cmd = tools.samtools + " view -Sb -@ " + str(pm.cores) + " -f 2 " + mapping_genome_sam 
+cmd += " | " + tools.samtools + " sort - -@ " + str(pm.cores) + " -o " + mapping_genome_bam  
+pm.run(cmd, mapping_genome_bam)#	Need to added
+
+
 
 # clean up sam files
-pm.clean_add(mapping_genom_sam)
+pm.clean_add(mapping_genome_sam)
 
 # End of mapping to genome 
  
-rmdup_bam =  os.path.join(map_genom_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
-Metrics_file = os.path.join(map_genom_folder, args.sample_name + "picard_metrics_bam.txt")
-picard_log = os.path.join(map_genom_folder, args.sample_name + "picard_metrics_log.txt")
-cmd3 =  tools.java + " -Xmx4G " +  " -jar " + tools.MarkDuplicates  + " INPUT=" + mapping_genom_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file + " VALIDATION_STRINGENCY=LENIENT"
+rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
+Metrics_file = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_bam.txt")
+picard_log = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_log.txt")
+cmd3 =  tools.java + " -Xmx4G " +  " -jar " + tools.MarkDuplicates  + " INPUT=" + mapping_genome_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file + " VALIDATION_STRINGENCY=LENIENT"
 
 cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 cmd4 = tools.samtools + " index " + rmdup_bam 
@@ -212,14 +268,14 @@ pm.run([cmd,cmd2,cmd3,cmd4], rmdup_bam)
 #pm.run(cmd,mapping_bam)
 
 # shift bam file and make  bigwig file
-shift_bed = os.path.join(map_genom_folder ,  args.sample_name + ".pe.q10.sort.rmdup.bed")
+shift_bed = os.path.join(map_genome_folder ,  args.sample_name + ".pe.q10.sort.rmdup.bed")
 cmd = tools.bam2bed_shift + " " +  rmdup_bam 
 pm.run(cmd,shift_bed)
-bedGraph = os.path.join( map_genom_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
+bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
 cmd = tools.bedtools + " genomecov " + " -bg "  + " -split " + " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph  
-norm_bedGraph = os.path.join(  map_genom_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph.norm")
+norm_bedGraph = os.path.join(  map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph.norm")
 cmd2 = tools.norm_bedGraph +  " "  + bedGraph + " " + norm_bedGraph
-bw =  os.path.join(map_genom_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
+bw =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
 cmd3 = tools.bed2bigwig + " " + norm_bedGraph + " " + res.chrom_sizes + " " + bw 
 pm.run([cmd,cmd2,cmd3], bw)
 
