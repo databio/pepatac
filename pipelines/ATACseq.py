@@ -159,11 +159,11 @@ def check_alignment_chrM():
 
 mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + "_chrM.bam")
 # combine all in one
-cmd = tools.bowtie2 + " -p " + str(pm.cores75)
+cmd = tools.bowtie2 + " -p " + str(pm.cores50a)
 cmd += " -k 1"  # Return only 1 alignment on the mitochondria. Deals with 2x circular fix.
 cmd += " --very-sensitive " + " -x " +  res.bt2_chrM
 cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2
-cmd += " | samtools view -bS - -@ " + str(pm.cores25)
+cmd += " | samtools view -bS - -@ " + str(pm.cores50)
 cmd += " > " + mapping_chrM_bam
 pm.run(cmd, mapping_chrM_bam, follow = check_alignment_chrM)
 
@@ -220,8 +220,36 @@ if os.path.exists(os.path.dirname(res.bt2_rDNA)):
 # Mapping to genome 
 pm.timestamp("### Map to genome")
 
+map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
+ngstk.make_dir(map_genome_folder)
+
+# old way with intermediate sam file:
+
+# mapping_genome_sam = os.path.join(map_genome_folder, args.sample_name + ".genome.sam")
+# cmd = tools.bowtie2 + " -p " + str(pm.cores) # + str(param.bowtie2.p)
+# cmd += " --very-sensitive " + " -x " +  res.ref_pref
+# cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_genome_sam
+# pm.run(cmd, mapping_genome_sam, follow = check_alignment_genome)
+# # convert to bam
+# mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + ".genome.bam")
+# # Filter only properly paired
+# cmd = tools.samtools + " view -Sb -@ " + str(pm.cores) + " -f 2 -q 10 " + mapping_genome_sam 
+# cmd += " | " + tools.samtools + " sort - -@ " + str(pm.cores) + " -o " + mapping_genome_bam  
+# pm.run(cmd, mapping_genome_bam)#	Need to added
+# # clean up sam files
+# pm.clean_add(mapping_genome_sam)
+
+# new, faster all-in-one
+mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + ".bam")
+cmd = tools.bowtie2 + " -p " + str(pm.cores50a)
+cmd += " --very-sensitive " + " -x " +  res.ref_pref
+cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+cmd += " | samtools view -bS - -@ " + str(pm.cores50)
+cmd += " -f 2 -q 10"  # quality and pairing filter
+cmd += " > " + mapping_genome_bam
+
 def check_alignment_genome():
-	ar = ngstk.count_mapped_reads(mapping_genome_sam, args.paired_end)
+	ar = ngstk.count_mapped_reads(mapping_genome_bam, args.paired_end)
 	pm.report_result("Aligned_reads", ar)
 	rr = float(pm.get_stat("Raw_reads"))
 	tr = float(pm.get_stat("Trimmed_reads"))
@@ -229,39 +257,19 @@ def check_alignment_genome():
  100 / float(tr), 2))
 	pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
 
-map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "genome")
-ngstk.make_dir(map_genome_folder)
-mapping_genome_sam = os.path.join(map_genome_folder, args.sample_name + ".genome.sam")
-
-cmd = tools.bowtie2 + " -p " + str(pm.cores) # + str(param.bowtie2.p)
-cmd += " --very-sensitive " + " -x " +  res.ref_pref
-cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_genome_sam
-pm.run(cmd, mapping_genome_sam, follow = check_alignment_genome)
-
-# convert to bam
-mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + ".genome.bam")
-
-# Filter only properly paired
-cmd = tools.samtools + " view -Sb -@ " + str(pm.cores) + " -f 2 " + mapping_genome_sam 
-cmd += " | " + tools.samtools + " sort - -@ " + str(pm.cores) + " -o " + mapping_genome_bam  
-pm.run(cmd, mapping_genome_bam)#	Need to added
-
-
-
-# clean up sam files
-pm.clean_add(mapping_genome_sam)
+pm.run(cmd, mapping_genome_bam, follow = check_alignment_genome)
 
 # End of mapping to genome 
  
 rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
 Metrics_file = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_bam.txt")
 picard_log = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_log.txt")
-cmd3 =  tools.java + " -Xmx4G " +  " -jar " + tools.MarkDuplicates  + " INPUT=" + mapping_genome_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file + " VALIDATION_STRINGENCY=LENIENT"
+cmd3 =  tools.java + " -Xmx " + str(pm.javamem) +  " -jar " + tools.MarkDuplicates  + " INPUT=" + mapping_genome_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file + " VALIDATION_STRINGENCY=LENIENT"
 
 cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 cmd4 = tools.samtools + " index " + rmdup_bam 
 
-pm.run([cmd,cmd2,cmd3,cmd4], rmdup_bam)
+pm.run([cmd3,cmd4], rmdup_bam)
 
 # remove sam file 
 # cmd = "rm " + mapping_sam do not need this step. 
