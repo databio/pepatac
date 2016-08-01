@@ -70,7 +70,7 @@ res.blacklist = os.path.join(pm.config.resources.ref_pref + ".blaklist.bed")
 #res.rDNA = os.path.join(pm.config.resources.genomes, args.genome_assembly + "_rDNA", "indexed_bowtie2/", args.genome_assembly + "_rDNA")
 res.bt2_chrM = get_bowtie2_index(res.genomes, args.genome_assembly + "_chrM2x")
 res.bt2_rDNA = get_bowtie2_index(res.genomes, args.genome_assembly + "_rDNA")
-
+res.bt2_alphasat = get_bowtie2_index(res.genomes, "alpha_sat")
 output = os.path.join(args.output_parent, args.sample_name + "/")
 param.outfolder = output
 
@@ -161,7 +161,9 @@ mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + "_chrM.bam")
 # combine all in one
 cmd = tools.bowtie2 + " -p " + str(pm.cores50a)
 cmd += " -k 1"  # Return only 1 alignment on the mitochondria. Deals with 2x circular fix.
-cmd += " --very-sensitive " + " -x " +  res.bt2_chrM
+cmd += " -x " +  res.bt2_chrM
+cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+cmd += " -X 2000"
 cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2
 cmd += " | samtools view -bS - -@ " + str(pm.cores50)
 cmd += " > " + mapping_chrM_bam
@@ -198,6 +200,7 @@ if os.path.exists(os.path.dirname(res.bt2_rDNA)):
 
 	cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
 	cmd += " --very-sensitive " + " -x " +  res.bt2_rDNA
+	cmd += " -X 2000"
 	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_rDNA_sam
 	pm.run(cmd, mapping_rDNA_sam, follow = check_alignment_rDNA)
 
@@ -216,6 +219,46 @@ if os.path.exists(os.path.dirname(res.bt2_rDNA)):
 	unmap_fq2 = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA_R2.fastq")
 	cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
 	pm.run([cmd,cmd2],unmap_fq2)
+
+# Map to alphasat
+if os.path.exists(os.path.dirname(res.bt2_alphasat)):
+	pm.timestamp("### Map to alpha satellites")
+	def check_alignment_alphasat():
+		ar = ngstk.count_mapped_reads(mapping_alphasat_sam, args.paired_end)
+		pm.report_result("Aligned_reads_alphasat", ar)
+		tr = float(pm.get_stat("Trimmed_reads"))
+		pm.report_result("Alignment_rate_alphasat", round(float(ar) *
+	 100 / float(tr), 2))
+		#rr = float(pm.get_stat("Raw_reads"))
+		#pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
+
+	map_alphasat_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_alphasat")
+	ngstk.make_dir(map_alphasat_folder)
+	mapping_alphasat_sam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.sam")
+
+	cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
+	cmd += " -x " +  res.bt2_alphasat
+	cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_alphasat_sam
+	pm.run(cmd, mapping_alphasat_sam, follow = check_alignment_alphasat)
+
+	# convert to bam
+	mapping_alphasat_bam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.bam")
+	cmd = tools.samtools + " view -Sb -@ " + str(pm.cores)
+	cmd += " " + mapping_alphasat_sam + " > " + mapping_alphasat_bam
+	pm.run(cmd, mapping_alphasat_bam)
+
+	# filter genome reads not mapped to alphasat 
+	unmap_bam = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat.bam")
+	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -F 2  "
+	cmd +=  mapping_alphasat_bam + " > " + unmap_bam
+	# -F 2 filters "read mapped in proper pair"
+	unmap_fq1 = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat_R1.fastq")
+	unmap_fq2 = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat_R2.fastq")
+	cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
+	pm.run([cmd,cmd2],unmap_fq2)
+
+
 
 # Mapping to genome 
 pm.timestamp("### Map to genome")
@@ -240,13 +283,14 @@ ngstk.make_dir(map_genome_folder)
 # pm.clean_add(mapping_genome_sam)
 
 # new, faster all-in-one
-mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + ".bam")
-cmd = tools.bowtie2 + " -p " + str(pm.cores50a)
+mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + "pe.q10.sort.bam")
+cmd = tools.bowtie2 + " -p " + str(pm.cores)
 cmd += " --very-sensitive " + " -x " +  res.ref_pref
 cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
-cmd += " | samtools view -bS - -@ " + str(pm.cores50)
+cmd += " -X 2000"
+cmd += " | samtools view -bS - -@ 1 " 
 cmd += " -f 2 -q 10"  # quality and pairing filter
-cmd += " > " + mapping_genome_bam
+cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_genome_bam  
 
 def check_alignment_genome():
 	ar = ngstk.count_mapped_reads(mapping_genome_bam, args.paired_end)
@@ -264,7 +308,7 @@ pm.run(cmd, mapping_genome_bam, follow = check_alignment_genome)
 rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
 Metrics_file = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_bam.txt")
 picard_log = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_log.txt")
-cmd3 =  tools.java + " -Xmx " + str(pm.javamem) +  " -jar " + tools.MarkDuplicates  + " INPUT=" + mapping_genome_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file + " VALIDATION_STRINGENCY=LENIENT"
+cmd3 =  tools.java + " -Xmx" + str(pm.javamem) +  " -jar " + tools.MarkDuplicates  + " INPUT=" + mapping_genome_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file + " VALIDATION_STRINGENCY=LENIENT"
 
 cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 cmd4 = tools.samtools + " index " + rmdup_bam 
