@@ -159,13 +159,13 @@ def check_alignment_chrM():
 
 mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + "_chrM.bam")
 # combine all in one
-cmd = tools.bowtie2 + " -p " + str(pm.cores50a)
+cmd = tools.bowtie2 + " -p " + str(pm.cores75)
 cmd += " -k 1"  # Return only 1 alignment on the mitochondria. Deals with 2x circular fix.
 cmd += " -x " +  res.bt2_chrM
 cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
 cmd += " -X 2000"
 cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2
-cmd += " | samtools view -bS - -@ " + str(pm.cores50)
+cmd += " | samtools view -bS - -@ " + str(pm.cores25)
 cmd += " > " + mapping_chrM_bam
 pm.run(cmd, mapping_chrM_bam, follow = check_alignment_chrM)
 
@@ -224,7 +224,7 @@ if os.path.exists(os.path.dirname(res.bt2_rDNA)):
 if os.path.exists(os.path.dirname(res.bt2_alphasat)):
 	pm.timestamp("### Map to alpha satellites")
 	def check_alignment_alphasat():
-		ar = ngstk.count_mapped_reads(mapping_alphasat_sam, args.paired_end)
+		ar = ngstk.count_mapped_reads(mapping_alphasat_bam, args.paired_end)
 		pm.report_result("Aligned_reads_alphasat", ar)
 		tr = float(pm.get_stat("Trimmed_reads"))
 		pm.report_result("Alignment_rate_alphasat", round(float(ar) *
@@ -234,19 +234,30 @@ if os.path.exists(os.path.dirname(res.bt2_alphasat)):
 
 	map_alphasat_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_alphasat")
 	ngstk.make_dir(map_alphasat_folder)
-	mapping_alphasat_sam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.sam")
+	# mapping_alphasat_sam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.sam")
+	# cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
+	# cmd += " -x " +  res.bt2_alphasat
+	# cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+	# cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_alphasat_sam
+	# pm.run(cmd, mapping_alphasat_sam, follow = check_alignment_alphasat)
 
-	cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
+	# # convert to bam
+	# mapping_alphasat_bam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.bam")
+	# cmd = tools.samtools + " view -Sb -@ " + str(pm.cores)
+	# cmd += " " + mapping_alphasat_sam + " > " + mapping_alphasat_bam
+	# pm.run(cmd, mapping_alphasat_bam)
+
+	mapping_alphasat_bam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.bam")
+	cmd = tools.bowtie2 + " -p " + str(pm.cores)
+	cmd += " -k 1"  # Return only 1 alignment on the mitochondria. Deals with 2x circular fix.
 	cmd += " -x " +  res.bt2_alphasat
 	cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_alphasat_sam
-	pm.run(cmd, mapping_alphasat_sam, follow = check_alignment_alphasat)
+	cmd += " -X 2000"
+	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+	cmd += " | samtools view -bS - -@ 1"
+	cmd += " > " + mapping_alphasat_bam
+	pm.run(cmd, mapping_alphasat_bam, follow = check_alignment_alphasat)
 
-	# convert to bam
-	mapping_alphasat_bam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.bam")
-	cmd = tools.samtools + " view -Sb -@ " + str(pm.cores)
-	cmd += " " + mapping_alphasat_sam + " > " + mapping_alphasat_bam
-	pm.run(cmd, mapping_alphasat_bam)
 
 	# filter genome reads not mapped to alphasat 
 	unmap_bam = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat.bam")
