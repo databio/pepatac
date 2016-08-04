@@ -42,7 +42,7 @@ data_sources:
 
 genomes:
   human: hg19
-  mouse: mm10
+  mouse: mm9
 
 transcriptomes:
   human: hg19_cdna
