@@ -31,17 +31,22 @@ else:
 	args.paired_end = False
 
 # Initialize
-pm = pypiper.PipelineManager(name = "ATACseq", outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name)), args = args)
+outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
+pm = pypiper.PipelineManager(name = "ATACseq", outfolder = outfolder, args = args)
 ngstk = pypiper.NGSTk(pm=pm)
 
 # Do some cores math for split processes
 # 50/50 split
-pm.cores50a = int(pm.cores) / 2 + int(pm.cores) % 2
-pm.cores50 = int(pm.cores) / 2
+pm.cores1of2a = int(pm.cores) / 2 + int(pm.cores) % 2
+pm.cores1of2 = int(pm.cores) / 2
 
 # 75/25 split
-pm.cores25 = int(pm.cores) / 4
-pm.cores75 = int(pm.cores) - int(pm.cores25)
+pm.cores1of4 = int(pm.cores) / 4
+pm.cores3of4 = int(pm.cores) - int(pm.cores1of4)
+
+pm.cores1of8 = int(pm.cores) / 8
+pm.cores7of8 = int(pm.cores) - int(pm.cores1of8)
+
 
 
 # Convenience alias 
@@ -71,8 +76,8 @@ res.blacklist = os.path.join(pm.config.resources.ref_pref + ".blaklist.bed")
 res.bt2_chrM = get_bowtie2_index(res.genomes, args.genome_assembly + "_chrM2x")
 res.bt2_rDNA = get_bowtie2_index(res.genomes, args.genome_assembly + "_rDNA")
 res.bt2_alphasat = get_bowtie2_index(res.genomes, "alpha_sat")
-output = os.path.join(args.output_parent, args.sample_name + "/")
-param.outfolder = output
+output = outfolder
+param.outfolder = outfolder
 
 ################################################################################
 print("Local input file: " + args.input[0]) 
@@ -174,7 +179,7 @@ pm.run(cmd, mapping_chrM_bam, follow = check_alignment_chrM)
 
 # filter genome reads that are not mapped to chrM 
 unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
-cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -F 2  " +  mapping_chrM_bam + " > " + unmapchrM_bam
+cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 4" +  mapping_chrM_bam + " > " + unmapchrM_bam
 # -F 2 filters "read mapped in proper pair"
 unmap_fq1 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
 unmap_fq2 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
@@ -249,7 +254,7 @@ if os.path.exists(os.path.dirname(res.bt2_alphasat)):
 
 	mapping_alphasat_bam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.bam")
 	cmd = tools.bowtie2 + " -p " + str(pm.cores)
-	cmd += " -k 1"  # Return only 1 alignment on the mitochondria. Deals with 2x circular fix.
+	cmd += " -k 1"  # Return only 1 alignment on the alphasatellites.
 	cmd += " -x " +  res.bt2_alphasat
 	cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
 	cmd += " -X 2000"
