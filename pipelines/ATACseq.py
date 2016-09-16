@@ -159,7 +159,7 @@ pm.run(cmd, mapping_chrM_bam, follow = check_alignment_chrM)
 
 # filter genome reads that are not mapped to chrM 
 unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
-cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 4" +  mapping_chrM_bam + " > " + unmapchrM_bam
+cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 4 " +  mapping_chrM_bam + " > " + unmapchrM_bam
 # -F 2 filters "read mapped in proper pair"
 unmap_fq1 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
 unmap_fq2 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
