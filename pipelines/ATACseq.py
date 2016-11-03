@@ -159,8 +159,10 @@ pm.run(cmd, mapping_chrM_bam, follow = check_alignment_chrM)
 
 # filter genome reads that are not mapped to chrM 
 unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
-cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 4 " +  mapping_chrM_bam + " > " + unmapchrM_bam
+cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 12 " +  mapping_chrM_bam + " > " + unmapchrM_bam
 # -F 2 filters "read mapped in proper pair"
+# -f 4 filters "read unmapped" -- problem with this is that it includes mates of reads that mapped.
+# -f 12 filters "read unmapped and mate unmapped" -- this will exclude reads whose mates mapped.
 unmap_fq1 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
 unmap_fq2 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
 cmd2 = tools.bedtools + " bamtofastq  -i " + unmapchrM_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
@@ -196,9 +198,9 @@ if os.path.exists(os.path.dirname(res.bt2_rDNA)):
 
 	# filter genome reads not mapped to rDNA 
 	unmap_bam = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA.bam")
-	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -F 2  "
+	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
 	cmd +=  mapping_rDNA_bam + " > " + unmap_bam
-	# -F 2 filters "read mapped in proper pair"
+
 	unmap_fq1 = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA_R1.fastq")
 	unmap_fq2 = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA_R2.fastq")
 	cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
@@ -221,7 +223,7 @@ if os.path.exists(os.path.dirname(res.bt2_alphasat)):
 
 	mapping_alphasat_bam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.bam")
 	cmd = tools.bowtie2 + " -p " + str(pm.cores)
-	cmd += " -k 1"  # Return only 1 alignment on the alphasatellites.
+	cmd += " -k 1"  # Return only 1 alignment on the alpha-satellites.
 	cmd += " -x " +  res.bt2_alphasat
 	cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
 	cmd += " -X 2000"
@@ -232,9 +234,9 @@ if os.path.exists(os.path.dirname(res.bt2_alphasat)):
 
 	# filter genome reads not mapped to alphasat 
 	unmap_bam = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat.bam")
-	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -F 2  "
+	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
 	cmd +=  mapping_alphasat_bam + " > " + unmap_bam
-	# -F 2 filters "read mapped in proper pair"
+
 	unmap_fq1 = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat_R1.fastq")
 	unmap_fq2 = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat_R2.fastq")
 	cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
@@ -247,13 +249,20 @@ map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assem
 ngstk.make_dir(map_genome_folder)
 
 mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + "pe.q10.sort.bam")
+mapping_genome_bam_temp = os.path.join(map_genome_folder, args.sample_name + ".bam")
+unmap_genome_bam = os.path.join(map_genome_folder, args.sample_name + "_unmap.bam")
 cmd = tools.bowtie2 + " -p " + str(pm.cores)
 cmd += " --very-sensitive " + " -x " +  res.bt2_genome
 cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 cmd += " -X 2000"
 cmd += " | samtools view -bS - -@ 1 " 
-cmd += " -f 2 -q 10"  # quality and pairing filter
-cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_genome_bam  
+#cmd += " -f 2 -q 10"  # quality and pairing filter
+cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_genome_bam_temp
+
+# Split genome mapping result bamfile into two: high-quality aligned reads (keepers)
+# and unmapped reads (in case we want to analyze the altogether unmapped reads)
+cmd2 = "samtools view -f 2 -q 10 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_temp
+cmd2 += " > " + mapping_genome_bam 
 
 def check_alignment_genome():
 	ar = ngstk.count_mapped_reads(mapping_genome_bam, args.paired_end)
@@ -264,15 +273,20 @@ def check_alignment_genome():
  100 / float(tr), 2))
 	pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
 
-pm.run(cmd, mapping_genome_bam, follow = check_alignment_genome)
+pm.run([cmd, cmd2], mapping_genome_bam)
+
+cmd = "samtools view -f 12 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_temp
+cmd += " > " + unmap_genome_bam
+pm.run(cmd, unmap_genome_bam)
 
 # End of mapping to genome 
  
 rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
 Metrics_file = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_bam.txt")
 picard_log = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_log.txt")
-cmd3 =  tools.java + " -Xmx" + str(pm.javamem) +  " -jar " + tools.MarkDuplicates  + " INPUT=" + mapping_genome_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file + " VALIDATION_STRINGENCY=LENIENT"
-
+cmd3 =  tools.java + " -Xmx" + str(pm.javamem) +  " -jar " + tools.MarkDuplicates
+cmd3 += " INPUT=" + mapping_genome_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file 
+cmd3 += " VALIDATION_STRINGENCY=LENIENT"
 cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 cmd4 = tools.samtools + " index " + rmdup_bam 
 
