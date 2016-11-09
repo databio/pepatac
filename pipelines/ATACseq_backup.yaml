@@ -3,28 +3,28 @@
 tools:
 
 # basic tools 
-  java:  java
+  java:  /usr/bin/java
   # absolute paths to required tools
 
 # public tools 
-  bowtie2: bowtie2
-  samtools: samtools
-  bedtools: bedtools
-  macs2: macs2
-  #MarkDuplicates:  /seq/picard-tools-1.79/MarkDuplicates.jar
-  picard: ${PICARD}
+  bowtie2:    /seq/bowtie2-2.1.0/bowtie2 
+  samtools:  /usr/local/bin/samtools
+  bedtools: /seq/bedtools-master/bin/bedtools
+  macs2: /usr/bin/macs2
+  MarkDuplicates:  /seq/picard-tools-1.79/MarkDuplicates.jar
+  picard: $PICARD
 # private tools
  # adapterTrim: /usr/local/bin/atacseq_tools/adapterTrimmingModified  
-  trimmo: ${TRIMMOMATIC}
+  trimmo: /home/jinxu/software/Trimmomatic-0.36/trimmomatic-0.36.jar
   #norm_bedGraph:     /seq/scripts/norm_bedGraph.pl 
   #pyMakeVplot: /seq/ATAC-seq/Code/pyMakeVplot.py
   #fragment_length_dist_pl: /seq/ATAC-seq/Code/fragment_length_dist.pl
   #fragment_length_dist_R: /seq/ATAC-seq/Code/fragment_length_dist.R
   #bam2bed_shift: /seq/ATAC-seq/Code/bam2bed_shift.pl
-  bedGraphToBigWig: bedGraphToBigWig
+  bedGraphToBigWig: /seq/ucsc/bedGraphToBigWig
 #User configure 
 resources:
-  genomes: ${RESOURCES}genomes/
+  genomes: /seq/genomes/
 # reference information set up , using  mm9 for example 
 #  changed using referen prefix 
 #  hard code for hg19 now      
@@ -34,8 +34,7 @@ resources:
 #  ref_size: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9_all.chrsize
 #  refGene_TSS: /seq/ATAC-seq/Data/mm9_refseq_genes_TSS.txt 
 #  blacklist: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9-blacklist.bed
-  #adapter:     /home/jinxu/software/Trimmomatic-0.36/adapters/NexteraPE-PE.fa # Including potential ATACseq adapter.
-  adapter: ${RESOURCES}adapters/ATAC_stanford.fa
+  adapter:     /home/jinxu/software/Trimmomatic-0.36/adapters/NexteraPE-PE.fa # Including potential ATACseq adapter.  
 parameters:
   # parameters passed to bioinformatic tools, subclassed by tool
   

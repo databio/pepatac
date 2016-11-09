@@ -73,6 +73,9 @@ res.bt2_rDNA = get_bowtie2_index(res.genomes, args.genome_assembly + "_rDNA")
 res.bt2_alphasat = get_bowtie2_index(res.genomes, "alpha_sat")
 res.bt2_genome = get_bowtie2_index(res.genomes, args.genome_assembly)
 
+# Set up a link to relative scripts included in the repo
+tools.scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools")
+
 output = outfolder
 param.outfolder = outfolder
 
@@ -100,7 +103,7 @@ pm.run(cmd, unaligned_fastq,
 pm.clean_add(out_fastq_pre + "*.fastq", conditional = True)
 print(local_input_files)
 
-# Adaptor trimming
+# Adapter trimming
 pm.timestamp("### Adapter trimming: ")
 
 trimming_prefix = os.path.join(fastq_folder, args.sample_name)
@@ -113,8 +116,8 @@ cmd += trimmed_fastq + " "
 cmd += trimming_prefix + "_R1_unpaired.fq "
 cmd += trimmed_fastq_R2 + " "
 cmd += trimming_prefix + "_R2_unpaired.fq "
-#cmd +=  "ILLUMINACLIP:"+ paths.adaptor + ":2:30:10:LEADING:3TRAILING:3SLIDINGWINDOW:4:15MINLEN:36" 
-cmd +=  "ILLUMINACLIP:"+ res.adaptor + ":2:30:10" 
+#cmd +=  "ILLUMINACLIP:"+ paths.adapter + ":2:30:10:LEADING:3TRAILING:3SLIDINGWINDOW:4:15MINLEN:36" 
+cmd +=  "ILLUMINACLIP:"+ res.adapter + ":2:30:10" 
 #def check_trim():
         #n_trim = float(myngstk.count_reads(trimmed_fastq, args.paired_end))
 #        rr = float(pm.get_stat("Raw_reads"))
@@ -126,7 +129,7 @@ pm.run(cmd, trimmed_fastq,
 
 pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional = True)
-# End of Adaptor trimming 
+# End of Adapter trimming 
 
 # Mapping to chrM first 
 pm.timestamp("### Map to chrM")
@@ -282,10 +285,12 @@ pm.run(cmd, unmap_genome_bam)
 # End of mapping to genome 
  
 rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
-Metrics_file = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_bam.txt")
+metrics_file = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_bam.txt")
 picard_log = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_log.txt")
-cmd3 =  tools.java + " -Xmx" + str(pm.javamem) +  " -jar " + tools.MarkDuplicates
-cmd3 += " INPUT=" + mapping_genome_bam + " OUTPUT=" + rmdup_bam + " METRICS_FILE=" + Metrics_file 
+cmd3 =  tools.java + " -Xmx" + str(pm.javamem) +  " -jar " + tools.picard + " MarkDuplicates"
+cmd3 += " INPUT=" + mapping_genome_bam 
+cmd3 += " OUTPUT=" + rmdup_bam 
+cmd3 += " METRICS_FILE=" + metrics_file 
 cmd3 += " VALIDATION_STRINGENCY=LENIENT"
 cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 cmd4 = tools.samtools + " index " + rmdup_bam 
@@ -294,14 +299,14 @@ pm.run([cmd3,cmd4], rmdup_bam)
 
 # shift bam file and make  bigwig file
 shift_bed = os.path.join(map_genome_folder ,  args.sample_name + ".pe.q10.sort.rmdup.bed")
-cmd = tools.bam2bed_shift + " " +  rmdup_bam 
+cmd = os.path.join(tools.scripts_dir, "bam2bed_shift.pl " +  rmdup_bam)
 pm.run(cmd,shift_bed)
 bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
 cmd = tools.bedtools + " genomecov " + " -bg "  + " -split " + " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph  
 norm_bedGraph = os.path.join(  map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph.norm")
-cmd2 = tools.norm_bedGraph +  " "  + bedGraph + " " + norm_bedGraph
+cmd2 = os.path.join(tools.scripts_dir, "norm_bedGraph.pl "  + bedGraph + " " + norm_bedGraph)
 bw =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
-cmd3 = tools.bed2bigwig + " " + norm_bedGraph + " " + res.chrom_sizes + " " + bw 
+cmd3 = tools.bedGraphToBigWig + " " + norm_bedGraph + " " + res.chrom_sizes + " " + bw
 pm.run([cmd,cmd2,cmd3], bw)
 
 
@@ -313,18 +318,19 @@ if os.path.exists(res.TSS_file):
 	ngstk.make_dir(QC_folder)
 
 	Tss_enrich =  os.path.join(QC_folder ,  args.sample_name + ".TssEnrichment") 
-	cmd = tools.pyMakeVplot + " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -o " + Tss_enrich
+	cmd = os.path.join(tools.scripts_dir, "pyMakeVplot.py")
+	cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -o " + Tss_enrich
 	pm.run(cmd, Tss_enrich)
 	#python /seq/ATAC-seq/Code/pyMakeVplot.py -a $outdir_map/$output.pe.q10.sort.rmdup.bam -b /seq/chromosome/hg19/hg19_refseq_genes_TSS.txt -p ends -e 2000 -u -v -o $outdir_qc/$output.TSSenrich
 
 	# fragment  distribution
 	fragL= os.path.join(QC_folder ,  args.sample_name +  ".fragLen.txt")
-	cmd = "perl " + tools.fragment_length_dist_pl + " " + rmdup_bam + " " +  fragL
+	cmd = os.path.join("perl " + tools.scripts_dir, "fragment_length_dist.pl " + rmdup_bam + " " +  fragL)
 	fragL_count= os.path.join(QC_folder ,  args.sample_name +  ".frag_count.txt")
 	cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
 	fragL_dis1= os.path.join(QC_folder ,  args.sample_name +  ".fragL.distribution.pdf")
 	fragL_dis2= os.path.join(QC_folder ,  args.sample_name +  ".fragL.distribution.txt")
-	cmd2 = "Rscript " +  tools.fragment_length_dist_R + " " +  fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
+	cmd2 = "Rscript " +  tools.scripts_dir + "fragment_length_dist.R " +  fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
 
 	pm.run([cmd,cmd1,cmd2], fragL_dis1)
 
@@ -337,15 +343,15 @@ else:
 #Rscript /seq/ATAC-seq/Code/fragment_length_dist.R $outdir_qc/$output.fragL.txt $outdir_qc/$output.frag.sort.txt $outdir_qc/$output.fragment_length_distribution.pdf $outdir_qc/$output.fragment_length_distribution.txt
 
 # peak calling 
-Peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly )
+peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly )
 ngstk.make_dir(Peak_folder)
 
-peak_file= os.path.join(Peak_folder ,  args.sample_name + "_peaks.narrowPeak")
+peak_file= os.path.join(peak_folder ,  args.sample_name + "_peaks.narrowPeak")
 cmd = tools.macs2 + " callpeak "
 cmd += " -t  " + shift_bed 
 cmd += " -f BED " 
 cmd += " -g "  +  str(args.genomeS)
-cmd +=  " --outdir " + Peak_folder +  " -n " + args.sample_name 
+cmd +=  " --outdir " + peak_folder +  " -n " + args.sample_name 
 cmd += "  -q " + str(param.macs2.q)
 cmd +=  " --shift " + str(param.macs2.shift) + " --nomodel "  
 pm.run(cmd, peak_file)
@@ -353,7 +359,7 @@ pm.run(cmd, peak_file)
 
 # filter peaks in blacklist 
 if os.path.exists(res.blacklist):
-	filter_peak = os.path.join(Peak_folder ,  args.sample_name + "_peaks.narrowPeak.rmBlacklist")
+	filter_peak = os.path.join(peak_folder ,  args.sample_name + "_peaks.narrowPeak.rmBlacklist")
 	cmd = tools.bedtools  + " intersect " + " -a " + peak_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
 
 	pm.run(cmd,filter_peak)

@@ -14,4 +14,4 @@ ATACseq.py:
       cores: "8"
       mem: "32000"
       time: "2-00:00:00"
-      partition: "longq"
+      partition: "economy"
