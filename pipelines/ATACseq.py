@@ -2,7 +2,7 @@
 """
 ATACseq  pipeline
 """
-__author__="Jin Xu"
+__author__=["Jin Xu", "Nathan Sheffield"]
 __email__="xujin937@gmail.com"
 
 from argparse import ArgumentParser
@@ -21,7 +21,7 @@ parser = pypiper.add_pypiper_args(parser, all_args = True)
 #parser = pypiper.add_pypiper_args(parser, groups = ['all'])  # future version
 
 #Add any pipeline-specific arguments
-parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=str, help='genome size for Macs2')
+parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=str, help='genome size for MACS2')
 args = parser.parse_args()
 
  # it always paired seqencung for ATACseq
@@ -70,7 +70,7 @@ res.blacklist = os.path.join(gfolder, args.genome_assembly + ".blacklist.bed")
 # Bowtie2 indexes for various assemblies
 res.bt2_chrM = get_bowtie2_index(res.genomes, args.genome_assembly + "_chrM2x")
 res.bt2_rDNA = get_bowtie2_index(res.genomes, args.genome_assembly + "_rDNA")
-res.bt2_alphasat = get_bowtie2_index(res.genomes, "alpha_sat")
+res.bt2_alphasat = get_bowtie2_index(res.genomes, args.genome_assembly + "_alphasat")
 res.bt2_genome = get_bowtie2_index(res.genomes, args.genome_assembly)
 
 # Set up a link to relative scripts included in the repo
@@ -252,7 +252,7 @@ map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assem
 ngstk.make_dir(map_genome_folder)
 
 mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + "pe.q10.sort.bam")
-mapping_genome_bam_temp = os.path.join(map_genome_folder, args.sample_name + ".bam")
+mapping_genome_bam_temp = os.path.join(map_genome_folder, args.sample_name + ".temp.bam")
 unmap_genome_bam = os.path.join(map_genome_folder, args.sample_name + "_unmap.bam")
 cmd = tools.bowtie2 + " -p " + str(pm.cores)
 cmd += " --very-sensitive " + " -x " +  res.bt2_genome
@@ -297,17 +297,22 @@ cmd4 = tools.samtools + " index " + rmdup_bam
 
 pm.run([cmd3,cmd4], rmdup_bam)
 
-# shift bam file and make  bigwig file
+# shift bam file and make bigwig file
 shift_bed = os.path.join(map_genome_folder ,  args.sample_name + ".pe.q10.sort.rmdup.bed")
 cmd = os.path.join(tools.scripts_dir, "bam2bed_shift.pl " +  rmdup_bam)
 pm.run(cmd,shift_bed)
 bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
-cmd = tools.bedtools + " genomecov " + " -bg "  + " -split " + " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph  
-norm_bedGraph = os.path.join(  map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph.norm")
+cmd = tools.bedtools + " genomecov -bg -split"
+cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
+norm_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.bedGraph")
+sort_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.sort.bedGraph")
 cmd2 = os.path.join(tools.scripts_dir, "norm_bedGraph.pl "  + bedGraph + " " + norm_bedGraph)
 bw =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
-cmd3 = tools.bedGraphToBigWig + " " + norm_bedGraph + " " + res.chrom_sizes + " " + bw
-pm.run([cmd,cmd2,cmd3], bw)
+
+# bedGraphToBigWig requires lexographical sort, which puts chr10 before chr2, for example
+cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
+cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw
+pm.run([cmd, cmd2, cmd3, cmd4], bw)
 
 
 # TSS enrichment 
@@ -344,7 +349,7 @@ else:
 
 # peak calling 
 peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly )
-ngstk.make_dir(Peak_folder)
+ngstk.make_dir(peak_folder)
 
 peak_file= os.path.join(peak_folder ,  args.sample_name + "_peaks.narrowPeak")
 cmd = tools.macs2 + " callpeak "
