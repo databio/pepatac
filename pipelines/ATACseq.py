@@ -208,6 +208,9 @@ if os.path.exists(os.path.dirname(res.bt2_rDNA)):
 	unmap_fq2 = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA_R2.fastq")
 	cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
 	pm.run([cmd,cmd2],unmap_fq2)
+else:
+	print("Skipping: No rDNA index found at " + os.path.dirname(res.bt2_rDNA))
+
 
 # Map to alphasat
 if os.path.exists(os.path.dirname(res.bt2_alphasat)):
@@ -244,6 +247,8 @@ if os.path.exists(os.path.dirname(res.bt2_alphasat)):
 	unmap_fq2 = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat_R2.fastq")
 	cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
 	pm.run([cmd,cmd2],unmap_fq2)
+else:
+	print("No alphasat index found at " + os.path.dirname(res.bt2_alphasat))
 
 # Mapping to genome 
 pm.timestamp("### Map to genome")
@@ -276,7 +281,7 @@ def check_alignment_genome():
  100 / float(tr), 2))
 	pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
 
-pm.run([cmd, cmd2], mapping_genome_bam)
+pm.run([cmd, cmd2], mapping_genome_bam, follow = check_alignment_genome)
 
 cmd = "samtools view -f 12 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_temp
 cmd += " > " + unmap_genome_bam
