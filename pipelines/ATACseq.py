@@ -57,9 +57,31 @@ def get_bowtie2_index(genomes_folder, genome_assembly):
 	"""
 	Convenience function
 	Retuns the bowtie2 index prefix (to be passed to bowtie2) for a genome assembly that follows
-	the folder structure produced by build_reference.py.
+	the folder structure produced by the RefGenie reference builder.
 	"""
 	return(os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2", genome_assembly))
+
+
+def count_alignment(assembly_identifier, aligned_bam, paired_end = args.paired_end):
+	""" 
+	This function counts the aligned reads and alignment rate and reports statistics. You
+	must have previously reported a "Trimmed_reads" result to get alignment rates. It is useful
+	as a follow function after any alignment step to quantify and report the number of reads
+	aligning, and the alignment rate to that reference.
+	:param:	aligned_bam	String pointing to the aligned bam file.
+	:param: assembly_identifier	String identifying the reference to which you aligned (can be anything)
+	"""
+	ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
+	pm.report_result("Aligned_reads_" + assembly_identifier, ar)
+	try:
+		# wrapped in try block in case Trimmed_reads is not reported in this pipeline.
+		tr = float(pm.get_stat("Trimmed_reads"))
+		pm.report_result("Alignment_rate_" + assembly_identifier, round(float(ar) *
+ 100 / float(tr), 2))
+	except:
+		pass
+
+
 
 # Set up reference resource according to genome prefix.
 gfolder = os.path.join(res.genomes, args.genome_assembly)
@@ -69,6 +91,8 @@ res.blacklist = os.path.join(gfolder, args.genome_assembly + ".blacklist.bed")
 
 # Bowtie2 indexes for various assemblies
 res.bt2_chrM = get_bowtie2_index(res.genomes, args.genome_assembly + "_chrM2x")
+res.bt2_alu = get_bowtie2_index(res.genomes, args.genome_assembly + "_alu")
+res.bt2_repbase = get_bowtie2_index(res.genomes, args.genome_assembly + "_repbase")
 res.bt2_rDNA = get_bowtie2_index(res.genomes, args.genome_assembly + "_rDNA")
 res.bt2_alphasat = get_bowtie2_index(res.genomes, args.genome_assembly + "_alphasat")
 res.bt2_genome = get_bowtie2_index(res.genomes, args.genome_assembly)
@@ -124,8 +148,8 @@ cmd +=  "ILLUMINACLIP:"+ res.adapter + ":2:30:10"
 #        pm.report_result("Trimmed_reads", n_trim)
 #        pm.report_result("Trim_loss_rate", round((rr - n_trim) * 100 / rr, 2))
 pm.run(cmd, trimmed_fastq,
-	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
-		fastqc_folder = os.path.join(param.pipeline_outfolder, "fastqc/")))
+	follow = lambda: ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
+		fastqc_folder = os.path.join(param.outfolder, "fastqc/")))
 
 pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional = True)
@@ -166,10 +190,41 @@ cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 12 " +  mapping_chr
 # -F 2 filters "read mapped in proper pair"
 # -f 4 filters "read unmapped" -- problem with this is that it includes mates of reads that mapped.
 # -f 12 filters "read unmapped and mate unmapped" -- this will exclude reads whose mates mapped.
+
+# Now convert the unaligned reads into fastq format for the next alignment step
 unmap_fq1 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
 unmap_fq2 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
 cmd2 = tools.bedtools + " bamtofastq  -i " + unmapchrM_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
+pm.run([cmd,cmd2], unmap_fq2)
+
+
+# Map to Alu elements
+pm.timestamp("### Map to alu")
+
+map_alu_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_alu")
+ngstk.make_dir(map_alu_folder)
+mapped_bam_alu = os.path.join(map_alu_folder, args.sample_name + "_alu.bam")
+
+cmd = tools.bowtie2 + " -p " + str(pm.cores)
+cmd += " -k 1"  # Return only 1 alignment
+cmd += " -x " +  res.bt2_alu
+cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+cmd += " -X 2000"
+cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+cmd += " | samtools view -bS - -@ 0"
+cmd += " > " + mapped_bam_alu
+pm.run(cmd, mapped_bam_alu, follow = lambda: count_alignment("alu", mapped_bam_alu))
+
+# Extract reads that didn't map
+unmap_bam_alu = os.path.join(map_alu_folder, args.sample_name + "_unmap_alu.bam")
+cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 12 " +  mapped_bam_alu + " > " + unmap_bam_alu
+
+# Now convert the unaligned reads into fastq format for the next alignment step
+unmap_fq1 = os.path.join(map_alu_folder, args.sample_name + "_unmap_alu_R1.fastq")
+unmap_fq2 = os.path.join(map_alu_folder, args.sample_name + "_unmap_alu_R2.fastq")
+cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam_alu + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
 pm.run([cmd,cmd2],unmap_fq2)
+
 
 # Map to rDNA
 if os.path.exists(os.path.dirname(res.bt2_rDNA)):
@@ -249,6 +304,38 @@ if os.path.exists(os.path.dirname(res.bt2_alphasat)):
 	pm.run([cmd,cmd2],unmap_fq2)
 else:
 	print("No alphasat index found at " + os.path.dirname(res.bt2_alphasat))
+
+# Mapping to repbase
+if os.path.exists(os.path.dirname(res.bt2_repbase)):
+	pm.timestamp("### Map to repbase")
+	assembly_identifier = "repbase"
+	outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_alphasat")
+	ngstk.make_dir(outdir)
+	mapped_bam = os.path.join(outdir, args.sample_name + "_" + assembly_identifier + ".bam")
+
+	cmd = tools.bowtie2 + " -p " + str(pm.cores)
+	cmd += " -k 1"  # Return only 1 alignment
+	cmd += " -x " +  res.bt2_repbase
+	cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+	cmd += " -X 2000"
+	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+	cmd += " | samtools view -bS - -@ 1"
+	cmd += " > " + mapped_bam
+	pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
+
+	# filter genome reads not mapped 
+	unmapped_bam = os.path.join(outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
+	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
+	cmd +=  mapped_bam + " > " + unmapped_bam
+
+	unmap_fq1 = os.path.join(outdir, args.sample_name + "_unmap_alphasat_R1.fastq")
+	unmap_fq2 = os.path.join(outdir, args.sample_name + "_unmap_alphasat_R2.fastq")
+	cmd2 = tools.bedtools + " bamtofastq  -i " + unmapped_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
+
+	pm.run([cmd,cmd2],unmap_fq2)
+else:
+	print("No " + assembly_identifier + " index found at " + os.path.dirname(res.bt2_repbase))
+
 
 # Mapping to genome 
 pm.timestamp("### Map to genome")
