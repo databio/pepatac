@@ -79,6 +79,7 @@ def count_alignment(assembly_identifier, aligned_bam, paired_end = args.paired_e
 		pm.report_result("Alignment_rate_" + assembly_identifier, round(float(ar) *
  100 / float(tr), 2))
 	except:
+
 		pass
 
 
@@ -198,61 +199,62 @@ cmd2 = tools.bedtools + " bamtofastq  -i " + unmapchrM_bam + " -fq " + unmap_fq1
 pm.run([cmd,cmd2], unmap_fq2)
 
 
-# Map to Alu elements
-pm.timestamp("### Map to alu")
+def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, cmd = None):
+	"""
+	A helper function to run alignments in series, so you can run one alignment followed
+	by another; this is useful for successive decoy alignments.
+	"""
+	if os.path.exists(os.path.dirname(assembly_bt2)):
+		pm.timestamp("### Map to " + assembly_identifier)
+		
+		sub_outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_" + assembly_identifier)
+		ngstk.make_dir(sub_outdir)
+		mapped_bam = os.path.join(sub_outdir, args.sample_name + "_" + assembly_identifier + ".bam")
+		
+		if not cmd: 
+			cmd = tools.bowtie2 + " -p " + str(pm.cores)
+			cmd += " -k 1"  # Return only 1 alignment
+			cmd += " -x " + assembly_bt2
+			cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+			cmd += " -X 2000"
+			cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+			cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
+			cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapped_bam  # sort output
+			cmd += " > " + mapped_bam
 
-map_alu_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_alu")
-ngstk.make_dir(map_alu_folder)
-mapped_bam_alu = os.path.join(map_alu_folder, args.sample_name + "_alu.bam")
+		pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
 
-cmd = tools.bowtie2 + " -p " + str(pm.cores)
-cmd += " -k 1"  # Return only 1 alignment
-cmd += " -x " +  res.bt2_alu
-cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-cmd += " -X 2000"
-cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
-cmd += " | samtools view -bS - -@ 0"
-cmd += " > " + mapped_bam_alu
-pm.run(cmd, mapped_bam_alu, follow = lambda: count_alignment("alu", mapped_bam_alu))
+		# filter genome reads not mapped 
+		unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
+		cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
+		cmd +=  mapped_bam + " > " + unmapped_bam
 
-# Extract reads that didn't map
-unmap_bam_alu = os.path.join(map_alu_folder, args.sample_name + "_unmap_alu.bam")
-cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 12 " +  mapped_bam_alu + " > " + unmap_bam_alu
+		out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
+		cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
+		pm.run([cmd,cmd2],unmap_fq2)
+		return unmap_fq1, unmap_fq2
+	else:
+		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2))
 
-# Now convert the unaligned reads into fastq format for the next alignment step
-unmap_fq1 = os.path.join(map_alu_folder, args.sample_name + "_unmap_alu_R1.fastq")
-unmap_fq2 = os.path.join(map_alu_folder, args.sample_name + "_unmap_alu_R2.fastq")
-cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam_alu + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
-pm.run([cmd,cmd2],unmap_fq2)
-
+# Map to alu
+unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alu", res.bt2_alu)
 
 # Map to rDNA
 if os.path.exists(os.path.dirname(res.bt2_rDNA)):
 	pm.timestamp("### Map to rDNA")
-	def check_alignment_rDNA():
-		ar = ngstk.count_mapped_reads(mapping_rDNA_sam, args.paired_end)
-		pm.report_result("Aligned_reads_rDNA", ar)
-		tr = float(pm.get_stat("Trimmed_reads"))
-		pm.report_result("Alignment_rate_rDNA", round(float(ar) *
-	 100 / float(tr), 2))
-		#rr = float(pm.get_stat("Raw_reads"))
-		#pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
 
 	map_rDNA_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_rDNA")
 	ngstk.make_dir(map_rDNA_folder)
 	mapping_rDNA_sam = os.path.join(map_rDNA_folder, args.sample_name + "_rDNA.sam")
+	mapping_rDNA_bam = os.path.join(map_rDNA_folder, args.sample_name + "_rDNA.bam")
 
 	cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
 	cmd += " --very-sensitive " + " -x " +  res.bt2_rDNA
 	cmd += " -X 2000"
-	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2 + " -S " + mapping_rDNA_sam
-	pm.run(cmd, mapping_rDNA_sam, follow = check_alignment_rDNA)
-
-	# convert to bam
-	mapping_rDNA_bam = os.path.join(map_rDNA_folder, args.sample_name + "_rDNA.bam")
-	cmd = tools.samtools + " view -Sb -@ " + str(pm.cores)
-	cmd += " " + mapping_rDNA_sam + " > " + mapping_rDNA_bam
-	pm.run(cmd, mapping_rDNA_bam)
+	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2# + " -S " + mapping_rDNA_sam
+	cmd += " | " + tools.samtools + " view -bS - -@ 1" # convert to bam
+	cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_rDNA_bam
+	pm.run(cmd, mapping_rDNA_bam, follow = lambda: count_alignment("rDNA", mapping_rDNA_bam))
 
 	# filter genome reads not mapped to rDNA 
 	unmap_bam = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA.bam")
@@ -266,75 +268,8 @@ if os.path.exists(os.path.dirname(res.bt2_rDNA)):
 else:
 	print("Skipping: No rDNA index found at " + os.path.dirname(res.bt2_rDNA))
 
-
-# Map to alphasat
-if os.path.exists(os.path.dirname(res.bt2_alphasat)):
-	pm.timestamp("### Map to alpha satellites")
-	def check_alignment_alphasat():
-		ar = ngstk.count_mapped_reads(mapping_alphasat_bam, args.paired_end)
-		pm.report_result("Aligned_reads_alphasat", ar)
-		tr = float(pm.get_stat("Trimmed_reads"))
-		pm.report_result("Alignment_rate_alphasat", round(float(ar) *
-	 100 / float(tr), 2))
-		#rr = float(pm.get_stat("Raw_reads"))
-		#pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
-
-	map_alphasat_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_alphasat")
-	ngstk.make_dir(map_alphasat_folder)
-
-	mapping_alphasat_bam = os.path.join(map_alphasat_folder, args.sample_name + "_alphasat.bam")
-	cmd = tools.bowtie2 + " -p " + str(pm.cores)
-	cmd += " -k 1"  # Return only 1 alignment on the alpha-satellites.
-	cmd += " -x " +  res.bt2_alphasat
-	cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-	cmd += " -X 2000"
-	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
-	cmd += " | samtools view -bS - -@ 1"
-	cmd += " > " + mapping_alphasat_bam
-	pm.run(cmd, mapping_alphasat_bam, follow = check_alignment_alphasat)
-
-	# filter genome reads not mapped to alphasat 
-	unmap_bam = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat.bam")
-	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
-	cmd +=  mapping_alphasat_bam + " > " + unmap_bam
-
-	unmap_fq1 = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat_R1.fastq")
-	unmap_fq2 = os.path.join(map_alphasat_folder, args.sample_name + "_unmap_alphasat_R2.fastq")
-	cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
-	pm.run([cmd,cmd2],unmap_fq2)
-else:
-	print("No alphasat index found at " + os.path.dirname(res.bt2_alphasat))
-
-# Mapping to repbase
-if os.path.exists(os.path.dirname(res.bt2_repbase)):
-	pm.timestamp("### Map to repbase")
-	assembly_identifier = "repbase"
-	outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_alphasat")
-	ngstk.make_dir(outdir)
-	mapped_bam = os.path.join(outdir, args.sample_name + "_" + assembly_identifier + ".bam")
-
-	cmd = tools.bowtie2 + " -p " + str(pm.cores)
-	cmd += " -k 1"  # Return only 1 alignment
-	cmd += " -x " +  res.bt2_repbase
-	cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-	cmd += " -X 2000"
-	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
-	cmd += " | samtools view -bS - -@ 1"
-	cmd += " > " + mapped_bam
-	pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
-
-	# filter genome reads not mapped 
-	unmapped_bam = os.path.join(outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
-	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
-	cmd +=  mapped_bam + " > " + unmapped_bam
-
-	unmap_fq1 = os.path.join(outdir, args.sample_name + "_unmap_alphasat_R1.fastq")
-	unmap_fq2 = os.path.join(outdir, args.sample_name + "_unmap_alphasat_R2.fastq")
-	cmd2 = tools.bedtools + " bamtofastq  -i " + unmapped_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
-
-	pm.run([cmd,cmd2],unmap_fq2)
-else:
-	print("No " + assembly_identifier + " index found at " + os.path.dirname(res.bt2_repbase))
+unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alphasat", res.bt2_alphasat)
+unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "repbase", res.bt2_repbase)
 
 
 # Mapping to genome 
@@ -350,7 +285,7 @@ cmd = tools.bowtie2 + " -p " + str(pm.cores)
 cmd += " --very-sensitive " + " -x " +  res.bt2_genome
 cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 cmd += " -X 2000"
-cmd += " | samtools view -bS - -@ 1 " 
+cmd += " | " + tools.samtools + " view -bS - -@ 1 "
 #cmd += " -f 2 -q 10"  # quality and pairing filter
 cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_genome_bam_temp
 
@@ -377,8 +312,8 @@ pm.run(cmd, unmap_genome_bam)
 # End of mapping to genome 
  
 rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
-metrics_file = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_bam.txt")
-picard_log = os.path.join(map_genome_folder, args.sample_name + "picard_metrics_log.txt")
+metrics_file = os.path.join(map_genome_folder, args.sample_name + "_picard_metrics_bam.txt")
+picard_log = os.path.join(map_genome_folder, args.sample_name + "_picard_metrics_log.txt")
 cmd3 =  tools.java + " -Xmx" + str(pm.javamem) +  " -jar " + tools.picard + " MarkDuplicates"
 cmd3 += " INPUT=" + mapping_genome_bam 
 cmd3 += " OUTPUT=" + rmdup_bam 
@@ -405,6 +340,9 @@ bw =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw
 cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
 cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw
 pm.run([cmd, cmd2, cmd3, cmd4], bw)
+
+
+# Exact cuts are more precise.
 
 
 # TSS enrichment 
@@ -465,6 +403,19 @@ if os.path.exists(res.blacklist):
 #macs2  callpeak -t  $outdir_map/$output.pe.q10.sort.rmdup.bed -f BED  -g $gsize --outdir $outdir_peak  -q 0.01 -n $outdir_peak/$output --nomodel  --shift # 0  
 # remove blacklist
 #Need to do
+
+
+
+# Calculate fraction of reads in peaks (FRIP)
+cmd = ngstk.simple_frip(rmdup_bam, peak_file)
+rip = pm.checkprint(cmd)
+ar = pm.get_stat("Aligned_reads")
+print(ar, rip)
+pm.report_result("FRIP", float(rip) / float(ar))
+
+
+
+
 
 pm.stop_pipeline()
 
