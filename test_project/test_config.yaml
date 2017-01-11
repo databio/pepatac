@@ -10,11 +10,6 @@
 paths:
   # output_dir: ABSOLUTE PATH to the parent, shared space where project results go
   output_dir: test_out
-  # results and submission subdirs are subdirectors directories under parent output_dir
-  # results: where output sample folders will go
-  # submission: where cluster submit scripts and log files will go
-  results_subdir: results_pipeline
-  submission_subdir: submission
   # pipelines_dir: ABSOLUTE PATH the directory where the Looper will find pipeline
   # scripts (and accompanying pipeline config files) for submission.
   pipelines_dir: ""
@@ -25,10 +20,6 @@ metadata:
   # relative paths are considered relative to this project config file.
   # sample_annotation: one-row-per-sample metadata
   sample_annotation: test_annotation.csv
-  # merge_table: input for samples with more than one input file
-  merge_table: null.csv
-  # compare_table: comparison pairs or groups, like normalization samples
-  compare_table: null.csv
 
 derived_columns: [read1, read2]
 
@@ -58,7 +49,6 @@ compute:
   #submission_template: templates/localhost_template.sub
   #submission_command: sh
 
-
 pipeline_config:
   # pipeline configuration files used in project.
   # Relative paths are relative to this project config file.
@@ -66,11 +56,3 @@ pipeline_config:
   atacseq_pipeline.py: null
   # Or you can point to a specific config to be used in this project:
   # chipseq: chipseq_pipeline.yaml
-
-trackhubs:
-  trackhub_dir: projects/microtest/trackhubs
-  # url: if you include this, the make_trackhubs will produce a link to your track hub in the project folder.
-  url: http://www.example.com/
-
-username: user
-email: user@cemm.at

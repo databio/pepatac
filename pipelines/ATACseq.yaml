@@ -7,11 +7,11 @@ tools:
   # absolute paths to required tools
 
 # public tools 
-  bowtie2:    /seq/bowtie2-2.1.0/bowtie2 
-  samtools:  /usr/local/bin/samtools
+  bowtie2: /seq/bowtie2-2.1.0/bowtie2 
+  samtools: /usr/local/bin/samtools
   bedtools: /seq/bedtools-master/bin/bedtools
   macs2: /usr/bin/macs2
-  MarkDuplicates:  /seq/picard-tools-1.79/MarkDuplicates.jar
+  MarkDuplicates: /seq/picard-tools-1.79/MarkDuplicates.jar
 # private tools
  # adapterTrim: /usr/local/bin/atacseq_tools/adapterTrimmingModified  
   trimmo: /home/jinxu/software/Trimmomatic-0.36/trimmomatic-0.36.jar
