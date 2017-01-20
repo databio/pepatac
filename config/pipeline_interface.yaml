@@ -1,6 +1,9 @@
 ATACseq.py:
   name: ATACseq
   looper_args: True
+  required_input_files: [read1, read2]
+  all_input_files: [read1, read2]
+  ngs_input_files: [read1, read2]
   arguments:
     "--sample-name": sample_name
     "--genome": genome

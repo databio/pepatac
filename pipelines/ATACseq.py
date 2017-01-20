@@ -149,7 +149,7 @@ cmd +=  "ILLUMINACLIP:"+ res.adapter + ":2:30:10"
 #        pm.report_result("Trimmed_reads", n_trim)
 #        pm.report_result("Trim_loss_rate", round((rr - n_trim) * 100 / rr, 2))
 pm.run(cmd, trimmed_fastq,
-	follow = lambda: ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
+	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
 		fastqc_folder = os.path.join(param.outfolder, "fastqc/")))
 
 pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
