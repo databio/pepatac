@@ -42,7 +42,7 @@ Your annotation file must specify these columns:
 - read2
 - whatever else you want
 
-More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html).
+Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html).
 
 ## Running on a single sample:
 
