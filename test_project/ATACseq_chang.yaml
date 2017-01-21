@@ -1,0 +1,27 @@
+# Configuration file for ATACseq pipeline based on pypiper
+
+# basic tools 
+# public tools
+tools:  # absolute paths to required tools
+  java: /usr/bin/java
+  bowtie2: /seq/bowtie2-2.1.0/bowtie2 
+  samtools: /usr/local/bin/samtools
+  bedtools: /seq/bedtools-master/bin/bedtools
+  macs2: /usr/bin/macs2
+  picard: ${PICARD}
+  trimmo:  /home/jinxu/software/Trimmomatic-0.36/trimmomatic-0.36.jar
+  bedGraphToBigWig: /seq/ucsc/bedGraphToBigWig
+
+# user configure 
+resources:
+  genomes: /seq/genomes/
+  adapter: /home/jinxu/software/Trimmomatic-0.36/adapters/NexteraPE-PE.fa
+
+parameters:  # parameters passed to bioinformatic tools, subclassed by tool
+  samtools:
+    q: 10
+  macs2: 
+   f: BED
+   q: 0.01
+   shift: 0 
+   gsize: mm  # should be used in command line

@@ -24,3 +24,8 @@ data_sources:  # This section describes paths to your data
 genomes:
   human: hg19
   mouse: mm9
+
+
+pipeline_config:
+  ATACseq.py: null  # Use this to load default environment settings
+  #ATACseq.py: ATACseq_chang.yaml  # Use this to load Chang Lab settings
