@@ -27,15 +27,22 @@ export PATH=$PATH:~/.local/bin
 ## Configuring
 You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment.
 
-**Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). By default, this pipeline assumes the executable tools (java, samtools, bowtie2, etc.) are in your PATH. For java tools (`picard` and `trimmomatic`), the default configuration uses environment variables to point to these `jar` files. It also expects an environment variable called `RESOURCES` pointing to a resource folder, with your refgenie genomes in a subfolder called `genomes`. The sequencing adapter file by default is in `${RESOURCES}adapters/ATAC_stanford.fa`. You can adapt your environment to this default configuration by setting these environment variables:
+Option 1: **Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
+  - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH.
+  - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
+  ```
+  export PICARD="/path/to/picard.jar"
+  export TRIMMOMATIC="/path/to/trimmomatic.jar"
+  ```
+  
+  - Define environment variable `RESOURCES` and place refgenie genomes in a subfolder called `genomes`. 
+  ```
+  export RESOURCES="/path/to/resources/folder/"
+  ```
+  
+  - Place your sequencing adapter file in `${RESOURCES}adapters/ATAC_stanford.fa`.
 
-```
-export PICARD="/path/to/picard.jar"
-export TRIMMOMATIC="/path/to/trimmomatic.jar"
-export RESOURCES="/path/to/resources/folder/"
-```
-
-**Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately.
+Option 2: **Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately.
 
 ## Running the pipeline
 
