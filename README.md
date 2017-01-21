@@ -1,6 +1,6 @@
 # ATACseq pipeline
 
-This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, bigwig, TSS enrichments.
+This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs.
 
 ## Installing
 
@@ -10,13 +10,28 @@ This repository contains a pipeline to process ATAC-seq data. It does adapter tr
 pip install --user https://github.com/epigen/pypiper/zipball/master
 pip install --user https://github.com/epigen/looper/zipball/master
 ```
-To have the looper executable in your $PATH, add the following line to your .bashrc file:
+To put the looper executable in your $PATH, add the following line to your `.bashrc` or `.profile`:
 
 ```
 export PATH=$PATH:~/.local/bin
 ```
 
-Then, clone this repository using one of these methods:
+**Required executables**. To run the pipeline, you will also need some common bioinformatics tools installed. The list is specied in the [pipeline configuration file at pipelines/ATACseq.yaml](pipelines/ATACseq.yaml). By default, this pipeline assumes these tools (java, samtools, bowtie2, etc.) are in your path, but you can also put absolute paths to each tool in the configuration file to fit your local setup. For java tools (`picard` and `trimmomatic`), the default configuration is to use environment variables to point to these `jar` files.
+
+**Genome assemblies**. This pipeline requires genome assemblies produced by `refgenie`. The [default pipeline configuration](pipelines/ATACseq.yaml) exepects an environment variable called `RESOURCES` pointing to a resource folder, with your refgenie genomes in a subfolder called `genomes`.
+
+You can either change the configuration file to fit your environment, or set up your environment variables to fit the default configuration by setting these environment variables: 
+
+```
+export PICARD="/path/to/picard.jar"
+export TRIMMOMATIC="/path/to/trimmomatic.jar"
+export RESOURCES="/path/to/resources/folder/"
+```
+
+Finally, you also need to provide a sequencing adapter file; by default in `${RESOURCES}adapters/ATAC_stanford.fa` (or wherever you specify in the config file).
+
+
+**Clone the pipeline**.Then, clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
 - using HTTPS: `git clone https://github.com/ChangLab/ATACseq.git`
 
@@ -24,7 +39,6 @@ Then, clone this repository using one of these methods:
 ## Running the pipeline
 
 The best way to use this pipeline is to run it through looper. You will need to tell looper about your project. Example project data are in the [test_project](test_project) folder. Run the pipeline across all samples in the test project with this command:
-
 ```
 looper run test_project/test_config.yaml
 ```
