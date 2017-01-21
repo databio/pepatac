@@ -8,14 +8,14 @@ tools:  # absolute paths to required tools
   samtools: /usr/local/bin/samtools
   bedtools: /seq/bedtools-master/bin/bedtools
   macs2: /usr/bin/macs2
-  picard: ${PICARD}
+  picard: /seq/picard-tools-2.5.0/picard.jar
   trimmo:  /home/jinxu/software/Trimmomatic-0.36/trimmomatic-0.36.jar
   bedGraphToBigWig: /seq/ucsc/bedGraphToBigWig
 
 # user configure 
 resources:
   genomes: /seq/genomes/
-  adapter: /home/jinxu/software/Trimmomatic-0.36/adapters/NexteraPE-PE.fa
+  adapter: null
 
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool
   samtools:

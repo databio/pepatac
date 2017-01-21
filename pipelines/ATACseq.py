@@ -101,6 +101,11 @@ res.bt2_genome = get_bowtie2_index(res.genomes, args.genome_assembly)
 # Set up a link to relative scripts included in the repo
 tools.scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools")
 
+# Adapter file can be set in the config; but if left null, we use a default.
+if not res.adapter:
+	res.adapter = os.path.join(tools.scripts_dir, "NexteraPE-PE.fa")
+
+
 output = outfolder
 param.outfolder = outfolder
 

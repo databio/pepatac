@@ -35,12 +35,12 @@ Option 1: **Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.
   export TRIMMOMATIC="/path/to/trimmomatic.jar"
   ```
   
-  - Define environment variable `RESOURCES` and place refgenie genomes in a subfolder called `genomes`. 
+  - Define environment variable `GENOMES` for refgenie genomes. 
   ```
-  export RESOURCES="/path/to/resources/folder/"
+  export GENOMES="/path/to/genomes/folder/"
   ```
   
-  - Place your sequencing adapter file in `${RESOURCES}adapters/ATAC_stanford.fa`.
+  - Specify custom sequencing adapter file if desired.
 
 
 Option 2: **Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
