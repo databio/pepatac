@@ -42,13 +42,10 @@ Option 1: **Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.
   
   - Place your sequencing adapter file in `${RESOURCES}adapters/ATAC_stanford.fa`.
 
-<<<<<<< HEAD
-Option 2: **Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. See [Chang lab configuration](#chang-lab-configuration).
-=======
+
 Option 2: **Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
 
 For the Chang lab, there is a pre-made config file and project template. Follow the instructions on the [Chang lab configuration](examples/chang_project) page.
->>>>>>> Clean up, clarify Chang config
 
 
 ## Running the pipeline
