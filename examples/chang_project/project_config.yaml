@@ -1,9 +1,9 @@
 
 # This project config file describes your project. See looper docs for details.
 
-metadata:
+metadata:  # relative paths are relative to this config file
   sample_annotation: test_annotation.csv  # sheet listing all samples in the project
-  output_dir: test_out  # ABSOLUTE PATH to the parent, shared space where project results go
+  output_dir: $HOME/atac_out  # ABSOLUTE PATH to the parent, shared space where project results go
   pipelines_dir: "../"  # ABSOLUTE PATH the directory where looper will find the pipeline repository
   merge_table: null  # (optional) input for samples with more than one input file
 
@@ -25,7 +25,7 @@ genomes:
   human: hg19
   mouse: mm9
 
-
 pipeline_config:
-  ATACseq.py: null  # Use this to load default environment settings
-  #ATACseq.py: ATACseq_chang.yaml  # Use this to load Chang Lab settings
+  ATACseq.py: ATACseq_chang.yaml  # Use this to load Chang Lab settings
+  #ATACseq.py: null  # Use this to load default environment settings
+  
