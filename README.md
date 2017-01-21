@@ -18,8 +18,7 @@ export PATH=$PATH:~/.local/bin
 
 **Required executables**. To run the pipeline, you will also need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
-**Genome assemblies**. This pipeline requires genome assemblies produced by `refgenie`. You also need to provide a sequencing adapter file; by default in `${RESOURCES}adapters/ATAC_stanford.fa` (or wherever you specify in the config file).
-
+**Genome assemblies**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You also need to provide a sequencing adapter file.
 
 **Clone the pipeline**.Then, clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
@@ -28,7 +27,7 @@ export PATH=$PATH:~/.local/bin
 ## Configuring
 You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment.
 
-**Default configuration**. By default, this pipeline is configured (using ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) to assume the executable tools (java, samtools, bowtie2, etc.) are in your PATH. For java tools (`picard` and `trimmomatic`), the default configuration uses environment variables to point to these `jar` files. It also expects an environment variable called `RESOURCES` pointing to a resource folder, with your refgenie genomes in a subfolder called `genomes`. You can adapt your environment to this default configuration by setting these environment variables:
+**Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). By default, this pipeline assumes the executable tools (java, samtools, bowtie2, etc.) are in your PATH. For java tools (`picard` and `trimmomatic`), the default configuration uses environment variables to point to these `jar` files. It also expects an environment variable called `RESOURCES` pointing to a resource folder, with your refgenie genomes in a subfolder called `genomes`. The sequencing adapter file by default is in `${RESOURCES}adapters/ATAC_stanford.fa`. You can adapt your environment to this default configuration by setting these environment variables:
 
 ```
 export PICARD="/path/to/picard.jar"
