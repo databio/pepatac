@@ -18,7 +18,7 @@ export PATH=$PATH:~/.local/bin
 
 **Required executables**. To run the pipeline, you will also need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
-**Genome assemblies**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You also need to provide a sequencing adapter file.
+**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). The pipeline aligns serially to decoy sequences if you have them set up, which greatly improves pipeline performance. You can set up the decoy sequences using [ref_decoy](https://github.com/databio/ref_decoy). You also need to provide a sequencing adapter file.
 
 **Clone the pipeline**.Then, clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
