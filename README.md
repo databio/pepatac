@@ -50,15 +50,15 @@ For the Chang lab, there is a pre-made config file and project template. Follow 
 
 ## Running the pipeline
 
-The best way to use this pipeline is to run it through looper. You will need to tell looper about your project. Example project data are in the [test_project](test_project) folder. Run the pipeline across all samples in the test project with this command:
+The best way to use this pipeline is to run it through looper. You will need to tell looper about your project. Example project data are in the [examples/test_project](examples/test_project) folder. Run the pipeline across all samples in the test project with this command:
 ```
-looper run test_project/test_config.yaml
+looper run examples/test_project/test_config.yaml
 ```
 
-Now, adapt for your project. Here's a quick start: You need to build two files for your project (follow examples in the [test_project](test_project/) folder):
+Now, adapt for your project. Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
 
-- [project config file](test_project/test_config.yaml) -- describes output locations, pointers to data, etc.
-- [sample annotation file](test_project/test_annotation.csv) -- comma-separated value (CSV) list of your samples.
+- [project config file](examples/test_project/test_config.yaml) -- describes output locations, pointers to data, etc.
+- [sample annotation file](examples/test_project/test_annotation.csv) -- comma-separated value (CSV) list of your samples.
 
 Your annotation file must specify these columns:
 - sample_name
