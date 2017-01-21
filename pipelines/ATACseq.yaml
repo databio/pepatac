@@ -1,47 +1,28 @@
-# configure file for ATACseq pipeline based on pypiper
-#system configure
-tools:
+# Configuration file for ATACseq pipeline based on pypiper
 
 # basic tools 
-  java:  /usr/bin/java
-  # absolute paths to required tools
+# public tools
+tools:  # absolute paths to required tools
+  java: java
+  bowtie2: bowtie2
+  samtools: samtools
+  bedtools: bedtools
+  macs2: macs2
+  picard: ${PICARD}
+  trimmo: ${TRIMMOMATIC}
+  bedGraphToBigWig: bedGraphToBigWig
 
-# public tools 
-  bowtie2: /seq/bowtie2-2.1.0/bowtie2 
-  samtools: /usr/local/bin/samtools
-  bedtools: /seq/bedtools-master/bin/bedtools
-  macs2: /usr/bin/macs2
-  MarkDuplicates: /seq/picard-tools-1.79/MarkDuplicates.jar
-# private tools
- # adapterTrim: /usr/local/bin/atacseq_tools/adapterTrimmingModified  
-  trimmo: /home/jinxu/software/Trimmomatic-0.36/trimmomatic-0.36.jar
-  norm_bedGraph:     /seq/scripts/norm_bedGraph.pl 
-  pyMakeVplot: /seq/ATAC-seq/Code/pyMakeVplot.py
-  fragment_length_dist_pl: /seq/ATAC-seq/Code/fragment_length_dist.pl
-  fragment_length_dist_R: /seq/ATAC-seq/Code/fragment_length_dist.R
-  bam2bed_shift: /seq/ATAC-seq/Code/bam2bed_shift.pl
-  bed2bigwig: /seq/ucsc/bedGraphToBigWig
-#User configure 
+# user configure 
 resources:
-  genomes: /seq/genomes/
-# reference information set up , using  mm9 for example 
-#  changed using referen prefix 
-#  hard code for hg19 now      
-  ref_pref: /home/jinxu/DB/hg19/hg19_all 
-# ref_pref: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9_all 
-# make all below with the same name prefix by ref_pref
-#  ref_size: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9_all.chrsize
-#  refGene_TSS: /seq/ATAC-seq/Data/mm9_refseq_genes_TSS.txt 
-#  blacklist: /home/jinxu/DB/mmu9/mm9_UCSC_genome/mm9-blacklist.bed
-  adaptor:     /home/jinxu/software/Trimmomatic-0.36/adapters/NexteraPE-PE.fa # Including potential ATACseq adaptor.  
-parameters:
-  # parameters passed to bioinformatic tools, subclassed by tool
-  
+  genomes: ${RESOURCES}genomes/
+  adapter: ${RESOURCES}adapters/ATAC_stanford.fa
+
+parameters:  # parameters passed to bioinformatic tools, subclassed by tool
   samtools:
-         q: 10
+    q: 10
   macs2: 
-         f: BED
-         q: 0.01
-         shift: 0 
-        # gsize: mm # should be used in commond line
+   f: BED
+   q: 0.01
+   shift: 0 
+   gsize: mm  # should be used in command line
 
