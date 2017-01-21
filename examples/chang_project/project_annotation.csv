@@ -1,2 +1,4 @@
 sample_name,library,organism,read1,read2,read_length,read_type
-liver-CD31_test,ATAC,human,test_data_R1,test_data_R2,75,paired
+sample1,ATAC,human,R1,R2,75,paired
+sample2,ATAC,human,R1,R2,75,paired
+sample3,ATAC,human,R1,R2,75,paired

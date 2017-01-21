@@ -25,7 +25,7 @@ export PATH=$PATH:~/.local/bin
 - using HTTPS: `git clone https://github.com/ChangLab/ATACseq.git`
 
 ## Configuring
-You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment.
+You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, there is a pre-made config file and project template. Follow the instructions on the [Chang lab configuration](examples/chang_project) page.
 
 Option 1: **Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
   - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH.
@@ -44,8 +44,6 @@ Option 1: **Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.
 
 
 Option 2: **Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
-
-For the Chang lab, there is a pre-made config file and project template. Follow the instructions on the [Chang lab configuration](examples/chang_project) page.
 
 
 ## Running the pipeline
@@ -74,10 +72,9 @@ Run your project as above, by passing your project config file to `looper run`. 
 
 You never need to interface with the pipeline directly, but you can if you want. Just run `python pipelines/ATACseq.py -h` to see usage. See example command in [cmd.sh](cmd.sh).
 
-
 ## Contributing
 
-Active development should occur in a development or feature branch.
+Pull requests welcome. Active development should occur in a development or feature branch.
 
 ## Contributors
 
