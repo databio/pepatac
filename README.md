@@ -35,7 +35,7 @@ export TRIMMOMATIC="/path/to/trimmomatic.jar"
 export RESOURCES="/path/to/resources/folder/"
 ```
 
-**Custom configuration**. Instead, you can also put absolute paths to each tool in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml) appropriately.
+**Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately.
 
 ## Running the pipeline
 
