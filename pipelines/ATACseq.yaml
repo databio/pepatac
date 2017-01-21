@@ -14,8 +14,9 @@ tools:  # absolute paths to required tools
 
 # user configure 
 resources:
-  genomes: ${RESOURCES}genomes/
-  adapter: ${RESOURCES}adapters/ATAC_stanford.fa
+  genomes: ${GENOMES}
+  #adapter: ${ADAPTERS}adapters/ATAC_stanford.fa
+  adapter: null  # Use default, built-in adapter file.
 
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool
   samtools:

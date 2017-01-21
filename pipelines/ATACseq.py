@@ -240,6 +240,7 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, cmd = None):
 		return unmap_fq1, unmap_fq2
 	else:
 		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2))
+		return unmap_fq1, unmap_fq2
 
 # Map to alu
 unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alu", res.bt2_alu)
