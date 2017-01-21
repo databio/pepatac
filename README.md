@@ -16,11 +16,19 @@ To put the looper executable in your $PATH, add the following line to your `.bas
 export PATH=$PATH:~/.local/bin
 ```
 
-**Required executables**. To run the pipeline, you will also need some common bioinformatics tools installed. The list is specied in the [pipeline configuration file at pipelines/ATACseq.yaml](pipelines/ATACseq.yaml). By default, this pipeline assumes these tools (java, samtools, bowtie2, etc.) are in your path, but you can also put absolute paths to each tool in the configuration file to fit your local setup. For java tools (`picard` and `trimmomatic`), the default configuration is to use environment variables to point to these `jar` files.
+**Required executables**. To run the pipeline, you will also need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
-**Genome assemblies**. This pipeline requires genome assemblies produced by `refgenie`. The [default pipeline configuration](pipelines/ATACseq.yaml) exepects an environment variable called `RESOURCES` pointing to a resource folder, with your refgenie genomes in a subfolder called `genomes`.
+**Genome assemblies**. This pipeline requires genome assemblies produced by `refgenie`. You also need to provide a sequencing adapter file; by default in `${RESOURCES}adapters/ATAC_stanford.fa` (or wherever you specify in the config file).
 
-You can either change the configuration file to fit your environment, or set up your environment variables to fit the default configuration by setting these environment variables: 
+
+**Clone the pipeline**.Then, clone this repository using one of these methods:
+- using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
+- using HTTPS: `git clone https://github.com/ChangLab/ATACseq.git`
+
+## Configuring
+You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment.
+
+**Default configuration**. By default, this pipeline is configured (using ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) to assume the executable tools (java, samtools, bowtie2, etc.) are in your PATH. For java tools (`picard` and `trimmomatic`), the default configuration uses environment variables to point to these `jar` files. It also expects an environment variable called `RESOURCES` pointing to a resource folder, with your refgenie genomes in a subfolder called `genomes`. You can adapt your environment to this default configuration by setting these environment variables:
 
 ```
 export PICARD="/path/to/picard.jar"
@@ -28,13 +36,7 @@ export TRIMMOMATIC="/path/to/trimmomatic.jar"
 export RESOURCES="/path/to/resources/folder/"
 ```
 
-Finally, you also need to provide a sequencing adapter file; by default in `${RESOURCES}adapters/ATAC_stanford.fa` (or wherever you specify in the config file).
-
-
-**Clone the pipeline**.Then, clone this repository using one of these methods:
-- using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
-- using HTTPS: `git clone https://github.com/ChangLab/ATACseq.git`
-
+**Custom configuration**. Instead, you can also put absolute paths to each tool in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml) appropriately.
 
 ## Running the pipeline
 
