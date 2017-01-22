@@ -20,7 +20,7 @@ export PATH=$PATH:~/.local/bin
 
 **Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). The pipeline aligns serially to decoy sequences if you have them set up, which greatly improves pipeline performance. You can set up the decoy sequences using [ref_decoy](https://github.com/databio/ref_decoy).
 
-**Clone the pipeline**.Then, clone this repository using one of these methods:
+**Clone the pipeline**. Then, clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
 - using HTTPS: `git clone https://github.com/ChangLab/ATACseq.git`
 
@@ -66,7 +66,11 @@ Your annotation file must specify these columns:
 - read2
 - whatever else you want
 
-Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html).
+Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
+
+## Advanced project management with looper
+
+Once you've specified your project to work with this pipeline, you will also inherit all the power of looper for your project. With a simple change to your configuration file, you can submit these jobs to a cluster, summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/).
 
 ## Running on a single sample:
 

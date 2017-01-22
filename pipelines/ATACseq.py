@@ -236,7 +236,7 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, cmd = None):
 
 		out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
 		cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
-		pm.run([cmd,cmd2],unmap_fq2)
+		pm.run([cmd,cmd2], unmap_fq2)
 		return unmap_fq1, unmap_fq2
 	else:
 		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2))
