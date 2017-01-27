@@ -14,7 +14,11 @@ ATACseq.py:
   resources:
     default:
       file_size: "0"
+      cores: "4"
+      mem: "16000"
+      time: "2-00:00:00"
+    large:
+      file_size: "6"
       cores: "8"
       mem: "32000"
-      time: "2-00:00:00"
-      partition: "parallel"
+      time: "3-00:00:00"
