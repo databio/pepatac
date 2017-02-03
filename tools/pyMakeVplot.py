@@ -161,5 +161,5 @@ else:
     plt.ylabel('Insert size')
 
 # save figure
-fig.savefig(options.o+'.png')
+fig.savefig(options.o+'.pdf')
 plt.close(fig)
