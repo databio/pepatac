@@ -360,8 +360,9 @@ if os.path.exists(res.TSS_file):
 
 	Tss_enrich =  os.path.join(QC_folder ,  args.sample_name + ".TssEnrichment") 
 	cmd = os.path.join(tools.scripts_dir, "pyMakeVplot.py")
-	cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -o " + Tss_enrich
+	cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -s 4 -o " + Tss_enrich
 	pm.run(cmd, Tss_enrich)
+	# Always plot strand specific TSS enrichment. 
 	#python /seq/ATAC-seq/Code/pyMakeVplot.py -a $outdir_map/$output.pe.q10.sort.rmdup.bam -b /seq/chromosome/hg19/hg19_refseq_genes_TSS.txt -p ends -e 2000 -u -v -o $outdir_qc/$output.TSSenrich
 
 	# fragment  distribution
