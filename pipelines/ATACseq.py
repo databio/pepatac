@@ -284,7 +284,7 @@ pm.timestamp("### Map to genome")
 map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
 ngstk.make_dir(map_genome_folder)
 
-mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + "pe.q10.sort.bam")
+mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.bam")
 mapping_genome_bam_temp = os.path.join(map_genome_folder, args.sample_name + ".temp.bam")
 unmap_genome_bam = os.path.join(map_genome_folder, args.sample_name + "_unmap.bam")
 cmd = tools.bowtie2 + " -p " + str(pm.cores)
