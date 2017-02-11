@@ -371,7 +371,7 @@ if os.path.exists(res.TSS_file):
 	cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
 	fragL_dis1= os.path.join(QC_folder ,  args.sample_name +  ".fragL.distribution.pdf")
 	fragL_dis2= os.path.join(QC_folder ,  args.sample_name +  ".fragL.distribution.txt")
-	cmd2 = "Rscript " +  tools.scripts_dir, "fragment_length_dist.R " +  fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
+	cmd2 = "Rscript " +  tools.scripts_dir + "/fragment_length_dist.R " +  fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
 
 	pm.run([cmd,cmd1,cmd2], fragL_dis1)
 
