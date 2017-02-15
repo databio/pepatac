@@ -363,7 +363,16 @@ if os.path.exists(res.TSS_file):
 	cmd = os.path.join(tools.scripts_dir, "pyMakeVplot.py")
 	cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -s 4 -o " + Tss_enrich
 	pm.run(cmd, Tss_enrich)
+
 	# Always plot strand specific TSS enrichment. 
+	#added by Ryan 2/10/17 to calculate TSS score as numeric and to include in summary stats
+	#This could be done in prettier ways which I'm open to. Just adding for the idea
+	#with open("A34912-CaudateNucleus-RepA_hg19.srt.rmdup.flt.RefSeqTSS") as f:
+	with open(Tss_enrich) as f:
+		floats = map(float,f)
+	Tss_score = (sum(floats[1950:2050])/100)/(sum(floats[1:200])/200)
+	pm.report_result("TSS_Score", Tss_score)
+	
 	#python /seq/ATAC-seq/Code/pyMakeVplot.py -a $outdir_map/$output.pe.q10.sort.rmdup.bam -b /seq/chromosome/hg19/hg19_refseq_genes_TSS.txt -p ends -e 2000 -u -v -o $outdir_qc/$output.TSSenrich
 
 	# fragment  distribution
@@ -373,7 +382,7 @@ if os.path.exists(res.TSS_file):
 	cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
 	fragL_dis1= os.path.join(QC_folder ,  args.sample_name +  ".fragL.distribution.pdf")
 	fragL_dis2= os.path.join(QC_folder ,  args.sample_name +  ".fragL.distribution.txt")
-	cmd2 = "Rscript " +  tools.scripts_dir + "fragment_length_dist.R " +  fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
+	cmd2 = "Rscript " +  os.path.join(tools.scripts_dir, "fragment_length_dist.R") +  fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
 
 	pm.run([cmd,cmd1,cmd2], fragL_dis1)
 
