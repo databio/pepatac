@@ -365,7 +365,8 @@ if os.path.exists(res.TSS_file):
 	
 	#added by Ryan 2/10/17 to calculate TSS score as numeric and to include in summary stats
 	#This could be done in prettier ways which I'm open to. Just adding for the idea
-	with open("A34912-CaudateNucleus-RepA_hg19.srt.rmdup.flt.RefSeqTSS") as f:
+	#with open("A34912-CaudateNucleus-RepA_hg19.srt.rmdup.flt.RefSeqTSS") as f:
+	with open(Tss_enrich) as f:
 		floats = map(float,f)
 	Tss_score = (sum(floats[1950:2050])/100)/(sum(floats[1:200])/200)
 	pm.report_result("TSS_Score", Tss_score)
