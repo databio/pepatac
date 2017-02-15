@@ -11,6 +11,8 @@ ATACseq.py:
     "--input2": read2
     "-gs mm": null
     "--single-or-paired": read_type
+  optional_arguments:
+    "--frip-ref-peaks": FRIP_ref
   resources:
     default:
       file_size: "0"

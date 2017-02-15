@@ -22,6 +22,10 @@ parser = pypiper.add_pypiper_args(parser, all_args = True)
 
 #Add any pipeline-specific arguments
 parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=str, help='genome size for MACS2')
+
+parser.add_argument('--frip-ref-peaks', default = None, dest='frip_ref_peaks',type=str, 
+	help='Reference peak set for calculating FRIP')
+
 args = parser.parse_args()
 
  # it always paired seqencung for ATACseq
@@ -422,17 +426,21 @@ if os.path.exists(res.blacklist):
 #Need to do
 
 
+pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
 
-# Calculate fraction of reads in peaks (FRIP)
 cmd = ngstk.simple_frip(rmdup_bam, peak_file)
 rip = pm.checkprint(cmd)
 ar = pm.get_stat("Aligned_reads")
 print(ar, rip)
 pm.report_result("FRIP", float(rip) / float(ar))
 
-
-
-
+if os.path.exists(args.frip_ref_peaks):
+	# Use an external reference set of peaks instead of the peaks called from this run
+	cmd = ngstk.simple_frip(rmdup_bam, args.frip_ref_peaks)
+	rip = pm.checkprint(cmd)
+	ar = pm.get_stat("Aligned_reads")
+	print(ar, rip)
+	pm.report_result("FRIP_ref", float(rip) / float(ar))
 
 pm.stop_pipeline()
 
