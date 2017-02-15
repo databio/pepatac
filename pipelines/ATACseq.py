@@ -87,7 +87,8 @@ def count_alignment(assembly_identifier, aligned_bam, paired_end = args.paired_e
 # Set up reference resource according to genome prefix.
 gfolder = os.path.join(res.genomes, args.genome_assembly)
 res.chrom_sizes = os.path.join(gfolder, args.genome_assembly + ".chromSizes")
-res.TSS_file = os.path.join(gfolder, args.genome_assembly + ".refseq.TSS.txt")
+#res.TSS_file = os.path.join(gfolder, args.genome_assembly + ".refseq.TSS.txt")
+res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
 res.blacklist = os.path.join(gfolder, args.genome_assembly + ".blacklist.bed")
 
 # Bowtie2 indexes for various assemblies

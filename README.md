@@ -25,6 +25,7 @@ export PATH=$PATH:~/.local/bin
 - using HTTPS: `git clone https://github.com/ChangLab/ATACseq.git`
 
 ## Configuring
+
 You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, there is a pre-made config file and project template. Follow the instructions on the [Chang lab configuration](examples/chang_project) page.
 
 Option 1: **Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
@@ -67,6 +68,20 @@ Your annotation file must specify these columns:
 - whatever else you want
 
 Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
+
+## TSS enrichments
+
+In order to calculate TSS enrichments, you will need a TSS annotation file in your reference genome directory. Here's code to generate that:
+
+```
+# Provide genome string and gene file
+GENOME="hg38"
+URL="http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz"
+
+wget -O ${GENOME}_TSS_full.txt.gz ${URL}
+zcat ${GENOME}_TSS_full.txt.gz | awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}'  | uniq > ${GENOME}_TSS.tsv
+echo ${GENOME}_TSS.tsv
+```
 
 ## Advanced project management with looper
 
