@@ -282,8 +282,6 @@ else:
 unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alphasat", res.bt2_alphasat)
 unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "repbase", res.bt2_repbase)
 
-
-# Mapping to genome 
 pm.timestamp("### Map to genome")
 
 map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
@@ -320,7 +318,14 @@ cmd = "samtools view -f 12 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_te
 cmd += " > " + unmap_genome_bam
 pm.run(cmd, unmap_genome_bam)
 
-# End of mapping to genome 
+pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
+
+def estimate_lib_size(picard_log):
+	# In millions of reads; contributed by Ryan
+	# Could probably be made more stable
+	cmd = '`awk "BEGIN { print $(cat ' + picard_log + ' | tail -n 3 | head -n 1 | cut -f9)/1000000 }"`'
+	picard_est_lib_size = pm.checkprint(cmd)
+	pm.report_result("Picard_est_lib_size", picard_est_lib_size)
  
 rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
 metrics_file = os.path.join(map_genome_folder, args.sample_name + "_picard_metrics_bam.txt")
@@ -333,7 +338,7 @@ cmd3 += " VALIDATION_STRINGENCY=LENIENT"
 cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 cmd4 = tools.samtools + " index " + rmdup_bam 
 
-pm.run([cmd3,cmd4], rmdup_bam)
+pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: estimate_lib_size(picard_log))
 
 # shift bam file and make bigwig file
 shift_bed = os.path.join(map_genome_folder ,  args.sample_name + ".pe.q10.sort.rmdup.bed")
@@ -355,9 +360,7 @@ pm.run([cmd, cmd2, cmd3, cmd4], bw)
 
 # Exact cuts are more precise.
 
-
 # TSS enrichment 
-
 if os.path.exists(res.TSS_file):
 	pm.timestamp("### Calculate TSS enrichment")
 	QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
