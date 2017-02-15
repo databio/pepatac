@@ -355,7 +355,7 @@ pm.run([cmd, cmd2, cmd3, cmd4], bw)
 # TSS enrichment 
 
 if os.path.exists(res.TSS_file):
-
+	pm.timestamp("### Calculate TSS enrichment")
 	QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
 	ngstk.make_dir(QC_folder)
 
@@ -380,9 +380,9 @@ if os.path.exists(res.TSS_file):
 	cmd = os.path.join("perl " + tools.scripts_dir, "fragment_length_dist.pl " + rmdup_bam + " " +  fragL)
 	fragL_count= os.path.join(QC_folder ,  args.sample_name +  ".frag_count.txt")
 	cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
-	fragL_dis1= os.path.join(QC_folder ,  args.sample_name +  ".fragL.distribution.pdf")
-	fragL_dis2= os.path.join(QC_folder ,  args.sample_name +  ".fragL.distribution.txt")
-	cmd2 = "Rscript " +  os.path.join(tools.scripts_dir, "fragment_length_dist.R") +  fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
+	fragL_dis1= os.path.join(QC_folder, args.sample_name +  ".fragL.distribution.pdf")
+	fragL_dis2= os.path.join(QC_folder, args.sample_name +  ".fragL.distribution.txt")
+	cmd2 = "Rscript " +  os.path.join(tools.scripts_dir, "fragment_length_dist.R") + " " + fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
 
 	pm.run([cmd,cmd1,cmd2], fragL_dis1)
 
