@@ -83,6 +83,11 @@ zcat ${GENOME}_TSS_full.txt.gz | awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\
 echo ${GENOME}_TSS.tsv
 ```
 
+## Fraction of Reads in Peaks (FRIP) Scores
+
+By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
+
+
 ## Advanced project management with looper
 
 Once you've specified your project to work with this pipeline, you will also inherit all the power of looper for your project. With a simple change to your configuration file, you can submit these jobs to a cluster, summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/).
