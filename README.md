@@ -71,7 +71,9 @@ Run your project as above, by passing your project config file to `looper run`. 
 
 ## TSS enrichments
 
-In order to calculate TSS enrichments, you will need a TSS annotation file in your reference genome directory. Here's code to generate that:
+In order to calculate TSS enrichments, you will need a TSS annotation file in your reference genome directory. Here's code to generate that.
+
+From refGene:
 
 ```
 # Provide genome string and gene file
@@ -79,8 +81,15 @@ GENOME="hg38"
 URL="http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz"
 
 wget -O ${GENOME}_TSS_full.txt.gz ${URL}
-zcat ${GENOME}_TSS_full.txt.gz | awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}'  | uniq > ${GENOME}_TSS.tsv
+zcat ${GENOME}_TSS_full.txt.gz | awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}'  | sort -u > ${GENOME}_TSS.tsv
 echo ${GENOME}_TSS.tsv
+```
+
+Another option from Gencode GTF:
+
+```
+grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\t"$4"\t"$7}else{print $1"\t"$5"\t"$5"\t"$7}}' | sort -u -k1,1V -k2,2n > ${GENOME}_TSS.tsv
+
 ```
 
 ## Fraction of Reads in Peaks (FRIP) Scores
