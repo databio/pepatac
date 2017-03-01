@@ -341,8 +341,6 @@ cmd4 = tools.samtools + " index " + rmdup_bam
 
 pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: estimate_lib_size(metrics_file))
 
-estimate_lib_size(metrics_file)
-
 # shift bam file and make bigwig file
 shift_bed = os.path.join(map_genome_folder ,  args.sample_name + ".pe.q10.sort.rmdup.bed")
 cmd = os.path.join(tools.scripts_dir, "bam2bed_shift.pl " +  rmdup_bam)
