@@ -323,7 +323,8 @@ pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
 def estimate_lib_size(picard_log):
 	# In millions of reads; contributed by Ryan
 	# Could probably be made more stable
-	cmd = '`awk "BEGIN { print $(cat ' + picard_log + ' | tail -n 3 | head -n 1 | cut -f9)/1000000 }"`'
+	#cmd = '`awk "BEGIN { print $(cat ' + picard_log + ' | tail -n 3 | head -n 1 | cut -f9)/1000000 }"`'
+	cmd = "awk -F'\t' -f " + os.path.join(tools.scripts_dir, "extract_picard_lib.awk") + " " + picard_log
 	picard_est_lib_size = pm.checkprint(cmd)
 	pm.report_result("Picard_est_lib_size", picard_est_lib_size)
  
@@ -338,7 +339,9 @@ cmd3 += " VALIDATION_STRINGENCY=LENIENT"
 cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 cmd4 = tools.samtools + " index " + rmdup_bam 
 
-pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: estimate_lib_size(picard_log))
+pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: estimate_lib_size(metrics_file))
+
+estimate_lib_size(metrics_file)
 
 # shift bam file and make bigwig file
 shift_bed = os.path.join(map_genome_folder ,  args.sample_name + ".pe.q10.sort.rmdup.bed")
