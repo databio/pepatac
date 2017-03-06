@@ -26,6 +26,9 @@ parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=st
 parser.add_argument('--frip-ref-peaks', default = None, dest='frip_ref_peaks',type=str, 
 	help='Reference peak set for calculating FRIP')
 
+parser.add_argument('--pyadapt', action="store_true"
+					help="Use pyadapter_trim for trimming? [Default: False]")
+
 args = parser.parse_args()
 
  # it always paired seqencung for ATACseq
