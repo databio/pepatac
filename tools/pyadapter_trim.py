@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 
 # Author: Jason Buenrostro, Stanford University
 # The following program will trim PE reads
@@ -40,6 +40,7 @@ opts.add_option("-a", help="<Read1> Accepts fastq or fastq.gz")
 opts.add_option("-b", help="<Read2> Accepts fastq or fastq.gz")
 opts.add_option("-u", action="store_true", default=False, help="Print uncompressed output file")
 opts.add_option("-s", default="", help="Prints trimmed R1 or R2 to screen. Options: R1,R2")
+opts.add_option("-o", help="output prefix", default=None)
 options, arguments = opts.parse_args()
 
 # return usage information if no argvs given
@@ -57,6 +58,7 @@ p1_file = p1_in.split('/')[-1]
 p2_file = p2_in.split('/')[-1]
 
 #check for file type and open input file
+
 append = p1_in.split('.')[-1]
 if append == "fastq":
     p1_rds = open(p1_in,'r')
@@ -80,6 +82,10 @@ elif append == "bz2":
     p2_out = re.sub(".fastq.bz2", ".trim.fastq", p2_file)
 else:
     sys.exit("ERROR! The input file2 must be a .fastq or .fastq.gz")
+
+if options.o:
+    p1_out = options.o + "_R1.trim.fastq"
+    p2_out = options.o + "_R2.trim.fastq"
 
 ##### SCRIPT #####
 # initialize variables

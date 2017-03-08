@@ -26,7 +26,7 @@ parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=st
 parser.add_argument('--frip-ref-peaks', default = None, dest='frip_ref_peaks',type=str, 
 	help='Reference peak set for calculating FRIP')
 
-parser.add_argument('--pyadapt', action="store_true"
+parser.add_argument('--pyadapt', action="store_true",
 					help="Use pyadapter_trim for trimming? [Default: False]")
 
 args = parser.parse_args()
@@ -151,6 +151,8 @@ if args.pyadapt:
 	cmd = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
 	cmd += " -a " + local_input_files[0]
 	cmd += " -b " + local_input_files[1]
+	cmd += " -o " + out_fastq_pre
+	cmd += " -u"
 	#TODO make pyadapt give options for output file name.
 else:
 
