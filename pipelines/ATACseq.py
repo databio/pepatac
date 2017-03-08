@@ -4,6 +4,7 @@ ATACseq  pipeline
 """
 __author__=["Jin Xu", "Nathan Sheffield"]
 __email__="xujin937@gmail.com"
+from _version import __version__
 
 from argparse import ArgumentParser
 import os,re
@@ -25,6 +26,9 @@ parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=st
 
 parser.add_argument('--frip-ref-peaks', default = None, dest='frip_ref_peaks',type=str, 
 	help='Reference peak set for calculating FRIP')
+
+parser.add_argument('--pyadapt', action="store_true",
+					help="Use pyadapter_trim for trimming? [Default: False]")
 
 args = parser.parse_args()
 
@@ -141,23 +145,35 @@ print(local_input_files)
 # Adapter trimming
 pm.timestamp("### Adapter trimming: ")
 
-trimming_prefix = os.path.join(fastq_folder, args.sample_name)
-trimmed_fastq = trimming_prefix + "_R1_trimmed.fq"
-trimmed_fastq_R2 = trimming_prefix + "_R2_trimmed.fq"
-cmd = tools.java +" -Xmx" + str(pm.mem) +" -jar " + tools.trimmo + " PE " + " -threads " + str(pm.cores) + " "
-cmd += local_input_files[0] + " "
-cmd += local_input_files[1] + " " 
-cmd += trimmed_fastq + " "
-cmd += trimming_prefix + "_R1_unpaired.fq "
-cmd += trimmed_fastq_R2 + " "
-cmd += trimming_prefix + "_R2_unpaired.fq "
-#cmd +=  "ILLUMINACLIP:"+ paths.adapter + ":2:30:10:LEADING:3TRAILING:3SLIDINGWINDOW:4:15MINLEN:36" 
-cmd +=  "ILLUMINACLIP:"+ res.adapter + ":2:30:10" 
-#def check_trim():
-        #n_trim = float(myngstk.count_reads(trimmed_fastq, args.paired_end))
-#        rr = float(pm.get_stat("Raw_reads"))
-#        pm.report_result("Trimmed_reads", n_trim)
-#        pm.report_result("Trim_loss_rate", round((rr - n_trim) * 100 / rr, 2))
+if args.pyadapt:
+	trimming_prefix = os.path.join(fastq_folder, args.sample_name)
+	trimmed_fastq = out_fastq_pre + "_R1.trim.fastq"
+	trimmed_fastq_R2 = out_fastq_pre + "_R2_trim.fastq"
+	cmd = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
+	cmd += " -a " + local_input_files[0]
+	cmd += " -b " + local_input_files[1]
+	cmd += " -o " + out_fastq_pre
+	cmd += " -u"
+	#TODO make pyadapt give options for output file name.
+else:
+
+	trimming_prefix = os.path.join(fastq_folder, args.sample_name)
+	trimmed_fastq = trimming_prefix + "_R1_trimmed.fq"
+	trimmed_fastq_R2 = trimming_prefix + "_R2_trimmed.fq"
+	cmd = tools.java +" -Xmx" + str(pm.mem) +" -jar " + tools.trimmo + " PE " + " -threads " + str(pm.cores) + " "
+	cmd += local_input_files[0] + " "
+	cmd += local_input_files[1] + " " 
+	cmd += trimmed_fastq + " "
+	cmd += trimming_prefix + "_R1_unpaired.fq "
+	cmd += trimmed_fastq_R2 + " "
+	cmd += trimming_prefix + "_R2_unpaired.fq "
+	#cmd +=  "ILLUMINACLIP:"+ paths.adapter + ":2:30:10:LEADING:3TRAILING:3SLIDINGWINDOW:4:15MINLEN:36" 
+	cmd +=  "ILLUMINACLIP:"+ res.adapter + ":2:30:10" 
+	#def check_trim():
+	        #n_trim = float(myngstk.count_reads(trimmed_fastq, args.paired_end))
+	#        rr = float(pm.get_stat("Raw_reads"))
+	#        pm.report_result("Trimmed_reads", n_trim)
+	#        pm.report_result("Trim_loss_rate", round((rr - n_trim) * 100 / rr, 2))
 pm.run(cmd, trimmed_fastq,
 	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
 		fastqc_folder = os.path.join(param.outfolder, "fastqc/")))
