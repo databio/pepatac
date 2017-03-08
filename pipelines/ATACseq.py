@@ -438,7 +438,7 @@ ar = pm.get_stat("Aligned_reads")
 print(ar, rip)
 pm.report_result("FRIP", float(rip) / float(ar))
 
-if os.path.exists(args.frip_ref_peaks):
+if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks):
 	# Use an external reference set of peaks instead of the peaks called from this run
 	cmd = ngstk.simple_frip(rmdup_bam, args.frip_ref_peaks)
 	rip = pm.checkprint(cmd)

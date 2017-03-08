@@ -1,3 +1,7 @@
+# This script reads a picard metrics file and parses out
+# the ESTIMATED_LIBRARY_SIZE field. run it like:
+# awk -F'\t' -f extract_picard_lib.awk metrics_file.txt
+
 /## METRICS CLASS/ { 
   for(i=1; i<=2; i++) {
     getline;
