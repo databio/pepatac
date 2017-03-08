@@ -148,7 +148,7 @@ if args.pyadapt:
 	trimming_prefix = os.path.join(fastq_folder, args.sample_name)
 	trimmed_fastq = out_fastq_pre + "_R1.trim.fastq"
 	trimmed_fastq_R2 = out_fastq_pre + "_R2_trim.fastq"
-	cmd = os.path.join(tools.scripts_dir, "pyadpter_trim.py")
+	cmd = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
 	cmd += " -a " + local_input_files[0]
 	cmd += " -b " + local_input_files[1]
 	#TODO make pyadapt give options for output file name.
