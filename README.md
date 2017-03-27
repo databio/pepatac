@@ -2,6 +2,18 @@
 
 This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs.
 
+## Features
+
+Before aligning to the genome, we first align to decoy sequences. This has several advantages: it speeds up the process dramatically, reduces noise from erroneous alignments, and provides potential to analyze signal at repeats. The pipeline will align sequentially to these decoy sequences (if provided):
+
+- chrM (doubled; for non-circular aligners, to draw away reads from NuMTs)
+- Alu elements
+- alpha satellites
+- rDNA
+- repbase
+
+We have provided indexed assemblies for download for each of these **for human** in the [ref_decoy](https://github.com/databio/ref_decoy) repository (excluding repbase, which is not publicly available).
+
 ## Installing
 
 **Prerequisites**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of both like this:
