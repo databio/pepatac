@@ -12,7 +12,7 @@ Before aligning to the genome, we first align to decoy sequences. This has sever
 - rDNA
 - repbase
 
-We have provided indexed assemblies for download for each of these **for human** in the [ref_decoy](https://github.com/databio/ref_decoy) repository (excluding repbase, which is not publicly available).
+We have provided indexed assemblies for download for each of these **for human** in the [ref_decoy](https://github.com/databio/ref_decoy) repository (excluding repbase, which is not publicly available). If any (or all) of these assemblies are not provided, the step is simply skipped.
 
 ## Installing
 
