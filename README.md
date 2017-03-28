@@ -2,9 +2,9 @@
 
 This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs.
 
-## Features
+## Pipeline features outlined
 
-Before aligning to the genome, we first align to decoy sequences. This has several advantages: it speeds up the process dramatically, reduces noise from erroneous alignments, and provides potential to analyze signal at repeats. The pipeline will align sequentially to these decoy sequences (if provided):
+**Decoy alignments.** Before aligning to the genome, we first align to decoy sequences. This has several advantages: it speeds up the process dramatically, reduces noise from erroneous alignments, and provides potential to analyze signal at repeats. The pipeline will align *sequentially* to these decoy sequences (if provided):
 
 - chrM (doubled; for non-circular aligners, to draw away reads from NuMTs)
 - Alu elements
@@ -12,7 +12,11 @@ Before aligning to the genome, we first align to decoy sequences. This has sever
 - rDNA
 - repbase
 
-We have provided indexed assemblies for download for each of these **for human** in the [ref_decoy](https://github.com/databio/ref_decoy) repository (excluding repbase, which is not publicly available). If any (or all) of these assemblies are not provided, the step is simply skipped.
+We have provided indexed assemblies for download for each of these **for human** in the [ref_decoy](https://github.com/databio/ref_decoy) repository (excluding repbase, which is not publicly available). Any assemblies not provided are skipped.
+
+**Fraction of reads in peaks (FRIP).** By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
+
+
 
 ## Installing
 
@@ -30,7 +34,7 @@ export PATH=$PATH:~/.local/bin
 
 **Required executables**. To run the pipeline, you will also need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
-**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). The pipeline aligns serially to decoy sequences if you have them set up, which greatly improves pipeline performance. You can set up the decoy sequences using [ref_decoy](https://github.com/databio/ref_decoy).
+**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You can set up the (optional) decoy sequences using [ref_decoy](https://github.com/databio/ref_decoy).
 
 **Clone the pipeline**. Then, clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
@@ -93,21 +97,16 @@ GENOME="hg38"
 URL="http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz"
 
 wget -O ${GENOME}_TSS_full.txt.gz ${URL}
-zcat ${GENOME}_TSS_full.txt.gz | awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}'  | sort -u > ${GENOME}_TSS.tsv
+zcat ${GENOME}_TSS_full.txt.gz | awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}'  | LC_COLLATE=C sort -k1,1 -k2,2n -u > ${GENOME}_TSS.tsv
 echo ${GENOME}_TSS.tsv
 ```
 
 Another option from Gencode GTF:
 
 ```
-grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\t"$4"\t"$7}else{print $1"\t"$5"\t"$5"\t"$7}}' | sort -u -k1,1V -k2,2n > ${GENOME}_TSS.tsv
+grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\t"$4"\t"$7}else{print $1"\t"$5"\t"$5"\t"$7}}' | LC_COLLATE=C sort -u -k1,1V -k2,2n > ${GENOME}_TSS.tsv
 
 ```
-
-## Fraction of Reads in Peaks (FRIP) Scores
-
-By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
-
 
 ## Advanced project management with looper
 
