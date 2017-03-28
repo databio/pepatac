@@ -21,8 +21,8 @@ export PATH=$PATH:~/.local/bin
 **Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). The pipeline aligns serially to decoy sequences if you have them set up, which greatly improves pipeline performance. You can set up the decoy sequences using [ref_decoy](https://github.com/databio/ref_decoy).
 
 **Clone the pipeline**. Then, clone this repository using one of these methods:
-- using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
-- using HTTPS: `git clone https://github.com/ChangLab/ATACseq.git`
+- using SSH: `git clone git@github.com:databio/ATACseq.git`
+- using HTTPS: `git clone https://github.com/databio/ATACseq.git`
 
 ## Configuring
 You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, there is a pre-made config file and project template. Follow the instructions on the [Chang lab configuration](examples/chang_project) page.
