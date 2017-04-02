@@ -36,7 +36,7 @@ args = parser.parse_args()
 if args.single_or_paired == "paired":
 	args.paired_end = True
 else:
-	args.paired_end = False
+	args.paired_end = True
 
 # Initialize
 outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
