@@ -36,7 +36,7 @@ args = parser.parse_args()
 if args.single_or_paired == "paired":
 	args.paired_end = True
 else:
-	args.paired_end = False
+	args.paired_end = True
 
 # Initialize
 outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
@@ -90,6 +90,48 @@ def count_alignment(assembly_identifier, aligned_bam, paired_end = args.paired_e
 
 		pass
 
+
+def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, bt2_options = None):
+	"""
+	A helper function to run alignments in series, so you can run one alignment followed
+	by another; this is useful for successive decoy alignments.
+	"""
+	if os.path.exists(os.path.dirname(assembly_bt2)):
+		pm.timestamp("### Map to " + assembly_identifier)
+		
+		sub_outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_" + assembly_identifier)
+		ngstk.make_dir(sub_outdir)
+		mapped_bam = os.path.join(sub_outdir, args.sample_name + "_" + assembly_identifier + ".bam")
+		
+		if not bt2_options:
+			# Default options
+			bt2_options = " -k 1"  # Return only 1 alignment
+			bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+			bt2_options += " -X 2000"
+
+		# Build bowtie2 command
+		cmd = tools.bowtie2 + " -p " + str(pm.cores)
+		cmd += bt2_options
+		cmd += " -x " + assembly_bt2
+		cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+		cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
+		cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapped_bam  # sort output
+		cmd += " > " + mapped_bam
+
+		pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
+
+		# filter genome reads not mapped 
+		unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
+		cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
+		cmd +=  mapped_bam + " > " + unmapped_bam
+
+		out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
+		cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
+		pm.run([cmd,cmd2], unmap_fq2)
+		return unmap_fq1, unmap_fq2
+	else:
+		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2))
+		return unmap_fq1, unmap_fq2
 
 
 # Set up reference resource according to genome prefix.
@@ -179,137 +221,44 @@ pm.run(cmd, trimmed_fastq,
 		fastqc_folder = os.path.join(param.outfolder, "fastqc/")))
 
 pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
-pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional = True)
+pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
 # End of Adapter trimming 
 
 # Mapping to chrM first 
-pm.timestamp("### Map to chrM")
-#if os.path.exists(os.path.dirname(res.bt2_chrM)):
-
-map_chrM_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_chrM")
-ngstk.make_dir(map_chrM_folder)
-
-
-def check_alignment_chrM():
-	ar = ngstk.count_mapped_reads(mapping_chrM_bam, args.paired_end)
-	pm.report_result("Aligned_reads_chrM", ar)
-	tr = float(pm.get_stat("Trimmed_reads"))
-	pm.report_result("Alignment_rate_chrM", round(float(ar) *
- 100 / float(tr), 2))
-	#rr = float(pm.get_stat("Raw_reads"))
-	#pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
-
-mapping_chrM_bam = os.path.join(map_chrM_folder, args.sample_name + "_chrM.bam")
-# combine all in one
-cmd = tools.bowtie2 + " -p " + str(pm.cores)
-cmd += " -k 1"  # Return only 1 alignment on the mitochondria. Deals with 2x circular fix.
-cmd += " -x " +  res.bt2_chrM
-cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-cmd += " -X 2000"
-cmd += " -1 " + trimmed_fastq  + " -2 " + trimmed_fastq_R2
-cmd += " | samtools view -bS - -@ 0"
-cmd += " > " + mapping_chrM_bam
-pm.run(cmd, mapping_chrM_bam, follow = check_alignment_chrM)
-
-# filter genome reads that are not mapped to chrM 
-unmapchrM_bam = os.path.join(map_chrM_folder, args.sample_name + ".unmap.chrM.bam")
-cmd = tools.samtools + " view -@ " + str(pm.cores) + " -b -f 12 " +  mapping_chrM_bam + " > " + unmapchrM_bam
-# -F 2 filters "read mapped in proper pair"
-# -f 4 filters "read unmapped" -- problem with this is that it includes mates of reads that mapped.
-# -f 12 filters "read unmapped and mate unmapped" -- this will exclude reads whose mates mapped.
-
-# Now convert the unaligned reads into fastq format for the next alignment step
-unmap_fq1 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R1.fastq")
-unmap_fq2 = os.path.join(map_chrM_folder, args.sample_name + ".unmapchrM_R2.fastq")
-cmd2 = tools.bedtools + " bamtofastq  -i " + unmapchrM_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
-pm.run([cmd,cmd2], unmap_fq2)
-
-
-def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, cmd = None):
-	"""
-	A helper function to run alignments in series, so you can run one alignment followed
-	by another; this is useful for successive decoy alignments.
-	"""
-	if os.path.exists(os.path.dirname(assembly_bt2)):
-		pm.timestamp("### Map to " + assembly_identifier)
-		
-		sub_outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_" + assembly_identifier)
-		ngstk.make_dir(sub_outdir)
-		mapped_bam = os.path.join(sub_outdir, args.sample_name + "_" + assembly_identifier + ".bam")
-		
-		if not cmd: 
-			cmd = tools.bowtie2 + " -p " + str(pm.cores)
-			cmd += " -k 1"  # Return only 1 alignment
-			cmd += " -x " + assembly_bt2
-			cmd += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-			cmd += " -X 2000"
-			cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
-			cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
-			cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapped_bam  # sort output
-			cmd += " > " + mapped_bam
-
-		pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
-
-		# filter genome reads not mapped 
-		unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
-		cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
-		cmd +=  mapped_bam + " > " + unmapped_bam
-
-		out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
-		cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
-		pm.run([cmd,cmd2], unmap_fq2)
-		return unmap_fq1, unmap_fq2
-	else:
-		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2))
-		return unmap_fq1, unmap_fq2
+bt2_options = " -k 1"  # Return only 1 alignment
+bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+bt2_options += " -X 2000"
+unmap_fq1, unmap_fq2 = align(trimmed_fastq, trimmed_fastq_R2, "chrM", res.bt2_chrM, bt2_options=bt2_options)
 
 # Map to alu
 unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alu", res.bt2_alu)
 
 # Map to rDNA
-if os.path.exists(os.path.dirname(res.bt2_rDNA)):
-	pm.timestamp("### Map to rDNA")
+bt2_options = " --very-sensitive"
+bt2_options += " -X 2000"
+unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "rDNA", res.bt2_rDNA, bt2_options=bt2_options)
 
-	map_rDNA_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_rDNA")
-	ngstk.make_dir(map_rDNA_folder)
-	mapping_rDNA_sam = os.path.join(map_rDNA_folder, args.sample_name + "_rDNA.sam")
-	mapping_rDNA_bam = os.path.join(map_rDNA_folder, args.sample_name + "_rDNA.bam")
-
-	cmd = tools.bowtie2 + " -p " + str(pm.cores) #+ str(param.bowtie2.p)
-	cmd += " --very-sensitive " + " -x " +  res.bt2_rDNA
-	cmd += " -X 2000"
-	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2# + " -S " + mapping_rDNA_sam
-	cmd += " | " + tools.samtools + " view -bS - -@ 1" # convert to bam
-	cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_rDNA_bam
-	pm.run(cmd, mapping_rDNA_bam, follow = lambda: count_alignment("rDNA", mapping_rDNA_bam))
-
-	# filter genome reads not mapped to rDNA 
-	unmap_bam = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA.bam")
-	cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
-	cmd +=  mapping_rDNA_bam + " > " + unmap_bam
-
-	unmap_fq1 = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA_R1.fastq")
-	unmap_fq2 = os.path.join(map_rDNA_folder, args.sample_name + "_unmap_rDNA_R2.fastq")
-	cmd2 = tools.bedtools + " bamtofastq  -i " + unmap_bam + " -fq " + unmap_fq1 + " -fq2 "  + unmap_fq2
-	pm.run([cmd,cmd2],unmap_fq2)
-else:
-	print("Skipping: No rDNA index found at " + os.path.dirname(res.bt2_rDNA))
-
+# alphasat
 unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alphasat", res.bt2_alphasat)
+
+# repbase
 unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "repbase", res.bt2_repbase)
 
 pm.timestamp("### Map to genome")
-
 map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
 ngstk.make_dir(map_genome_folder)
 
 mapping_genome_bam = os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.bam")
 mapping_genome_bam_temp = os.path.join(map_genome_folder, args.sample_name + ".temp.bam")
 unmap_genome_bam = os.path.join(map_genome_folder, args.sample_name + "_unmap.bam")
+
+bt2_options = " --very-sensitive"
+bt2_options += " -X 2000"
+
 cmd = tools.bowtie2 + " -p " + str(pm.cores)
-cmd += " --very-sensitive " + " -x " +  res.bt2_genome
+cmd += bt2_options
+cmd += " -x " +  res.bt2_genome
 cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
-cmd += " -X 2000"
 cmd += " | " + tools.samtools + " view -bS - -@ 1 "
 #cmd += " -f 2 -q 10"  # quality and pairing filter
 cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_genome_bam_temp
