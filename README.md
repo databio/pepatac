@@ -37,8 +37,8 @@ export PATH=$PATH:~/.local/bin
 **Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You can set up the (optional) decoy sequences using [ref_decoy](https://github.com/databio/ref_decoy).
 
 **Clone the pipeline**. Then, clone this repository using one of these methods:
-- using SSH: `git clone git@github.com:ChangLab/ATACseq.git`
-- using HTTPS: `git clone https://github.com/ChangLab/ATACseq.git`
+- using SSH: `git clone git@github.com:databio/ATACseq.git`
+- using HTTPS: `git clone https://github.com/databio/ATACseq.git`
 
 ## Configuring
 
@@ -108,9 +108,11 @@ grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\
 
 ```
 
-## Advanced project management with looper
+## Using a cluster
 
-Once you've specified your project to work with this pipeline, you will also inherit all the power of looper for your project. With a simple change to your configuration file, you can submit these jobs to a cluster, summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/).
+Once you've specified your project to work with this pipeline, you will also inherit all the power of looper for your project.  You can submit these jobs to a cluster with a simple change to your configuration file. Follow instructions in [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html).
+
+Looper can also summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/). 
 
 ## Running on a single sample:
 
