@@ -10,7 +10,10 @@ tools:  # absolute paths to required tools
   macs2: macs2
   picard: ${PICARD}
   trimmo: ${TRIMMOMATIC}
+  # ucsc tools
   bedGraphToBigWig: bedGraphToBigWig
+  wigToBigWig: wigToBigWig
+  bigWigCat: bigWigCat
 
 # user configure 
 resources:

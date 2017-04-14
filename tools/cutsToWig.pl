@@ -25,6 +25,8 @@
 $chrSize = shift;  # Size of chromosome is the first argument
 $countIndex = 1;
 $currentCount = 1;
+$header =  <>; #discard the first line (fixedstep)
+print $header;
 $cutSite = <>;  # Grab the first cut
 
 # Print out 0s until the first cut

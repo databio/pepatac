@@ -316,15 +316,50 @@ cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
 norm_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.bedGraph")
 sort_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.sort.bedGraph")
 cmd2 = os.path.join(tools.scripts_dir, "norm_bedGraph.pl "  + bedGraph + " " + norm_bedGraph)
-bw =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
+bw_file =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
 
 # bedGraphToBigWig requires lexographical sort, which puts chr10 before chr2, for example
 cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
-cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw
-pm.run([cmd, cmd2, cmd3, cmd4], bw)
+cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw_file
+pm.run([cmd, cmd2, cmd3, cmd4], bw_file)
 
 
-# Exact cuts are more precise.
+# "Exact cuts" are what I call nucleotide-resolution tracks of exact bases where the
+# transposition (or DNAse cut) happened;
+# In the past I used wigToBigWig on a combined wig file, but this ends up using a boatload
+# of memory (more than 32GB); in contrast, running the wig -> bw conversion on each chrom
+# and then combining them with bigWigCat requires much less memory. This was a memory bottleneck
+# in the pipeline.
+pm.timestamp("### Computing exact sites")
+exact_folder = os.path.join(map_genome_folder + "_exact")
+temp_exact_folder = os.path.join(exact_folder, "temp")
+ngstk.make_dir(exact_folder)
+ngstk.make_dir(temp_exact_folder)
+temp_target = os.path.join(temp_exact_folder, "flag_completed")
+exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
+
+# cmd = os.path.join(tools.scripts_dir, "bedToExactWig.pl")
+# cmd += " " + shift_bed
+# cmd += " " + res.chrom_sizes
+# cmd += " " + temp_exact_folder
+# cmd2 = "touch " + temp_target
+# pm.run([cmd, cmd2], temp_target)
+
+# # Aside: since this bigWigCat command uses shell expansion, pypiper cannot profile memory.
+# # we could use glob.glob if we want to preserve memory. like so: glob.glob(os.path.join(...))
+# # But I don't because bigWigCat uses little memory (<10GB).
+# # This also sets us up nicely to process chromosomes in parallel.
+# cmd = tools.bigWigCat + " " + exact_target + " " + os.path.join(temp_exact_folder, "*.bw")
+# pm.run(cmd, exact_target)
+# pm.clean_add(os.path.join(temp_exact_folder, "*.bw"))
+
+cmd = os.path.join(tools.scripts_dir, "bamSitesToWig.py")
+cmd += " -i " + rmdup_bam
+cmd += " -c " + res.chrom_sizes
+cmd += " -o " + exact_target
+cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
+cmd2 = "touch " + temp_target
+pm.run([cmd, cmd2], temp_target)
 
 # TSS enrichment 
 if os.path.exists(res.TSS_file):
