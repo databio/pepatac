@@ -1,0 +1,27 @@
+# This project config file describes your project. See looper docs for details.
+
+metadata:  # relative paths are relative to this config file
+  sample_annotation: gold_atac_annotation.csv  # sheet listing all samples in the project
+  output_dir: ${PROCESSED}gold_atac  # ABSOLUTE PATH to the parent, shared space where project results go
+  pipelines_dir: "${CODEBASE}ATACseq"  # ABSOLUTE PATH the directory where looper will find the pipeline repository
+
+# in your sample_annotation, columns with these names will be populated as described 
+# in the data_sources section below
+derived_columns: [read1, read2]  
+
+data_sources:  # This section describes paths to your data
+  # specify the ABSOLUTE PATH of input files using variable path expressions
+  # These keys then correspond to values in your sample annotation columns.
+  # Variables specified using brackets are populated from sample_annotation columns. 
+  # Variable syntax: {column_name}. For example, use {sample_name} to populate
+  # the file name with the value in the sample_name column for each sample.
+  # example_data_source: "/path/to/data/{sample_name}_R1.fastq.gz"
+  SRA: "${SRABAM}{SRR}.bam"
+  SRA_1: "${SRAFQ}{SRR}_1.fastq.gz"
+  SRA_2: "${SRAFQ}{SRR}_2.fastq.gz"
+  TEST_1: "${CODEBASE}ATACseq/examples/test_data/{sample_name}_r1.fastq.gz"
+  TEST_2: "${CODEBASE}ATACseq/examples/test_data/{sample_name}_r2.fastq.gz"
+
+genomes:
+  human: hg38
+  mouse: mm10
