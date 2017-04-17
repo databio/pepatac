@@ -4,16 +4,17 @@ ATACseq  pipeline
 """
 __author__=["Jin Xu", "Nathan Sheffield"]
 __email__="xujin937@gmail.com"
-from _version import __version__
 
 from argparse import ArgumentParser
-import os,re
-import sys
-import os.path
-import subprocess
-import pypiper
-import yaml 
 from datetime import datetime
+import os
+import re
+import sys
+import subprocess
+import yaml 
+
+import pypiper
+from _version import __version__
 
 # Argument Parsing from yaml file 
 # #######################################################################################
@@ -29,6 +30,9 @@ parser.add_argument('--frip-ref-peaks', default = None, dest='frip_ref_peaks',ty
 
 parser.add_argument('--pyadapt', action="store_true",
 					help="Use pyadapter_trim for trimming? [Default: False]")
+
+parser.add_argument("-V", "--version", action="version",
+              version="%(prog)s {v}".format(v=__version__))
 
 args = parser.parse_args()
 
