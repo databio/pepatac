@@ -1,6 +1,9 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.3.0 Unreleased]
+- Added exact cuts calculation
+
 ## [0.2.0]
 ### Added
 - FRiP can now be calculated based on reference peaks
