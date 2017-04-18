@@ -51,28 +51,17 @@ class CutTracer(pararead.ParaReadProcessor):
         in the input bamfile
         @param chrom: a string with a chromosome, used by bamFile.fetch to
         grab a subset of reads from the bamfile
-        @param bamFile: a pysam.AlignmentFile object of the bam file to read
-        @param temp_folder: temporary output folder.
         """
-        try:
-            reads_file = pararead.PARA_READ_FILES[pararead.READS_FILE_KEY]
-            # Read in all reads on this chromosome
-            reads = reads_file.fetch(chrom, multiple_iterators=True)
-        except IOError:
-            print("Error reading reads_file for ", chrom)
 
-
-        #reads = self.get_reads(identifier)
+        reads = self.fetch_chunk(chrom)
 
         if not any(reads):
             print("Chrom has no reads: " + chrom)
             return None
 
-        chrom_size = -1
-        for x in reads_file.header['SQ']:
-            if x['SN'] == chrom:
-                chrom_size = x['LN']
-                self.unbuffered_write("[Name: " + x['SN'] + "; Size: " + str(chrom_size) + "]")
+        chrom_size = self.get_chrom_size(chrom)
+
+        self.unbuffered_write("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
 
         chromOutFile = self._tempf(chrom)
         chromOutFileBw = chromOutFile + ".bw"
