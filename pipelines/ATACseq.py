@@ -32,7 +32,7 @@ parser.add_argument('--pyadapt', action="store_true",
 					help="Use pyadapter_trim for trimming? [Default: False]")
 
 parser.add_argument("-V", "--version", action="version",
-              version="%(prog)s {v}".format(v=__version__))
+          version="%(prog)s {v}".format(v=__version__))
 
 args = parser.parse_args()
 
@@ -44,7 +44,7 @@ else:
 
 # Initialize
 outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
-pm = pypiper.PipelineManager(name = "ATACseq", outfolder = outfolder, args = args)
+pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__)
 ngstk = pypiper.NGSTk(pm=pm)
 
 # Do some cores math for split processes
