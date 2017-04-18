@@ -1,0 +1,3 @@
+pypiper
+looper
+-e git+https://github.com/databio/pararead/#egg=pararead
