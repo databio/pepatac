@@ -62,7 +62,7 @@ class CutTracer(pararead.ParaReadProcessor):
             print("Error reading reads_file for ", chrom)
 
 
-        reads = self.get_reads(identifier)
+        #reads = self.get_reads(identifier)
 
         if not any(reads):
             print("Chrom has no reads: " + chrom)
