@@ -101,6 +101,8 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None
 
 		ngstk.make_dir(sub_outdir)
 		mapped_bam = os.path.join(sub_outdir, args.sample_name + "_" + assembly_identifier + ".bam")
+		out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
+		out_fastq_bt2 = out_fastq_pre + '_R%.fq.gz'  # bowtie2 unmapped filename format
 		
 		if not bt2_options:
 			# Default options
@@ -113,6 +115,7 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None
 		cmd += bt2_options
 		cmd += " -x " + assembly_bt2
 		cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+		cmd += " --un-conc-gz " + out_fastq_bt2
 		cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
 		cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapped_bam  # sort output
 		cmd += " > " + mapped_bam
@@ -120,13 +123,14 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None
 		pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
 
 		# filter genome reads not mapped 
-		unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
-		cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
-		cmd +=  mapped_bam + " > " + unmapped_bam
+		#unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
+		#cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
+		#cmd +=  mapped_bam + " > " + unmapped_bam
 
-		out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
-		cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
-		pm.run([cmd,cmd2], unmap_fq2)
+		#cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
+		#pm.run([cmd,cmd2], unmap_fq2)
+		unmap_fq1 = out_fastq_pre + "_R1.fq.gz"
+		unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
 		return unmap_fq1, unmap_fq2
 	else:
 		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2))
