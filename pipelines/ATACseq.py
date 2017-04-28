@@ -38,6 +38,7 @@ parser.add_argument("--prealignments", default=[], type=str, nargs="+",
 parser.add_argument("-V", "--version", action="version",
           			version="%(prog)s {v}".format(v=__version__))
 
+
 args = parser.parse_args()
 
  # it always paired-end sequencing for ATACseq
