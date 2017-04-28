@@ -2,7 +2,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [0.3.0 Unreleased]
+### Added
 - Added exact cuts calculation
+
+### Changed
+- Generalizes decoy alignments to pre-alignments, with a new `--prealignment` option
 
 ## [0.2.0]
 ### Added
