@@ -4,21 +4,15 @@ This repository contains a pipeline to process ATAC-seq data. It does adapter tr
 
 ## Pipeline features outlined
 
-**Decoy alignments.** Before aligning to the genome, we first align to decoy sequences. This has several advantages: it speeds up the process dramatically, reduces noise from erroneous alignments, and provides potential to analyze signal at repeats. The pipeline will align *sequentially* to these decoy sequences (if provided):
+**mtDNA prealignment**. If provided, the pipeline will first align to chrM separately. Because of the high proportion of mtDNA reads in ATAC-seq data, this has several advantages: it speeds up the process dramatically, and reduces noise from erroneous alignments (NuMTs). To do this, we use a doubled mtDNA reference that allows even non-circular aligners to draw all reads to the mtDNA.
 
-- chrM (doubled; for non-circular aligners, to draw away reads from NuMTs)
-- Alu elements
-- alpha satellites
-- rDNA
-- repbase
+**Other prealignments**. The pipeline will also align *sequentially* to other references, if provided via the `--prealignments` command-line option. For example, you may download the `repbase` assembly to align to all repeats. We have also provided indexed assemblies for some repeat classes download in the [ref_decoy](https://github.com/databio/ref_decoy) repository.
 
-We have provided indexed assemblies for download for each of these **for human** in the [ref_decoy](https://github.com/databio/ref_decoy) repository (excluding repbase, which is not publicly available). Any assemblies not provided are skipped.
-
-**Fraction of reads in peaks (FRIP).** By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
+**Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
 
 ## Installing
 
-**Prerequisites**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of both like this:
+**Prerequisites**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). It uses the [pararead](https://github.com/databio/pararead) module for processing reads in parallel. You can do a user-specific install of these like this:
 
 ```
 pip install --user https://github.com/epigen/pypiper/zipball/master
@@ -43,9 +37,9 @@ export PATH=$PATH:~/.local/bin
 
 ## Configuring
 
-You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, there is a pre-made config file and project template. Follow the instructions on the [Chang lab configuration](examples/chang_project) page.
+You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one of these options:
 
-Option 1: **Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
+**Option 1: Default configuration** (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
   - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH.
   - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
   ```
@@ -61,12 +55,14 @@ Option 1: **Default configuration** ([pipelines/ATACseq.yaml](pipelines/ATACseq.
   - Specify custom sequencing adapter file if desired.
 
 
-Option 2: **Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
+**Option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
 
 
 ## Running the pipeline
 
-The best way to use this pipeline is to run it through looper. You will need to tell looper about your project. Example project data are in the [examples/test_project](examples/test_project) folder. Run the pipeline across all samples in the test project with this command:
+You never need to interface with the pipeline directly, but you can if you want. Just run `python pipelines/ATACseq.py -h` to see usage. See example command in [cmd.sh](cmd.sh).
+
+But the best way to use this pipeline is to run it using looper. You will need to tell looper about your project. Example project data are in the [examples/test_project](examples/test_project) folder. Run the pipeline across all samples in the test project with this command:
 ```
 looper run examples/test_project/test_config.yaml
 ```
@@ -114,10 +110,6 @@ grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\
 Once you've specified your project to work with this pipeline, you will also inherit all the power of looper for your project.  You can submit these jobs to a cluster with a simple change to your configuration file. Follow instructions in [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html).
 
 Looper can also summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/). 
-
-## Running on a single sample:
-
-You never need to interface with the pipeline directly, but you can if you want. Just run `python pipelines/ATACseq.py -h` to see usage. See example command in [cmd.sh](cmd.sh).
 
 ## Contributing
 

@@ -23,20 +23,24 @@ parser = pypiper.add_pypiper_args(parser, all_args = True)
 #parser = pypiper.add_pypiper_args(parser, groups = ['all'])  # future version
 
 #Add any pipeline-specific arguments
-parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=str, help='genome size for MACS2')
+parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=str, 
+					help='genome size for MACS2')
 
-parser.add_argument('--frip-ref-peaks', default = None, dest='frip_ref_peaks',type=str, 
-	help='Reference peak set for calculating FRIP')
+parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks',type=str, 
+					help='Reference peak set for calculating FRIP')
 
 parser.add_argument('--pyadapt', action="store_true",
 					help="Use pyadapter_trim for trimming? [Default: False]")
 
+parser.add_argument("--prealignments", default=[], type=str, nargs="+",
+					help="List of reference genomes to align to before primary alignment.")
+
 parser.add_argument("-V", "--version", action="version",
-          version="%(prog)s {v}".format(v=__version__))
+          			version="%(prog)s {v}".format(v=__version__))
 
 args = parser.parse_args()
 
- # it always paired seqencung for ATACseq
+ # it always paired-end sequencing for ATACseq
 if args.single_or_paired == "paired":
 	args.paired_end = True
 else:
@@ -46,19 +50,6 @@ else:
 outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
 pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__)
 ngstk = pypiper.NGSTk(pm=pm)
-
-# Do some cores math for split processes
-# 50/50 split
-pm.cores1of2a = int(pm.cores) / 2 + int(pm.cores) % 2
-pm.cores1of2 = int(pm.cores) / 2
-
-# 75/25 split
-pm.cores1of4 = int(pm.cores) / 4
-pm.cores3of4 = int(pm.cores) - int(pm.cores1of4)
-
-pm.cores1of8 = int(pm.cores) / 8
-pm.cores7of8 = int(pm.cores) - int(pm.cores1of8)
-
 
 # Convenience alias 
 tools = pm.config.tools
@@ -95,15 +86,18 @@ def count_alignment(assembly_identifier, aligned_bam, paired_end = args.paired_e
 		pass
 
 
-def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, bt2_options = None):
+def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None, bt2_options=None):
 	"""
 	A helper function to run alignments in series, so you can run one alignment followed
 	by another; this is useful for successive decoy alignments.
 	"""
 	if os.path.exists(os.path.dirname(assembly_bt2)):
 		pm.timestamp("### Map to " + assembly_identifier)
-		
-		sub_outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_" + assembly_identifier)
+		if not aligndir:
+			sub_outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_" + assembly_identifier)
+		else:
+			sub_outdir = os.path.join(param.outfolder, aligndir)
+
 		ngstk.make_dir(sub_outdir)
 		mapped_bam = os.path.join(sub_outdir, args.sample_name + "_" + assembly_identifier + ".bam")
 		
@@ -147,10 +141,6 @@ res.blacklist = os.path.join(gfolder, args.genome_assembly + ".blacklist.bed")
 
 # Bowtie2 indexes for various assemblies
 res.bt2_chrM = get_bowtie2_index(res.genomes, args.genome_assembly + "_chrM2x")
-res.bt2_alu = get_bowtie2_index(res.genomes, args.genome_assembly + "_alu")
-res.bt2_repbase = get_bowtie2_index(res.genomes, args.genome_assembly + "_repbase")
-res.bt2_rDNA = get_bowtie2_index(res.genomes, args.genome_assembly + "_rDNA")
-res.bt2_alphasat = get_bowtie2_index(res.genomes, args.genome_assembly + "_alphasat")
 res.bt2_genome = get_bowtie2_index(res.genomes, args.genome_assembly)
 
 # Set up a link to relative scripts included in the repo
@@ -228,25 +218,21 @@ pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
 # End of Adapter trimming 
 
+# Prealignments
+
 # Mapping to chrM first 
 bt2_options = " -k 1"  # Return only 1 alignment
 bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
 bt2_options += " -X 2000"
-unmap_fq1, unmap_fq2 = align(trimmed_fastq, trimmed_fastq_R2, "chrM", res.bt2_chrM, bt2_options=bt2_options)
+unmap_fq1, unmap_fq2 = align(trimmed_fastq, trimmed_fastq_R2, "chrM", res.bt2_chrM, 
+	aligndir="prealignments", 
+	bt2_options=bt2_options)
 
-# Map to alu
-unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alu", res.bt2_alu)
-
-# Map to rDNA
-bt2_options = " --very-sensitive"
-bt2_options += " -X 2000"
-unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "rDNA", res.bt2_rDNA, bt2_options=bt2_options)
-
-# alphasat
-unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alphasat", res.bt2_alphasat)
-
-# repbase
-unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "repbase", res.bt2_repbase)
+# Map to any other requested prealignments
+for reference in args.prealignments:
+	unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, reference, 
+		get_bowtie2_index(res.genomes, reference),
+		aligndir="prealignments")
 
 pm.timestamp("### Map to genome")
 map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
