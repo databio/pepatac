@@ -16,8 +16,6 @@ We have provided indexed assemblies for download for each of these **for human**
 
 **Fraction of reads in peaks (FRIP).** By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
 
-
-
 ## Installing
 
 **Prerequisites**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of both like this:
@@ -25,7 +23,10 @@ We have provided indexed assemblies for download for each of these **for human**
 ```
 pip install --user https://github.com/epigen/pypiper/zipball/master
 pip install --user https://github.com/epigen/looper/zipball/master
+pip install --user https://github.com/databio/pararead/zipball/master
+
 ```
+
 To put the looper executable in your $PATH, add the following line to your `.bashrc` or `.profile`:
 
 ```
