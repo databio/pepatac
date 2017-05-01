@@ -223,17 +223,8 @@ pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
 # End of Adapter trimming 
 
-# Prealignments
-
-# Mapping to chrM first 
-bt2_options = " -k 1"  # Return only 1 alignment
-bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-bt2_options += " -X 2000"
-unmap_fq1, unmap_fq2 = align(trimmed_fastq, trimmed_fastq_R2, "chrM", res.bt2_chrM, 
-	aligndir="prealignments", 
-	bt2_options=bt2_options)
-
-# Map to any other requested prealignments
+# Map to any requested prealignments
+# We recommend mapping to chrM first for ATAC-seq data
 for reference in args.prealignments:
 	unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, reference, 
 		get_bowtie2_index(res.genomes, reference),

@@ -13,6 +13,7 @@ ATACseq.py:
     "--single-or-paired": read_type
   optional_arguments:
     "--frip-ref-peaks": FRIP_ref
+    "--prealignments": prealignments
   resources:
     default:
       file_size: "0"

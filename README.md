@@ -2,13 +2,17 @@
 
 This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs. You can download the latest version from the [releases page](https://github.com/databio/ATACseq/releases) and a history of version changes is in the [CHANGELOG](CHANGELOG.md).
 
-## Pipeline features outlined
+## Pipeline features at-a-glance
 
-**mtDNA prealignment**. If provided, the pipeline will first align to chrM separately. Because of the high proportion of mtDNA reads in ATAC-seq data, this has several advantages: it speeds up the process dramatically, and reduces noise from erroneous alignments (NuMTs). To do this, we use a doubled mtDNA reference that allows even non-circular aligners to draw all reads to the mtDNA.
+A quick overview of benefits of using this pipeline. These are explained in more detail later in this README.
 
-**Other prealignments**. The pipeline will also align *sequentially* to other references, if provided via the `--prealignments` command-line option. For example, you may download the `repbase` assembly to align to all repeats. We have also provided indexed assemblies for some repeat classes for download in the [ref_decoy](https://github.com/databio/ref_decoy) repository.
+**Prealignments**. The pipeline can (optionally) first align to any number of genome assemblies separately before the primary genome alignment. This is useful for several reasons, such as aligning to mtDNA, repeats, or spike-ins. This increases both speed and accuracy.
 
-**Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
+**Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). 
+
+**TSS enrichments**. The pipeline produces nice quality control plots.
+
+**Scalability**. This pipeline is built on [looper](https://github.com/epigen/looper), so it can run locally, but it quickly scales to submission to any cluster resource manager with a simple configuration change.
 
 ## Installing
 
@@ -29,7 +33,7 @@ export PATH=$PATH:~/.local/bin
 
 **Required executables**. To run the pipeline, you will also need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
-**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). Downloads for common genomes are available or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided [ref_decoy](https://github.com/databio/ref_decoy).
+**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). Downloads for common genomes are available or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
 
 **Clone the pipeline**. Then, clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
@@ -82,7 +86,17 @@ Your annotation file must specify these columns:
 
 Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
 
-## TSS enrichments
+## Outline of analysis steps
+
+### Prealignments
+
+Because of the high proportion of mtDNA reads in ATAC-seq data, we recommend first aligning to the mitochondrial DNA using this prealignment feature. This has several advantages: it speeds up the process dramatically, and reduces noise from erroneous alignments (NuMTs). To do this, we use a doubled mtDNA reference that allows even non-circular aligners to draw all reads to the mtDNA.The pipeline will also align *sequentially* to other references, if provided via the `--prealignments` command-line option. For example, you may download the `repbase` assembly to align to all repeats. We have also provided indexed assemblies for some repeat classes for download in the [ref_decoy](https://github.com/databio/ref_decoy) repository.
+
+### FRIP
+
+By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
+
+### TSS enrichments
 
 In order to calculate TSS enrichments, you will need a TSS annotation file in your reference genome directory. Here's code to generate that.
 

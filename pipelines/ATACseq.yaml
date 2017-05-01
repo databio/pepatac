@@ -18,8 +18,10 @@ tools:  # absolute paths to required tools
 # user configure 
 resources:
   genomes: ${GENOMES}
-  #adapter: ${ADAPTERS}adapters/ATAC_stanford.fa
   adapter: null  # Use default, built-in adapter file.
+
+prealignments:
+  human: "rCRSd repbase"
 
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool
   samtools:
@@ -28,5 +30,3 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
    f: BED
    q: 0.01
    shift: 0 
-   gsize: mm  # should be used in command line
-
