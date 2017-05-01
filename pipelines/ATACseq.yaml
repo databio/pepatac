@@ -20,9 +20,6 @@ resources:
   genomes: ${GENOMES}
   adapter: null  # Use default, built-in adapter file.
 
-prealignments:
-  human: "rCRSd repbase"
-
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool
   samtools:
     q: 10

@@ -9,11 +9,11 @@ ATACseq.py:
     "--genome": genome
     "--input": read1
     "--input2": read2
-    "-gs mm": null
     "--single-or-paired": read_type
   optional_arguments:
     "--frip-ref-peaks": FRIP_ref
     "--prealignments": prealignments
+    "--genome-size": macs_genome_size
   resources:
     default:
       file_size: "0"

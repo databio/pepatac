@@ -23,7 +23,7 @@ parser = pypiper.add_pypiper_args(parser, all_args = True)
 #parser = pypiper.add_pypiper_args(parser, groups = ['all'])  # future version
 
 #Add any pipeline-specific arguments
-parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=str, 
+parser.add_argument('-gs', '--genome-size', default="hs", type=str, 
 					help='genome size for MACS2')
 
 parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks',type=str, 
@@ -396,7 +396,7 @@ peak_file= os.path.join(peak_folder ,  args.sample_name + "_peaks.narrowPeak")
 cmd = tools.macs2 + " callpeak "
 cmd += " -t  " + shift_bed 
 cmd += " -f BED " 
-cmd += " -g "  +  str(args.genomeS)
+cmd += " -g "  +  str(args.genome_size)
 cmd +=  " --outdir " + peak_folder +  " -n " + args.sample_name 
 cmd += "  -q " + str(param.macs2.q)
 cmd +=  " --shift " + str(param.macs2.shift) + " --nomodel "  
