@@ -4,44 +4,37 @@ This repository contains a pipeline to process ATAC-seq data. It does adapter tr
 
 ## Pipeline features at-a-glance
 
-A quick overview of benefits of using this pipeline. These are explained in more detail later in this README.
+This features are explained in more detail later in this README.
 
-**Prealignments**. The pipeline can (optionally) first align to any number of genome assemblies separately before the primary genome alignment. This is useful for several reasons, such as aligning to mtDNA, repeats, or spike-ins. This increases both speed and accuracy.
+**Prealignments**. The pipeline can (optionally) first align to any number of reference assemblies separately before the primary genome alignment. This increases both speed and accuracy and can be used, for example, to aligning sequentially to mtDNA, repeats, or spike-ins.
 
-**Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). 
+**Scalability**. This pipeline is built on [looper](https://github.com/epigen/looper), so it can run locally if your project is simple, but it also employs a standardized interface to any cluster resource manager.
+
+**Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. Optionally, it can **also** calculate a FRIP using a reference set of peaks (for example, from another experiment). 
 
 **TSS enrichments**. The pipeline produces nice quality control plots.
 
-**Scalability**. This pipeline is built on [looper](https://github.com/epigen/looper), so it can run locally, but it quickly scales to submission to any cluster resource manager with a simple configuration change.
-
 ## Installing
 
-**Prerequisites**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). It uses the [pararead](https://github.com/databio/pararead) module for processing reads in parallel. You can do a user-specific install of these like this:
+**Prerequisite python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). It uses the [pararead](https://github.com/databio/pararead) module for processing reads in parallel. You can do a user-specific install of these like this:
 
 ```
 pip install --user https://github.com/epigen/pypiper/zipball/master
 pip install --user https://github.com/epigen/looper/zipball/master
 pip install --user https://github.com/databio/pararead/zipball/master
-
 ```
 
-To put the looper executable in your $PATH, add the following line to your `.bashrc` or `.profile`:
+**Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
-```
-export PATH=$PATH:~/.local/bin
-```
+**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
 
-**Required executables**. To run the pipeline, you will also need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
-
-**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). Downloads for common genomes are available or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
-
-**Clone the pipeline**. Then, clone this repository using one of these methods:
+**Clone the pipeline**. Clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
 - using HTTPS: `git clone https://github.com/databio/ATACseq.git`
 
 ## Configuring
 
-You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one of these options:
+There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
 
 **Option 1: Default configuration** (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
   - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH.
@@ -56,7 +49,7 @@ You can either set up environment variables to fit the default configuration, or
   export GENOMES="/path/to/genomes/folder/"
   ```
   
-  - Specify custom sequencing adapter file if desired.
+  - Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
 
 
 **Option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
@@ -71,7 +64,13 @@ But the best way to use this pipeline is to run it using looper. You will need t
 looper run examples/test_project/test_config.yaml
 ```
 
-Now, adapt for your project. Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
+If the looper executable in not your `$PATH`, add the following line to your `.bashrc` or `.profile`:
+
+```
+export PATH=$PATH:~/.local/bin
+```
+
+Now, adapt the example project to your project. Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
 
 - [project config file](examples/test_project/test_config.yaml) -- describes output locations, pointers to data, etc.
 - [sample annotation file](examples/test_project/test_annotation.csv) -- comma-separated value (CSV) list of your samples.
@@ -90,7 +89,7 @@ Run your project as above, by passing your project config file to `looper run`. 
 
 ### Prealignments
 
-Because of the high proportion of mtDNA reads in ATAC-seq data, we recommend first aligning to the mitochondrial DNA using this prealignment feature. This has several advantages: it speeds up the process dramatically, and reduces noise from erroneous alignments (NuMTs). To do this, we use a doubled mtDNA reference that allows even non-circular aligners to draw all reads to the mtDNA.The pipeline will also align *sequentially* to other references, if provided via the `--prealignments` command-line option. For example, you may download the `repbase` assembly to align to all repeats. We have also provided indexed assemblies for some repeat classes for download in the [ref_decoy](https://github.com/databio/ref_decoy) repository.
+Because of the high proportion of mtDNA reads in ATAC-seq data, we recommend first aligning to the mitochondrial DNA. This pipeline does this using prealignments, which are passed to the pipeline via the `--prealignments` argument. This has several advantages: it speeds up the process dramatically, and reduces noise from erroneous alignments (NuMTs). To do this, we use a doubled mtDNA reference that allows even non-circular aligners to draw all reads to the mtDNA.The pipeline will also align *sequentially* to other references, if provided via the `--prealignments` command-line option. For example, you may download the `repbase` assembly to align to all repeats. We have also provided indexed assemblies for some repeat classes for download in the [ref_decoy](https://github.com/databio/ref_decoy) repository.
 
 ### FRIP
 

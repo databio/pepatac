@@ -133,7 +133,7 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None
 		unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
 		return unmap_fq1, unmap_fq2
 	else:
-		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2))
+		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2) + ". Skipping.")
 		return unmap_fq1, unmap_fq2
 
 
@@ -221,14 +221,23 @@ pm.run(cmd, trimmed_fastq,
 
 pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
+
+# Prepare variables for alignment step
+unmap_fq1 = trimmed_fastq
+unmap_fq2 = trimmed_fastq_R2
 # End of Adapter trimming 
 
 # Map to any requested prealignments
 # We recommend mapping to chrM first for ATAC-seq data
-for reference in args.prealignments:
-	unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, reference, 
-		get_bowtie2_index(res.genomes, reference),
-		aligndir="prealignments")
+pm.timestamp("### Prealignments")
+if len(args.prealignments) == 0:
+	print("You may use `--prealignments` to align to references before the genome alignment step. See docs.")
+else:
+	print("Prealignment assemblies: " + str(args.prealignments))
+	for reference in args.prealignments:
+		unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, reference, 
+			get_bowtie2_index(res.genomes, reference),
+			aligndir="prealignments")
 
 pm.timestamp("### Map to genome")
 map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
