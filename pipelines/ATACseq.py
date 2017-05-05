@@ -108,7 +108,7 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None
 			# Default options
 			bt2_options = " -k 1"  # Return only 1 alignment
 			bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-			bt2_options += " -X 2000"the want
+			bt2_options += " -X 2000"
 
 		# Build bowtie2 command
 		cmd = tools.bowtie2 + " -p " + str(pm.cores)
