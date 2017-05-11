@@ -4,19 +4,19 @@ This repository contains a pipeline to process ATAC-seq data. It does adapter tr
 
 ## Pipeline features at-a-glance
 
-This features are explained in more detail later in this README.
+These features are explained in more detail later in this README.
 
-**Prealignments**. The pipeline can (optionally) first align to any number of reference assemblies separately before the primary genome alignment. This increases both speed and accuracy and can be used, for example, to aligning sequentially to mtDNA, repeats, or spike-ins.
+**Prealignments**. The pipeline can (optionally) first align to any number of reference assemblies separately before the primary genome alignment. This increases both speed and accuracy and can be used, for example, to align sequentially to mtDNA, repeats, or spike-ins.
 
-**Scalability**. This pipeline is built on [looper](https://github.com/epigen/looper), so it can run locally if your project is simple, but it also employs a standardized interface to any cluster resource manager.
+**Scalability**. This pipeline is built on [looper](https://github.com/epigen/looper), so it can run locally or with any cluster resource manager.
 
-**Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. Optionally, it can **also** calculate a FRIP using a reference set of peaks (for example, from another experiment). 
+**Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP using the peaks it identifies. Optionally, it can **also** calculate a FRIP using a reference set of peaks (for example, from another experiment). 
 
-**TSS enrichments**. The pipeline produces nice quality control plots.
+**TSS enrichments**. The pipeline produces various nice QC plots.
 
 ## Installing
 
-**Prerequisite python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). It uses the [pararead](https://github.com/databio/pararead) module for processing reads in parallel. You can do a user-specific install of these like this:
+**Prerequisite python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
 
 ```
 pip install --user https://github.com/epigen/pypiper/zipball/master
