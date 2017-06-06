@@ -114,6 +114,7 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None
 		cmd = tools.bowtie2 + " -p " + str(pm.cores)
 		cmd += bt2_options
 		cmd += " -x " + assembly_bt2
+		cmd += " --rg-id " + args.sample_name
 		cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 		cmd += " --un-conc-gz " + out_fastq_bt2
 		cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
@@ -252,6 +253,7 @@ bt2_options += " -X 2000"
 
 cmd = tools.bowtie2 + " -p " + str(pm.cores)
 cmd += bt2_options
+cmd += " --rg-id " + args.sample_name
 cmd += " -x " +  res.bt2_genome
 cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 cmd += " | " + tools.samtools + " view -bS - -@ 1 "
