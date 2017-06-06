@@ -47,6 +47,10 @@ if args.single_or_paired == "paired":
 else:
 	args.paired_end = True
 
+if not args.input:
+	parser.print_help()
+	raise SystemExit
+
 # Initialize
 outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
 pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__)
