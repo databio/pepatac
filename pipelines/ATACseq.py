@@ -4,6 +4,7 @@ ATACseq  pipeline
 """
 __author__=["Jin Xu", "Nathan Sheffield"]
 __email__="xujin937@gmail.com"
+__version__ = "0.3.0-dev"
 
 from argparse import ArgumentParser
 from datetime import datetime
@@ -14,7 +15,7 @@ import subprocess
 import yaml 
 
 import pypiper
-from _version import __version__
+
 
 # Argument Parsing from yaml file 
 # #######################################################################################
