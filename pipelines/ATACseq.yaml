@@ -7,6 +7,8 @@ tools:  # absolute paths to required tools
   bowtie2: bowtie2
   samtools: samtools
   bedtools: bedtools
+  python: python
+  fastqc: fastqc
   macs2: macs2
   picard: ${PICARD}
   trimmo: ${TRIMMOMATIC}
