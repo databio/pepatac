@@ -33,6 +33,9 @@ parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks',type
 parser.add_argument('--pyadapt', action="store_true",
 					help="Use pyadapter_trim for trimming? [Default: False]")
 
+parser.add_argument('--skewer', action="store_true",
+					help="Use skewer for trimming? [Default: False]")
+
 parser.add_argument("--prealignments", default=[], type=str, nargs="+",
 					help="List of reference genomes to align to before primary alignment.")
 
@@ -202,7 +205,37 @@ if args.pyadapt:
 	cmd += " -o " + out_fastq_pre
 	cmd += " -u"
 	#TODO make pyadapt give options for output file name.
-else:
+
+elif args.skewer:
+	mode = "pe" if args.paired_end else "any"
+	trimmed_fastq = out_fastq_pre + "_R1.trim.fastq"
+	trimmed_fastq_R2 = out_fastq_pre + "_R2_trim.fastq"
+	cmds = list()
+	cmd1 = tools.skewer #+ " --quiet"
+	cmd1 += " -f sanger"
+	cmd1 += " -t {0}".format(args.cores)
+	cmd1 += " -m {0}".format(mode)
+	cmd1 += " -x {0}".format(res.adapter)
+	cmd1 += " -o {0}".format(out_fastq_pre)
+	cmd1 += " {0}".format(local_input_files[0])
+
+	if args.paired_end:
+		cmd1 += " {0}".format(local_input_files[1])
+	cmds.append(cmd1)
+
+	if not args.paired_end:
+		cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed.fastq", trimmed_fastq)
+		cmds.append(cmd2)
+	else:
+		cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair1.fastq", trimmed_fastq)
+		cmds.append(cmd2)
+		cmd3 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair2.fastq", trimmed_fastq_R2)
+		cmds.append(cmd3)
+	#cmd4 = "mv {0} {1}".format(out_fastq_pre + "-trimmed.log", trimLog)
+	#cmds.append(cmd4)
+	cmd = cmds
+
+else:  # default to trimmomatic
 
 	trimming_prefix = os.path.join(fastq_folder, args.sample_name)
 	trimmed_fastq = trimming_prefix + "_R1_trimmed.fq"
@@ -214,13 +247,8 @@ else:
 	cmd += trimming_prefix + "_R1_unpaired.fq "
 	cmd += trimmed_fastq_R2 + " "
 	cmd += trimming_prefix + "_R2_unpaired.fq "
-	#cmd +=  "ILLUMINACLIP:"+ paths.adapter + ":2:30:10:LEADING:3TRAILING:3SLIDINGWINDOW:4:15MINLEN:36" 
 	cmd +=  "ILLUMINACLIP:"+ res.adapter + ":2:30:10" 
-	#def check_trim():
-	        #n_trim = float(myngstk.count_reads(trimmed_fastq, args.paired_end))
-	#        rr = float(pm.get_stat("Raw_reads"))
-	#        pm.report_result("Trimmed_reads", n_trim)
-	#        pm.report_result("Trim_loss_rate", round((rr - n_trim) * 100 / rr, 2))
+	
 pm.run(cmd, trimmed_fastq,
 	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
 		fastqc_folder = os.path.join(param.outfolder, "fastqc/")))
@@ -289,8 +317,6 @@ pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
 
 def estimate_lib_size(picard_log):
 	# In millions of reads; contributed by Ryan
-	# Could probably be made more stable
-	#cmd = '`awk "BEGIN { print $(cat ' + picard_log + ' | tail -n 3 | head -n 1 | cut -f9)/1000000 }"`'
 	cmd = "awk -F'\t' -f " + os.path.join(tools.scripts_dir, "extract_picard_lib.awk") + " " + picard_log
 	picard_est_lib_size = pm.checkprint(cmd)
 	pm.report_result("Picard_est_lib_size", picard_est_lib_size)
@@ -383,8 +409,6 @@ if os.path.exists(res.TSS_file):
 	Tss_score = (sum(floats[1950:2050])/100)/(sum(floats[1:200])/200)
 	pm.report_result("TSS_Score", Tss_score)
 	
-	#python /seq/ATAC-seq/Code/pyMakeVplot.py -a $outdir_map/$output.pe.q10.sort.rmdup.bam -b /seq/chromosome/hg19/hg19_refseq_genes_TSS.txt -p ends -e 2000 -u -v -o $outdir_qc/$output.TSSenrich
-
 	# fragment  distribution
 	fragL= os.path.join(QC_folder ,  args.sample_name +  ".fragLen.txt")
 	cmd = os.path.join("perl " + tools.scripts_dir, "fragment_length_dist.pl " + rmdup_bam + " " +  fragL)
@@ -399,10 +423,6 @@ if os.path.exists(res.TSS_file):
 else:
 	# If the TSS annotation is missing, print a message
 	print("TSS enrichment calculation requires a TSS annotation file here:" + res.TSS_file)
-
-#perl /seq/ATAC-seq/Code/fragment_length_dist.pl $outdir_map/$output.pe.q10.sort.rmdup.bam $outdir_qc/$output.fragL.txt
-#sort -n $outdir_qc/$output.fragL.txt | uniq -c > $outdir_qc/$output.frag.sort.txt
-#Rscript /seq/ATAC-seq/Code/fragment_length_dist.R $outdir_qc/$output.fragL.txt $outdir_qc/$output.frag.sort.txt $outdir_qc/$output.fragment_length_distribution.pdf $outdir_qc/$output.fragment_length_distribution.txt
 
 # peak calling 
 peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly )
@@ -425,12 +445,6 @@ if os.path.exists(res.blacklist):
 	cmd = tools.bedtools  + " intersect " + " -a " + peak_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
 
 	pm.run(cmd,filter_peak)
-#bedtools intersect -a $outdir_peak/$peakFile -b /seq/ATAC-seq/Data/JDB_blacklist.bed -v > $outdir_peak/$output$filename.filterBL.bed
-
-#macs2  callpeak -t  $outdir_map/$output.pe.q10.sort.rmdup.bed -f BED  -g $gsize --outdir $outdir_peak  -q 0.01 -n $outdir_peak/$output --nomodel  --shift # 0  
-# remove blacklist
-#Need to do
-
 
 pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
 
