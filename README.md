@@ -20,9 +20,10 @@ We have provided indexed assemblies for download for each of these **for human**
 
 ## Installing
 
-**Prerequisites**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of both like this:
+**Prerequisites**. This pipeline uses [pararead](https://github.com/databio/pararead) to parallel processing of sequencing reads, [pypiper](https://github.com/epigen/pypiper) to run a pipeline for a single sample, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of all like this:
 
 ```
+pip install --user --upgrade https://github.com/databio/pararead/zipball/master
 pip install --user https://github.com/epigen/pypiper/zipball/master
 pip install --user https://github.com/epigen/looper/zipball/master
 ```
