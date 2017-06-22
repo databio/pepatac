@@ -7,15 +7,19 @@ tools:  # absolute paths to required tools
   bowtie2: bowtie2
   samtools: samtools
   bedtools: bedtools
+  python: python
+  fastqc: fastqc
   macs2: macs2
   picard: ${PICARD}
   trimmo: ${TRIMMOMATIC}
+  # ucsc tools
   bedGraphToBigWig: bedGraphToBigWig
+  wigToBigWig: wigToBigWig
+  bigWigCat: bigWigCat
 
 # user configure 
 resources:
   genomes: ${GENOMES}
-  #adapter: ${ADAPTERS}adapters/ATAC_stanford.fa
   adapter: null  # Use default, built-in adapter file.
 
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool
@@ -25,5 +29,3 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
    f: BED
    q: 0.01
    shift: 0 
-   gsize: mm  # should be used in command line
-

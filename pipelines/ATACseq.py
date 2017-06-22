@@ -4,16 +4,18 @@ ATACseq  pipeline
 """
 __author__=["Jin Xu", "Nathan Sheffield"]
 __email__="xujin937@gmail.com"
-from _version import __version__
+__version__ = "0.3.0-dev"
 
 from argparse import ArgumentParser
-import os,re
-import sys
-import os.path
-import subprocess
-import pypiper
-import yaml 
 from datetime import datetime
+import os
+import re
+import sys
+import subprocess
+import yaml 
+
+import pypiper
+
 
 # Argument Parsing from yaml file 
 # #######################################################################################
@@ -22,39 +24,41 @@ parser = pypiper.add_pypiper_args(parser, all_args = True)
 #parser = pypiper.add_pypiper_args(parser, groups = ['all'])  # future version
 
 #Add any pipeline-specific arguments
-parser.add_argument('-gs', '--genome-size', default="hs", dest='genomeS',type=str, help='genome size for MACS2')
+parser.add_argument('-gs', '--genome-size', default="hs", type=str, 
+					help='genome size for MACS2')
 
-parser.add_argument('--frip-ref-peaks', default = None, dest='frip_ref_peaks',type=str, 
-	help='Reference peak set for calculating FRIP')
+parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks',type=str, 
+					help='Reference peak set for calculating FRIP')
 
 parser.add_argument('--pyadapt', action="store_true",
 					help="Use pyadapter_trim for trimming? [Default: False]")
 
+parser.add_argument('--skewer', action="store_true",
+					help="Use skewer for trimming? [Default: False]")
+
+parser.add_argument("--prealignments", default=[], type=str, nargs="+",
+					help="List of reference genomes to align to before primary alignment.")
+
+parser.add_argument("-V", "--version", action="version",
+          			version="%(prog)s {v}".format(v=__version__))
+
+
 args = parser.parse_args()
 
- # it always paired seqencung for ATACseq
+ # it always paired-end sequencing for ATACseq
 if args.single_or_paired == "paired":
 	args.paired_end = True
 else:
 	args.paired_end = True
 
+if not args.input:
+	parser.print_help()
+	raise SystemExit
+
 # Initialize
 outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
-pm = pypiper.PipelineManager(name = "ATACseq", outfolder = outfolder, args = args)
+pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__)
 ngstk = pypiper.NGSTk(pm=pm)
-
-# Do some cores math for split processes
-# 50/50 split
-pm.cores1of2a = int(pm.cores) / 2 + int(pm.cores) % 2
-pm.cores1of2 = int(pm.cores) / 2
-
-# 75/25 split
-pm.cores1of4 = int(pm.cores) / 4
-pm.cores3of4 = int(pm.cores) - int(pm.cores1of4)
-
-pm.cores1of8 = int(pm.cores) / 8
-pm.cores7of8 = int(pm.cores) - int(pm.cores1of8)
-
 
 # Convenience alias 
 tools = pm.config.tools
@@ -91,17 +95,22 @@ def count_alignment(assembly_identifier, aligned_bam, paired_end = args.paired_e
 		pass
 
 
-def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, bt2_options = None):
+def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None, bt2_options=None):
 	"""
 	A helper function to run alignments in series, so you can run one alignment followed
 	by another; this is useful for successive decoy alignments.
 	"""
 	if os.path.exists(os.path.dirname(assembly_bt2)):
 		pm.timestamp("### Map to " + assembly_identifier)
-		
-		sub_outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_" + assembly_identifier)
+		if not aligndir:
+			sub_outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_" + assembly_identifier)
+		else:
+			sub_outdir = os.path.join(param.outfolder, aligndir)
+
 		ngstk.make_dir(sub_outdir)
 		mapped_bam = os.path.join(sub_outdir, args.sample_name + "_" + assembly_identifier + ".bam")
+		out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
+		out_fastq_bt2 = out_fastq_pre + '_R%.fq.gz'  # bowtie2 unmapped filename format
 		
 		if not bt2_options:
 			# Default options
@@ -113,7 +122,9 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, bt2_options =
 		cmd = tools.bowtie2 + " -p " + str(pm.cores)
 		cmd += bt2_options
 		cmd += " -x " + assembly_bt2
+		cmd += " --rg-id " + args.sample_name
 		cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+		cmd += " --un-conc-gz " + out_fastq_bt2
 		cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
 		cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapped_bam  # sort output
 		cmd += " > " + mapped_bam
@@ -121,16 +132,17 @@ def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, bt2_options =
 		pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
 
 		# filter genome reads not mapped 
-		unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
-		cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
-		cmd +=  mapped_bam + " > " + unmapped_bam
+		#unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
+		#cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
+		#cmd +=  mapped_bam + " > " + unmapped_bam
 
-		out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
-		cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
-		pm.run([cmd,cmd2], unmap_fq2)
+		#cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
+		#pm.run([cmd,cmd2], unmap_fq2)
+		unmap_fq1 = out_fastq_pre + "_R1.fq.gz"
+		unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
 		return unmap_fq1, unmap_fq2
 	else:
-		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2))
+		print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2) + ". Skipping.")
 		return unmap_fq1, unmap_fq2
 
 
@@ -143,10 +155,6 @@ res.blacklist = os.path.join(gfolder, args.genome_assembly + ".blacklist.bed")
 
 # Bowtie2 indexes for various assemblies
 res.bt2_chrM = get_bowtie2_index(res.genomes, args.genome_assembly + "_chrM2x")
-res.bt2_alu = get_bowtie2_index(res.genomes, args.genome_assembly + "_alu")
-res.bt2_repbase = get_bowtie2_index(res.genomes, args.genome_assembly + "_repbase")
-res.bt2_rDNA = get_bowtie2_index(res.genomes, args.genome_assembly + "_rDNA")
-res.bt2_alphasat = get_bowtie2_index(res.genomes, args.genome_assembly + "_alphasat")
 res.bt2_genome = get_bowtie2_index(res.genomes, args.genome_assembly)
 
 # Set up a link to relative scripts included in the repo
@@ -197,7 +205,37 @@ if args.pyadapt:
 	cmd += " -o " + out_fastq_pre
 	cmd += " -u"
 	#TODO make pyadapt give options for output file name.
-else:
+
+elif args.skewer:
+	mode = "pe" if args.paired_end else "any"
+	trimmed_fastq = out_fastq_pre + "_R1.trim.fastq"
+	trimmed_fastq_R2 = out_fastq_pre + "_R2_trim.fastq"
+	cmds = list()
+	cmd1 = tools.skewer #+ " --quiet"
+	cmd1 += " -f sanger"
+	cmd1 += " -t {0}".format(args.cores)
+	cmd1 += " -m {0}".format(mode)
+	cmd1 += " -x {0}".format(res.adapter)
+	cmd1 += " -o {0}".format(out_fastq_pre)
+	cmd1 += " {0}".format(local_input_files[0])
+
+	if args.paired_end:
+		cmd1 += " {0}".format(local_input_files[1])
+	cmds.append(cmd1)
+
+	if not args.paired_end:
+		cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed.fastq", trimmed_fastq)
+		cmds.append(cmd2)
+	else:
+		cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair1.fastq", trimmed_fastq)
+		cmds.append(cmd2)
+		cmd3 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair2.fastq", trimmed_fastq_R2)
+		cmds.append(cmd3)
+	#cmd4 = "mv {0} {1}".format(out_fastq_pre + "-trimmed.log", trimLog)
+	#cmds.append(cmd4)
+	cmd = cmds
+
+else:  # default to trimmomatic
 
 	trimming_prefix = os.path.join(fastq_folder, args.sample_name)
 	trimmed_fastq = trimming_prefix + "_R1_trimmed.fq"
@@ -209,40 +247,31 @@ else:
 	cmd += trimming_prefix + "_R1_unpaired.fq "
 	cmd += trimmed_fastq_R2 + " "
 	cmd += trimming_prefix + "_R2_unpaired.fq "
-	#cmd +=  "ILLUMINACLIP:"+ paths.adapter + ":2:30:10:LEADING:3TRAILING:3SLIDINGWINDOW:4:15MINLEN:36" 
 	cmd +=  "ILLUMINACLIP:"+ res.adapter + ":2:30:10" 
-	#def check_trim():
-	        #n_trim = float(myngstk.count_reads(trimmed_fastq, args.paired_end))
-	#        rr = float(pm.get_stat("Raw_reads"))
-	#        pm.report_result("Trimmed_reads", n_trim)
-	#        pm.report_result("Trim_loss_rate", round((rr - n_trim) * 100 / rr, 2))
+	
 pm.run(cmd, trimmed_fastq,
 	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
 		fastqc_folder = os.path.join(param.outfolder, "fastqc/")))
 
 pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
+
+# Prepare variables for alignment step
+unmap_fq1 = trimmed_fastq
+unmap_fq2 = trimmed_fastq_R2
 # End of Adapter trimming 
 
-# Mapping to chrM first 
-bt2_options = " -k 1"  # Return only 1 alignment
-bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-bt2_options += " -X 2000"
-unmap_fq1, unmap_fq2 = align(trimmed_fastq, trimmed_fastq_R2, "chrM", res.bt2_chrM, bt2_options=bt2_options)
-
-# Map to alu
-unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alu", res.bt2_alu)
-
-# Map to rDNA
-bt2_options = " --very-sensitive"
-bt2_options += " -X 2000"
-unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "rDNA", res.bt2_rDNA, bt2_options=bt2_options)
-
-# alphasat
-unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "alphasat", res.bt2_alphasat)
-
-# repbase
-unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, "repbase", res.bt2_repbase)
+# Map to any requested prealignments
+# We recommend mapping to chrM first for ATAC-seq data
+pm.timestamp("### Prealignments")
+if len(args.prealignments) == 0:
+	print("You may use `--prealignments` to align to references before the genome alignment step. See docs.")
+else:
+	print("Prealignment assemblies: " + str(args.prealignments))
+	for reference in args.prealignments:
+		unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, reference, 
+			get_bowtie2_index(res.genomes, reference),
+			aligndir="prealignments")
 
 pm.timestamp("### Map to genome")
 map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
@@ -257,6 +286,7 @@ bt2_options += " -X 2000"
 
 cmd = tools.bowtie2 + " -p " + str(pm.cores)
 cmd += bt2_options
+cmd += " --rg-id " + args.sample_name
 cmd += " -x " +  res.bt2_genome
 cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 cmd += " | " + tools.samtools + " view -bS - -@ 1 "
@@ -287,8 +317,6 @@ pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
 
 def estimate_lib_size(picard_log):
 	# In millions of reads; contributed by Ryan
-	# Could probably be made more stable
-	#cmd = '`awk "BEGIN { print $(cat ' + picard_log + ' | tail -n 3 | head -n 1 | cut -f9)/1000000 }"`'
 	cmd = "awk -F'\t' -f " + os.path.join(tools.scripts_dir, "extract_picard_lib.awk") + " " + picard_log
 	picard_est_lib_size = pm.checkprint(cmd)
 	pm.report_result("Picard_est_lib_size", picard_est_lib_size)
@@ -316,15 +344,50 @@ cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
 norm_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.bedGraph")
 sort_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.sort.bedGraph")
 cmd2 = os.path.join(tools.scripts_dir, "norm_bedGraph.pl "  + bedGraph + " " + norm_bedGraph)
-bw =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
+bw_file =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
 
 # bedGraphToBigWig requires lexographical sort, which puts chr10 before chr2, for example
 cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
-cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw
-pm.run([cmd, cmd2, cmd3, cmd4], bw)
+cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw_file
+pm.run([cmd, cmd2, cmd3, cmd4], bw_file)
 
 
-# Exact cuts are more precise.
+# "Exact cuts" are what I call nucleotide-resolution tracks of exact bases where the
+# transposition (or DNAse cut) happened;
+# In the past I used wigToBigWig on a combined wig file, but this ends up using a boatload
+# of memory (more than 32GB); in contrast, running the wig -> bw conversion on each chrom
+# and then combining them with bigWigCat requires much less memory. This was a memory bottleneck
+# in the pipeline.
+pm.timestamp("### Computing exact sites")
+exact_folder = os.path.join(map_genome_folder + "_exact")
+temp_exact_folder = os.path.join(exact_folder, "temp")
+ngstk.make_dir(exact_folder)
+ngstk.make_dir(temp_exact_folder)
+temp_target = os.path.join(temp_exact_folder, "flag_completed")
+exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
+
+# cmd = os.path.join(tools.scripts_dir, "bedToExactWig.pl")
+# cmd += " " + shift_bed
+# cmd += " " + res.chrom_sizes
+# cmd += " " + temp_exact_folder
+# cmd2 = "touch " + temp_target
+# pm.run([cmd, cmd2], temp_target)
+
+# # Aside: since this bigWigCat command uses shell expansion, pypiper cannot profile memory.
+# # we could use glob.glob if we want to preserve memory. like so: glob.glob(os.path.join(...))
+# # But I don't because bigWigCat uses little memory (<10GB).
+# # This also sets us up nicely to process chromosomes in parallel.
+# cmd = tools.bigWigCat + " " + exact_target + " " + os.path.join(temp_exact_folder, "*.bw")
+# pm.run(cmd, exact_target)
+# pm.clean_add(os.path.join(temp_exact_folder, "*.bw"))
+
+cmd = os.path.join(tools.scripts_dir, "bamSitesToWig.py")
+cmd += " -i " + rmdup_bam
+cmd += " -c " + res.chrom_sizes
+cmd += " -o " + exact_target
+cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
+cmd2 = "touch " + temp_target
+pm.run([cmd, cmd2], temp_target)
 
 # TSS enrichment 
 if os.path.exists(res.TSS_file):
@@ -346,8 +409,6 @@ if os.path.exists(res.TSS_file):
 	Tss_score = (sum(floats[1950:2050])/100)/(sum(floats[1:200])/200)
 	pm.report_result("TSS_Score", Tss_score)
 	
-	#python /seq/ATAC-seq/Code/pyMakeVplot.py -a $outdir_map/$output.pe.q10.sort.rmdup.bam -b /seq/chromosome/hg19/hg19_refseq_genes_TSS.txt -p ends -e 2000 -u -v -o $outdir_qc/$output.TSSenrich
-
 	# fragment  distribution
 	fragL= os.path.join(QC_folder ,  args.sample_name +  ".fragLen.txt")
 	cmd = os.path.join("perl " + tools.scripts_dir, "fragment_length_dist.pl " + rmdup_bam + " " +  fragL)
@@ -363,10 +424,6 @@ else:
 	# If the TSS annotation is missing, print a message
 	print("TSS enrichment calculation requires a TSS annotation file here:" + res.TSS_file)
 
-#perl /seq/ATAC-seq/Code/fragment_length_dist.pl $outdir_map/$output.pe.q10.sort.rmdup.bam $outdir_qc/$output.fragL.txt
-#sort -n $outdir_qc/$output.fragL.txt | uniq -c > $outdir_qc/$output.frag.sort.txt
-#Rscript /seq/ATAC-seq/Code/fragment_length_dist.R $outdir_qc/$output.fragL.txt $outdir_qc/$output.frag.sort.txt $outdir_qc/$output.fragment_length_distribution.pdf $outdir_qc/$output.fragment_length_distribution.txt
-
 # peak calling 
 peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly )
 ngstk.make_dir(peak_folder)
@@ -375,7 +432,7 @@ peak_file= os.path.join(peak_folder ,  args.sample_name + "_peaks.narrowPeak")
 cmd = tools.macs2 + " callpeak "
 cmd += " -t  " + shift_bed 
 cmd += " -f BED " 
-cmd += " -g "  +  str(args.genomeS)
+cmd += " -g "  +  str(args.genome_size)
 cmd +=  " --outdir " + peak_folder +  " -n " + args.sample_name 
 cmd += "  -q " + str(param.macs2.q)
 cmd +=  " --shift " + str(param.macs2.shift) + " --nomodel "  
@@ -388,12 +445,6 @@ if os.path.exists(res.blacklist):
 	cmd = tools.bedtools  + " intersect " + " -a " + peak_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
 
 	pm.run(cmd,filter_peak)
-#bedtools intersect -a $outdir_peak/$peakFile -b /seq/ATAC-seq/Data/JDB_blacklist.bed -v > $outdir_peak/$output$filename.filterBL.bed
-
-#macs2  callpeak -t  $outdir_map/$output.pe.q10.sort.rmdup.bed -f BED  -g $gsize --outdir $outdir_peak  -q 0.01 -n $outdir_peak/$output --nomodel  --shift # 0  
-# remove blacklist
-#Need to do
-
 
 pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
 
