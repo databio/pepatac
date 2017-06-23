@@ -17,8 +17,11 @@ import yaml
 import pypiper
 
 
-def main():
 
+def parse_arguments():
+	"""
+	Parse command-line arguments passed to the pipeline.
+	"""
 	# Argument Parsing from yaml file 
 	# #######################################################################################
 	parser = ArgumentParser(description='Pipeline')
@@ -47,15 +50,27 @@ def main():
 
 	args = parser.parse_args()
 
-	 # it always paired-end sequencing for ATACseq
+	if not args.input:
+		parser.print_help()
+		raise SystemExit
+
+	return args
+
+
+def main():
+	"""
+	Main pipeline process.
+	"""
+
+	args = parse_arguments()
+
+	# it always paired-end sequencing for ATACseq
 	if args.single_or_paired == "paired":
 		args.paired_end = True
 	else:
 		args.paired_end = True
 
-	if not args.input:
-		parser.print_help()
-		raise SystemExit
+
 
 	# Initialize
 	outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
