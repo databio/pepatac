@@ -26,13 +26,28 @@ pipelines:
         cores: "2"
         mem: "4000"
         time: "0-04:00:00"
-      normal:
+      femto:
+        file_size: "0.001"
+        cores: "1"
+        mem: "4000"
+        time: "00:20:00"
+      pico:
+        file_size: "0.05"
+        cores: "1"
+        mem: "4000"
+        time: "02:00:00"
+      nano:
         file_size: "0.5"
         cores: "4"
         mem: "16000"
-        time: "2-00:00:00"
-      large:
-        file_size: "6"
+        time: "02-00:00:00"
+      micro:
+        file_size: "1"
         cores: "8"
         mem: "32000"
-        time: "3-00:00:00"
+        time: "07-00:00:00"
+      milli:
+        file_size: "4"
+        cores: "16"
+        mem: "64000"
+        time: "07-00:00:00"
