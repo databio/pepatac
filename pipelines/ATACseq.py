@@ -64,13 +64,11 @@ def main():
 
 	args = parse_arguments()
 
-	# it always paired-end sequencing for ATACseq
+	# always paired-end sequencing for ATACseq
 	if args.single_or_paired == "paired":
 		args.paired_end = True
 	else:
 		args.paired_end = True
-
-
 
 	# Initialize
 	outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
@@ -85,7 +83,7 @@ def main():
 	def get_bowtie2_index(genomes_folder, genome_assembly):
 		"""
 		Convenience function
-		Retuns the bowtie2 index prefix (to be passed to bowtie2) for a genome assembly that follows
+		Returns the bowtie2 index prefix (to be passed to bowtie2) for a genome assembly that follows
 		the folder structure produced by the RefGenie reference builder.
 		"""
 		return(os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2", genome_assembly))
@@ -108,7 +106,6 @@ def main():
 			pm.report_result("Alignment_rate_" + assembly_identifier, round(float(ar) *
 	 100 / float(tr), 2))
 		except:
-
 			pass
 
 
@@ -170,8 +167,7 @@ def main():
 	res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
 	res.blacklist = os.path.join(gfolder, args.genome_assembly + ".blacklist.bed")
 
-	# Bowtie2 indexes for various assemblies
-	res.bt2_chrM = get_bowtie2_index(res.genomes, args.genome_assembly + "_chrM2x")
+	# Get bowtie2 indexes
 	res.bt2_genome = get_bowtie2_index(res.genomes, args.genome_assembly)
 
 	# Set up a link to relative scripts included in the repo
@@ -273,10 +269,10 @@ def main():
 	pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 	pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
 
+	# End of Adapter trimming 
 	# Prepare variables for alignment step
 	unmap_fq1 = trimmed_fastq
 	unmap_fq2 = trimmed_fastq_R2
-	# End of Adapter trimming 
 
 	# Map to any requested prealignments
 	# We recommend mapping to chrM first for ATAC-seq data
@@ -285,6 +281,7 @@ def main():
 		print("You may use `--prealignments` to align to references before the genome alignment step. See docs.")
 	else:
 		print("Prealignment assemblies: " + str(args.prealignments))
+		# Loop through any prealignment references and map to them sequentially
 		for reference in args.prealignments:
 			unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, reference, 
 				get_bowtie2_index(res.genomes, reference),
@@ -418,9 +415,9 @@ def main():
 		pm.run(cmd, Tss_enrich)
 
 		# Always plot strand specific TSS enrichment. 
-		#added by Ryan 2/10/17 to calculate TSS score as numeric and to include in summary stats
-		#This could be done in prettier ways which I'm open to. Just adding for the idea
-		#with open("A34912-CaudateNucleus-RepA_hg19.srt.rmdup.flt.RefSeqTSS") as f:
+		# added by Ryan 2/10/17 to calculate TSS score as numeric and to include in summary stats
+		# This could be done in prettier ways which I'm open to. Just adding for the idea
+		# with open("A34912-CaudateNucleus-RepA_hg19.srt.rmdup.flt.RefSeqTSS") as f:
 		with open(Tss_enrich) as f:
 			floats = map(float,f)
 		Tss_score = (sum(floats[1950:2050])/100)/(sum(floats[1:200])/200)
