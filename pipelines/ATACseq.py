@@ -418,7 +418,7 @@ if os.path.exists(res.TSS_file):
 	fragL_dis2= os.path.join(QC_folder, args.sample_name +  ".fragL.distribution.txt")
 	cmd2 = "Rscript " +  os.path.join(tools.scripts_dir, "fragment_length_dist.R") + " " + fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
 
-	pm.run([cmd,cmd1,cmd2], fragL_dis1)
+	pm.run([cmd,cmd1,cmd2], fragL_dis1, nofail=True)
 
 else:
 	# If the TSS annotation is missing, print a message
