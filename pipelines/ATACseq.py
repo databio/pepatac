@@ -37,7 +37,7 @@ parser.add_argument('--skewer', action="store_true",
 					help="Use skewer for trimming? [Default: False]")
 
 parser.add_argument("--prealignments", default=[], type=str, nargs="+",
-					help="List of reference genomes to align to before primary alignment.")
+					help="Space-delimited list of reference genomes to align to before primary alignment.")
 
 parser.add_argument("-V", "--version", action="version",
           			version="%(prog)s {v}".format(v=__version__))

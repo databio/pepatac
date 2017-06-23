@@ -1,14 +1,24 @@
 #!/usr/bin/env python
+# Original Author: Jason Buenrostro
+# Modified from plotV_vC.py: Alicia Schepp
+#
+# Last updated 6/22/17: Ryan Corces
+#
+# Dependencies: Script requires ATAC_Rscript_TSSenrichmentPlot_pyPiper.R to be in the same directory
+#				For pyPiper, these two scripts would be in the tools directory
+#
+# Function: Script takes as input a BAM file and a bed file of single base positions and plots the enrichment of signal around those regions
+#			This enrichment is calculated as the cummulative insertions per base divided by the average number of insertions in the first 100 bases of the window
+#
+# Parameters: This version of the script expects a certain set or parameters in order to properly interface with ATAC_Rscript_TSSenrichmentPlot_pyPiper.R
+#			  Those parameters are: -p ends -e 2000 -u -v -s 4 -o <someFile.TssEnrichment>
 
-# Author: Jason Buenrostro, Stanford University 
-# modified from plotV_vC.py (Alicia)
-
-# Will make a V-plot from bed regions
 
 ##### IMPORT MODULES #####
 # import necessary for python
 import os
 import sys
+import subprocess
 import numpy as np
 import pysam
 import matplotlib
@@ -49,7 +59,7 @@ def asn_mat(val,mat,s_int,e_int,t,i,weight):
         if len(p1_ints[0]) == 3:
             mat[t][base] += weight
         elif p1_ints[i][int(options.s)-1] == "-":
-            mat[t][len(mat[0])-base-1] += weight        
+            mat[t][len(mat[0])-base-1] += weight	
         else:
             mat[t][base] += weight
     return mat
@@ -67,36 +77,31 @@ def sub_Mat(start):
         s_int=center-int(options.e)
         e_int=center+int(options.e)
         # loop through rds
-        try:
-            for p2_rds in bamfile.fetch(str(p1_ints[i][0]), max(0,s_int-2000), e_int+2000):
-                #check mapping quality
-                if p2_rds.mapq<30:# or p2_rds.is_proper_pair==False:
-                    continue
-                # get read positions
-                if p2_rds.is_reverse:
-                    continue
-                else:
-                    l_pos = p2_rds.pos+4
-                    # calculate center point
-                    ilen = abs(p2_rds.tlen)-9
-                    #ilen = 1
-                    r_pos=l_pos+ilen
-                    c_pos=l_pos+ilen/2
-                    if ilen%2==1 and options.p=='center':
-                        mat=asn_mat(c_pos,mat,s_int,e_int,ilen,i,0.5)
-                        mat=asn_mat(c_pos+1,mat,s_int,e_int,ilen,i,0.5)
-                    elif ilen%2!=1 and options.p=='center':
-                        mat=asn_mat(c_pos,mat,s_int,e_int,ilen,i,1)
-                    # save ends or read centers to v-plot
-                    elif options.p == 'ends':
-                        mat = asn_mat(l_pos,mat,s_int,e_int,ilen,i,1)
-                        mat = asn_mat(r_pos,mat,s_int,e_int,ilen,i,1)
-                    else:
-                        sys.exit('Error, check parameters')
-        except ValueError:
-            # This happens if the region file has a chromosome not present in the bam file.
-            pass
-
+        for p2_rds in bamfile.fetch(str(p1_ints[i][0]), max(0,s_int-2000), e_int+2000):
+            #check mapping quality
+            if p2_rds.mapq<30:# or p2_rds.is_proper_pair==False:
+                continue
+            # get read positions
+            if p2_rds.is_reverse:
+		continue
+            else:
+		l_pos = p2_rds.pos+4
+                # calculate center point
+		ilen = abs(p2_rds.tlen)-9
+                #ilen = 1
+		r_pos=l_pos+ilen
+		c_pos=l_pos+ilen/2
+		if ilen%2==1 and options.p=='center':
+			mat=asn_mat(c_pos,mat,s_int,e_int,ilen,i,0.5)
+			mat=asn_mat(c_pos+1,mat,s_int,e_int,ilen,i,0.5)
+		elif ilen%2!=1 and options.p=='center':
+			mat=asn_mat(c_pos,mat,s_int,e_int,ilen,i,1)
+		# save ends or read centers to v-plot
+		elif options.p == 'ends':
+			mat = asn_mat(l_pos,mat,s_int,e_int,ilen,i,1)
+			mat = asn_mat(r_pos,mat,s_int,e_int,ilen,i,1)
+		else:
+			sys.exit('Error, check parameters')
     return mat
 
 ##### INPUTS AND OUTPUTS #####
@@ -166,5 +171,12 @@ else:
     plt.ylabel('Insert size')
 
 # save figure
-fig.savefig(options.o+'.pdf')
-plt.close(fig)
+#fig.savefig(options.o+'.png')
+#fig.savefig(options.o+'.pdf', format='pdf')
+#plt.close(fig)
+
+#Call ATAC_Rscript_TSSenrichmentPlot_pyPiper.R to make TSS plot
+cmd = "Rscript "
+cmd += os.path.dirname(os.path.realpath(sys.argv[0])) + "/ATAC_Rscript_TSSenrichmentPlot_pyPiper.R"
+cmd += " --TSSfile " + options.o + " --outputType pdf"
+subprocess.call(cmd, shell=True)
