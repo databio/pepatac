@@ -1,7 +1,7 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.3.0 Unreleased]
+## [0.3.0] -- 2017-06-22
 
 ### Added
 - Added exact cuts calculation
@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
 - Pipeline now requires looper v0.6 or greater
 - Improved README
 
-## [0.2.0]
+## [0.2.0] -- 2017-04-17
 ### Added
 - FRiP can now be calculated based on reference peaks
 - Pipeline now reports Picard estimated library size statistic

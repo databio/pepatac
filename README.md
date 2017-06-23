@@ -19,7 +19,6 @@ These features are explained in more detail later in this README.
 **Prerequisite python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
 
 ```
-pip install --user --upgrade https://github.com/databio/pararead/zipball/master
 pip install --user https://github.com/epigen/pypiper/zipball/master
 pip install --user https://github.com/epigen/looper/zipball/master
 pip install --user https://github.com/databio/pararead/zipball/master
@@ -60,10 +59,19 @@ There are two configuration options: You can either set up environment variables
 
 ## Running the pipeline
 
-You never need to interface with the pipeline directly, but you can if you want. Just run `python pipelines/ATACseq.py -h` to see usage. See example command in [cmd.sh](cmd.sh).
+You have options for running the pipeline. This is a looper-compatible pipeline, so you never need to interface with the pipeline directly, but you can if you want. 
 
-But the best way to use this pipeline is to run it using looper. You will need to tell looper about your project. Example project data are in the [examples/test_project](examples/test_project) folder. Run the pipeline across all samples in the test project with this command:
+### Option 1: Running the pipeline script directly
+
+Just run `python pipelines/ATACseq.py -h` to see usage. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh).
+
+### Option 2: Running the pipeline through looper
+
+[Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy this pipeline across samples. To use it, you will need to tell looper about your project. 
+
+Start by running the example project in the [examples/test_project](examples/test_project) folder. This command runs the pipeline across all samples in the test project:
 ```
+cd ATACseq
 looper run examples/test_project/test_config.yaml
 ```
 
