@@ -1,6 +1,13 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] -- Unreleased
+
+### Added
+	
+### Changed
+- Changed TSS plotting	
+
 ## [0.3.0] -- 2017-06-22
 
 ### Added
