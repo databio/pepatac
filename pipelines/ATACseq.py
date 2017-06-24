@@ -410,9 +410,15 @@ def main():
 		ngstk.make_dir(QC_folder)
 
 		Tss_enrich =  os.path.join(QC_folder ,  args.sample_name + ".TssEnrichment") 
-		cmd = os.path.join(tools.scripts_dir, "pyMakeVplot.py")
+		cmd = os.path.join(tools.scripts_dir, "pyTssEnrichment.py")
 		cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -s 4 -o " + Tss_enrich
 		pm.run(cmd, Tss_enrich)
+		
+		#Call Rscript to plot TSS Enrichment
+		Tss_plot = os.path.join(QC_folder ,  args.sample_name + ".TssEnrichment.pdf")
+		cmd = "Rscript " + os.path.join(tools.scripts_dir, "ATAC_Rscript_TSSenrichmentPlot_pyPiper.R")
+		cmd += " " + Tss_enrich + " pdf"
+		pm.run(cmd, Tss_plot)
 
 		# Always plot strand specific TSS enrichment. 
 		# added by Ryan 2/10/17 to calculate TSS score as numeric and to include in summary stats

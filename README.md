@@ -26,6 +26,22 @@ pip install --user https://github.com/databio/pararead/zipball/master
 
 Version 0.3 of this pipeline requires looper version 0.6 or greater. You can upgrade looper with: `pip install --user --upgrade https://github.com/epigen/looper/zipball/master`.
 
+**Prerequisite R packages**. This pipeline uses R to generate plots using the ggplot2 package (v2.2.1). For R versions >=3.2.2, you can install this package like this:
+
+```
+R #Start R
+install.packages("https://cran.r-project.org/src/contrib/ggplot2_2.2.1.tar.gz", repos=NULL)
+```
+
+For earlier version of R, you can install this package like this:
+
+```
+wget https://cran.r-project.org/src/contrib/ggplot2_2.2.1.tar.gz
+R #Start R
+install.packages(/path/to/ggplot2_2.2.1.tar.gz, repos = NULL, type="source")
+```
+
+
 **Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
 **Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).

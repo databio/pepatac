@@ -30,7 +30,7 @@ pipelines:
         file_size: "0.001"
         cores: "1"
         mem: "4000"
-        time: "00:20:00"
+        time: "00:40:00"
       pico:
         file_size: "0.05"
         cores: "1"

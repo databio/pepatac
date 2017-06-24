@@ -8,36 +8,38 @@
 #NOTES:
 #usage: Rscript /path/to/Rscript/ATAC_Rscript_TSSenrichmentPlot.R --TSSfile /path/to/file.TssEnrichment --outputType < pdf (default) / png >
 #
-#requirements: optparse
+#requirements: ggplot2
 #
 ################################################################################################
 #Global Variables
 TSS_CUTOFF <- 6 # Minimum TSS score to yield "passing"- This would need to be changed if you used a highly different TSS file
 ################################################################################################
 ## Load dependencies
-suppressPackageStartupMessages(require(optparse))
+# suppressPackageStartupMessages(require(optparse))
 suppressPackageStartupMessages(require(ggplot2))
 ################################################################################################
 ## uses optparse package to read in command line arguments
-option_list <- list(
-  make_option(c("--TSSfile"), action="store", default=NULL),
-  make_option(c("--outputType"), action="store", default="pdf")
-)
+# option_list <- list(
+#   make_option(c("--TSSfile"), action="store", default=NULL),
+#   make_option(c("--outputType"), action="store", default="pdf")
+# )
 
-opt = parse_args(OptionParser(option_list=option_list))
+# opt = parse_args(OptionParser(option_list=option_list))
 
-if (is.null(opt$TSSfile)) {
-  # print usage information if --TSSfile not provided
-  cat("\n Usage: Rscript /path/to/ATAC_Rscript_TSSenrichmentPlot.R -i /path/to/file.TssEnrichment -o <pdf (default) or png> \n
-  --TSSfile is required \n
-  --outputType is optional \n\n")
+args <- commandArgs(TRUE)
+
+TSSfile <- args[1]
+outputType <- args[2]
+
+if (is.null(TSSfile)) {
+  # print usage information if .TssEnrichment file is not provided
+  cat("\n Usage: Rscript /path/to/ATAC_Rscript_TSSenrichmentPlot.R /path/to/file.TssEnrichment outputType \n
+  where outputType is either pdf or png
+  .TssEnrichment file is required \n
+  output Type is optional (default pdf) \n\n")
 }
 
-write(paste("\nGenerating TSS plot in ",opt$outputType," format with ", opt$TSSfile, sep=""), stdout())
-
-
-TSS_file = opt$TSSfile
-file_type = opt$outputType
+write(paste("\nGenerating TSS plot in ",outputType," format with ", TSSfile, sep=""), stdout())
 
 t1<-theme(
   plot.background = element_blank(),
@@ -55,7 +57,7 @@ t1<-theme(
   axis.ticks.length = unit(2, "mm")
 )
 
-insertionsMat <- read.table(TSS_file, header=FALSE, row.names=NULL, as.is=TRUE, check.names=FALSE)
+insertionsMat <- read.table(TSSfile, header=FALSE, row.names=NULL, as.is=TRUE, check.names=FALSE)
 normTSS <- insertionsMat / mean(insertionsMat[1:200,])
 colnames(normTSS) <- c("score")
 TSSscore <- round(mean(normTSS[1950:2050,]),1)
@@ -66,8 +68,8 @@ if (TSSscore > TSS_CUTOFF)
   lineColor <- "springgreen4"
 }
 
-if (file_type == "png") {
-  png(filename = gsub(pattern=".TssEnrichment", replacement=".TssEnrichment.png", x=TSS_file), width = 480, height = 480)
+if (outputType == "png") {
+  png(filename = gsub(pattern=".TssEnrichment", replacement=".TssEnrichment.png", x=TSSfile), width = 480, height = 480)
   pre <- ggplot(normTSS, aes(x=(as.numeric(rownames(normTSS))-2000), y=score, group=1, colour="black")) +
     geom_hline(yintercept = 6, linetype = 2, color = "grey", size = 0.25) +
     geom_smooth(method="loess", span=0.02, se=FALSE, colour=lineColor) + labs(x = "Distance from TSS (bp)", y = "TSS Enrichment Score")
@@ -77,7 +79,7 @@ if (file_type == "png") {
     annotate("text", x=1750, y=31, label="TSS Score", fontface = 1, size=6, hjust=0.5) + 
     annotate("text", x=1750, y=29, label=TSSscore, fontface = 2, size=10, hjust=0.5)
 } else {
-  pdf(file = gsub(pattern=".TssEnrichment", replacement=".TssEnrichment.pdf", x=TSS_file), width= 7, height = 7, useDingbats=F)
+  pdf(file = gsub(pattern=".TssEnrichment", replacement=".TssEnrichment.pdf", x=TSSfile), width= 7, height = 7, useDingbats=F)
   pre <- ggplot(normTSS, aes(x=(as.numeric(rownames(normTSS))-2000), y=score, group=1, colour="black")) +
     geom_hline(yintercept = 6, linetype = 2, color = "grey", size = 0.25) +
     geom_smooth(method="loess", span=0.02, se=FALSE, colour=lineColor) + labs(x = "Distance from TSS (bp)", y = "TSS Enrichment Score")
