@@ -9,6 +9,15 @@ python pipelines/ATACseq.py -P 5 -O output_folder -S output_sample_name -G hg38 
 # run pepATAC on multiple datasets at the same time:  <- this could be wrong as I don't see an explaination of how to use -I and -I2 with multiple samples
 python pipelines/ATACseq.py -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results1_PE_R1.fastq.gz $INPUT/ATACseq_results2_PE_R1.fastq.gz $INPUT/ATACseq_results3_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results1_PE_R2.fastq.gz $INPUT/ATACseq_results2_PE_R2.fastq.gz $INPUT/ATACseq_results3_PE_R2.fastq.gz 
 
+# run multiple samples with a for loop:
+declare -a sample_name_arr=("sample1","sample2","sample3")
+for sample_name in "${sample_name_arr[@]}"
+do
+file1=$INPUT/{$file1}_PE_R1.fastq.gz
+file2=${file1/R1/R2}
+python pipelines/ATACseq.py -P 5 -O output_folder -S $sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $file1 -I2 $file2  
+done
+
 # run pepATAC on a mouse single-end reads dataset using 8 threads:
 python pipelines/ATACseq.py -P 8 -O output_folder -S output_sample_name -G mm10  -Q single  -C ATACseq.yaml  -gs mm -I $INPUT/ATACseq_results_PE_R1.fastq.gz  
 
@@ -21,6 +30,9 @@ python pipelines/ATACseq.py -N -P 5 -O output_folder -S output_sample_name -G hg
 
 # continue to run pepATAC since a locked step (usually locked due to failure): 
 python pipelines/ATACseq.py -R -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+
+
+
 
 # check xxxx for full list of parameter usage
 
