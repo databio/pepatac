@@ -94,9 +94,10 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 }
 
 ################################################################################################
-#args <- commandArgs(TRUE)
-#summaryFile <- args[1]
-summaryFile <- "D:\\Dropbox\\Work\\Chang Lab\\ATACseq\\pyPiper\\ATACseq-dev_stats_summary.tsv"
+args <- commandArgs(TRUE)
+summaryFile <- args[1]
+
+setwd(dirname(summaryFile))
 
 if (is.null(summaryFile)) {
   # print usage information if summary.tsv file is not provided

@@ -26,21 +26,32 @@ pip install --user https://github.com/databio/pararead/zipball/master
 
 Version 0.3 of this pipeline requires looper version 0.6 or greater. You can upgrade looper with: `pip install --user --upgrade https://github.com/epigen/looper/zipball/master`.
 
-**Prerequisite R packages**. This pipeline uses R to generate plots using the ggplot2 package (v2.2.1). For R versions >=3.2.2, you can install this package like this:
+**Prerequisite R packages**. This pipeline uses R to generate QC metric plots. The dependencies introduced by thes plotting scripts are detailed here.
+REQUIRED:
+The TSS Enrichment Plot is generated using the ggplot2 package (v2.2.1).
 
+OPTIONAL:
+The R script ATAC_Looper_Summary_plot.R requires additional packages but this script is an optional add-on to the pipeline.
+The following packages are required in addition to ggplot2:
+gplots (v3.0.1)
+reshape2 (v1.4.2)
+grid (v3.3.3) - This package comes pre-installed in R versions > 1.8.0
+
+
+For R versions >=3.2.2, you can install these packages like this:
 ```
 R #Start R
 install.packages("https://cran.r-project.org/src/contrib/ggplot2_2.2.1.tar.gz", repos=NULL)
+install.packages("https://cran.r-project.org/src/contrib/gplots_3.0.1.tar.gz", repos=NULL)
+install.packages("https://cran.r-project.org/src/contrib/reshape2_1.4.2.tar.gz", repos=NULL)
 ```
 
-For earlier version of R, you can install this package like this:
-
+For earlier version of R, you can install these package like this (substitute appropriate URL from above for desired package):
 ```
 wget https://cran.r-project.org/src/contrib/ggplot2_2.2.1.tar.gz
 R #Start R
 install.packages(/path/to/ggplot2_2.2.1.tar.gz, repos = NULL, type="source")
 ```
-
 
 **Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
@@ -111,6 +122,23 @@ Your annotation file must specify these columns:
 - whatever else you want
 
 Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
+
+## Optional summary plots
+
+### 1. Run looper's "summarize" command to generate a summary table in tab-separated values (TSV) format
+
+```
+looper summarize examples/test_project/test_config.yaml
+```
+
+### 2. Run ATAC_Looper_Summary_plot.R to produce summary plots.
+
+You must pass the full path to your TSV file that resulted from the call to looper summarize.
+```
+Rscript ATAC_Looper_Summary_plot.R </path/to/looper/summarize/summary.TSV>
+```
+
+This results in the output of multiple PDF plots in the directory containing the TSV input file.
 
 ## Outline of analysis steps
 
