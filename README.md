@@ -18,52 +18,35 @@ These features are explained in more detail later in this README.
 
 ### Prequisites
 
-**Prerequisite python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
+**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
 
 ```
 pip install --user https://github.com/epigen/pypiper/zipball/master
 pip install --user https://github.com/epigen/looper/zipball/master
 pip install --user https://github.com/databio/pararead/zipball/master
 ```
+**R packages**. This pipeline uses R to generate QC metric plots. These are **optional** and if you don't install these R packages (or R in general), the pipeline will still work, but you will not get the QC plot outputs. 
 
-Version 0.3 of this pipeline requires looper version 0.6 or greater. You can upgrade looper with: `pip install --user --upgrade https://github.com/epigen/looper/zipball/master`.
+The following packages are used by the qc scripts:
+- ggplot2
+- gplots (v3.0.1)
+- reshape2 (v1.4.2)
 
-**Prerequisite R packages**. This pipeline uses R to generate QC metric plots. The dependencies introduced by thes plotting scripts are detailed here.
-REQUIRED:
-The TSS Enrichment Plot is generated using the ggplot2 package (v2.2.1).
-
-OPTIONAL:
-The R script ATAC_Looper_Summary_plot.R requires additional packages but this script is an optional add-on to the pipeline.
-The following packages are required in addition to ggplot2:
-gplots (v3.0.1)
-reshape2 (v1.4.2)
-grid (v3.3.3) - This package comes pre-installed in R versions > 1.8.0
-
-
-For R versions >=3.2.2, you can install these packages like this:
+You can install these packages like this:
 ```
-R #Start R
-install.packages("https://cran.r-project.org/src/contrib/ggplot2_2.2.1.tar.gz", repos=NULL)
-install.packages("https://cran.r-project.org/src/contrib/gplots_3.0.1.tar.gz", repos=NULL)
-install.packages("https://cran.r-project.org/src/contrib/reshape2_1.4.2.tar.gz", repos=NULL)
-```
-
-For earlier version of R, you can install these package like this (substitute appropriate URL from above for desired package):
-```
-wget https://cran.r-project.org/src/contrib/ggplot2_2.2.1.tar.gz
-R #Start R
-install.packages(/path/to/ggplot2_2.2.1.tar.gz, repos = NULL, type="source")
+R # start R
+install.packages(c("ggplot2", "gplots", "reshape2"))
 ```
 
 **Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
 
 **Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
 
+### Configuring the pipeline
+
 **Clone the pipeline**. Clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
 - using HTTPS: `git clone https://github.com/databio/ATACseq.git`
-
-### Configuring
 
 There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
 
@@ -91,7 +74,9 @@ You have two options for running the pipeline.
 
 ### Option 1: Running the pipeline script directly
 
-To see the command-line options for usage, run `pipelines/ATACseq.py --help`. You can view the current help dialog in the [usage.txt](usage.txt) documentation file. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh).
+To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh) using test data.
+
+To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
 
 ### Option 2: Running the pipeline through looper
 
