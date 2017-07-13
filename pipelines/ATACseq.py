@@ -58,10 +58,6 @@ def parse_arguments():
 	return args
 
 
-def fetch_tool_param():
-	pass
-
-
 def main():
 	"""
 	Main pipeline process.
