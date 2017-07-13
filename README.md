@@ -91,7 +91,7 @@ You have two options for running the pipeline.
 
 ### Option 1: Running the pipeline script directly
 
-To see the command-line options for usage, run `pipelines/ATACseq.py --help`. You can view the current help dialog in the [usage.md](usage.md) documentation file. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh).
+To see the command-line options for usage, run `pipelines/ATACseq.py --help`. You can view the current help dialog in the [usage.txt](usage.txt) documentation file. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh).
 
 ### Option 2: Running the pipeline through looper
 
