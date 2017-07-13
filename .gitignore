@@ -1,2 +1,7 @@
+# General
 *.pyc
 .~lock*
+
+# JetBrains
+.idea/
+

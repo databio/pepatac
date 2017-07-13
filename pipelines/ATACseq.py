@@ -2,20 +2,19 @@
 """
 ATACseq  pipeline
 """
+
 __author__=["Jin Xu", "Nathan Sheffield"]
 __email__="xujin937@gmail.com"
 __version__ = "0.4.0-dev"
 
-from argparse import ArgumentParser
-from datetime import datetime
-import os
-import re
-import sys
-import subprocess
-import yaml 
 
+from argparse import ArgumentParser
+import os
+import sys
 import pypiper
 
+
+TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 
 
 def parse_arguments():
@@ -35,6 +34,10 @@ def parse_arguments():
 	parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks',type=str, 
 						help='Reference peak set for calculating FRIP')
 
+	parser.add_argument("-T", "--trimmer", dest="trimmer",
+						default="trimmomatic", choices=TRIMMERS,
+						help="Name of read trimming program to use")
+
 	parser.add_argument('--pyadapt', action="store_true",
 						help="Use pyadapter_trim for trimming? [Default: False]")
 
@@ -46,7 +49,6 @@ def parse_arguments():
 
 	parser.add_argument("-V", "--version", action="version",
 	          			version="%(prog)s {v}".format(v=__version__))
-
 
 	args = parser.parse_args()
 
@@ -65,10 +67,7 @@ def main():
 	args = parse_arguments()
 
 	# always paired-end sequencing for ATACseq
-	if args.single_or_paired == "paired":
-		args.paired_end = True
-	else:
-		args.paired_end = True
+	args.paired_end = True
 
 	# Initialize
 	outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
@@ -178,7 +177,6 @@ def main():
 		res.adapter = os.path.join(tools.scripts_dir, "NexteraPE-PE.fa")
 
 
-	output = outfolder
 	param.outfolder = outfolder
 
 	################################################################################
@@ -208,8 +206,12 @@ def main():
 	# Adapter trimming
 	pm.timestamp("### Adapter trimming: ")
 
-	if args.pyadapt:
-		trimming_prefix = os.path.join(fastq_folder, args.sample_name)
+	if args.trimmer not in TRIMMERS:
+		raise ValueError(
+				"Trimmer choice not in {}: {}".format(TRIMMERS, args.trimmer))
+
+	if args.trimmer == "pyadapt":
+		#TODO make pyadapt give options for output file name.
 		trimmed_fastq = out_fastq_pre + "_R1.trim.fastq"
 		trimmed_fastq_R2 = out_fastq_pre + "_R2_trim.fastq"
 		cmd = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
@@ -217,9 +219,8 @@ def main():
 		cmd += " -b " + local_input_files[1]
 		cmd += " -o " + out_fastq_pre
 		cmd += " -u"
-		#TODO make pyadapt give options for output file name.
 
-	elif args.skewer:
+	elif args.trimmer == "skewer":
 		mode = "pe" if args.paired_end else "any"
 		trimmed_fastq = out_fastq_pre + "_R1.trim.fastq"
 		trimmed_fastq_R2 = out_fastq_pre + "_R2_trim.fastq"
@@ -232,24 +233,17 @@ def main():
 		cmd1 += " -o {0}".format(out_fastq_pre)
 		cmd1 += " {0}".format(local_input_files[0])
 
-		if args.paired_end:
-			cmd1 += " {0}".format(local_input_files[1])
+		cmd1 += " {0}".format(local_input_files[1])
 		cmds.append(cmd1)
 
-		if not args.paired_end:
-			cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed.fastq", trimmed_fastq)
-			cmds.append(cmd2)
-		else:
-			cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair1.fastq", trimmed_fastq)
-			cmds.append(cmd2)
-			cmd3 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair2.fastq", trimmed_fastq_R2)
-			cmds.append(cmd3)
-		#cmd4 = "mv {0} {1}".format(out_fastq_pre + "-trimmed.log", trimLog)
-		#cmds.append(cmd4)
+		cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair1.fastq", trimmed_fastq)
+		cmds.append(cmd2)
+		cmd3 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair2.fastq", trimmed_fastq_R2)
+		cmds.append(cmd3)
 		cmd = cmds
 
-	else:  # default to trimmomatic
-
+	else:
+		# Default to trimmomatic.
 		trimming_prefix = os.path.join(fastq_folder, args.sample_name)
 		trimmed_fastq = trimming_prefix + "_R1_trimmed.fq"
 		trimmed_fastq_R2 = trimming_prefix + "_R2_trimmed.fq"
