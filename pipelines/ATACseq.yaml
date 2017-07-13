@@ -4,12 +4,13 @@
 # public tools
 tools:  # absolute paths to required tools
   java: java
-  bowtie2: bowtie2
+  python: python
   samtools: samtools
   bedtools: bedtools
-  python: python
+  bowtie2: bowtie2
   fastqc: fastqc
   macs2: macs2
+  fseq: fseq
   picard: ${PICARD}
   trimmo: ${TRIMMOMATIC}
   # ucsc tools
@@ -26,6 +27,8 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
   samtools:
     q: 10
   macs2: 
-   f: BED
-   q: 0.01
-   shift: 0 
+    f: BED
+    q: 0.01
+    shift: 0
+  fseq:
+    of: npf

@@ -35,11 +35,11 @@ def parse_arguments():
 	parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks', type=str,
 						help='Reference peak set for calculating FRIP')
 
-	parser.add_argument("-P", "--peak-caller", dest="peak_caller",
+	parser.add_argument("--peak-caller", dest="peak_caller",
 						default="macs2", choices=PEAK_CALLERS,
 						help="Name of peak caller")
 
-	parser.add_argument("-T", "--trimmer", dest="trimmer",
+	parser.add_argument("--trimmer", dest="trimmer",
 						default="trimmomatic", choices=TRIMMERS,
 						help="Name of read trimming program")
 
@@ -456,6 +456,7 @@ def main():
 		# Options that are always specified
 		fseq_input_folder = os.path.dirname(peak_input_file)
 		fseq_output_folder = peak_folder
+		# TODO: should output format flexibility even be allowed at all?
 		fseq_output_format = fetch_fseq_param("of", default="npf")
 		fseq_constant_opts = [("d", fseq_input_folder), ("o", fseq_output_folder), ("of", fseq_output_format)]
 
