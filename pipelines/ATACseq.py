@@ -186,7 +186,7 @@ def main():
 	print("Local input file: " + args.input2[0]) 
 
 	pm.report_result("File_mb", ngstk.get_file_size([args.input, args.input2]))
-	pm.report_result("Read_type", args.single_or_paired)
+	pm.report_result("read_type", args.single_or_paired)
 	pm.report_result("Genome", args.genome_assembly)
 
 	# ATACseq pipeline
