@@ -14,6 +14,7 @@ import sys
 import pypiper
 
 
+PEAK_CALLERS = ["fseq", "macs2"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 
 
@@ -31,18 +32,16 @@ def parse_arguments():
 	parser.add_argument('-gs', '--genome-size', default="hs", type=str, 
 						help='genome size for MACS2')
 
-	parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks',type=str, 
+	parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks', type=str,
 						help='Reference peak set for calculating FRIP')
+
+	parser.add_argument("-P", "--peak-caller", dest="peak_caller",
+						default="macs2", choices=PEAK_CALLERS,
+						help="Name of peak caller")
 
 	parser.add_argument("-T", "--trimmer", dest="trimmer",
 						default="trimmomatic", choices=TRIMMERS,
-						help="Name of read trimming program to use")
-
-	parser.add_argument('--pyadapt', action="store_true",
-						help="Use pyadapter_trim for trimming? [Default: False]")
-
-	parser.add_argument('--skewer', action="store_true",
-						help="Use skewer for trimming? [Default: False]")
+						help="Name of read trimming program")
 
 	parser.add_argument("--prealignments", default=[], type=str, nargs="+",
 						help="Space-delimited list of reference genomes to align to before primary alignment.")
@@ -57,6 +56,10 @@ def parse_arguments():
 		raise SystemExit
 
 	return args
+
+
+def fetch_tool_param():
+	pass
 
 
 def main():
@@ -102,8 +105,7 @@ def main():
 		try:
 			# wrapped in try block in case Trimmed_reads is not reported in this pipeline.
 			tr = float(pm.get_stat("Trimmed_reads"))
-			pm.report_result("Alignment_rate_" + assembly_identifier, round(float(ar) *
-	 100 / float(tr), 2))
+			pm.report_result("Alignment_rate_" + assembly_identifier, round(float(ar) * 100 / float(tr), 2))
 		except:
 			pass
 
@@ -208,57 +210,51 @@ def main():
 
 	if args.trimmer not in TRIMMERS:
 		raise ValueError(
-				"Trimmer choice not in {}: {}".format(TRIMMERS, args.trimmer))
+				"Trimmer choice not in {}: '{}'".format(TRIMMERS, args.trimmer))
 
+	# Create names for trimmed FASTQ files.
+	if args.trimmer == "trimmomatic":
+		trimming_prefix = os.path.join(fastq_folder, args.sample_name)
+	else:
+		trimming_prefix = out_fastq_pre
+	trimmed_fastq = trimming_prefix + "_R1.trim.fastq"
+	trimmed_fastq_R2 = trimming_prefix + "_R2.trim.fastq"
+
+	# Create trimming command(s).
 	if args.trimmer == "pyadapt":
 		#TODO make pyadapt give options for output file name.
-		trimmed_fastq = out_fastq_pre + "_R1.trim.fastq"
-		trimmed_fastq_R2 = out_fastq_pre + "_R2_trim.fastq"
-		cmd = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
-		cmd += " -a " + local_input_files[0]
-		cmd += " -b " + local_input_files[1]
-		cmd += " -o " + out_fastq_pre
-		cmd += " -u"
-
+		base = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
+		flags = {"-a": local_input_files[0], "-b": local_input_files[1], "-o": out_fastq_pre}
+		flag_text = " ".join(["{} {}".format(flag, value) for flag, value in flags])
+		cmd = "{} {} -u".format(base, flag_text)
 	elif args.trimmer == "skewer":
-		mode = "pe" if args.paired_end else "any"
-		trimmed_fastq = out_fastq_pre + "_R1.trim.fastq"
-		trimmed_fastq_R2 = out_fastq_pre + "_R2_trim.fastq"
-		cmds = list()
-		cmd1 = tools.skewer #+ " --quiet"
-		cmd1 += " -f sanger"
-		cmd1 += " -t {0}".format(args.cores)
-		cmd1 += " -m {0}".format(mode)
-		cmd1 += " -x {0}".format(res.adapter)
-		cmd1 += " -o {0}".format(out_fastq_pre)
-		cmd1 += " {0}".format(local_input_files[0])
-
-		cmd1 += " {0}".format(local_input_files[1])
-		cmds.append(cmd1)
-
+		# Trimming command
+		base = tools.skewer #+ " --quiet"
+		flags = [("-f", "sanger"), ("-t", str(args.cores)), ("-m", "pe"), ("-x", res.adapter), ("-o", out_fastq_pre)]
+		flag_text = " ".join(["{} {}".format(flag, value) for flag, value in flags])
+		positionals = [local_input_files[0], local_input_files[1]]
+		cmd1 = "{} {} {}".format(base, flag_text, " ".join(positionals))
+		# File renaming commands
 		cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair1.fastq", trimmed_fastq)
-		cmds.append(cmd2)
 		cmd3 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair2.fastq", trimmed_fastq_R2)
-		cmds.append(cmd3)
-		cmd = cmds
-
+		# Pypiper submits these commands serially.
+		cmd = [cmd1, cmd2, cmd3]
 	else:
 		# Default to trimmomatic.
-		trimming_prefix = os.path.join(fastq_folder, args.sample_name)
-		trimmed_fastq = trimming_prefix + "_R1_trimmed.fq"
-		trimmed_fastq_R2 = trimming_prefix + "_R2_trimmed.fq"
-		cmd = tools.java +" -Xmx" + str(pm.mem) +" -jar " + tools.trimmo + " PE " + " -threads " + str(pm.cores) + " "
-		cmd += local_input_files[0] + " "
-		cmd += local_input_files[1] + " " 
-		cmd += trimmed_fastq + " "
-		cmd += trimming_prefix + "_R1_unpaired.fq "
-		cmd += trimmed_fastq_R2 + " "
-		cmd += trimming_prefix + "_R2_unpaired.fq "
-		cmd +=  "ILLUMINACLIP:"+ res.adapter + ":2:30:10" 
+		base = "{} -Xmx{} -jar {}".format(tools.java, pm.mem, tools.trimmo)
+		trim_cmd_text = "PE -threads {}".format(pm.cores)
+		r1_trim_unpaired, r2_trim_unpaired = \
+				["{}{}".format(trimming_prefix, suffix)
+				 for suffix in ["_R1_unpaired.fq", "_R2_unpaired.fq"]]
+		trim_spec = "ILLUMINACLIP:" + res.adapter + ":2:30:10"
+		positionals = [local_input_files[0], local_input_files[1],
+					   trimmed_fastq, r1_trim_unpaired,
+					   trimmed_fastq_R2, r2_trim_unpaired, trim_spec]
+		cmd = "{} {} {}".format(base, trim_cmd_text, " ".join(positionals))
 		
 	pm.run(cmd, trimmed_fastq,
-		follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
-			fastqc_folder = os.path.join(param.outfolder, "fastqc/")))
+			follow=ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
+			fastqc_folder=os.path.join(param.outfolder, "fastqc/")))
 
 	pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 	pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
@@ -343,7 +339,7 @@ def main():
 	pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: estimate_lib_size(metrics_file))
 
 	# shift bam file and make bigwig file
-	shift_bed = os.path.join(map_genome_folder ,  args.sample_name + ".pe.q10.sort.rmdup.bed")
+	shift_bed = os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bed")
 	cmd = os.path.join(tools.scripts_dir, "bam2bed_shift.pl " +  rmdup_bam)
 	pm.run(cmd,shift_bed)
 	bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
@@ -438,31 +434,68 @@ def main():
 		# If the TSS annotation is missing, print a message
 		print("TSS enrichment calculation requires a TSS annotation file here:" + res.TSS_file)
 
-	# peak calling 
-	peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly )
+	# Peak calling
+	peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly)
 	ngstk.make_dir(peak_folder)
+	peak_output_file = os.path.join(peak_folder,  args.sample_name + "_peaks.narrowPeak")
+	peak_input_file = shift_bed
 
-	peak_file= os.path.join(peak_folder ,  args.sample_name + "_peaks.narrowPeak")
-	cmd = tools.macs2 + " callpeak "
-	cmd += " -t  " + shift_bed 
-	cmd += " -f BED " 
-	cmd += " -g "  +  str(args.genome_size)
-	cmd +=  " --outdir " + peak_folder +  " -n " + args.sample_name 
-	cmd += "  -q " + str(param.macs2.q)
-	cmd +=  " --shift " + str(param.macs2.shift) + " --nomodel "  
-	pm.run(cmd, peak_file)
+	if args.peak_caller not in PEAK_CALLERS:
+		raise ValueError("Peak caller not in {}: '{}'".format(PEAK_CALLERS, args.peak_caller))
+
+	if args.peak_caller == "fseq":
+		# Parse fseq options from pipeline config/settings.
+		fseq_optnames = {"f": "fragment_size", "l": "feature_length",
+						 "s": "wiggle_track_step", "t": "threshold"}
+		def fetch_fseq_param(optname, default=None):
+			try:
+				return param[optname]
+			except KeyError:
+				return param.get(fseq_optnames[optname], default)
+
+		# Options that are always specified
+		fseq_input_folder = os.path.dirname(peak_input_file)
+		fseq_output_folder = peak_folder
+		fseq_output_format = fetch_fseq_param("of", default="npf")
+		fseq_constant_opts = [("d", fseq_input_folder), ("o", fseq_output_folder), ("of", fseq_output_format)]
+
+		# Parse fseq options from the pipeline configuration settings.
+		fseq_opt_vals = []
+		for opt_name in fseq_optnames:
+			opt_value = fetch_fseq_param(opt_name)
+			if opt_value:
+				fseq_opt_vals.append((opt_name, opt_value))
+
+		# Add the always-specified options.
+		fseq_opt_vals.extend(fseq_constant_opts)
+
+		# Create the command, adding the hyphen prefix to each option, and handling spacing and verbosity.
+		fseq_opts_text = " ".join(["-{} {}".format(opt, val) for opt, val in fseq_opt_vals])
+		if fetch_fseq_param("v", "verbose"):
+			fseq_opts_text += " -v"
+		cmd = "{prog} {opts} {infile}".format(prog=tools.fseq, opts=fseq_opts_text, infile=peak_input_file)
+
+	else:
+		cmd = tools.macs2 + " callpeak "
+		cmd += " -t  " + peak_input_file
+		cmd += " -f BED "
+		cmd += " -g "  +  str(args.genome_size)
+		cmd +=  " --outdir " + peak_folder +  " -n " + args.sample_name
+		cmd += "  -q " + str(param.macs2.q)
+		cmd +=  " --shift " + str(param.macs2.shift) + " --nomodel "
+	pm.run(cmd, peak_output_file)
 
 
 	# filter peaks in blacklist 
 	if os.path.exists(res.blacklist):
 		filter_peak = os.path.join(peak_folder ,  args.sample_name + "_peaks.narrowPeak.rmBlacklist")
-		cmd = tools.bedtools  + " intersect " + " -a " + peak_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
+		cmd = tools.bedtools  + " intersect " + " -a " + peak_output_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
 
 		pm.run(cmd,filter_peak)
 
 	pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
 
-	cmd = ngstk.simple_frip(rmdup_bam, peak_file)
+	cmd = ngstk.simple_frip(rmdup_bam, peak_output_file)
 	rip = pm.checkprint(cmd)
 	ar = pm.get_stat("Aligned_reads")
 	print(ar, rip)
