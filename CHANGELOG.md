@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 	
 ### Changed
-- Changed TSS plotting	
+- Changed TSS plotting
+- Changed `Read_type` to `read_type` to prevent duplicate columns
 
 ## [0.3.0] -- 2017-06-22
 
