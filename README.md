@@ -16,6 +16,8 @@ These features are explained in more detail later in this README.
 
 ## Installing
 
+### Prequisites
+
 **Prerequisite python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
 
 ```
@@ -61,7 +63,7 @@ install.packages(/path/to/ggplot2_2.2.1.tar.gz, repos = NULL, type="source")
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
 - using HTTPS: `git clone https://github.com/databio/ATACseq.git`
 
-## Configuring
+### Configuring
 
 There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
 
@@ -83,14 +85,13 @@ There are two configuration options: You can either set up environment variables
 
 **Option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
 
+## Usage
 
-## Running the pipeline
-
-You have options for running the pipeline. This is a looper-compatible pipeline, so you never need to interface with the pipeline directly, but you can if you want. 
+You have two options for running the pipeline. 
 
 ### Option 1: Running the pipeline script directly
 
-Just run `python pipelines/ATACseq.py -h` to see usage. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh).
+To see the command-line options for usage, run `pipelines/ATACseq.py --help`. You can view the current help dialog in the [usage.md](usage.md) documentation file. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh).
 
 ### Option 2: Running the pipeline through looper
 
@@ -122,23 +123,6 @@ Your annotation file must specify these columns:
 - whatever else you want
 
 Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
-
-## Optional summary plots
-
-### 1. Run looper's "summarize" command to generate a summary table in tab-separated values (TSV) format
-
-```
-looper summarize examples/test_project/test_config.yaml
-```
-
-### 2. Run ATAC_Looper_Summary_plot.R to produce summary plots.
-
-You must pass the full path to your TSV file that resulted from the call to looper summarize.
-```
-Rscript ATAC_Looper_Summary_plot.R </path/to/looper/summarize/summary.TSV>
-```
-
-This results in the output of multiple PDF plots in the directory containing the TSV input file.
 
 ## Outline of analysis steps
 
@@ -172,6 +156,24 @@ Another option from Gencode GTF:
 grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\t"$4"\t"$7}else{print $1"\t"$5"\t"$5"\t"$7}}' | LC_COLLATE=C sort -u -k1,1V -k2,2n > ${GENOME}_TSS.tsv
 
 ```
+
+### Optional summary plots
+
+1. Run `looper summarize` to generate a summary table in tab-separated values (TSV) format
+
+```
+looper summarize examples/test_project/test_config.yaml
+```
+
+2. Run `ATAC_Looper_Summary_plot.R` to produce summary plots.
+
+You must pass the full path to your TSV file that resulted from the call to looper summarize.
+```
+Rscript ATAC_Looper_Summary_plot.R </path/to/looper/summarize/summary.TSV>
+```
+
+This results in the output of multiple PDF plots in the directory containing the TSV input file.
+
 
 ## Using a cluster
 
