@@ -236,7 +236,10 @@ def main():
 	pm.clean_add(out_fastq_pre + "*.fastq", conditional = True)
 	print(local_input_files)
 
-	# Adapter trimming
+
+	########################
+	# Begin adapter trimming
+	########################
 	pm.timestamp("### Adapter trimming: ")
 
 	# Create names for trimmed FASTQ files.
@@ -295,8 +298,10 @@ def main():
 
 	pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 	pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
+	#########################
+	# End adapter trimming
+	#########################
 
-	# End of Adapter trimming 
 	# Prepare variables for alignment step
 	unmap_fq1 = trimmed_fastq
 	unmap_fq2 = trimmed_fastq_R2
