@@ -216,13 +216,23 @@ def main():
 	if args.trimmer == "pyadapt":
 		#TODO make pyadapt give options for output file name.
 		base = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
-		flags = {"-a": local_input_files[0], "-b": local_input_files[1], "-o": out_fastq_pre}
+		flags = [
+				("-a", local_input_files[0]),
+				("-b", local_input_files[1]),
+				("-o", out_fastq_pre)
+		]
 		flag_text = " ".join(["{} {}".format(flag, value) for flag, value in flags])
 		cmd = "{} {} -u".format(base, flag_text)
 	elif args.trimmer == "skewer":
 		# Trimming command
 		base = tools.skewer #+ " --quiet"
-		flags = [("-f", "sanger"), ("-t", str(args.cores)), ("-m", "pe"), ("-x", res.adapter), ("-o", out_fastq_pre)]
+		flags = [
+				("-f", "sanger"),
+				("-t", str(args.cores)),
+				("-m", "pe"),
+				("-x", res.adapter),
+				("-o", out_fastq_pre)
+		]
 		flag_text = " ".join(["{} {}".format(flag, value) for flag, value in flags])
 		positionals = [local_input_files[0], local_input_files[1]]
 		cmd1 = "{} {} {}".format(base, flag_text, " ".join(positionals))
