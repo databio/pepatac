@@ -14,8 +14,10 @@ import sys
 import pypiper
 
 
+
 PEAK_CALLERS = ["fseq", "macs2"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
+
 
 
 def parse_arguments():
@@ -56,6 +58,39 @@ def parse_arguments():
 		raise SystemExit
 
 	return args
+
+
+
+def build_command(chunks):
+	"""
+	Create a command from various parts.
+
+	The parts provided may include a base, flags, option-bound arguments, and
+	positional arguments. Each element must be either a string or a two-tuple.
+	Raw strings are interpreted as either the command base, a pre-joined
+	pair (or multiple pairs) of option and argument, a series of positional
+	arguments, or a combination of those elements. The only modification they
+	undergo is trimming of any space characters from each end.
+
+	:param Iterable[str | (str, str | NoneType)] chunks: the collection of the
+		command components to interpret, modify, and join to create a
+		single meaningful command
+	:return str: the single meaningful command built from the given components
+	"""
+	parsed_pieces = []
+	for cmd_part in chunks:
+		try:
+			# Trim just space, not all whitespace.
+			# This prevents damage to an option that specifies,
+			# say, tab as a delimiter.
+			parsed_pieces.append(cmd_part.strip(" "))
+		except AttributeError:
+			option, argument = cmd_part
+			if argument is not None:
+				option, argument = option.strip(" "), str(argument).strip(" ")
+				parsed_pieces.append("{} {}".format(option, argument))
+	return " ".join(parsed_pieces)
+
 
 
 def main():
@@ -443,11 +478,12 @@ def main():
 	peak_input_file = shift_bed
 
 	if args.peak_caller == "fseq":
+		program = tools.fseq
 
 		# True fseq options, along with a more.
 		fseq_opts = {
-				"f": "fragment_size", "l": "feature_length",
-				"s": "wiggle_track_step", "t": "threshold"}
+			"-f": "fragment_size", "-l": "feature_length",
+			"-s": "wiggle_track_step", "-t": "threshold"}
 
 		def fetch_fseq_param(short_optname, default=None):
 			"""
@@ -466,7 +502,8 @@ def main():
 				config file, otherwise the default
 			"""
 			try:
-				return param.fseq[short_optname]
+				# Config file param specs lack hyphen(s).
+				return param.fseq[short_optname.lstrip("-")]
 			except KeyError:
 				return param.fseq.get(fseq_opts[short_optname], default)
 
@@ -477,28 +514,29 @@ def main():
 		fseq_output_folder = peak_folder
 
 		# Start with the options that we always specify.
-		fseq_opt_vals = [("d", fseq_input_folder), ("o", fseq_output_folder), ("of", fseq_output_format)]
+		peak_cmd_opts = [("-d", fseq_input_folder), ("-o", fseq_output_folder), ("-of", fseq_output_format)]
 
 		# Parse additional fseq options from the configuration.
 		for opt_name in fseq_opts:
 			opt_value = fetch_fseq_param(opt_name)
 			if opt_value:
-				fseq_opt_vals.append((opt_name, opt_value))
-
-		# Create the command, adding the hyphen prefix to each option, and handling spacing and verbosity.
-		fseq_opts_text = " ".join(["-{} {}".format(opt, val) for opt, val in fseq_opt_vals])
-		if fetch_fseq_param("v", "verbose"):
-			fseq_opts_text += " -v"
-		cmd = "{prog} {opts} {infile}".format(prog=tools.fseq, opts=fseq_opts_text, infile=peak_input_file)
+				peak_cmd_opts.append((opt_name, opt_value))
 
 	else:
-		cmd = tools.macs2 + " callpeak "
-		cmd += " -t  " + peak_input_file
-		cmd += " -f BED "
-		cmd += " -g "  +  str(args.genome_size)
-		cmd +=  " --outdir " + peak_folder +  " -n " + args.sample_name
-		cmd += "  -q " + str(param.macs2.q)
-		cmd +=  " --shift " + str(param.macs2.shift) + " --nomodel "
+		program = "{} callpeak".format(tools.macs2)
+		peak_cmd_opts = [
+			("-t", peak_input_file),
+			"-f BED",
+			("-g", args.genome_size),
+			("--outdir", peak_folder),
+			("-n", args.sample_name),
+			("-q", param.macs2.q),
+			("--shift", param.macs2.shift),
+			"--nomodel"
+		]
+
+	peak_cmd_chunks = [program] + peak_cmd_opts + [peak_input_file]
+	cmd = build_command(peak_cmd_chunks)
 	pm.run(cmd, peak_output_file)
 
 
