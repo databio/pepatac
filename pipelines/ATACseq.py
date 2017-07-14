@@ -41,6 +41,9 @@ def parse_arguments():
 						default="macs2", choices=PEAK_CALLERS,
 						help="Name of peak caller")
 
+	parser.add_argument("--skip-tss", dest="skip_tss", action="store_true",
+						help="Skip TSS enrichment")
+
 	parser.add_argument("--trimmer", dest="trimmer",
 						default="trimmomatic", choices=TRIMMERS,
 						help="Name of read trimming program")
@@ -445,13 +448,17 @@ def main():
 	cmd2 = "touch " + temp_target
 	pm.run([cmd, cmd2], temp_target)
 
-	# TSS enrichment 
-	if os.path.exists(res.TSS_file):
+	# TSS enrichment
+	if args.skip_tss:
+		print("CLI options indicate that TSS enrichment should be skipped, skipping")
+	elif not os.path.exists(res.TSS_file):
+		print("TSS enrichment requires TSS annotation file: {}".format(res.TSS_file))
+	else:
 		pm.timestamp("### Calculate TSS enrichment")
 		QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
 		ngstk.make_dir(QC_folder)
 
-		Tss_enrich =  os.path.join(QC_folder ,  args.sample_name + ".TssEnrichment") 
+		Tss_enrich =  os.path.join(QC_folder,  args.sample_name + ".TssEnrichment")
 		cmd = os.path.join(tools.scripts_dir, "pyTssEnrichment.py")
 		cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -s 4 -o " + Tss_enrich
 		pm.run(cmd, Tss_enrich, nofail=True)
@@ -481,10 +488,6 @@ def main():
 		cmd2 = "Rscript " +  os.path.join(tools.scripts_dir, "fragment_length_dist.R") + " " + fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
 
 		pm.run([cmd,cmd1,cmd2], fragL_dis1, nofail=True)
-
-	else:
-		# If the TSS annotation is missing, print a message
-		print("TSS enrichment calculation requires a TSS annotation file here:" + res.TSS_file)
 
 	# Peak calling
 	peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly)
