@@ -204,10 +204,6 @@ def main():
 	# Adapter trimming
 	pm.timestamp("### Adapter trimming: ")
 
-	if args.trimmer not in TRIMMERS:
-		raise ValueError(
-				"Trimmer choice not in {}: '{}'".format(TRIMMERS, args.trimmer))
-
 	# Create names for trimmed FASTQ files.
 	if args.trimmer == "trimmomatic":
 		trimming_prefix = os.path.join(fastq_folder, args.sample_name)
@@ -435,9 +431,6 @@ def main():
 	ngstk.make_dir(peak_folder)
 	peak_output_file = os.path.join(peak_folder,  args.sample_name + "_peaks.narrowPeak")
 	peak_input_file = shift_bed
-
-	if args.peak_caller not in PEAK_CALLERS:
-		raise ValueError("Peak caller not in {}: '{}'".format(PEAK_CALLERS, args.peak_caller))
 
 	if args.peak_caller == "fseq":
 		# Parse fseq options from pipeline config/settings.
