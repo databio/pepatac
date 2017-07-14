@@ -5,3 +5,6 @@
 # JetBrains
 .idea/
 
+# Tests
+.cache/
+

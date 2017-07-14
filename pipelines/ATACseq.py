@@ -76,8 +76,17 @@ def build_command(chunks):
 		command components to interpret, modify, and join to create a
 		single meaningful command
 	:return str: the single meaningful command built from the given components
+	:raise ValueError: if no command parts are provided
 	"""
+
+	if not chunks:
+		raise ValueError("No command parts: {} ({})".format(chunks, type(chunks)))
+
+	if isinstance(chunks, str):
+		return chunks
+
 	parsed_pieces = []
+
 	for cmd_part in chunks:
 		try:
 			# Trim just space, not all whitespace.
@@ -89,6 +98,7 @@ def build_command(chunks):
 			if argument is not None:
 				option, argument = option.strip(" "), str(argument).strip(" ")
 				parsed_pieces.append("{} {}".format(option, argument))
+
 	return " ".join(parsed_pieces)
 
 
