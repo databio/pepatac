@@ -445,7 +445,7 @@ def main():
 	if args.peak_caller == "fseq":
 
 		# True fseq options, along with a more.
-		name_by_fseq_flag = {
+		fseq_opts = {
 				"f": "fragment_size", "l": "feature_length",
 				"s": "wiggle_track_step", "t": "threshold"}
 
@@ -468,7 +468,7 @@ def main():
 			try:
 				return param.fseq[short_optname]
 			except KeyError:
-				return param.fseq.get(name_by_fseq_flag[short_optname], default)
+				return param.fseq.get(fseq_opts[short_optname], default)
 
 		# TODO: should output format flexibility even be allowed at all?
 		# fseq default output format is wig; use narrowPeak instead.
@@ -476,22 +476,14 @@ def main():
 		fseq_input_folder = os.path.dirname(peak_input_file)
 		fseq_output_folder = peak_folder
 
-		# Options that are always specified
-		fseq_constant_opts = [
-				("d", fseq_input_folder),
-				("o", fseq_output_folder),
-				("of", fseq_output_format)
-		]
+		# Start with the options that we always specify.
+		fseq_opt_vals = [("d", fseq_input_folder), ("o", fseq_output_folder), ("of", fseq_output_format)]
 
-		# Parse fseq options from the pipeline configuration settings.
-		fseq_opt_vals = []
-		for opt_name in name_by_fseq_flag:
+		# Parse additional fseq options from the configuration.
+		for opt_name in fseq_opts:
 			opt_value = fetch_fseq_param(opt_name)
 			if opt_value:
 				fseq_opt_vals.append((opt_name, opt_value))
-
-		# Add the always-specified options.
-		fseq_opt_vals.extend(fseq_constant_opts)
 
 		# Create the command, adding the hyphen prefix to each option, and handling spacing and verbosity.
 		fseq_opts_text = " ".join(["-{} {}".format(opt, val) for opt, val in fseq_opt_vals])
