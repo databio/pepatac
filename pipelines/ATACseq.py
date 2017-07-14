@@ -438,9 +438,9 @@ def main():
 						 "s": "wiggle_track_step", "t": "threshold"}
 		def fetch_fseq_param(optname, default=None):
 			try:
-				return param[optname]
+				return param.fseq[optname]
 			except KeyError:
-				return param.get(fseq_optnames[optname], default)
+				return param.fseq.get(fseq_optnames[optname], default)
 
 		# Options that are always specified
 		fseq_input_folder = os.path.dirname(peak_input_file)
