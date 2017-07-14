@@ -443,25 +443,49 @@ def main():
 	peak_input_file = shift_bed
 
 	if args.peak_caller == "fseq":
-		# Parse fseq options from pipeline config/settings.
-		fseq_optnames = {"f": "fragment_size", "l": "feature_length",
-						 "s": "wiggle_track_step", "t": "threshold"}
-		def fetch_fseq_param(optname, default=None):
-			try:
-				return param.fseq[optname]
-			except KeyError:
-				return param.fseq.get(fseq_optnames[optname], default)
 
-		# Options that are always specified
+		# True fseq options, along with a more.
+		name_by_fseq_flag = {
+				"f": "fragment_size", "l": "feature_length",
+				"s": "wiggle_track_step", "t": "threshold"}
+
+		def fetch_fseq_param(short_optname, default=None):
+			"""
+			Fetch a parameter for fseq from the configuration parameters.
+
+			Each option may be provided in the config file by either its true
+			short name, or a more immediately meaningful long name. A default
+			value can be requested if the indicated option isn't specified in
+			the config file.
+
+			:param str short_optname: actual fseq option name
+			:param object default: value to use if the option isn't provided
+				in the config file; if omitted and the option isn't in the
+				file, then the option won't be included in the command
+			:return object | NoneType: value for the option if found in the
+				config file, otherwise the default
+			"""
+			try:
+				return param.fseq[short_optname]
+			except KeyError:
+				return param.fseq.get(name_by_fseq_flag[short_optname], default)
+
+		# TODO: should output format flexibility even be allowed at all?
+		# fseq default output format is wig; use narrowPeak instead.
+		fseq_output_format = fetch_fseq_param("of", default="npf")
 		fseq_input_folder = os.path.dirname(peak_input_file)
 		fseq_output_folder = peak_folder
-		# TODO: should output format flexibility even be allowed at all?
-		fseq_output_format = fetch_fseq_param("of", default="npf")
-		fseq_constant_opts = [("d", fseq_input_folder), ("o", fseq_output_folder), ("of", fseq_output_format)]
+
+		# Options that are always specified
+		fseq_constant_opts = [
+				("d", fseq_input_folder),
+				("o", fseq_output_folder),
+				("of", fseq_output_format)
+		]
 
 		# Parse fseq options from the pipeline configuration settings.
 		fseq_opt_vals = []
-		for opt_name in fseq_optnames:
+		for opt_name in name_by_fseq_flag:
 			opt_value = fetch_fseq_param(opt_name)
 			if opt_value:
 				fseq_opt_vals.append((opt_name, opt_value))
