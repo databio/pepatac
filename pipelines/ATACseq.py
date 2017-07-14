@@ -450,9 +450,9 @@ def main():
 
 	# TSS enrichment
 	if args.skip_tss:
-		print("CLI options indicate that TSS enrichment should be skipped, skipping")
+		print("Skipping TSS -- CLI option toggled")
 	elif not os.path.exists(res.TSS_file):
-		print("TSS enrichment requires TSS annotation file: {}".format(res.TSS_file))
+		print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}".format(res.TSS_file))
 	else:
 		pm.timestamp("### Calculate TSS enrichment")
 		QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
