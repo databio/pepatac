@@ -2,7 +2,7 @@
 # pyTssEnrichment.py
 #
 # Modified from pyMakeVplot.py: Jason Buenrostro
-# Last updated 6/22/17: Ryan Corces
+# Last updated 7/16/17: Vince Reuter
 #
 # Dependencies: Script requires ATAC_Rscript_TSSenrichmentPlot_pyPiper.R to be in the same directory
 #				For pyPiper, these two scripts would be in the tools directory
@@ -14,23 +14,23 @@
 #			  Those parameters are: -p ends -e 2000 -u -v -s 4 -o <someFile.TssEnrichment>
 
 
-##### IMPORT MODULES #####
-# import necessary for python
 import os
-import sys
-import subprocess
-import numpy as np
-import pysam
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from multiprocessing import Pool
 from optparse import OptionParser
-import random
+import subprocess
+import sys
+
+# Plotting imports
+#import matplotlib
+#matplotlib.use('Agg')
+#import matplotlib.pyplot as plt
+
+import numpy as np
+import pysam
+
 
 #### OPTIONS ####
 # read options from command line
-opts = OptionParser()
 usage = "usage: %prog [options] [inputs]"
 opts = OptionParser(usage=usage)
 opts.add_option("-a", help="<Reads> Accepts sorted BAM file")

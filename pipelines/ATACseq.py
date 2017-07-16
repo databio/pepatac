@@ -544,6 +544,7 @@ def main():
 			:return object | NoneType: value for the option if found in the
 				config file, otherwise the default
 			"""
+			# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
 			try:
 				# Config file param specs lack hyphen(s).
 				return param.fseq[short_optname.lstrip("-")]
@@ -560,6 +561,7 @@ def main():
 		peak_cmd_opts = [("-d", fseq_input_folder), ("-o", fseq_output_folder), ("-of", fseq_output_format)]
 
 		# Parse additional fseq options from the configuration.
+		# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
 		for opt_name in fseq_opts:
 			opt_value = fetch_fseq_param(opt_name)
 			if opt_value:
