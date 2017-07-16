@@ -56,6 +56,10 @@ def parse_arguments():
 
 	args = parser.parse_args()
 
+    # TODO: determine if it's safe to handle this requirement with argparse.
+	# It may be that communication between pypiper and a pipeline via
+	# the pipeline interface (and/or) looper, and how the partial argument
+	# parsing is handled, that makes this more favorable.
 	if not args.input:
 		parser.print_help()
 		raise SystemExit
@@ -106,6 +110,18 @@ def build_command(chunks):
 
 
 
+def get_mv_cmd(old, new):
+	"""
+	Create a move command.
+	
+	:param str old: existing filepath to change
+	:param str new: filepath to use as replacement
+	:return str: move command to execute
+	"""
+	return build_command(["mv", old, new])
+
+
+
 def main():
 	"""
 	Main pipeline process.
@@ -113,8 +129,11 @@ def main():
 
 	args = parse_arguments()
 
-	# always paired-end sequencing for ATACseq
-	args.paired_end = True
+    # TODO: for now, paired end sequencing input is required.
+	if args.single_or_paired == "paired":
+		args.paired_end = True
+	else:
+		args.paired_end = True
 
 	# Initialize
 	outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
@@ -135,14 +154,16 @@ def main():
 		return(os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2", genome_assembly))
 
 
-	def count_alignment(assembly_identifier, aligned_bam, paired_end = args.paired_end):
+	def count_alignment(assembly_identifier, aligned_bam, paired_end):
 		""" 
 		This function counts the aligned reads and alignment rate and reports statistics. You
 		must have previously reported a "Trimmed_reads" result to get alignment rates. It is useful
 		as a follow function after any alignment step to quantify and report the number of reads
 		aligning, and the alignment rate to that reference.
-		:param:	aligned_bam	String pointing to the aligned bam file.
-		:param: assembly_identifier	String identifying the reference to which you aligned (can be anything)
+
+		:param str	aligned_bam: Path to the aligned bam file.
+		:param str assembly_identifier:	String identifying the reference to which you aligned (can be anything)
+		:param bool paired_end: Whether the sequencing empployed a paired-end strategy.
 		"""
 		ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
 		pm.report_result("Aligned_reads_" + assembly_identifier, ar)
@@ -188,7 +209,7 @@ def main():
 			cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapped_bam  # sort output
 			cmd += " > " + mapped_bam
 
-			pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
+			pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam, args.paired_end))
 
 			# filter genome reads not mapped 
 			#unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
@@ -266,44 +287,54 @@ def main():
 	# Create trimming command(s).
 	if args.trimmer == "pyadapt":
 		#TODO make pyadapt give options for output file name.
-		base = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
-		flags = [
+		trim_cmd_base = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
+		trim_cmd_options = [
 				("-a", local_input_files[0]),
 				("-b", local_input_files[1]),
 				("-o", out_fastq_pre)
 		]
-		flag_text = " ".join(["{} {}".format(flag, value) for flag, value in flags])
-		cmd = "{} {} -u".format(base, flag_text)
+		trim_opts_text = " ".join(["{} {}".format(opt, val) for opt, val in trim_cmd_options])
+		cmd = "{} {} -u".format(trim_cmd_base, trim_opts_text)
 	elif args.trimmer == "skewer":
-		# Trimming command
-		base = tools.skewer #+ " --quiet"
-		flags = [
+		skewer_input_files = [local_input_files[0]]
+		if args.paired_end:
+			skewer_mode = "pe"
+			skewer_input_files.append(local_input_files[1])
+			skewer_filename_pairs = [
+				("{}-trimmed-pair1.fastq".format(out_fastq_pre), trimmed_fastq), 
+				("{}-trimmed-pair2.fastq".format(out_fastq_pre), trimmed_fastq_R2)]
+		else:
+			skewer_mode = "any"
+			skewer_filename_pairs = [
+				("{}-trimmed.fastq".format(out_fastq_pre), trimmed_fastq)]
+		trim_cmd_base = tools.skewer #+ " --quiet"
+		trim_cmd_options = [
 				("-f", "sanger"),
 				("-t", str(args.cores)),
-				("-m", "pe"),
+				("-m", skewer_mode),
 				("-x", res.adapter),
 				("-o", out_fastq_pre)
 		]
-		flag_text = " ".join(["{} {}".format(flag, value) for flag, value in flags])
-		positionals = [local_input_files[0], local_input_files[1]]
-		cmd1 = "{} {} {}".format(base, flag_text, " ".join(positionals))
-		# File renaming commands
-		cmd2 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair1.fastq", trimmed_fastq)
-		cmd3 = "mv {0} {1}".format(out_fastq_pre + "-trimmed-pair2.fastq", trimmed_fastq_R2)
-		# Pypiper submits these commands serially.
-		cmd = [cmd1, cmd2, cmd3]
+		trim_opts_text = " ".join(["{} {}".format(opt, val) for opt, val in trim_cmd_options])
+		trimming_command = "{} {} {}".format(trim_cmd_base, trim_opts_text, " ".join(skewer_input_files))
+		trimming_renaming_commands = [get_mv_cmd(old, new) for old, new in skewer_filename_pairs]
+		# Pypiper submits the commands serially.
+		cmd = [trimming_command] + trimming_renaming_commands
+		#rename_skewer_logfile = get_mv_cmd(old="{}-trimmed.log".format(out_fastq_pre), new=trimLog)
+		#cmd.append(rename_skewer_logfile)
 	else:
 		# Default to trimmomatic.
-		base = "{} -Xmx{} -jar {}".format(tools.java, pm.mem, tools.trimmo)
-		trim_cmd_text = "PE -threads {}".format(pm.cores)
+		java_base_text = "{} -Xmx{}".format(tools.java, pm.mem)
+		trimmomatic_text = "-jar {} PE -threads {}".format(tools.trimmo, pm.cores)
 		r1_trim_unpaired, r2_trim_unpaired = \
 				["{}{}".format(trimming_prefix, suffix)
 				 for suffix in ["_R1_unpaired.fq", "_R2_unpaired.fq"]]
-		trim_spec = "ILLUMINACLIP:" + res.adapter + ":2:30:10"
-		positionals = [local_input_files[0], local_input_files[1],
-					   trimmed_fastq, r1_trim_unpaired,
-					   trimmed_fastq_R2, r2_trim_unpaired, trim_spec]
-		cmd = "{} {} {}".format(base, trim_cmd_text, " ".join(positionals))
+		trim_spec_text = "ILLUMINACLIP:" + res.adapter + ":2:30:10"
+		trimmomatic_filepaths = [
+			local_input_files[0], local_input_files[1],
+			trimmed_fastq, r1_trim_unpaired,
+			trimmed_fastq_R2, r2_trim_unpaired]
+		cmd = "{} {} {} {}".format(java_base_text, trimmomatic_text, " ".join(trimmomatic_filepaths), trim_spec_text)
 		
 	pm.run(cmd, trimmed_fastq,
 			follow=ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
