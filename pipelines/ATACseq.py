@@ -110,18 +110,6 @@ def build_command(chunks):
 
 
 
-def get_mv_cmd(old, new):
-	"""
-	Create a move command.
-	
-	:param str old: existing filepath to change
-	:param str new: filepath to use as replacement
-	:return str: move command to execute
-	"""
-	return build_command(["mv", old, new])
-
-
-
 def main():
 	"""
 	Main pipeline process.
@@ -293,10 +281,12 @@ def main():
 				("-b", local_input_files[1]),
 				("-o", out_fastq_pre)
 		]
-		trim_opts_text = " ".join(["{} {}".format(opt, val) for opt, val in trim_cmd_options])
-		cmd = "{} {} -u".format(trim_cmd_base, trim_opts_text)
+		trim_cmd_chunks = [trim_cmd_base] + trim_cmd_options + ["-u"]
+		cmd = build_command(trim_cmd_chunks)
+
 	elif args.trimmer == "skewer":
 		skewer_input_files = [local_input_files[0]]
+
 		if args.paired_end:
 			skewer_mode = "pe"
 			skewer_input_files.append(local_input_files[1])
@@ -307,6 +297,10 @@ def main():
 			skewer_mode = "any"
 			skewer_filename_pairs = [
 				("{}-trimmed.fastq".format(out_fastq_pre), trimmed_fastq)]
+
+		# Rename the logfile.
+		#skewer_filename_pairs.append(("{}-trimmed.log".format(out_fastq_pre), trimLog))
+
 		trim_cmd_base = tools.skewer #+ " --quiet"
 		trim_cmd_options = [
 				("-f", "sanger"),
@@ -315,13 +309,12 @@ def main():
 				("-x", res.adapter),
 				("-o", out_fastq_pre)
 		]
-		trim_opts_text = " ".join(["{} {}".format(opt, val) for opt, val in trim_cmd_options])
-		trimming_command = "{} {} {}".format(trim_cmd_base, trim_opts_text, " ".join(skewer_input_files))
-		trimming_renaming_commands = [get_mv_cmd(old, new) for old, new in skewer_filename_pairs]
+		trim_cmd_chunks = [trim_cmd_base] + trim_cmd_options
+		trimming_command = build_command(trim_cmd_chunks)
+		trimming_renaming_commands = [build_command(["mv", old, new]) for old, new in skewer_filename_pairs]
 		# Pypiper submits the commands serially.
 		cmd = [trimming_command] + trimming_renaming_commands
-		#rename_skewer_logfile = get_mv_cmd(old="{}-trimmed.log".format(out_fastq_pre), new=trimLog)
-		#cmd.append(rename_skewer_logfile)
+
 	else:
 		# Default to trimmomatic.
 		java_base_text = "{} -Xmx{}".format(tools.java, pm.mem)
@@ -334,8 +327,9 @@ def main():
 			local_input_files[0], local_input_files[1],
 			trimmed_fastq, r1_trim_unpaired,
 			trimmed_fastq_R2, r2_trim_unpaired]
-		cmd = "{} {} {} {}".format(java_base_text, trimmomatic_text, " ".join(trimmomatic_filepaths), trim_spec_text)
-		
+		trim_cmd_chunks = [java_base_text, trimmomatic_text] + trimmomatic_filepaths + [trim_spec_text]
+		cmd = build_command(trim_cmd_chunks)
+
 	pm.run(cmd, trimmed_fastq,
 			follow=ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
 			fastqc_folder=os.path.join(param.outfolder, "fastqc/")))
