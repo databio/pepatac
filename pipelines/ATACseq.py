@@ -565,13 +565,17 @@ def main():
 				return param.fseq.get(fseq_opts[short_optname], default)
 			"""
 
-			# Workaround for lackadaisical param.
-			if abbreviated in param.fseq:
-				return param.fseq[abbreviated]
-			elif full_opt_name in param.fseq:
-				return param.fseq[full_opt_name]
-			else:
-				return default
+			# DEBUG
+			try:
+				# Workaround for lackadaisical param.
+				if abbreviated in param.fseq:
+					return param.fseq[abbreviated]
+				elif full_opt_name in param.fseq:
+					return param.fseq[full_opt_name]
+				else:
+					return default
+			except TypeError:
+				raise TypeError("param: {} ({}); abbreviated: {} ({})".format(param, type(param), abbreviated, type(abbreviated)))
 
 		# TODO: should output format flexibility even be allowed at all?
 		# fseq default output format is wig; use narrowPeak instead.
