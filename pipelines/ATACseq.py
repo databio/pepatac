@@ -606,11 +606,11 @@ def main():
 				peak_cmd_opts.append((opt_name, opt_value))
 
 		chrom_peak_files = os.path.join(peak_folder, "*.npf")
-		merge_peaks_files = "cat {peakfiles} > {combined_peak_file}".format(
+		merge_chrom_peaks_files = "cat {peakfiles} > {combined_peak_file}".format(
 			peakfiles=chrom_peak_files, combined_peak_file=peak_output_file)
-		delete_chrom_files = "rm {}".format(chrom_peak_files)
+		delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
 		fseq_cmd = build_command([program] + peak_cmd_opts + [peak_input_file])
-		cmd = [fseq_cmd, merge_peaks_files, delete_chrom_files]
+		cmd = [fseq_cmd, merge_chrom_peaks_files, delete_chrom_peaks_files]
 
 	else:
 		program = "{} callpeak".format(tools.macs2)
