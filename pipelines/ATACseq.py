@@ -609,7 +609,7 @@ def main():
 		merge_peaks_files = "cat {peakfiles} > {combined_peak_file}".format(
 			peakfiles=chrom_peak_files, combined_peak_file=peak_output_file)
 		delete_chrom_files = "rm {}".format(chrom_peak_files)
-		fseq_cmd = build_command([program] + peak_cmd_opts)
+		fseq_cmd = build_command([program] + peak_cmd_opts + [peak_input_file])
 		cmd = [fseq_cmd, merge_peaks_files, delete_chrom_files]
 
 	else:
