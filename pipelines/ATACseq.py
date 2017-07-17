@@ -606,6 +606,13 @@ def main():
 			if opt_value:
 				peak_cmd_opts.append((opt_name, opt_value))
 
+		chrom_peak_files = os.path.join(fseq_output_folder, "*.npf")
+		merge_peaks_files = "cat {peakfiles} > {combined_peak_file}".format(
+			peakfiles=chrom_peak_files, combined_peak_file=peak_output_file)
+		delete_chrom_files = "rm {}".format(chrom_peak_files)
+		fseq_cmd = build_command([program] + peak_cmd_opts)
+		cmd = [fseq_cmd, merge_peaks_files, delete_chrom_files]
+
 	else:
 		program = "{} callpeak".format(tools.macs2)
 		peak_cmd_opts = [
@@ -618,15 +625,14 @@ def main():
 			("--shift", param.macs2.shift),
 			"--nomodel"
 		]
+		cmd = build_command([program] + peak_cmd_opts + [peak_input_file])
 
-	peak_cmd_chunks = [program] + peak_cmd_opts + [peak_input_file]
-	cmd = build_command(peak_cmd_chunks)
 	pm.run(cmd, peak_output_file)
 
 
 	# filter peaks in blacklist 
 	if os.path.exists(res.blacklist):
-		filter_peak = os.path.join(peak_folder ,  args.sample_name + "_peaks.narrowPeak.rmBlacklist")
+		filter_peak = os.path.join(peak_folder,  args.sample_name + "_peaks.narrowPeak.rmBlacklist")
 		cmd = tools.bedtools  + " intersect " + " -a " + peak_output_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
 
 		pm.run(cmd,filter_peak)
