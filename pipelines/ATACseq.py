@@ -577,7 +577,8 @@ def main():
 				else:
 					return default
 			except TypeError:
-				raise TypeError("fseq_params: {} ({}); abbreviated: {} ({})".format(fseq_params, type(fseq_params), abbreviated, type(abbreviated)))
+				print("fseq_params: {} ({}); abbreviated: {} ({})".format(fseq_params, type(fseq_params), abbreviated, type(abbreviated)))
+				raise
 
 		# TODO: should output format flexibility even be allowed at all?
 		# fseq default output format is wig; use narrowPeak instead.
