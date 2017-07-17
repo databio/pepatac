@@ -8,7 +8,7 @@
 #				For pyPiper, these two scripts would be in the tools directory
 #
 # Function: Script takes as input a BAM file and a bed file of single base positions and plots the enrichment of signal around those regions
-#			This enrichment is calculated as the cummulative insertions per base divided by the average number of insertions in the first 100 bases of the window
+#			This enrichment is calculated as the cumulative insertions per base divided by the average number of insertions in the first 100 bases of the window
 #
 # Parameters: This version of the script expects a certain set or parameters in order to properly interface with ATAC_Rscript_TSSenrichmentPlot_pyPiper.R
 #			  Those parameters are: -p ends -e 2000 -u -v -s 4 -o <someFile.TssEnrichment>

@@ -544,12 +544,28 @@ def main():
 			:return object | NoneType: value for the option if found in the
 				config file, otherwise the default
 			"""
+
 			# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
+			abbreviated = short_optname.lstrip("-")
+			full_opt_name = fseq_opts[short_optname]
+
+			# TODO: restore this version once the stricter config is used in PipelineManager.
+			# TODO: that is, when param (AttributeDict) doesn't return alleged key itself if it's absent.
+			"""
 			try:
 				# Config file param specs lack hyphen(s).
 				return param.fseq[short_optname.lstrip("-")]
 			except KeyError:
 				return param.fseq.get(fseq_opts[short_optname], default)
+			"""
+
+			# Workaround for lackadaisical param.
+			if abbreviated in param.fseq:
+				return param.fseq[abbreviated]
+			elif full_opt_name in param.fseq:
+				return param.fseq[full_opt_name]
+			else:
+				return default
 
 		# TODO: should output format flexibility even be allowed at all?
 		# fseq default output format is wig; use narrowPeak instead.
