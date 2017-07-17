@@ -537,6 +537,8 @@ def main():
 		fseq_opts = {
 			"-f": "fragment_size", "-l": "feature_length",
 			"-s": "wiggle_track_step", "-t": "threshold",
+			# TODO: should output format flexibility even be allowed at all?
+			# TODO (cont): fseq default output format is wig; use narrowPeak instead.
 			"-of": ("output_format", "npf")}
 
 		def fetch_fseq_param(short_optname, cmdl_opts=None):
@@ -565,8 +567,8 @@ def main():
 				default = None
 
 			# TODO: use a more natural implementation once pypiper adopts
-			# the AttributeDict implementation from PEP models / looper, or
-			# when it is a Mapping.
+			# TODO (cont): the AttributeDict implementation from PEP models / looper, or
+			# TODO (cont): when it is a Mapping.
 			try:
 				# Config file param specs lack hyphen(s).
 				return param.fseq[short_optname.lstrip("-")]
@@ -580,6 +582,7 @@ def main():
 						return default
 
 			"""
+			# Dealing with lax/loose/non-strict pypiper config/parameters AttributeDict
 			fseq_params = param.fseq
 			abbreviated = short_optname.lstrip("-")
 			# Workaround for lackadaisical param.
@@ -591,13 +594,9 @@ def main():
 				return default
 			"""
 
-		# TODO: should output format flexibility even be allowed at all?
-		# fseq default output format is wig; use narrowPeak instead.
-		fseq_input_folder = os.path.dirname(peak_input_file)
-		fseq_output_folder = peak_folder
 
 		# Start with the options that we always specify.
-		peak_cmd_opts = [("-d", fseq_input_folder), ("-o", fseq_output_folder)]
+		peak_cmd_opts = [("-o", peak_folder)]
 
 		# Parse additional fseq options from the configuration.
 		# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
@@ -606,7 +605,7 @@ def main():
 			if opt_value:
 				peak_cmd_opts.append((opt_name, opt_value))
 
-		chrom_peak_files = os.path.join(fseq_output_folder, "*.npf")
+		chrom_peak_files = os.path.join(peak_folder, "*.npf")
 		merge_peaks_files = "cat {peakfiles} > {combined_peak_file}".format(
 			peakfiles=chrom_peak_files, combined_peak_file=peak_output_file)
 		delete_chrom_files = "rm {}".format(chrom_peak_files)
@@ -635,7 +634,7 @@ def main():
 		filter_peak = os.path.join(peak_folder,  args.sample_name + "_peaks.narrowPeak.rmBlacklist")
 		cmd = tools.bedtools  + " intersect " + " -a " + peak_output_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
 
-		pm.run(cmd,filter_peak)
+		pm.run(cmd, filter_peak)
 
 	pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
 
