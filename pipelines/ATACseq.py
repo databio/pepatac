@@ -125,7 +125,7 @@ def main():
 
 	# Initialize
 	outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
-	pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__)
+	pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__, strict_config=True)
 	ngstk = pypiper.NGSTk(pm=pm)
 
 	# Convenience alias 
@@ -547,7 +547,6 @@ def main():
 
 			# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
 
-			abbreviated = short_optname.lstrip("-")
 			# Grab full name and default (if present)
 			try:
 				full_opt_name, default = fseq_opts[short_optname]
@@ -557,16 +556,15 @@ def main():
 
 			# TODO: restore this version once the stricter config is used in PipelineManager.
 			# TODO: that is, when param (AttributeDict) doesn't return alleged key itself if it's absent.
-			"""
 			try:
 				# Config file param specs lack hyphen(s).
 				return param.fseq[short_optname.lstrip("-")]
 			except KeyError:
-				return param.fseq.get(fseq_opts[short_optname], default)
+				return param.fseq.get(full_opt_name, default)
+
 			"""
-
 			fseq_params = param.fseq
-
+			abbreviated = short_optname.lstrip("-")
 			# Workaround for lackadaisical param.
 			if abbreviated in fseq_params:
 				return fseq_params[abbreviated]
@@ -574,6 +572,7 @@ def main():
 				return fseq_params[full_opt_name]
 			else:
 				return default
+			"""
 
 		# TODO: should output format flexibility even be allowed at all?
 		# fseq default output format is wig; use narrowPeak instead.
