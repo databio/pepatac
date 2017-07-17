@@ -30,12 +30,13 @@ def parse_arguments():
 	parser = pypiper.add_pypiper_args(parser, all_args = True)
 	#parser = pypiper.add_pypiper_args(parser, groups = ['all'])  # future version
 
-	#Add any pipeline-specific arguments
-	parser.add_argument('-gs', '--genome-size', default="hs", type=str, 
-						help='genome size for MACS2')
+	# Pipeline-specific arguments
+	parser.add_argument("-gs", "--genome-size", default="hs", type=str,
+						help="genome size for MACS2")
 
-	parser.add_argument('--frip-ref-peaks', default=None, dest='frip_ref_peaks', type=str,
-						help='Reference peak set for calculating FRIP')
+	parser.add_argument("--frip-ref-peaks", default=None,
+						dest="frip_ref_peaks", type=str,
+						help="Reference peak set for calculating FRIP")
 
 	parser.add_argument("--peak-caller", dest="peak_caller",
 						default="macs2", choices=PEAK_CALLERS,
@@ -50,6 +51,13 @@ def parse_arguments():
 
 	parser.add_argument("--prealignments", default=[], type=str, nargs="+",
 						help="Space-delimited list of reference genomes to align to before primary alignment.")
+
+	# F-seq as peak caller
+	parser.add_argument("--fragment-size", type=int,
+						help="Fragment size specification for F-seq; "
+							 "by default, this is inferred from the data, but "
+							 "explicit specification can help with potential "
+							 "ArrayIndexOutOfBoundException when there are few reads.")
 
 	parser.add_argument("-V", "--version", action="version",
 	          			version="%(prog)s {v}".format(v=__version__))
