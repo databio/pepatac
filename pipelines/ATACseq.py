@@ -554,13 +554,17 @@ def main():
 				full_opt_name = fseq_opts[short_optname]
 				default = None
 
-			# TODO: restore this version once the stricter config is used in PipelineManager.
-			# TODO: that is, when param (AttributeDict) doesn't return alleged key itself if it's absent.
+			# TODO: use a more natural implementation once pypiper adopts
+			# the AttributeDict implementation from PEP models / looer, or
+			# when it is a Mapping.
 			try:
 				# Config file param specs lack hyphen(s).
 				return param.fseq[short_optname.lstrip("-")]
 			except KeyError:
-				return param.fseq.get(full_opt_name, default)
+				try:
+					return param.fseq[full_opt_name]
+				except KeyError:
+					return default
 
 			"""
 			fseq_params = param.fseq
