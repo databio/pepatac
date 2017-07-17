@@ -539,7 +539,7 @@ def main():
 			"-s": "wiggle_track_step", "-t": "threshold",
 			"-of": ("output_format", "npf")}
 
-		def fetch_fseq_param(short_optname):
+		def fetch_fseq_param(short_optname, cmdl_opts=None):
 			"""
 			Fetch a parameter for fseq from the configuration parameters.
 
@@ -549,6 +549,8 @@ def main():
 			the config file.
 
 			:param str short_optname: actual fseq option name
+			:param argparse.Namespace cmdl_opts: namespace parsed from
+				command-line options and arguments
 			:return object | NoneType: value for the option if found in the
 				config file, otherwise the default
 			"""
@@ -563,7 +565,7 @@ def main():
 				default = None
 
 			# TODO: use a more natural implementation once pypiper adopts
-			# the AttributeDict implementation from PEP models / looer, or
+			# the AttributeDict implementation from PEP models / looper, or
 			# when it is a Mapping.
 			try:
 				# Config file param specs lack hyphen(s).
@@ -572,7 +574,10 @@ def main():
 				try:
 					return param.fseq[full_opt_name]
 				except KeyError:
-					return default
+					if cmdl_opts:
+						return getattr(cmdl_opts, full_opt_name, default)
+					else:
+						return default
 
 			"""
 			fseq_params = param.fseq
@@ -597,7 +602,7 @@ def main():
 		# Parse additional fseq options from the configuration.
 		# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
 		for opt_name in fseq_opts:
-			opt_value = fetch_fseq_param(opt_name)
+			opt_value = fetch_fseq_param(opt_name, cmdl_opts=args)
 			if opt_value:
 				peak_cmd_opts.append((opt_name, opt_value))
 
