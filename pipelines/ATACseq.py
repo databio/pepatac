@@ -523,12 +523,15 @@ def main():
 	if args.peak_caller == "fseq":
 		program = tools.fseq
 
-		# True fseq options, along with a more.
+		# True fseq options, along with a more description specification option.
+		# Raw string as value represents descriptive specification name.
+		# Two-tuple as value is descriptive name and default value.
 		fseq_opts = {
 			"-f": "fragment_size", "-l": "feature_length",
-			"-s": "wiggle_track_step", "-t": "threshold"}
+			"-s": "wiggle_track_step", "-t": "threshold",
+			"-of": ("output_format", "npf")}
 
-		def fetch_fseq_param(short_optname, default=None):
+		def fetch_fseq_param(short_optname):
 			"""
 			Fetch a parameter for fseq from the configuration parameters.
 
@@ -538,16 +541,19 @@ def main():
 			the config file.
 
 			:param str short_optname: actual fseq option name
-			:param object default: value to use if the option isn't provided
-				in the config file; if omitted and the option isn't in the
-				file, then the option won't be included in the command
 			:return object | NoneType: value for the option if found in the
 				config file, otherwise the default
 			"""
 
 			# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
+
 			abbreviated = short_optname.lstrip("-")
-			full_opt_name = fseq_opts[short_optname]
+			# Grab full name and default (if present)
+			try:
+				full_opt_name, default = fseq_opts[short_optname]
+			except ValueError:
+				full_opt_name = fseq_opts[short_optname]
+				default = None
 
 			# TODO: restore this version once the stricter config is used in PipelineManager.
 			# TODO: that is, when param (AttributeDict) doesn't return alleged key itself if it's absent.
@@ -569,12 +575,11 @@ def main():
 
 		# TODO: should output format flexibility even be allowed at all?
 		# fseq default output format is wig; use narrowPeak instead.
-		fseq_output_format = fetch_fseq_param("of", default="npf")
 		fseq_input_folder = os.path.dirname(peak_input_file)
 		fseq_output_folder = peak_folder
 
 		# Start with the options that we always specify.
-		peak_cmd_opts = [("-d", fseq_input_folder), ("-o", fseq_output_folder), ("-of", fseq_output_format)]
+		peak_cmd_opts = [("-d", fseq_input_folder), ("-o", fseq_output_folder)]
 
 		# Parse additional fseq options from the configuration.
 		# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
