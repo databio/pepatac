@@ -3,8 +3,8 @@
 ATACseq  pipeline
 """
 
-__author__=["Jin Xu", "Nathan Sheffield"]
-__email__="xujin937@gmail.com"
+__author__ = ["Jin Xu", "Nathan Sheffield"]
+__email__ = "xujin937@gmail.com"
 __version__ = "0.4.0-dev"
 
 
@@ -17,6 +17,59 @@ import pypiper
 
 PEAK_CALLERS = ["fseq", "macs2"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
+
+# True fseq options, along with a more description specification option.
+# Raw string as value represents descriptive specification name.
+# Two-tuple as value is descriptive name and default value.
+# TODO: should output format flexibility even be allowed at all?
+# TODO (cont): fseq default output format is wig; use narrowPeak instead.
+FSEQ_OPTS = {
+	"-f": "fragment_size", "-l": "feature_length",
+	"-s": "wiggle_track_step", "-t": "threshold",
+	"-of": ("output_format", "npf")}
+
+
+
+def fetch_fseq_param(short_optname, pipeline_parameters, cmdl_opts=None):
+	"""
+	Fetch a parameter for fseq from the configuration parameters.
+
+	Each option may be provided in the config file by either its true
+	short name, or a more immediately meaningful long name. A default
+	value can be requested if the indicated option isn't specified in
+	the config file.
+
+	:param str short_optname: actual fseq option name
+	:param object pipeline_parameters: some parameters object, likely an
+		AttributeDict, parsed as a section of a pipeline configuration file
+		(e.g., ATACseq.yaml); the only requirement of the object is that it
+		has an attribute called "fseq."
+	:param argparse.Namespace cmdl_opts: namespace parsed from
+		command-line options and arguments
+	:return object | NoneType: value for the option if found in the
+		config file, otherwise the default
+	"""
+
+	# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
+
+	# Grab full name and default (if present)
+	try:
+		full_opt_name, default = FSEQ_OPTS[short_optname]
+	except ValueError:
+		full_opt_name = FSEQ_OPTS[short_optname]
+		default = None
+
+	try:
+		# Config file param specs lack hyphen(s).
+		return pipeline_parameters.fseq[short_optname.lstrip("-")]
+	except KeyError:
+		try:
+			return pipeline_parameters.fseq[full_opt_name]
+		except KeyError:
+			if cmdl_opts:
+				return getattr(cmdl_opts, full_opt_name, default)
+			else:
+				return default
 
 
 
@@ -159,7 +212,7 @@ def main():
 
 		:param str	aligned_bam: Path to the aligned bam file.
 		:param str assembly_identifier:	String identifying the reference to which you aligned (can be anything)
-		:param bool paired_end: Whether the sequencing empployed a paired-end strategy.
+		:param bool paired_end: Whether the sequencing employed a paired-end strategy.
 		"""
 		ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
 		pm.report_result("Aligned_reads_" + assembly_identifier, ar)
@@ -530,89 +583,30 @@ def main():
 
 	if args.peak_caller == "fseq":
 		program = tools.fseq
-
-		# True fseq options, along with a more description specification option.
-		# Raw string as value represents descriptive specification name.
-		# Two-tuple as value is descriptive name and default value.
-		fseq_opts = {
-			"-f": "fragment_size", "-l": "feature_length",
-			"-s": "wiggle_track_step", "-t": "threshold",
-			# TODO: should output format flexibility even be allowed at all?
-			# TODO (cont): fseq default output format is wig; use narrowPeak instead.
-			"-of": ("output_format", "npf")}
-
-		def fetch_fseq_param(short_optname, cmdl_opts=None):
-			"""
-			Fetch a parameter for fseq from the configuration parameters.
-
-			Each option may be provided in the config file by either its true
-			short name, or a more immediately meaningful long name. A default
-			value can be requested if the indicated option isn't specified in
-			the config file.
-
-			:param str short_optname: actual fseq option name
-			:param argparse.Namespace cmdl_opts: namespace parsed from
-				command-line options and arguments
-			:return object | NoneType: value for the option if found in the
-				config file, otherwise the default
-			"""
-
-			# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
-
-			# Grab full name and default (if present)
-			try:
-				full_opt_name, default = fseq_opts[short_optname]
-			except ValueError:
-				full_opt_name = fseq_opts[short_optname]
-				default = None
-
-			# TODO: use a more natural implementation once pypiper adopts
-			# TODO (cont): the AttributeDict implementation from PEP models / looper, or
-			# TODO (cont): when it is a Mapping.
-			try:
-				# Config file param specs lack hyphen(s).
-				return param.fseq[short_optname.lstrip("-")]
-			except KeyError:
-				try:
-					return param.fseq[full_opt_name]
-				except KeyError:
-					if cmdl_opts:
-						return getattr(cmdl_opts, full_opt_name, default)
-					else:
-						return default
-
-			"""
-			# Dealing with lax/loose/non-strict pypiper config/parameters AttributeDict
-			fseq_params = param.fseq
-			abbreviated = short_optname.lstrip("-")
-			# Workaround for lackadaisical param.
-			if abbreviated in fseq_params:
-				return fseq_params[abbreviated]
-			elif full_opt_name in fseq_params:
-				return fseq_params[full_opt_name]
-			else:
-				return default
-			"""
-
-
-		# Start with the options that we always specify.
-		peak_cmd_opts = [("-o", peak_folder)]
+		peak_cmd_opts = [("-o", peak_folder)]    # Always use output folder.
 
 		# Parse additional fseq options from the configuration.
-		# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
-		for opt_name in fseq_opts:
-			opt_value = fetch_fseq_param(opt_name, cmdl_opts=args)
+		for opt_name in FSEQ_OPTS:
+			# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
+			opt_value = fetch_fseq_param(
+				short_optname=opt_name, pipeline_parameters=param, cmdl_opts=args)
 			if opt_value:
 				peak_cmd_opts.append((opt_name, opt_value))
 
+		# Create the peak calling command
+		fseq_cmd = build_command([program] + peak_cmd_opts + [peak_input_file])
+
+		# Create the file merge/delete commands.
 		chrom_peak_files = os.path.join(peak_folder, "*.npf")
 		merge_chrom_peaks_files = "cat {peakfiles} > {combined_peak_file}".format(
 			peakfiles=chrom_peak_files, combined_peak_file=peak_output_file)
 		delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
-		fseq_cmd = build_command([program] + peak_cmd_opts + [peak_input_file])
+
+		# Pypiper serially exectutes the commands.
 		cmd = [fseq_cmd, merge_chrom_peaks_files, delete_chrom_peaks_files]
 
 	else:
+		# MACS2
 		program = "{} callpeak".format(tools.macs2)
 		peak_cmd_opts = [
 			("-t", peak_input_file),
@@ -626,7 +620,11 @@ def main():
 		]
 		cmd = build_command([program] + peak_cmd_opts + [peak_input_file])
 
+	# Call peaks and report peak count.
 	pm.run(cmd, peak_output_file)
+	with open(peak_output_file, 'r') as peaksfile:
+		num_peaks = sum(1 for _ in peaksfile) - 1
+	pm.report_result("Peak_count", num_peaks)
 
 
 	# filter peaks in blacklist 
@@ -653,6 +651,7 @@ def main():
 		pm.report_result("FRIP_ref", float(rip) / float(ar))
 
 	pm.stop_pipeline()
+
 
 
 if __name__ == '__main__':
