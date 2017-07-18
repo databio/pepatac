@@ -618,7 +618,8 @@ def main():
 			("--shift", param.macs2.shift),
 			"--nomodel"
 		]
-		cmd = build_command([program] + peak_cmd_opts + [peak_input_file])
+		# Note: required input file is non-positional ("treatment" file -t)
+		cmd = build_command([program] + peak_cmd_opts)
 
 	# Call peaks and report peak count.
 	pm.run(cmd, peak_output_file)
