@@ -76,8 +76,15 @@ def sub_Mat(start):
         center = int(p1_ints[i][1])+(int(p1_ints[i][2])-int(p1_ints[i][1]))/2
         s_int=center-int(options.e)
         e_int=center+int(options.e)
-        # loop through rds
-        for p2_rds in bamfile.fetch(str(p1_ints[i][0]), max(0,s_int-2000), e_int+2000):
+        # Loop over reads.
+        try:
+            p2_reads = bamfile.fetch(str(p1_ints[i][0]), max(0, s_int - 2000), e_int + 2000)
+        except ValueError:
+            # Could print speculation about cause, but that may get wordy.
+            # This is likely due to no reads for first argument to the fetch()
+            # call; that is, the current "reference" value.
+            continue
+        for p2_rds in p2_reads:
             #check mapping quality
             if p2_rds.mapq<30:# or p2_rds.is_proper_pair==False:
                 continue
