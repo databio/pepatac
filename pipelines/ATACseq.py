@@ -30,49 +30,6 @@ FSEQ_OPTS = {
 
 
 
-def fetch_fseq_param(short_optname, pipeline_parameters, cmdl_opts=None):
-	"""
-	Fetch a parameter for fseq from the configuration parameters.
-
-	Each option may be provided in the config file by either its true
-	short name, or a more immediately meaningful long name. A default
-	value can be requested if the indicated option isn't specified in
-	the config file.
-
-	:param str short_optname: actual fseq option name
-	:param object pipeline_parameters: some parameters object, likely an
-		AttributeDict, parsed as a section of a pipeline configuration file
-		(e.g., ATACseq.yaml); the only requirement of the object is that it
-		has an attribute called "fseq."
-	:param argparse.Namespace cmdl_opts: namespace parsed from
-		command-line options and arguments
-	:return object | NoneType: value for the option if found in the
-		config file, otherwise the default
-	"""
-
-	# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
-
-	# Grab full name and default (if present)
-	try:
-		full_opt_name, default = FSEQ_OPTS[short_optname]
-	except ValueError:
-		full_opt_name = FSEQ_OPTS[short_optname]
-		default = None
-
-	try:
-		# Config file param specs lack hyphen(s).
-		return pipeline_parameters.fseq[short_optname.lstrip("-")]
-	except KeyError:
-		try:
-			return pipeline_parameters.fseq[full_opt_name]
-		except KeyError:
-			if cmdl_opts:
-				return getattr(cmdl_opts, full_opt_name, default)
-			else:
-				return default
-
-
-
 def parse_arguments():
 	"""
 	Parse command-line arguments passed to the pipeline.
@@ -168,6 +125,49 @@ def build_command(chunks):
 				parsed_pieces.append("{} {}".format(option, argument))
 
 	return " ".join(parsed_pieces)
+
+
+
+def fetch_fseq_param(short_optname, pipeline_parameters, cmdl_opts=None):
+	"""
+	Fetch a parameter for fseq from the configuration parameters.
+
+	Each option may be provided in the config file by either its true
+	short name, or a more immediately meaningful long name. A default
+	value can be requested if the indicated option isn't specified in
+	the config file.
+
+	:param str short_optname: actual fseq option name
+	:param object pipeline_parameters: some parameters object, likely an
+		AttributeDict, parsed as a section of a pipeline configuration file
+		(e.g., ATACseq.yaml); the only requirement of the object is that it
+		has an attribute called "fseq."
+	:param argparse.Namespace cmdl_opts: namespace parsed from
+		command-line options and arguments
+	:return object | NoneType: value for the option if found in the
+		config file, otherwise the default
+	"""
+
+	# TODO: how to handle flags? ("TRUE"/"FALSE", true/false, absent vs. present-as-null)
+
+	# Grab full name and default (if present)
+	try:
+		full_opt_name, default = FSEQ_OPTS[short_optname]
+	except ValueError:
+		full_opt_name = FSEQ_OPTS[short_optname]
+		default = None
+
+	try:
+		# Config file param specs lack hyphen(s).
+		return pipeline_parameters.fseq[short_optname.lstrip("-")]
+	except KeyError:
+		try:
+			return pipeline_parameters.fseq[full_opt_name]
+		except KeyError:
+			if cmdl_opts:
+				return getattr(cmdl_opts, full_opt_name, default)
+			else:
+				return default
 
 
 
