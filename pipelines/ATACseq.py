@@ -623,12 +623,11 @@ def main():
 
 	# Call peaks and report peak count.
 	pm.run(cmd, peak_output_file)
-	with open(peak_output_file, 'r') as peaksfile:
-		num_peaks = max(0, sum(1 for _ in peaksfile) - 1)
+	num_peaksfile_lines = int(ngstk.count_lines(peak_output_file).strip())
+	num_peaks = max(0, num_peaksfile_lines - 1)
 	pm.report_result("Peak_count", num_peaks)
 
-
-	# filter peaks in blacklist 
+	# Filter peaks in blacklist.
 	if os.path.exists(res.blacklist):
 		filter_peak = os.path.join(peak_folder,  args.sample_name + "_peaks.narrowPeak.rmBlacklist")
 		cmd = tools.bedtools  + " intersect " + " -a " + peak_output_file + " -b " + res.blacklist + " -v  >"  +  filter_peak
