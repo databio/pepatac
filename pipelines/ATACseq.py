@@ -52,9 +52,6 @@ def parse_arguments():
 						default="macs2", choices=PEAK_CALLERS,
 						help="Name of peak caller")
 
-	parser.add_argument("--skip-tss", dest="skip_tss", action="store_true",
-						help="Skip TSS enrichment")
-
 	parser.add_argument("--trimmer", dest="trimmer",
 						default="trimmomatic", choices=TRIMMERS,
 						help="Name of read trimming program")
@@ -527,9 +524,7 @@ def main():
 	pm.run([cmd, cmd2], temp_target)
 
 	# TSS enrichment
-	if args.skip_tss:
-		print("Skipping TSS -- CLI option toggled")
-	elif not os.path.exists(res.TSS_file):
+	if not os.path.exists(res.TSS_file):
 		print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}".format(res.TSS_file))
 	else:
 		pm.timestamp("### Calculate TSS enrichment")
