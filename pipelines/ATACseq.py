@@ -624,7 +624,7 @@ def main():
 	# Call peaks and report peak count.
 	pm.run(cmd, peak_output_file)
 	with open(peak_output_file, 'r') as peaksfile:
-		num_peaks = sum(1 for _ in peaksfile) - 1
+		num_peaks = max(0, sum(1 for _ in peaksfile) - 1)
 	pm.report_result("Peak_count", num_peaks)
 
 
