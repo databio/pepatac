@@ -62,13 +62,6 @@ def parse_arguments():
 	parser.add_argument("--prealignments", default=[], type=str, nargs="+",
 						help="Space-delimited list of reference genomes to align to before primary alignment.")
 
-	# F-seq as peak caller
-	parser.add_argument("--fragment-size", type=int,
-						help="Fragment size specification for F-seq; "
-							 "by default, this is inferred from the data, but "
-							 "explicit specification can help with potential "
-							 "ArrayIndexOutOfBoundException when there are few reads.")
-
 	parser.add_argument("-V", "--version", action="version",
 	          			version="%(prog)s {v}".format(v=__version__))
 
@@ -335,14 +328,14 @@ def main():
 
 	# Create trimming command(s).
 	if args.trimmer == "pyadapt":
-		#TODO make pyadapt give options for output file name.
-		trim_cmd_base = os.path.join(tools.scripts_dir, "pyadapter_trim.py")
-		trim_cmd_options = [
-				("-a", local_input_files[0]),
-				("-b", local_input_files[1]),
-				("-o", out_fastq_pre)
+		# TODO: make pyadapt give options for output file name.
+		trim_cmd_chunks = [
+			os.path.join(tools.scripts_dir, "pyadapter_trim.py")
+			("-a", local_input_files[0]),
+			("-b", local_input_files[1]),
+			("-o", out_fastq_pre),
+			"-u"
 		]
-		trim_cmd_chunks = [trim_cmd_base] + trim_cmd_options + ["-u"]
 		cmd = build_command(trim_cmd_chunks)
 
 	elif args.trimmer == "skewer":
@@ -362,16 +355,15 @@ def main():
 		# Rename the logfile.
 		#skewer_filename_pairs.append(("{}-trimmed.log".format(out_fastq_pre), trimLog))
 
-		trim_cmd_base = tools.skewer #+ " --quiet"
-		trim_cmd_options = [
-				("-f", "sanger"),
-				("-t", str(args.cores)),
-				("-m", skewer_mode),
-				("-x", res.adapter),
-				("-o", out_fastq_pre)
+		trim_cmd_chunks = [
+			tools.skewer  # + " --quiet"
+			("-f", "sanger"),
+			("-t", str(args.cores)),
+			("-m", skewer_mode),
+			("-x", res.adapter),
+			("-o", out_fastq_pre),
 		]
-		trim_cmd_chunks = [trim_cmd_base] + trim_cmd_options
-		trimming_command = build_command(trim_cmd_chunks)
+		trimming_command = build_command(trim_cmd_chunks + skewer_input_files)
 		trimming_renaming_commands = [build_command(["mv", old, new]) for old, new in skewer_filename_pairs]
 		# Pypiper submits the commands serially.
 		cmd = [trimming_command] + trimming_renaming_commands
