@@ -94,6 +94,8 @@ def build_command(chunks):
 	parsed_pieces = []
 
 	for cmd_part in chunks:
+		if cmd_part is None:
+			continue
 		try:
 			# Trim just space, not all whitespace.
 			# This prevents damage to an option that specifies,
@@ -284,48 +286,43 @@ def main():
 		cmd = build_command(trim_cmd_chunks)
 
 	elif args.trimmer == "skewer":
-		skewer_input_files = [local_input_files[0]]
-
-		if args.paired_end:
-			skewer_mode = "pe"
-			skewer_input_files.append(local_input_files[1])
-			skewer_filename_pairs = [
-				("{}-trimmed-pair1.fastq".format(out_fastq_pre), trimmed_fastq), 
-				("{}-trimmed-pair2.fastq".format(out_fastq_pre), trimmed_fastq_R2)]
-		else:
-			skewer_mode = "any"
-			skewer_filename_pairs = [
-				("{}-trimmed.fastq".format(out_fastq_pre), trimmed_fastq)]
-
-		# Rename the logfile.
-		#skewer_filename_pairs.append(("{}-trimmed.log".format(out_fastq_pre), trimLog))
-
+		# Create the primary skewer command.
 		trim_cmd_chunks = [
 			tools.skewer,  # + " --quiet"
 			("-f", "sanger"),
 			("-t", str(args.cores)),
-			("-m", skewer_mode),
+			("-m", "pe" if args.paired_end else "any"),
 			("-x", res.adapter),
-			("-o", out_fastq_pre)
+			("-o", out_fastq_pre),
+			local_input_files[0],
+			local_input_files[1] if args.paired_end else None
 		]
-		trimming_command = build_command(trim_cmd_chunks + skewer_input_files)
+		trimming_command = build_command(trim_cmd_chunks)
+
+		# Create the skewer file renaming commands.
+		skewer_filename_pairs = [("{}-trimmed-pair1.fastq".format(out_fastq_pre), trimmed_fastq)]
+		if args.paired_end:
+			skewer_filename_pairs.append(("{}-trimmed-pair2.fastq".format(out_fastq_pre), trimmed_fastq_R2))
 		trimming_renaming_commands = [build_command(["mv", old, new]) for old, new in skewer_filename_pairs]
+		# Rename the logfile.
+		#skewer_filename_pairs.append(("{}-trimmed.log".format(out_fastq_pre), trimLog))
+
 		# Pypiper submits the commands serially.
 		cmd = [trimming_command] + trimming_renaming_commands
 
 	else:
 		# Default to trimmomatic.
-		java_base_text = "{} -Xmx{}".format(tools.java, pm.mem)
-		trimmomatic_text = "-jar {} PE -threads {}".format(tools.trimmo, pm.cores)
-		r1_trim_unpaired, r2_trim_unpaired = \
-				["{}{}".format(trimming_prefix, suffix)
-				 for suffix in ["_R1_unpaired.fq", "_R2_unpaired.fq"]]
-		trim_spec_text = "ILLUMINACLIP:" + res.adapter + ":2:30:10"
-		trimmomatic_filepaths = [
-			local_input_files[0], local_input_files[1],
-			trimmed_fastq, r1_trim_unpaired,
-			trimmed_fastq_R2, r2_trim_unpaired]
-		trim_cmd_chunks = [java_base_text, trimmomatic_text] + trimmomatic_filepaths + [trim_spec_text]
+		trim_cmd_chunks = [
+			"{java} -Xmx{mem} -jar {trim} PE -threads {cores}".format(
+				java=tools.java, mem=pm.mem, trim=tools.trimmo, cores=pm.cores),
+			local_input_files[0],
+			local_input_files[1],
+			trimmed_fastq,
+			trimming_prefix + "_R1_unpaired.fq",
+			trimmed_fastq_R2,
+			trimming_prefix + "_R2_unpaired.fq",
+			"ILLUMINACLIP:" + res.adapter + ":2:30:10"
+		]
 		cmd = build_command(trim_cmd_chunks)
 
 	pm.run(cmd, trimmed_fastq,
