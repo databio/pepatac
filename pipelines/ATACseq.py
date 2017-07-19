@@ -17,7 +17,6 @@ import pypiper
 
 PEAK_CALLERS = ["fseq", "macs2"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
-# TODO: should output format flexibility even be allowed at all?
 
 
 
