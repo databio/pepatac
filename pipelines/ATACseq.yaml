@@ -31,4 +31,7 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     q: 0.01
     shift: 0
   fseq:
-    of: npf
+    of: npf    # narrowPeak as output format
+    l: 600     # feature length
+    t: 4.0     # "threshold" (standard deviations)
+    s: 1       # wiggle track step
