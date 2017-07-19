@@ -126,7 +126,7 @@ def main():
 
 	# Initialize
 	outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
-	pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__, strict_config=True)
+	pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__)
 	ngstk = pypiper.NGSTk(pm=pm)
 
 	# Convenience alias 
