@@ -516,16 +516,14 @@ def main():
 	if args.peak_caller == "fseq":
 		fseq_cmd_chunks = [tools.fseq, ("-o", peak_folder)]
 
-		# Parse additional fseq options from the configuration.
-		# Store the true fseq default here just in case an alternate pipeline
-		# configuration file is specified and the user forgets or does not want
-		# to provide a value (or lacks write access to the file).
-		for fseq_opt, default_fseq_val in [("of", "npf"), ("l", 600), ("t", 4.0), ("s", 1)]:
+		# Parse only a subset of fseq options.
+		for fseq_opt in ["of", "l", "t", "s"]:
 			fseq_value = param.fseq[fseq_opt]
-			# TODO: swtich to more natural try/except approach once PipelineManager config is strict.
-			# Non-strict pipeline parameters AttributeDict return key itself if missing.
+			# TODO: use more natural try/except once PipelineManager parameters AD is strict.
 			if fseq_value == fseq_opt:
-				fseq_value = default_fseq_val
+				# Non-strict pipeline parameters AttributeDict returns key itself if missing.
+				continue
+			# We're building a command, so even non-text values need no special handling.
 			fseq_optval = ("-{}".format(fseq_opt), fseq_value)
 			fseq_cmd_chunks.append(fseq_optval)
 
