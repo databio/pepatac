@@ -120,27 +120,45 @@ class TestBuildCommandHolistic:
         """ Command construction satisfies associativity. """
         expected = "fseq -d input_folder -o output -of npf input_file"
         assert expected == build_command(expected.split())
-        assert expected == build_command(["fseq", ("-d", "input_folder"), "-o", ("output", "-of"), "npf", "input_file"])
-        assert expected == build_command([("fseq", "-d"), ("input_folder", "-o"), "output", "-of", ("npf", "input_file")])
+        assert expected == build_command(
+            ["fseq", ("-d", "input_folder"), "-o", ("output", "-of"), "npf", "input_file"])
+        assert expected == build_command(
+            [("fseq", "-d"), ("input_folder", "-o"), "output", "-of", ("npf", "input_file")])
 
 
     @pytest.mark.parametrize(
         argnames="arg_by_opt",
-        argvalues=[{"--gsize": "4B"}, {"--qvalue": 0.01}, {"--gsize": 4000000000, "-qvalue": 0.005}],
+        argvalues=[{"--gsize": "4B"}, {"--qvalue": 0.01},
+                   {"--gsize": 4000000000, "-qvalue": 0.005}],
         ids=lambda arg_by_opt: " arg_by_opt = {} ".format(arg_by_opt))
     def test_conditional_argument_specification(self, arg_by_opt):
         """ Null-valued options are ignored. """
         optnames = ["--gsize", "--qvalue"]
         program = "macs2 callpeak"
         opts_text = "-f BED --nomodel"
-        options = [(opt, arg_by_opt[opt] if opt in arg_by_opt else None) for opt in optnames]
+        options = [(opt, arg_by_opt[opt] if opt in arg_by_opt else None)
+                   for opt in optnames]
         cmd = build_command([program] + [opts_text] + options)
         for opt in optnames:
             if opt in arg_by_opt:
                 assert "{} {}".format(opt, arg_by_opt[opt]) in cmd
             else:
                 assert opt not in cmd
-        expected_num_spaces = sum(len(command_section) for command_section in [program.split(" "), opts_text.split(" "), options]) - 1
+        expected_num_spaces = -1 + sum(
+                len(command_section) for command_section in
+                [program.split(" "), opts_text.split(" "), options])
         print("Expecting {} spaces in command: {}".format(expected_num_spaces, cmd))
         assert expected_num_spaces == cmd.count(" ")
 
+
+    def test_ignores_null_singletons(self):
+        """ Conditional expression for positional arg may evaluate to null. """
+        cmd_chunks = [
+            "java",
+            ("-jar", "trimmomatic.jar"),
+            None,
+            ("-o", None),
+            "input_file.txt"
+        ]
+        expected = "java -jar trimmomatic.jar input_file.txt"
+        assert expected == build_command(cmd_chunks)
