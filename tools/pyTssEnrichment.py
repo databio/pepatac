@@ -2,35 +2,35 @@
 # pyTssEnrichment.py
 #
 # Modified from pyMakeVplot.py: Jason Buenrostro
-# Last updated 6/22/17: Ryan Corces
+# Last updated 7/16/17: Vince Reuter
 #
 # Dependencies: Script requires ATAC_Rscript_TSSenrichmentPlot_pyPiper.R to be in the same directory
 #				For pyPiper, these two scripts would be in the tools directory
 #
 # Function: Script takes as input a BAM file and a bed file of single base positions and plots the enrichment of signal around those regions
-#			This enrichment is calculated as the cummulative insertions per base divided by the average number of insertions in the first 100 bases of the window
+#			This enrichment is calculated as the cumulative insertions per base divided by the average number of insertions in the first 100 bases of the window
 #
 # Parameters: This version of the script expects a certain set or parameters in order to properly interface with ATAC_Rscript_TSSenrichmentPlot_pyPiper.R
 #			  Those parameters are: -p ends -e 2000 -u -v -s 4 -o <someFile.TssEnrichment>
 
 
-##### IMPORT MODULES #####
-# import necessary for python
 import os
-import sys
-import subprocess
-import numpy as np
-import pysam
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from multiprocessing import Pool
 from optparse import OptionParser
-import random
+import subprocess
+import sys
+
+# Plotting imports
+#import matplotlib
+#matplotlib.use('Agg')
+#import matplotlib.pyplot as plt
+
+import numpy as np
+import pysam
+
 
 #### OPTIONS ####
 # read options from command line
-opts = OptionParser()
 usage = "usage: %prog [options] [inputs]"
 opts = OptionParser(usage=usage)
 opts.add_option("-a", help="<Reads> Accepts sorted BAM file")
@@ -76,8 +76,15 @@ def sub_Mat(start):
         center = int(p1_ints[i][1])+(int(p1_ints[i][2])-int(p1_ints[i][1]))/2
         s_int=center-int(options.e)
         e_int=center+int(options.e)
-        # loop through rds
-        for p2_rds in bamfile.fetch(str(p1_ints[i][0]), max(0,s_int-2000), e_int+2000):
+        # Loop over reads.
+        try:
+            p2_reads = bamfile.fetch(str(p1_ints[i][0]), max(0, s_int - 2000), e_int + 2000)
+        except ValueError:
+            # Could print speculation about cause, but that may get wordy.
+            # This is likely due to no reads for first argument to the fetch()
+            # call; that is, the current "reference" value.
+            continue
+        for p2_rds in p2_reads:
             #check mapping quality
             if p2_rds.mapq<30:# or p2_rds.is_proper_pair==False:
                 continue
