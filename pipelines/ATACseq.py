@@ -562,11 +562,13 @@ def main():
 		cmd = build_command(macs_cmd_chunks)
 		pm.run(cmd, peak_output_file)
 
+	def report_peak_count():
+		num_peaksfile_lines = int(ngstk.count_lines(peak_output_file).strip())
+		num_peaks = max(0, num_peaksfile_lines - 1)
+		pm.report_result("Peak_count", num_peaks)
+
 	# Call peaks and report peak count.
-	pm.run(cmd, peak_output_file)
-	num_peaksfile_lines = int(ngstk.count_lines(peak_output_file).strip())
-	num_peaks = max(0, num_peaksfile_lines - 1)
-	pm.report_result("Peak_count", num_peaks)
+	pm.run(cmd, peak_output_file, follow=report_peak_count)
 
 	# Filter peaks in blacklist.
 	if os.path.exists(res.blacklist):
