@@ -591,6 +591,13 @@ def main():
 
 		# Pypiper serially exectutes the commands.
 		cmd = [fseq_cmd, merge_chrom_peaks_files, delete_chrom_peaks_files]
+		pm.run(cmd, peak_output_file, nofail=True)
+		if not os.path.exists(peak_output_file):
+			pm.fail_pipeline(Exception(
+				"Failed to create peaks file with fseq; if the log file "
+				"indicates an ArrayIndexOutOfBoundsException, this is likely "
+				"due to a low read count and can probably be overcome be "
+				"specifying fragment size with the fseq -f option."))
 
 	else:
 		# MACS2
@@ -607,6 +614,7 @@ def main():
 		]
 		# Note: required input file is non-positional ("treatment" file -t)
 		cmd = build_command([program] + peak_cmd_opts)
+		pm.run(cmd, peak_output_file)
 
 	# Call peaks and report peak count.
 	pm.run(cmd, peak_output_file)
