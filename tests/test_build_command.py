@@ -22,19 +22,24 @@ class TestBasicBuildCommand:
 
 
     @pytest.mark.parametrize(argnames="chunks", argvalues=[None, "", []])
-    def test_no_command_parts(self, chunks):
+    def test_requires_chunks(self, chunks):
         """ Fail loudly to halt processing if no command parts are there. """
         with pytest.raises(ValueError):
             build_command(chunks)
 
 
-    def test_basic_raw_string(self):
+    def test_ignores_single_null(self):
+        """ Command builder ignores each null singleton. """
+        assert "" == build_command([None])
+
+
+    def test_raw_string_is_unchanged(self):
         """ Single raw text command is returned as such. """
         text = "".join(random.choice(string.letters))
         assert text == build_command(text)
 
 
-    def test_single_wrapped_string(self):
+    def test_single_wrapped_string_is_unchanged(self):
         """ Raw command within contained type is returned as the command. """
         digits_string = "".join(random.choice(string.digits))
         assert digits_string == build_command(digits_string)
@@ -42,7 +47,7 @@ class TestBasicBuildCommand:
 
     @pytest.mark.parametrize(
         argnames="option", argvalues=["python", "-V", "--help"])
-    def test_single_tuple_null_argument(self, option):
+    def test_single_null_value_option_is_omitted(self, option):
         """ Null-valued option is excluded from command. """
         assert "" == build_command([(option, None)])
 
@@ -50,7 +55,7 @@ class TestBasicBuildCommand:
     @pytest.mark.parametrize(
         argnames=["option", "argument"],
         argvalues=[("java", "-version"), ("python", "--help"), ("-q", True), ("--CO", 550)])
-    def test_single_tuple_non_null_argument(self, option, argument):
+    def test_single_non_null_valued_option_is_used(self, option, argument):
         """ Non-null-valued option is included in command, single-spaced. """
         assert "{} {}".format(option, argument) == build_command([(option, argument)])
 
