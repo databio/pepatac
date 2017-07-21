@@ -1,2 +1,10 @@
+# General
 *.pyc
 .~lock*
+
+# JetBrains
+.idea/
+
+# Tests
+.cache/
+

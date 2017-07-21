@@ -1,36 +1,36 @@
 #!/usr/bin/env python
-# Original Author: Jason Buenrostro
-# Modified from plotV_vC.py: Alicia Schepp
+# pyTssEnrichment.py
 #
-# Last updated 6/22/17: Ryan Corces
+# Modified from pyMakeVplot.py: Jason Buenrostro
+# Last updated 7/16/17: Vince Reuter
 #
 # Dependencies: Script requires ATAC_Rscript_TSSenrichmentPlot_pyPiper.R to be in the same directory
 #				For pyPiper, these two scripts would be in the tools directory
 #
 # Function: Script takes as input a BAM file and a bed file of single base positions and plots the enrichment of signal around those regions
-#			This enrichment is calculated as the cummulative insertions per base divided by the average number of insertions in the first 100 bases of the window
+#			This enrichment is calculated as the cumulative insertions per base divided by the average number of insertions in the first 100 bases of the window
 #
 # Parameters: This version of the script expects a certain set or parameters in order to properly interface with ATAC_Rscript_TSSenrichmentPlot_pyPiper.R
 #			  Those parameters are: -p ends -e 2000 -u -v -s 4 -o <someFile.TssEnrichment>
 
 
-##### IMPORT MODULES #####
-# import necessary for python
 import os
-import sys
-import subprocess
-import numpy as np
-import pysam
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from multiprocessing import Pool
 from optparse import OptionParser
-import random
+import subprocess
+import sys
+
+# Plotting imports
+#import matplotlib
+#matplotlib.use('Agg')
+#import matplotlib.pyplot as plt
+
+import numpy as np
+import pysam
+
 
 #### OPTIONS ####
 # read options from command line
-opts = OptionParser()
 usage = "usage: %prog [options] [inputs]"
 opts = OptionParser(usage=usage)
 opts.add_option("-a", help="<Reads> Accepts sorted BAM file")
@@ -76,8 +76,15 @@ def sub_Mat(start):
         center = int(p1_ints[i][1])+(int(p1_ints[i][2])-int(p1_ints[i][1]))/2
         s_int=center-int(options.e)
         e_int=center+int(options.e)
-        # loop through rds
-        for p2_rds in bamfile.fetch(str(p1_ints[i][0]), max(0,s_int-2000), e_int+2000):
+        # Loop over reads.
+        try:
+            p2_reads = bamfile.fetch(str(p1_ints[i][0]), max(0, s_int - 2000), e_int + 2000)
+        except ValueError:
+            # Could print speculation about cause, but that may get wordy.
+            # This is likely due to no reads for first argument to the fetch()
+            # call; that is, the current "reference" value.
+            continue
+        for p2_rds in p2_reads:
             #check mapping quality
             if p2_rds.mapq<30:# or p2_rds.is_proper_pair==False:
                 continue
@@ -109,13 +116,10 @@ def sub_Mat(start):
 p1_ints = np.loadtxt(options.b,'str')
 
 ##### SCRIPT #####
-# open and read BAM file
-#bamfile = pysam.Samfile(options.a, "rb")  # messes with file handle, add into func instead
 
 # determine number of rows and columns for matrix
 rows = 1000
 cols = int(options.e)*2
-#cols = int(p1_ints[0][2])-int(p1_ints[0][1])+int(options.e)*2
 
 # split bedfile into chunks
 maxi=len(p1_ints)
@@ -151,24 +155,25 @@ if options.u == True:
 else:
     np.save(options.o,mat)
 
+
+#UNUSED PLOTTING FEATURES BELOW
 # plot
-fig=plt.figure(figsize=(8.0, 5.0))
-xran=min(500,int(options.e))
-yran=min(500,rows)
-if options.v == True:
-    #plt.plot(mat/np.median(mat[1:200]))
-    plt.plot(mat/np.mean(mat[1:200]),'k.')
-    plt.plot(np.convolve(mat,np.ones(int(options.window)),'same')/int(options.window)/np.mean(mat[1:200]),'r')
-    plt.xlabel('Position relative to center')
-    plt.ylabel('Insertions')
-elif options.i == True:
-    plt.plot(mat[0:990])
-    plt.xlabel('Insert size (bp)')
-    plt.ylabel('Count')
-else:
-    plt.imshow(mat[0:yran,(int(options.e)-xran):(int(options.e)+xran+1)],origin='lower',aspect='equal',extent=[-xran,xran,1,yran+1])
-    plt.xlabel('Position relative to center')
-    plt.ylabel('Insert size')
+# fig=plt.figure(figsize=(8.0, 5.0))
+# xran=min(500,int(options.e))
+# yran=min(500,rows)
+# if options.v == True:
+    # plt.plot(mat/np.mean(mat[1:200]),'k.')
+    # plt.plot(np.convolve(mat,np.ones(int(options.window)),'same')/int(options.window)/np.mean(mat[1:200]),'r')
+    # plt.xlabel('Position relative to center')
+    # plt.ylabel('Insertions')
+# elif options.i == True:
+    # plt.plot(mat[0:990])
+    # plt.xlabel('Insert size (bp)')
+    # plt.ylabel('Count')
+# else:
+    # plt.imshow(mat[0:yran,(int(options.e)-xran):(int(options.e)+xran+1)],origin='lower',aspect='equal',extent=[-xran,xran,1,yran+1])
+    # plt.xlabel('Position relative to center')
+    # plt.ylabel('Insert size')
 
 # save figure
 #fig.savefig(options.o+'.png')
@@ -176,7 +181,7 @@ else:
 #plt.close(fig)
 
 #Call ATAC_Rscript_TSSenrichmentPlot_pyPiper.R to make TSS plot
-cmd = "Rscript "
-cmd += os.path.dirname(os.path.realpath(sys.argv[0])) + "/ATAC_Rscript_TSSenrichmentPlot_pyPiper.R"
-cmd += " --TSSfile " + options.o + " --outputType pdf"
-subprocess.call(cmd, shell=True)
+# cmd = "Rscript "
+# cmd += os.path.dirname(os.path.realpath(sys.argv[0])) + "/ATAC_Rscript_TSSenrichmentPlot_pyPiper.R"
+# cmd += " --TSSfile " + options.o + " --outputType pdf"
+# subprocess.call(cmd, shell=True)
