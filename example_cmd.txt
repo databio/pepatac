@@ -1,0 +1,90 @@
+# Example commands of using pepATAC through pypiper. 
+# For the example commands of using pepATAC with looper, please see the xxx Users Guide.
+
+INPUT=/path/to/sequencing_results/fastq_files
+
+# run pepATAC on a human paired-end reads dataset using 5 threads:
+python pipelines/ATACseq.py -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+
+# run pepATAC on multiple datasets at the same time:  <- this could be wrong as I don't see an explaination of how to use -I and -I2 with multiple samples
+python pipelines/ATACseq.py -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results1_PE_R1.fastq.gz $INPUT/ATACseq_results2_PE_R1.fastq.gz $INPUT/ATACseq_results3_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results1_PE_R2.fastq.gz $INPUT/ATACseq_results2_PE_R2.fastq.gz $INPUT/ATACseq_results3_PE_R2.fastq.gz 
+
+# run multiple samples with a for loop:
+declare -a sample_name_arr=("sample1","sample2","sample3")
+for sample_name in "${sample_name_arr[@]}"
+do
+file1=$INPUT/{$file1}_PE_R1.fastq.gz
+file2=${file1/R1/R2}
+python pipelines/ATACseq.py -P 5 -O output_folder -S $sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $file1 -I2 $file2  
+done
+
+# run pepATAC on a mouse single-end reads dataset using 8 threads:
+python pipelines/ATACseq.py -P 8 -O output_folder -S output_sample_name -G mm10  -Q single  -C ATACseq.yaml  -gs mm -I $INPUT/ATACseq_results_PE_R1.fastq.gz  
+
+# run pepATAC with different trimming tools then default trimmomatic, currectly supports skewer and pyadapt: 
+python pipelines/ATACseq.py --skewer TRUE -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+python pipelines/ATACseq.py --pyadapt TRUE -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+
+# re-run pepATAC and over-write the previous output: 
+python pipelines/ATACseq.py -N -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+
+# continue to run pepATAC since a locked step (usually locked due to failure): 
+python pipelines/ATACseq.py -R -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+
+
+
+
+# check xxxx for full list of parameter usage
+
+# full list of parameters are listed below: 
+python ATACseq.py 
+usage: ATACseq.py [-h] [-N] [-I2 INPUT_FILES2 [INPUT_FILES2 ...]]
+[-M MEMORY_LIMIT] [-Q SINGLE_OR_PAIRED] [-S SAMPLE_NAME]
+[-P NUMBER_OF_CORES] [-D] [-I INPUT_FILES [INPUT_FILES ...]]
+[-F] [-R] [-C CONFIG_FILE] [-O PARENT_OUTPUT_FOLDER]
+[-G GENOME_ASSEMBLY] [-gs GENOME_SIZE]
+[--frip-ref-peaks FRIP_REF_PEAKS] [--pyadapt] [--skewer]
+[--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
+
+Pipeline
+optional arguments:
+-C CONFIG_FILE, --config CONFIG_FILE
+pipeline config file in YAML format; relative paths
+are considered relative to the pipeline script.
+defaults to ATACseq.yaml
+-D, --dirty           Make all cleanups manual
+-F, --follow          Run all follow commands, even if command is not run
+--frip-ref-peaks FRIP_REF_PEAKS
+Reference peak set for calculating FRIP
+-G GENOME_ASSEMBLY, --genome GENOME_ASSEMBLY
+identifier for genome assempbly (required)
+-gs GENOME_SIZE, --genome-size GENOME_SIZE
+genome size for MACS2
+-h, --help            show this help message and exit
+-I INPUT_FILES [INPUT_FILES ...], --input INPUT_FILES [INPUT_FILES ...]
+One or more primary input files (required)
+-I2 INPUT_FILES2 [INPUT_FILES2 ...], --input2 INPUT_FILES2 [INPUT_FILES2 ...]
+One or more secondary input files (if they exists);
+for example, second read in pair.
+-M MEMORY_LIMIT, --mem MEMORY_LIMIT
+Memory string for processes that accept memory limits
+(like java)
+-N, --new-start       Fresh start mode, overwrite all
+-O PARENT_OUTPUT_FOLDER, --output-parent PARENT_OUTPUT_FOLDER
+parent output directory of the project (required).
+-P NUMBER_OF_CORES, --cores NUMBER_OF_CORES
+number of cores to use for parallel processes
+-Q SINGLE_OR_PAIRED, --single-or-paired SINGLE_OR_PAIRED
+single or paired end? default: single
+-R, --recover         Recover mode, overwrite locks
+-S SAMPLE_NAME, --sample-name SAMPLE_NAME
+unique name for output subfolder and files (required)
+--pyadapt             Use pyadapter_trim for trimming? [Default: False]
+--skewer              Use skewer for trimming? [Default: False]
+--prealignments PREALIGNMENTS [PREALIGNMENTS ...]
+List of reference genomes to align to before primary
+alignment.
+-V, --version         show program's version number and exit'
+
+
+
