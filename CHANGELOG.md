@@ -1,22 +1,26 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.4.0] -- Unreleased
+## [0.4.0] -- 2017-07-21
 
 ### Added
-- Peak calling may now be done with the [fseq](https://github.com/aboyle/F-seq) from the [Furey Lab](http://fureylab.web.unc.edu/software/fseq/).
+- Added [fseq](https://github.com/aboyle/F-seq) as a peak caller option
+- Peak caller is specified by a command line argument (defaults to macs2)
 - Count of called peaks is now reported as a pipeline result.
+- Add R and ggplot2 as requirements
 
 ### Changed
-- Changed TSS plotting
+- Changed TSS plotting to use R instead of python
+- TSS plot failures no longer fail the pipeline.
 - Changed `Read_type` to `read_type` to prevent duplicate columns
-- Choice of read trimmer (and now also peak caller since there's a second option) is specified in option + argument style rather than as a flag.
+- Read trimmer is now specified in option + argument style rather than as a flag.
 
 ## [0.3.0] -- 2017-06-22
 
 ### Added
 - Added exact cuts calculation
-- Adds command-line version display
+- Added command-line version display
+- Added skewer as a trimmer option 
 - Uses looper 'implied columns' (from looper v0.6) to derive multiple variables from organism value
 
 ### Changed
