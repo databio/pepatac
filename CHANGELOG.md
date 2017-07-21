@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file.
 ## [0.4.0] -- Unreleased
 
 ### Added
-	
+- Peak calling may now be done with the [fseq](https://github.com/aboyle/F-seq) from the [Furey Lab](http://fureylab.web.unc.edu/software/fseq/).
+- Count of called peaks is now reported as a pipeline result.
+
 ### Changed
 - Changed TSS plotting
 - Changed `Read_type` to `read_type` to prevent duplicate columns
+- Choice of read trimmer (and now also peak caller since there's a second option) is specified in option + argument style rather than as a flag.
 
 ## [0.3.0] -- 2017-06-22
 
