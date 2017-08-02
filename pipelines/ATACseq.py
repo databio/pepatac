@@ -140,8 +140,13 @@ def main():
 			cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 			cmd += " --un-conc-gz " + out_fastq_bt2
 			cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
-			cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapped_bam  # sort output
+			cmd += " | " + tools.samtools + " sort - -@ 1" # sort output
 			cmd += " > " + mapped_bam
+
+			# In this samtools sort command we print to stdout and then use > to
+			# redirect instead of  `+ " -o " + mapped_bam` because then samtools
+			# uses a random temp file, so it won't choke if the job gets
+			# interrupted and restarted at this step.
 
 			pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam))
 
@@ -417,7 +422,6 @@ def main():
 		# Always plot strand specific TSS enrichment. 
 		# added by Ryan 2/10/17 to calculate TSS score as numeric and to include in summary stats
 		# This could be done in prettier ways which I'm open to. Just adding for the idea
-		# with open("A34912-CaudateNucleus-RepA_hg19.srt.rmdup.flt.RefSeqTSS") as f:
 		with open(Tss_enrich) as f:
 			floats = map(float,f)
 		Tss_score = (sum(floats[1950:2050])/100)/(sum(floats[1:200])/200)

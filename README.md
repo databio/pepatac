@@ -38,7 +38,7 @@ Version 0.3 of this pipeline requires looper version 0.6 or greater. You can upg
 
 There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
 
-**Option 1: Default configuration** (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
+**Configuration option 1: Default configuration** (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
   - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH.
   - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
   ```
@@ -54,18 +54,20 @@ There are two configuration options: You can either set up environment variables
   - Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
 
 
-**Option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
+**Configuration option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
 
 
 ## Running the pipeline
 
 You have options for running the pipeline. This is a looper-compatible pipeline, so you never need to interface with the pipeline directly, but you can if you want. 
 
-### Option 1: Running the pipeline script directly
+
+
+### Run option 1: Running the pipeline script directly
 
 Just run `python pipelines/ATACseq.py -h` to see usage. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh).
 
-### Option 2: Running the pipeline through looper
+### Run option 2: Running the pipeline through looper
 
 [Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy this pipeline across samples. To use it, you will need to tell looper about your project. 
 
@@ -95,6 +97,10 @@ Your annotation file must specify these columns:
 - whatever else you want
 
 Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
+
+### Arguments
+
+The arguments to the pipeline are the same whether you run it using looper or on the command line. 
 
 ## Outline of analysis steps
 
