@@ -375,7 +375,8 @@ def main():
 	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 	cmd += " | " + tools.samtools + " view -bS - -@ 1 "
 	#cmd += " -f 2 -q 10"  # quality and pairing filter
-	cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_genome_bam_temp
+	cmd += " | " + tools.samtools + " sort - -@ 1"
+	cmd += " > " + mapping_genome_bam_temp
 
 	# Split genome mapping result bamfile into two: high-quality aligned reads (keepers)
 	# and unmapped reads (in case we want to analyze the altogether unmapped reads)
