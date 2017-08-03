@@ -375,7 +375,7 @@ def main():
 	bt2_options += " -X 2000"
 
 	# samtools sort needs a temporary directory
-	tempdir = tempfile.mkdtemp(dir=sub_outdir)
+	tempdir = tempfile.mkdtemp(dir=map_genome_folder)
 	pm.clean_add(tempdir)
 
 	cmd = tools.bowtie2 + " -p " + str(pm.cores)
