@@ -11,6 +11,7 @@ __version__ = "0.5.0-dev"
 from argparse import ArgumentParser
 import os
 import sys
+import tempfile
 import pypiper
 
 
@@ -186,6 +187,10 @@ def main():
 				bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
 				bt2_options += " -X 2000"
 
+			# samtools sort needs a temporary directory
+			tempdir = tempfile.mkdtemp(dir=sub_outdir)
+			pm.clean_add(tempdir)
+
 			# Build bowtie2 command
 			cmd = tools.bowtie2 + " -p " + str(pm.cores)
 			cmd += bt2_options
@@ -195,13 +200,13 @@ def main():
 			cmd += " --un-conc-gz " + out_fastq_bt2
 			cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
 			cmd += " | " + tools.samtools + " sort - -@ 1" # sort output
-			cmd += " > " + mapped_bam
+			cmd += " -T " + tempdir
+			cmd += " -o " + mapped_bam
 
 			# In this samtools sort command we print to stdout and then use > to
 			# redirect instead of  `+ " -o " + mapped_bam` because then samtools
 			# uses a random temp file, so it won't choke if the job gets
 			# interrupted and restarted at this step.
-
 
 			pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam, args.paired_end))
 
@@ -368,6 +373,10 @@ def main():
 	bt2_options = " --very-sensitive"
 	bt2_options += " -X 2000"
 
+	# samtools sort needs a temporary directory
+	tempdir = tempfile.mkdtemp(dir=sub_outdir)
+	pm.clean_add(tempdir)
+
 	cmd = tools.bowtie2 + " -p " + str(pm.cores)
 	cmd += bt2_options
 	cmd += " --rg-id " + args.sample_name
@@ -376,7 +385,8 @@ def main():
 	cmd += " | " + tools.samtools + " view -bS - -@ 1 "
 	#cmd += " -f 2 -q 10"  # quality and pairing filter
 	cmd += " | " + tools.samtools + " sort - -@ 1"
-	cmd += " > " + mapping_genome_bam_temp
+	cmd += " -T " + tempdir
+	cmd += " -o " + mapping_genome_bam_temp
 
 	# Split genome mapping result bamfile into two: high-quality aligned reads (keepers)
 	# and unmapped reads (in case we want to analyze the altogether unmapped reads)
