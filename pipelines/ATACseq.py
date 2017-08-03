@@ -303,6 +303,7 @@ def main():
 			("-t", str(args.cores)),
 			("-m", "pe" if args.paired_end else "any"),
 			("-x", res.adapter),
+			"--quiet",
 			("-o", out_fastq_pre),
 			local_input_files[0],
 			local_input_files[1] if args.paired_end else None
