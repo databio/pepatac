@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] -- Unreleased
+
+### Changed
+- Changed default trimmer from trimmomatic to skewer
+
 ## [0.4.0] -- 2017-07-21
 
 ### Added
