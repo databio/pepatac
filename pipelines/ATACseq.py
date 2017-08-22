@@ -44,7 +44,7 @@ def parse_arguments():
 						help="Name of peak caller")
 
 	parser.add_argument("--trimmer", dest="trimmer",
-						default="trimmomatic", choices=TRIMMERS,
+						default="skewer", choices=TRIMMERS,
 						help="Name of read trimming program")
 
 	parser.add_argument("--prealignments", default=[], type=str, nargs="+",
