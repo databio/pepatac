@@ -499,7 +499,7 @@ def main():
 		pm.run(cmd, Tss_enrich, nofail=True)
 		
 		#Call Rscript to plot TSS Enrichment
-		Tss_plot = os.path.join(QC_folder ,  args.sample_name + ".TssEnrichment.pdf")
+		Tss_plot = os.path.join(QC_folder,  args.sample_name + ".TssEnrichment.pdf")
 		cmd = "Rscript " + os.path.join(tools.scripts_dir, "ATAC_Rscript_TSSenrichmentPlot_pyPiper.R")
 		cmd += " " + Tss_enrich + " pdf"
 		pm.run(cmd, Tss_plot, nofail=True)
@@ -511,6 +511,12 @@ def main():
 			floats = map(float,f)
 		Tss_score = (sum(floats[1950:2050])/100)/(sum(floats[1:200])/200)
 		pm.report_result("TSS_Score", Tss_score)
+		try:
+			# Just wrapping this in a try temporarily so that old versions of 
+			# pypiper will work. v0.6 release of pypiper adds this function
+			pm.report_figure("TSS enrichment", Tss_plot)
+		except:
+			pass
 		
 		# fragment  distribution
 		fragL= os.path.join(QC_folder ,  args.sample_name +  ".fragLen.txt")
