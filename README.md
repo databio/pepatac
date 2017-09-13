@@ -50,7 +50,7 @@ install.packages(c("ggplot2", "gplots", "reshape2"))
 
 There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
 
-**Option 1: Default configuration** (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
+**Configuration option 1: Default configuration** (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
   - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH.
   - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
   ```
@@ -66,19 +66,21 @@ There are two configuration options: You can either set up environment variables
   - Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
 
 
-**Option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
+**Configuration option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
 
 ## Usage
 
 You have two options for running the pipeline. 
 
-### Option 1: Running the pipeline script directly
+
+
+### Run option 1: Running the pipeline script directly
 
 To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh) using test data.
 
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
 
-### Option 2: Running the pipeline through looper
+### Run option 2: Running the pipeline through looper
 
 [Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy this pipeline across samples. To use it, you will need to tell looper about your project. 
 
@@ -108,6 +110,10 @@ Your annotation file must specify these columns:
 - whatever else you want
 
 Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
+
+### Arguments
+
+The arguments to the pipeline are the same whether you run it using looper or on the command line. 
 
 ## Outline of analysis steps
 

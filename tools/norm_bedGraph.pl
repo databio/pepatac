@@ -31,10 +31,10 @@ open (in, "<$infile");
 open (out, ">$outfile");
 while ($line=<in>) {
 
-  $count++;
-  if ($count%10000 eq 0) {
-    print $line;
-  }
+  # $count++;
+  # if ($count%10000 eq 0) {
+  #   print $line;
+  # }
 
   if (!($line=~/track/)) {
     chomp $line;

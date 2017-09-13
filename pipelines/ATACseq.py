@@ -5,12 +5,13 @@ ATACseq  pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield"]
 __email__ = "xujin937@gmail.com"
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 
 from argparse import ArgumentParser
 import os
 import sys
+import tempfile
 import pypiper
 
 
@@ -43,7 +44,7 @@ def parse_arguments():
 						help="Name of peak caller")
 
 	parser.add_argument("--trimmer", dest="trimmer",
-						default="trimmomatic", choices=TRIMMERS,
+						default="skewer", choices=TRIMMERS,
 						help="Name of read trimming program")
 
 	parser.add_argument("--prealignments", default=[], type=str, nargs="+",
@@ -186,6 +187,10 @@ def main():
 				bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
 				bt2_options += " -X 2000"
 
+			# samtools sort needs a temporary directory
+			tempdir = tempfile.mkdtemp(dir=sub_outdir)
+			pm.clean_add(tempdir)
+
 			# Build bowtie2 command
 			cmd = tools.bowtie2 + " -p " + str(pm.cores)
 			cmd += bt2_options
@@ -194,8 +199,14 @@ def main():
 			cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 			cmd += " --un-conc-gz " + out_fastq_bt2
 			cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
-			cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapped_bam  # sort output
-			cmd += " > " + mapped_bam
+			cmd += " | " + tools.samtools + " sort - -@ 1" # sort output
+			cmd += " -T " + tempdir
+			cmd += " -o " + mapped_bam
+
+			# In this samtools sort command we print to stdout and then use > to
+			# redirect instead of  `+ " -o " + mapped_bam` because then samtools
+			# uses a random temp file, so it won't choke if the job gets
+			# interrupted and restarted at this step.
 
 			pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam, args.paired_end))
 
@@ -292,6 +303,7 @@ def main():
 			("-t", str(args.cores)),
 			("-m", "pe" if args.paired_end else "any"),
 			("-x", res.adapter),
+			"--quiet",
 			("-o", out_fastq_pre),
 			local_input_files[0],
 			local_input_files[1] if args.paired_end else None
@@ -362,6 +374,10 @@ def main():
 	bt2_options = " --very-sensitive"
 	bt2_options += " -X 2000"
 
+	# samtools sort needs a temporary directory
+	tempdir = tempfile.mkdtemp(dir=map_genome_folder)
+	pm.clean_add(tempdir)
+
 	cmd = tools.bowtie2 + " -p " + str(pm.cores)
 	cmd += bt2_options
 	cmd += " --rg-id " + args.sample_name
@@ -369,7 +385,9 @@ def main():
 	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
 	cmd += " | " + tools.samtools + " view -bS - -@ 1 "
 	#cmd += " -f 2 -q 10"  # quality and pairing filter
-	cmd += " | " + tools.samtools + " sort - -@ 1" + " -o " + mapping_genome_bam_temp
+	cmd += " | " + tools.samtools + " sort - -@ 1"
+	cmd += " -T " + tempdir
+	cmd += " -o " + mapping_genome_bam_temp
 
 	# Split genome mapping result bamfile into two: high-quality aligned reads (keepers)
 	# and unmapped reads (in case we want to analyze the altogether unmapped reads)
@@ -481,7 +499,7 @@ def main():
 		pm.run(cmd, Tss_enrich, nofail=True)
 		
 		#Call Rscript to plot TSS Enrichment
-		Tss_plot = os.path.join(QC_folder ,  args.sample_name + ".TssEnrichment.pdf")
+		Tss_plot = os.path.join(QC_folder,  args.sample_name + ".TssEnrichment.pdf")
 		cmd = "Rscript " + os.path.join(tools.scripts_dir, "ATAC_Rscript_TSSenrichmentPlot_pyPiper.R")
 		cmd += " " + Tss_enrich + " pdf"
 		pm.run(cmd, Tss_plot, nofail=True)
@@ -489,11 +507,16 @@ def main():
 		# Always plot strand specific TSS enrichment. 
 		# added by Ryan 2/10/17 to calculate TSS score as numeric and to include in summary stats
 		# This could be done in prettier ways which I'm open to. Just adding for the idea
-		# with open("A34912-CaudateNucleus-RepA_hg19.srt.rmdup.flt.RefSeqTSS") as f:
 		with open(Tss_enrich) as f:
 			floats = map(float,f)
 		Tss_score = (sum(floats[1950:2050])/100)/(sum(floats[1:200])/200)
 		pm.report_result("TSS_Score", Tss_score)
+		try:
+			# Just wrapping this in a try temporarily so that old versions of 
+			# pypiper will work. v0.6 release of pypiper adds this function
+			pm.report_figure("TSS enrichment", Tss_plot)
+		except:
+			pass
 		
 		# fragment  distribution
 		fragL= os.path.join(QC_folder ,  args.sample_name +  ".fragLen.txt")
@@ -601,5 +624,5 @@ if __name__ == '__main__':
 	try:
 		sys.exit(main())
 	except KeyboardInterrupt:
-		print("Program canceled by user!")
+		print("Pipeline aborted.")
 		sys.exit(1)
