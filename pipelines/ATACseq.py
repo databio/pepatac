@@ -41,7 +41,12 @@ def parse_arguments():
 
 	parser.add_argument("--peak-caller", dest="peak_caller",
 						default="macs2", choices=PEAK_CALLERS,
-						help="Name of peak caller")
+						help="Name of peak caller; if 'fseq' fails to create "
+							 "a peaks file and the log file indicates an "
+							 "ArrayIndexOutOfBoundsException, this is likely "
+							 "due to a low read count and can probably be "
+							 "overcome by specifying fragment size with "
+							 "fseq's -f option.")
 
 	parser.add_argument("--trimmer", dest="trimmer",
 						default="skewer", choices=TRIMMERS,
@@ -568,13 +573,6 @@ def main():
 
 		# Pypiper serially executes the commands.
 		cmd = [fseq_cmd, merge_chrom_peaks_files, delete_chrom_peaks_files]
-		pm.run(cmd, peak_output_file, nofail=True, follow=report_peak_count)
-		if not os.path.exists(peak_output_file):
-			pm.fail_pipeline(Exception(
-				"Failed to create peaks file with fseq; if the log file "
-				"indicates an ArrayIndexOutOfBoundsException, this is likely "
-				"due to a low read count and can probably be overcome by "
-				"specifying fragment size with the fseq -f option."))
 
 	else:
 		# MACS2
@@ -591,8 +589,9 @@ def main():
 		]
 		# Note: required input file is non-positional ("treatment" file -t)
 		cmd = build_command(macs_cmd_chunks)
-		# Call peaks and report peak count.
-		pm.run(cmd, peak_output_file, follow=report_peak_count)
+
+	# Call peaks and report peak count.
+	pm.run(cmd, peak_output_file, follow=report_peak_count)
 
 
 	# Filter peaks in blacklist.
