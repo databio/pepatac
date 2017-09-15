@@ -42,11 +42,11 @@ def parse_arguments():
 	parser.add_argument("--peak-caller", dest="peak_caller",
 						default="macs2", choices=PEAK_CALLERS,
 						help="Name of peak caller; if 'fseq' fails to create "
-							 "a peaks file and the log file indicates an "
-							 "ArrayIndexOutOfBoundsException, this is likely "
-							 "due to a low read count and can probably be "
-							 "overcome by specifying fragment size with "
-							 "fseq's -f option.")
+							"a peaks file and the log file indicates an "
+							"ArrayIndexOutOfBoundsException, this is likely "
+							"due to a low read count and can probably be "
+							"overcome by specifying fragment size with "
+							"fseq's -f option.")
 
 	parser.add_argument("--trimmer", dest="trimmer",
 						default="skewer", choices=TRIMMERS,
