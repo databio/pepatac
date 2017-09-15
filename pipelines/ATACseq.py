@@ -573,7 +573,7 @@ def main():
 			pm.fail_pipeline(Exception(
 				"Failed to create peaks file with fseq; if the log file "
 				"indicates an ArrayIndexOutOfBoundsException, this is likely "
-				"due to a low read count and can probably be overcome be "
+				"due to a low read count and can probably be overcome by "
 				"specifying fragment size with the fseq -f option."))
 
 	else:
