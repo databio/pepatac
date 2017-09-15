@@ -530,6 +530,14 @@ def main():
 		pm.run([cmd,cmd1,cmd2], fragL_dis1, nofail=True)
 
 	# Peak calling
+
+	pm.timestamp("### Call peaks")
+
+	def report_peak_count():
+		num_peaksfile_lines = int(ngstk.count_lines(peak_output_file).strip())
+		num_peaks = max(0, num_peaksfile_lines - 1)
+		pm.report_result("Peak_count", num_peaks)
+
 	peak_folder = os.path.join(param.outfolder, "peak_calling_" + args.genome_assembly)
 	ngstk.make_dir(peak_folder)
 	peak_output_file = os.path.join(peak_folder,  args.sample_name + "_peaks.narrowPeak")
@@ -558,9 +566,9 @@ def main():
 			peakfiles=chrom_peak_files, combined_peak_file=peak_output_file)
 		delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
 
-		# Pypiper serially exectutes the commands.
+		# Pypiper serially executes the commands.
 		cmd = [fseq_cmd, merge_chrom_peaks_files, delete_chrom_peaks_files]
-		pm.run(cmd, peak_output_file, nofail=True)
+		pm.run(cmd, peak_output_file, nofail=True, follow=report_peak_count)
 		if not os.path.exists(peak_output_file):
 			pm.fail_pipeline(Exception(
 				"Failed to create peaks file with fseq; if the log file "
@@ -583,15 +591,9 @@ def main():
 		]
 		# Note: required input file is non-positional ("treatment" file -t)
 		cmd = build_command(macs_cmd_chunks)
-		pm.run(cmd, peak_output_file)
+		# Call peaks and report peak count.
+		pm.run(cmd, peak_output_file, follow=report_peak_count)
 
-	def report_peak_count():
-		num_peaksfile_lines = int(ngstk.count_lines(peak_output_file).strip())
-		num_peaks = max(0, num_peaksfile_lines - 1)
-		pm.report_result("Peak_count", num_peaks)
-
-	# Call peaks and report peak count.
-	pm.run(cmd, peak_output_file, follow=report_peak_count)
 
 	# Filter peaks in blacklist.
 	if os.path.exists(res.blacklist):
