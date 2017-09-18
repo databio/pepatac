@@ -76,7 +76,7 @@ You have two options for running the pipeline.
 
 ### Run option 1: Running the pipeline script directly
 
-To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh) using test data.
+To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
 
