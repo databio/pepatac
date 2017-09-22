@@ -116,6 +116,16 @@ def build_command(chunks):
 
 
 
+def _get_bowtie2_index(genomes_folder, genome_assembly):
+	"""
+	Convenience function
+	Returns the bowtie2 index prefix (to be passed to bowtie2) for a genome assembly that follows
+	the folder structure produced by the RefGenie reference builder.
+	"""
+	return os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2", genome_assembly)
+
+
+
 def main():
 	"""
 	Main pipeline process.
@@ -138,14 +148,6 @@ def main():
 	tools = pm.config.tools
 	param = pm.config.parameters
 	res = pm.config.resources
-
-	def get_bowtie2_index(genomes_folder, genome_assembly):
-		"""
-		Convenience function
-		Returns the bowtie2 index prefix (to be passed to bowtie2) for a genome assembly that follows
-		the folder structure produced by the RefGenie reference builder.
-		"""
-		return(os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2", genome_assembly))
 
 
 	def count_alignment(assembly_identifier, aligned_bam, paired_end):
@@ -238,7 +240,7 @@ def main():
 	res.blacklist = os.path.join(gfolder, args.genome_assembly + ".blacklist.bed")
 
 	# Get bowtie2 indexes
-	res.bt2_genome = get_bowtie2_index(res.genomes, args.genome_assembly)
+	res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
 
 	# Set up a link to relative scripts included in the repo
 	tools.scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools")
@@ -365,7 +367,7 @@ def main():
 		# Loop through any prealignment references and map to them sequentially
 		for reference in args.prealignments:
 			unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, reference, 
-				get_bowtie2_index(res.genomes, reference),
+				_get_bowtie2_index(res.genomes, reference),
 				aligndir="prealignments")
 
 	pm.timestamp("### Map to genome")
@@ -404,11 +406,10 @@ def main():
 		pm.report_result("Aligned_reads", ar)
 		rr = float(pm.get_stat("Raw_reads"))
 		tr = float(pm.get_stat("Trimmed_reads"))
-		pm.report_result("Alignment_rate", round(float(ar) *
-	 100 / float(tr), 2))
+		pm.report_result("Alignment_rate", round(float(ar) * 100 / float(tr), 2))
 		pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
 
-	pm.run([cmd, cmd2], mapping_genome_bam, follow = check_alignment_genome)
+	pm.run([cmd, cmd2], mapping_genome_bam, follow=check_alignment_genome)
 
 	cmd = "samtools view -f 12 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_temp
 	cmd += " > " + unmap_genome_bam
@@ -603,21 +604,41 @@ def main():
 
 	pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
 
-	cmd = ngstk.simple_frip(rmdup_bam, peak_output_file)
-	rip = pm.checkprint(cmd)
-	ar = pm.get_stat("Aligned_reads")
-	print(ar, rip)
-	pm.report_result("FRIP", float(rip) / float(ar))
+	frip = calc_frip(rmdup_bam, peak_output_file, frip_func=ngstk.simple_frip, pipeline_manager=pm)
+	pm.report_result("FRIP", frip)
 
 	if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks):
 		# Use an external reference set of peaks instead of the peaks called from this run
-		cmd = ngstk.simple_frip(rmdup_bam, args.frip_ref_peaks)
-		rip = pm.checkprint(cmd)
-		ar = pm.get_stat("Aligned_reads")
-		print(ar, rip)
-		pm.report_result("FRIP_ref", float(rip) / float(ar))
+		frip_ref = calc_frip(rmdup_bam, args.frip_ref_peaks, frip_func=ngstk.simple_frip, pipeline_manager=pm)
+		pm.report_result("FRIP_ref", frip_ref)
 
 	pm.stop_pipeline()
+
+
+
+def calc_frip(bamfile, peakfile, frip_func, pipeline_manager, aligned_reads_key="Aligned_reads"):
+	"""
+	Calculate the fraction of reads in peaks (FRIP).
+
+	Use the given function and data from an aligned reads file and a called
+	peaks file, along with a PipelineManager, to calculate FRIP.
+
+	:param callable frip_func: how to calculate the fraction of reads in peaks;
+		this must accept the path to the aligned reads file and the path to
+		the called peaks file as arguments.
+	:param str bamfile: path to aligned reads file
+	:param str peakfile: path to called peaks file
+	:param pypiper.PipelineManager pipeline_manager: the PipelineManager in use
+		for the pipeline calling this function
+	:param str aligned_reads_key: name of the key from a stats (key-value) file
+		to use to fetch the count of aligned reads
+	:return float: fraction of reads in peaks
+	"""
+	frip_cmd = frip_func(bamfile, peakfile)
+	num_peak_reads = pipeline_manager.checkprint(frip_cmd)
+	num_aligned_reads = pipeline_manager.get_stat(aligned_reads_key)
+	print(num_aligned_reads, num_peak_reads)
+	return float(num_peak_reads) / float(num_aligned_reads)
 
 
 
