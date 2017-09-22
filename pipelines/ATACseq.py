@@ -116,13 +116,158 @@ def build_command(chunks):
 
 
 
+def calc_frip(bamfile, peakfile, frip_func, pipeline_manager, aligned_reads_key="Aligned_reads"):
+	"""
+	Calculate the fraction of reads in peaks (FRIP).
+
+	Use the given function and data from an aligned reads file and a called
+	peaks file, along with a PipelineManager, to calculate FRIP.
+
+	:param callable frip_func: how to calculate the fraction of reads in peaks;
+		this must accept the path to the aligned reads file and the path to
+		the called peaks file as arguments.
+	:param str bamfile: path to aligned reads file
+	:param str peakfile: path to called peaks file
+	:param pypiper.PipelineManager pipeline_manager: the PipelineManager in use
+		for the pipeline calling this function
+	:param str aligned_reads_key: name of the key from a stats (key-value) file
+		to use to fetch the count of aligned reads
+	:return float: fraction of reads in peaks
+	"""
+	frip_cmd = frip_func(bamfile, peakfile)
+	num_peak_reads = pipeline_manager.checkprint(frip_cmd)
+	num_aligned_reads = pipeline_manager.get_stat(aligned_reads_key)
+	print(num_aligned_reads, num_peak_reads)
+	return float(num_peak_reads) / float(num_aligned_reads)
+
+
+
+def _align_with_bt2(
+		args, tools, unmap_fq1, unmap_fq2, 
+		assembly_identifier, assembly_bt2,
+		outfolder, aligndir=None, bt2_opts_txt=None):
+	"""
+	A helper function to run alignments in series, so you can run one alignment followed
+	by another; this is useful for successive decoy alignments.
+
+	:param argparse.Namespace args: binding between option name and argument,
+		e.g. from parsing command-line options
+	:param looper.models.AttributeDict tools: binding between tool name and
+		value, e.g. for tools/resources used by the pipeline
+	:param str outfolder: path to output directory for the pipeline
+	:param str unmap_fq1: path to unmapped read1 FASTQ file
+	:param str unmap_fq2: path to unmapped read2 FASTQ file
+	:param str assembly_identifier: text identifying a genome assembly for the
+		pipeline
+	:param str assembly_bt2: assembly-specific bowtie2 folder (index, etc.)
+	:param str aligndir: name of folder for temporary output
+	:param str bt2_opts_txt: command-line text for bowtie2 options
+	:return (str, str): pair (R1, R2) of paths to FASTQ files
+	"""
+	if os.path.exists(os.path.dirname(assembly_bt2)):
+		pm.timestamp("### Map to " + assembly_identifier)
+		if not aligndir:
+			align_subdir = "aligned_{}_{}".format(args.genome_assembly, assembly_identifier)
+			sub_outdir = os.path.join(outfolder, align_subdir)
+		else:
+			sub_outdir = os.path.join(outfolder, aligndir)
+
+		ngstk.make_dir(sub_outdir)
+		bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
+		mapped_bam = os.path.join(sub_outdir, bamname)
+		out_fastq_pre = os.path.join(
+			sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
+		out_fastq_bt2 = out_fastq_pre + '_R%.fq.gz'  # bowtie2 unmapped filename format
+
+		if not bt2_opts_txt:
+			# Default options
+			bt2_opts_txt = " -k 1"  # Return only 1 alignment
+			bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+			bt2_opts_txt += " -X 2000"
+
+		# samtools sort needs a temporary directory
+		tempdir = tempfile.mkdtemp(dir=sub_outdir)
+		pm.clean_add(tempdir)
+
+		# Build bowtie2 command
+		cmd = tools.bowtie2 + " -p " + str(pm.cores)
+		cmd += bt2_opts_txt
+		cmd += " -x " + assembly_bt2
+		cmd += " --rg-id " + args.sample_name
+		cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+		cmd += " --un-conc-gz " + out_fastq_bt2
+		cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
+		cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
+		cmd += " -T " + tempdir
+		cmd += " -o " + mapped_bam
+
+		# In this samtools sort command we print to stdout and then use > to
+		# redirect instead of  `+ " -o " + mapped_bam` because then samtools
+		# uses a random temp file, so it won't choke if the job gets
+		# interrupted and restarted at this step.
+
+		pm.run(cmd, mapped_bam, follow=lambda: _count_alignment(
+			assembly_identifier, mapped_bam, args.paired_end))
+
+		# filter genome reads not mapped 
+		# unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
+		# cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
+		# cmd +=  mapped_bam + " > " + unmapped_bam
+
+		# cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
+		# pm.run([cmd,cmd2], unmap_fq2)
+		unmap_fq1 = out_fastq_pre + "_R1.fq.gz"
+		unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
+		return unmap_fq1, unmap_fq2
+	else:
+		msg = "No {} index found in {}; skipping.".format(
+			assembly_identifier, os.path.dirname(assembly_bt2))
+		print(msg)
+		return unmap_fq1, unmap_fq2
+
+
+
+def _count_alignment(assembly_identifier, aligned_bam, paired_end):
+	""" 
+	This function counts the aligned reads and alignment rate and reports statistics. You
+	must have previously reported a "Trimmed_reads" result to get alignment rates. It is useful
+	as a follow function after any alignment step to quantify and report the number of reads
+	aligning, and the alignment rate to that reference.
+
+	:param str	aligned_bam: Path to the aligned bam file.
+	:param str assembly_identifier:	String identifying the reference to which you aligned (can be anything)
+	:param bool paired_end: Whether the sequencing employed a paired-end strategy.
+	"""
+	ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
+	pm.report_result("Aligned_reads_" + assembly_identifier, ar)
+	try:
+		# wrapped in try block in case Trimmed_reads is not reported in this pipeline.
+		tr = float(pm.get_stat("Trimmed_reads"))
+	except:
+		print("Trimmed reads is not reported.")
+	else:
+		res_key = "Alignment_rate_" + assembly_identifier
+		pm.report_result(res_key, round(float(ar) * 100 / float(tr), 2))
+
+
+
 def _get_bowtie2_index(genomes_folder, genome_assembly):
 	"""
-	Convenience function
-	Returns the bowtie2 index prefix (to be passed to bowtie2) for a genome assembly that follows
-	the folder structure produced by the RefGenie reference builder.
+	Create path to genome assembly folder with refgenie structure.
+
+	Convenience function that returns the bowtie2 index prefix (to be passed
+	to bowtie2) for a genome assembly that follows the folder structure
+	produced by the RefGenie reference builder.
+
+	:param str genomes_folder: path to central genomes directory, i.e. the
+		root for multiple assembly subdirectories
+	:param str genome_assembly: name of the specific assembly of interest,
+		e.g. 'mm10'
+	:return str: path to bowtie2 index subfolder within central assemblies
+		home, for assembly indicated
 	"""
-	return os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2", genome_assembly)
+	return os.path.join(genomes_folder,
+		genome_assembly, "indexed_bowtie2", genome_assembly)
 
 
 
@@ -133,104 +278,22 @@ def main():
 
 	args = parse_arguments()
 
-    # TODO: for now, paired end sequencing input is required.
-	if args.single_or_paired == "paired":
-		args.paired_end = True
-	else:
-		args.paired_end = True
-
+	args.paired_end = args.single_or_paired == "paired"
+	# TODO: for now, paired end sequencing input is required.
+	args.paired_end = True
+	
 	# Initialize
 	outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
-	pm = pypiper.PipelineManager(name="ATACseq", outfolder=outfolder, args=args, version=__version__)
+	global pm
+	pm = pypiper.PipelineManager(
+		name="ATACseq", outfolder=outfolder, args=args, version=__version__)
+	global ngstk
 	ngstk = pypiper.NGSTk(pm=pm)
 
 	# Convenience alias 
 	tools = pm.config.tools
 	param = pm.config.parameters
 	res = pm.config.resources
-
-
-	def count_alignment(assembly_identifier, aligned_bam, paired_end):
-		""" 
-		This function counts the aligned reads and alignment rate and reports statistics. You
-		must have previously reported a "Trimmed_reads" result to get alignment rates. It is useful
-		as a follow function after any alignment step to quantify and report the number of reads
-		aligning, and the alignment rate to that reference.
-
-		:param str	aligned_bam: Path to the aligned bam file.
-		:param str assembly_identifier:	String identifying the reference to which you aligned (can be anything)
-		:param bool paired_end: Whether the sequencing employed a paired-end strategy.
-		"""
-		ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
-		pm.report_result("Aligned_reads_" + assembly_identifier, ar)
-		try:
-			# wrapped in try block in case Trimmed_reads is not reported in this pipeline.
-			tr = float(pm.get_stat("Trimmed_reads"))
-			pm.report_result("Alignment_rate_" + assembly_identifier, round(float(ar) * 100 / float(tr), 2))
-		except:
-			pass
-
-
-	def align(unmap_fq1, unmap_fq2, assembly_identifier, assembly_bt2, aligndir=None, bt2_options=None):
-		"""
-		A helper function to run alignments in series, so you can run one alignment followed
-		by another; this is useful for successive decoy alignments.
-		"""
-		if os.path.exists(os.path.dirname(assembly_bt2)):
-			pm.timestamp("### Map to " + assembly_identifier)
-			if not aligndir:
-				sub_outdir = os.path.join(param.outfolder, "aligned_" + args.genome_assembly + "_" + assembly_identifier)
-			else:
-				sub_outdir = os.path.join(param.outfolder, aligndir)
-
-			ngstk.make_dir(sub_outdir)
-			mapped_bam = os.path.join(sub_outdir, args.sample_name + "_" + assembly_identifier + ".bam")
-			out_fastq_pre = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
-			out_fastq_bt2 = out_fastq_pre + '_R%.fq.gz'  # bowtie2 unmapped filename format
-			
-			if not bt2_options:
-				# Default options
-				bt2_options = " -k 1"  # Return only 1 alignment
-				bt2_options += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-				bt2_options += " -X 2000"
-
-			# samtools sort needs a temporary directory
-			tempdir = tempfile.mkdtemp(dir=sub_outdir)
-			pm.clean_add(tempdir)
-
-			# Build bowtie2 command
-			cmd = tools.bowtie2 + " -p " + str(pm.cores)
-			cmd += bt2_options
-			cmd += " -x " + assembly_bt2
-			cmd += " --rg-id " + args.sample_name
-			cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
-			cmd += " --un-conc-gz " + out_fastq_bt2
-			cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
-			cmd += " | " + tools.samtools + " sort - -@ 1" # sort output
-			cmd += " -T " + tempdir
-			cmd += " -o " + mapped_bam
-
-			# In this samtools sort command we print to stdout and then use > to
-			# redirect instead of  `+ " -o " + mapped_bam` because then samtools
-			# uses a random temp file, so it won't choke if the job gets
-			# interrupted and restarted at this step.
-
-			pm.run(cmd, mapped_bam, follow = lambda: count_alignment(assembly_identifier, mapped_bam, args.paired_end))
-
-			# filter genome reads not mapped 
-			#unmapped_bam = os.path.join(sub_outdir, args.sample_name + "_unmap_" + assembly_identifier + ".bam")
-			#cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
-			#cmd +=  mapped_bam + " > " + unmapped_bam
-
-			#cmd2, unmap_fq1, unmap_fq2 = ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
-			#pm.run([cmd,cmd2], unmap_fq2)
-			unmap_fq1 = out_fastq_pre + "_R1.fq.gz"
-			unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
-			return unmap_fq1, unmap_fq2
-		else:
-			print("No " + assembly_identifier + " index found at " + os.path.dirname(assembly_bt2) + ". Skipping.")
-			return unmap_fq1, unmap_fq2
-
 
 	# Set up reference resource according to genome prefix.
 	gfolder = os.path.join(res.genomes, args.genome_assembly)
@@ -243,7 +306,8 @@ def main():
 	res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
 
 	# Set up a link to relative scripts included in the repo
-	tools.scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools")
+	tools.scripts_dir = os.path.join(
+		os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools")
 
 	# Adapter file can be set in the config; but if left null, we use a default.
 	if not res.adapter:
@@ -366,9 +430,10 @@ def main():
 		print("Prealignment assemblies: " + str(args.prealignments))
 		# Loop through any prealignment references and map to them sequentially
 		for reference in args.prealignments:
-			unmap_fq1, unmap_fq2 = align(unmap_fq1, unmap_fq2, reference, 
-				_get_bowtie2_index(res.genomes, reference),
-				aligndir="prealignments")
+			unmap_fq1, unmap_fq2 = _align_with_bt2(
+				args, tools, unmap_fq1, unmap_fq2, reference, 
+				assembly_bt2=_get_bowtie2_index(res.genomes, reference), 
+				outfolder=param.outfolder, aligndir="prealignments")
 
 	pm.timestamp("### Map to genome")
 	map_genome_folder = os.path.join(param.outfolder, "aligned_" + args.genome_assembly)
@@ -616,33 +681,9 @@ def main():
 
 
 
-def calc_frip(bamfile, peakfile, frip_func, pipeline_manager, aligned_reads_key="Aligned_reads"):
-	"""
-	Calculate the fraction of reads in peaks (FRIP).
-
-	Use the given function and data from an aligned reads file and a called
-	peaks file, along with a PipelineManager, to calculate FRIP.
-
-	:param callable frip_func: how to calculate the fraction of reads in peaks;
-		this must accept the path to the aligned reads file and the path to
-		the called peaks file as arguments.
-	:param str bamfile: path to aligned reads file
-	:param str peakfile: path to called peaks file
-	:param pypiper.PipelineManager pipeline_manager: the PipelineManager in use
-		for the pipeline calling this function
-	:param str aligned_reads_key: name of the key from a stats (key-value) file
-		to use to fetch the count of aligned reads
-	:return float: fraction of reads in peaks
-	"""
-	frip_cmd = frip_func(bamfile, peakfile)
-	num_peak_reads = pipeline_manager.checkprint(frip_cmd)
-	num_aligned_reads = pipeline_manager.get_stat(aligned_reads_key)
-	print(num_aligned_reads, num_peak_reads)
-	return float(num_peak_reads) / float(num_aligned_reads)
-
-
-
 if __name__ == '__main__':
+	pm = None
+	ngstk = None    # TODO: remove once ngstk become less instance-y, more function-y.
 	try:
 		sys.exit(main())
 	except KeyboardInterrupt:
