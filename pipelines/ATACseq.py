@@ -313,7 +313,6 @@ def main():
 	if not res.adapter:
 		res.adapter = os.path.join(tools.scripts_dir, "NexteraPE-PE.fa")
 
-
 	param.outfolder = outfolder
 
 	################################################################################
@@ -333,11 +332,13 @@ def main():
 	pm.timestamp("### Merge/link and fastq conversion: ")
 	# This command will merge multiple inputs so you can use multiple sequencing lanes
 	# in a single pipeline run. 
-	local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
-	cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
+	local_input_files = ngstk.merge_or_link(
+		[args.input, args.input2], raw_folder, args.sample_name)
+	cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
+		local_input_files, args.sample_name, args.paired_end, fastq_folder)
 	pm.run(cmd, unaligned_fastq, 
 		follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
-	pm.clean_add(out_fastq_pre + "*.fastq", conditional = True)
+	pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 	print(local_input_files)
 
 
