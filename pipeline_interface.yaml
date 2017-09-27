@@ -1,6 +1,6 @@
 protocol_mapping:
   ATAC: ATACseq.py
-  ATAC-SEQ: ATACseq
+  ATAC-SEQ: ATACseq.py
 
 pipelines:
   ATACseq.py:
