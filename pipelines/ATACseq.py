@@ -15,7 +15,7 @@ import tempfile
 import pypiper
 
 
-
+TOOLS_FOLDER = "tools"
 PEAK_CALLERS = ["fseq", "macs2"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 
@@ -271,6 +271,16 @@ def _get_bowtie2_index(genomes_folder, genome_assembly):
 
 
 
+def tool_path(tool_name):
+	"""
+	Return the path to a tool used by this pipeline.
+
+	:param str tool_name: name of the tool (e.g., a script filename)
+	:return str: real, absolute path to tool (expansion and symlink resolution)
+	"""
+	return os.path.join(os.path.realpath(__file__), TOOLS_FOLDER, tool_name)
+
+
 def main():
 	"""
 	Main pipeline process.
@@ -282,7 +292,8 @@ def main():
 	# TODO: for now, paired end sequencing input is required.
 	args.paired_end = True
 	
-	# Initialize
+	# Initialize, creating global PipelineManager and NGSTk instance for
+	# access in ancillary functions outside of main().
 	outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
 	global pm
 	pm = pypiper.PipelineManager(
@@ -305,13 +316,8 @@ def main():
 	# Get bowtie2 indexes
 	res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
 
-	# Set up a link to relative scripts included in the repo
-	tools.scripts_dir = os.path.join(
-		os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "tools")
-
 	# Adapter file can be set in the config; but if left null, we use a default.
-	if not res.adapter:
-		res.adapter = os.path.join(tools.scripts_dir, "NexteraPE-PE.fa")
+	res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
 
 	param.outfolder = outfolder
 
@@ -359,7 +365,7 @@ def main():
 	if args.trimmer == "pyadapt":
 		# TODO: make pyadapt give options for output file name.
 		trim_cmd_chunks = [
-			os.path.join(tools.scripts_dir, "pyadapter_trim.py")
+			tool_path("pyadapter_trim.py"),
 			("-a", local_input_files[0]),
 			("-b", local_input_files[1]),
 			("-o", out_fastq_pre),
@@ -374,7 +380,7 @@ def main():
 			("-f", "sanger"),
 			("-t", str(args.cores)),
 			("-m", "pe" if args.paired_end else "any"),
-			("-x", res.adapter),
+			("-x", res.adapters),
 			"--quiet",
 			("-o", out_fastq_pre),
 			local_input_files[0],
@@ -404,7 +410,7 @@ def main():
 			trimming_prefix + "_R1_unpaired.fq",
 			trimmed_fastq_R2,
 			trimming_prefix + "_R2_unpaired.fq",
-			"ILLUMINACLIP:" + res.adapter + ":2:30:10"
+			"ILLUMINACLIP:" + res.adapters + ":2:30:10"
 		]
 		cmd = build_command(trim_cmd_chunks)
 
@@ -485,7 +491,7 @@ def main():
 
 	def estimate_lib_size(picard_log):
 		# In millions of reads; contributed by Ryan
-		cmd = "awk -F'\t' -f " + os.path.join(tools.scripts_dir, "extract_picard_lib.awk") + " " + picard_log
+		cmd = "awk -F'\t' -f " + tool_path("extract_picard_lib.awk") + " " + picard_log
 		picard_est_lib_size = pm.checkprint(cmd)
 		pm.report_result("Picard_est_lib_size", picard_est_lib_size)
 	 
@@ -504,17 +510,17 @@ def main():
 
 	# shift bam file and make bigwig file
 	shift_bed = os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bed")
-	cmd = os.path.join(tools.scripts_dir, "bam2bed_shift.pl " +  rmdup_bam)
+	cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
 	pm.run(cmd,shift_bed)
 	bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
 	cmd = tools.bedtools + " genomecov -bg -split"
 	cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
 	norm_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.bedGraph")
 	sort_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.sort.bedGraph")
-	cmd2 = os.path.join(tools.scripts_dir, "norm_bedGraph.pl "  + bedGraph + " " + norm_bedGraph)
+	cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"), bedGraph, norm_bedGraph)
 	bw_file =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
 
-	# bedGraphToBigWig requires lexographical sort, which puts chr10 before chr2, for example
+	# bedGraphToBigWig requires lexicographical sort, which puts chr10 before chr2, for example
 	cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
 	cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw_file
 	pm.run([cmd, cmd2, cmd3, cmd4], bw_file)
@@ -534,7 +540,7 @@ def main():
 	temp_target = os.path.join(temp_exact_folder, "flag_completed")
 	exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
 
-	# cmd = os.path.join(tools.scripts_dir, "bedToExactWig.pl")
+	# cmd = tool_path("bedToExactWig.pl")
 	# cmd += " " + shift_bed
 	# cmd += " " + res.chrom_sizes
 	# cmd += " " + temp_exact_folder
@@ -549,7 +555,7 @@ def main():
 	# pm.run(cmd, exact_target)
 	# pm.clean_add(os.path.join(temp_exact_folder, "*.bw"))
 
-	cmd = os.path.join(tools.scripts_dir, "bamSitesToWig.py")
+	cmd = tool_path("bamSitesToWig.py")
 	cmd += " -i " + rmdup_bam
 	cmd += " -c " + res.chrom_sizes
 	cmd += " -o " + exact_target
@@ -566,13 +572,13 @@ def main():
 		ngstk.make_dir(QC_folder)
 
 		Tss_enrich =  os.path.join(QC_folder,  args.sample_name + ".TssEnrichment")
-		cmd = os.path.join(tools.scripts_dir, "pyTssEnrichment.py")
+		cmd = tool_path("pyTssEnrichment.py")
 		cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -s 4 -o " + Tss_enrich
 		pm.run(cmd, Tss_enrich, nofail=True)
 		
 		#Call Rscript to plot TSS Enrichment
 		Tss_plot = os.path.join(QC_folder,  args.sample_name + ".TssEnrichment.pdf")
-		cmd = "Rscript " + os.path.join(tools.scripts_dir, "ATAC_Rscript_TSSenrichmentPlot_pyPiper.R")
+		cmd = "Rscript " + tool_path("ATAC_Rscript_TSSenrichmentPlot_pyPiper.R")
 		cmd += " " + Tss_enrich + " pdf"
 		pm.run(cmd, Tss_plot, nofail=True)
 
@@ -591,15 +597,18 @@ def main():
 			pass
 		
 		# fragment  distribution
-		fragL= os.path.join(QC_folder ,  args.sample_name +  ".fragLen.txt")
-		cmd = os.path.join("perl " + tools.scripts_dir, "fragment_length_dist.pl " + rmdup_bam + " " +  fragL)
-		fragL_count= os.path.join(QC_folder ,  args.sample_name +  ".frag_count.txt")
+		fragL = os.path.join(QC_folder ,  args.sample_name +  ".fragLen.txt")
+		frag_dist_tool = tool_path("fragment_length_dist.pl")
+		cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
+		frag_length_counts_file = args.sample_name +  ".frag_count.txt"
+		fragL_count = os.path.join(QC_folder, frag_length_counts_file)
 		cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
-		fragL_dis1= os.path.join(QC_folder, args.sample_name +  ".fragL.distribution.pdf")
-		fragL_dis2= os.path.join(QC_folder, args.sample_name +  ".fragL.distribution.txt")
-		cmd2 = "Rscript " +  os.path.join(tools.scripts_dir, "fragment_length_dist.R") + " " + fragL + " " + fragL_count + " " + fragL_dis1 + " "  + fragL_dis2 
-
-		pm.run([cmd,cmd1,cmd2], fragL_dis1, nofail=True)
+		fragL_dis1 = os.path.join(QC_folder, args.sample_name +  ".fragL.distribution.pdf")
+		fragL_dis2 = os.path.join(QC_folder, args.sample_name +  ".fragL.distribution.txt")
+		cmd2 = build_command(
+			[tools.Rscript, tool_path("fragment_length_dist.R"),
+			 fragL, fragL_count, fragL_dis1, fragL_dis2])
+		pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True)
 
 	# Peak calling
 
