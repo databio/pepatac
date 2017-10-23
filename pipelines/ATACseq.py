@@ -332,8 +332,8 @@ def main():
 	# ATACseq pipeline
 	# Each (major) step should have its own subfolder
 
-	raw_folder = os.path.join(param.outfolder, "raw/")
-	fastq_folder = os.path.join(param.outfolder, "fastq/")
+	raw_folder = os.path.join(param.outfolder, "raw")
+	fastq_folder = os.path.join(param.outfolder, "fastq")
 
 	pm.timestamp("### Merge/link and fastq conversion: ")
 	# This command will merge multiple inputs so you can use multiple sequencing lanes
@@ -416,7 +416,7 @@ def main():
 
 	pm.run(cmd, trimmed_fastq,
 			follow=ngstk.check_trim(trimmed_fastq, args.paired_end, trimmed_fastq_R2, 
-			fastqc_folder=os.path.join(param.outfolder, "fastqc/")))
+			fastqc_folder=os.path.join(param.outfolder, "fastqc")))
 
 	pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
 	pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
