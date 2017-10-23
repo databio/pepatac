@@ -13,6 +13,7 @@ import os
 import sys
 import tempfile
 import pypiper
+from pypiper import build_command
 
 
 TOOLS_FOLDER = "tools"
@@ -69,50 +70,6 @@ def parse_arguments():
 		raise SystemExit
 
 	return args
-
-
-
-def build_command(chunks):
-	"""
-	Create a command from various parts.
-
-	The parts provided may include a base, flags, option-bound arguments, and
-	positional arguments. Each element must be either a string or a two-tuple.
-	Raw strings are interpreted as either the command base, a pre-joined
-	pair (or multiple pairs) of option and argument, a series of positional
-	arguments, or a combination of those elements. The only modification they
-	undergo is trimming of any space characters from each end.
-
-	:param Iterable[str | (str, str | NoneType)] chunks: the collection of the
-		command components to interpret, modify, and join to create a
-		single meaningful command
-	:return str: the single meaningful command built from the given components
-	:raise ValueError: if no command parts are provided
-	"""
-
-	if not chunks:
-		raise ValueError("No command parts: {} ({})".format(chunks, type(chunks)))
-
-	if isinstance(chunks, str):
-		return chunks
-
-	parsed_pieces = []
-
-	for cmd_part in chunks:
-		if cmd_part is None:
-			continue
-		try:
-			# Trim just space, not all whitespace.
-			# This prevents damage to an option that specifies,
-			# say, tab as a delimiter.
-			parsed_pieces.append(cmd_part.strip(" "))
-		except AttributeError:
-			option, argument = cmd_part
-			if argument is not None:
-				option, argument = option.strip(" "), str(argument).strip(" ")
-				parsed_pieces.append("{} {}".format(option, argument))
-
-	return " ".join(parsed_pieces)
 
 
 
