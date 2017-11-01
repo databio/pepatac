@@ -30,4 +30,4 @@ implied_columns:
     mouse:
       genome: mm10
       macs_genome_size: "mm"
-      prealignments: null
+      prealignments: "mouse_chrM2x"
