@@ -235,7 +235,8 @@ def tool_path(tool_name):
 	:param str tool_name: name of the tool (e.g., a script filename)
 	:return str: real, absolute path to tool (expansion and symlink resolution)
 	"""
-	return os.path.join(os.path.realpath(__file__), TOOLS_FOLDER, tool_name)
+
+	return os.path.join(os.path.dirname(os.path.dirname(__file__)), TOOLS_FOLDER, tool_name)
 
 
 def main():
