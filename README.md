@@ -139,6 +139,11 @@ URL="http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz"
 wget -O ${GENOME}_TSS_full.txt.gz ${URL}
 zcat ${GENOME}_TSS_full.txt.gz | awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}'  | LC_COLLATE=C sort -k1,1 -k2,2n -u > ${GENOME}_TSS.tsv
 echo ${GENOME}_TSS.tsv
+
+Mouse:
+GENOME="mm10"
+URL="http://hgdownload.soe.ucsc.edu/goldenPath/mm10/database/refGene.txt.gz"
+
 ```
 
 Another option from Gencode GTF:
