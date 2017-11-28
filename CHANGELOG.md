@@ -3,24 +3,26 @@ All notable changes to this project will be documented in this file.
 
 ## [0.6.0] -- Unreleased
 
-
+### Added
+- Single-end reads are now allowed
+- Pipeline can now accommodate `.bam` input files
 
 ## [0.5.0] -- 2017-09-13
 
 ### Added
-- Adds rudimentary figure reporting
+- Added rudimentary figure reporting
 
 ### Changed
 - Changed default trimmer from trimmomatic to skewer
-- Make output from several tasks less verbose to make logs cleaner
-- Fixes an issue that left behind temporary samtools files if the job was killed
+- Made output from several tasks less verbose to make logs cleaner
+- Fixed an issue that left behind temporary samtools files if the job was killed
 
 ## [0.4.0] -- 2017-07-21
 
 ### Added
 - Added [fseq](https://github.com/aboyle/F-seq) as a peak caller option
-- Peak caller is specified by a command line argument (defaults to macs2)
-- Count of called peaks is now reported as a pipeline result.
+- Peak caller is now specified by a command line argument (defaults to macs2)
+- Count of called peaks is now reported as a pipeline result
 - Add R and ggplot2 as requirements
 
 ### Changed
