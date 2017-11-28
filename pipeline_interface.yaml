@@ -40,14 +40,14 @@ pipelines:
         file_size: "0.5"
         cores: "4"
         mem: "16000"
-        time: "02-00:00:00"
+        time: "00-04:00:00"
       micro:
         file_size: "1"
         cores: "8"
         mem: "32000"
-        time: "07-00:00:00"
+        time: "02-00:00:00"
       milli:
-        file_size: "4"
+        file_size: "10"
         cores: "16"
         mem: "64000"
-        time: "07-00:00:00"
+        time: "03-00:00:00"
