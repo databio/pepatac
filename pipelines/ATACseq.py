@@ -445,8 +445,12 @@ def main():
 
 	# Split genome mapping result bamfile into two: high-quality aligned reads (keepers)
 	# and unmapped reads (in case we want to analyze the altogether unmapped reads)
-	cmd2 = "samtools view -f 2 -q 10 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_temp
-	cmd2 += " > " + mapping_genome_bam 
+	cmd2 = "samtools view -q 10 -b -@ " + str(pm.cores)
+	if args.paired_end:
+		# add a step to accept only reads mapped in proper pair
+		cmd2 =  " -f 2 "
+
+	cmd2 += mapping_genome_bam_temp + " > " + mapping_genome_bam 
 
 	def check_alignment_genome():
 		ar = ngstk.count_mapped_reads(mapping_genome_bam, args.paired_end)
