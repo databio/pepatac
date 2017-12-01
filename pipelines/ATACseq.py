@@ -445,10 +445,10 @@ def main():
 
 	# Split genome mapping result bamfile into two: high-quality aligned reads (keepers)
 	# and unmapped reads (in case we want to analyze the altogether unmapped reads)
-	cmd2 = "samtools view -q 10 -b -@ " + str(pm.cores)
+	cmd2 = "samtools view -q 10 -b -@ " + str(pm.cores) + " "
 	if args.paired_end:
 		# add a step to accept only reads mapped in proper pair
-		cmd2 =  " -f 2 "
+		cmd2 =  "-f 2 "
 
 	cmd2 += mapping_genome_bam_temp + " > " + mapping_genome_bam 
 
@@ -462,8 +462,16 @@ def main():
 
 	pm.run([cmd, cmd2], mapping_genome_bam, follow=check_alignment_genome)
 
-	cmd = "samtools view -f 12 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_temp
-	cmd += " > " + unmap_genome_bam
+	# Now produce the unmapped file
+	cmd = "samtools view -b -@ " + str(pm.cores) 
+	if args.paired_end:
+		# require both read and mate unmapped
+		cmd += " -f 12 "
+	else:
+		# require only read unmapped
+		cmd += " -f 4 "
+
+	cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
 	pm.run(cmd, unmap_genome_bam)
 
 	pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
@@ -488,21 +496,23 @@ def main():
 	pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: estimate_lib_size(metrics_file))
 
 	# shift bam file and make bigwig file
-	shift_bed = os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bed")
-	cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
-	pm.run(cmd,shift_bed)
-	bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
-	cmd = tools.bedtools + " genomecov -bg -split"
-	cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
-	norm_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.bedGraph")
-	sort_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.sort.bedGraph")
-	cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"), bedGraph, norm_bedGraph)
-	bw_file =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
+	# this script is only compatible with paired-end at the moment
+	if args.paired_end:
+		shift_bed = os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bed")
+		cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
+		pm.run(cmd,shift_bed)
+		bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
+		cmd = tools.bedtools + " genomecov -bg -split"
+		cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
+		norm_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.bedGraph")
+		sort_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.sort.bedGraph")
+		cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"), bedGraph, norm_bedGraph)
+		bw_file =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
 
-	# bedGraphToBigWig requires lexicographical sort, which puts chr10 before chr2, for example
-	cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
-	cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw_file
-	pm.run([cmd, cmd2, cmd3, cmd4], bw_file)
+		# bedGraphToBigWig requires lexicographical sort, which puts chr10 before chr2, for example
+		cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
+		cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw_file
+		pm.run([cmd, cmd2, cmd3, cmd4], bw_file, nofail=True)
 
 
 	# "Exact cuts" are what I call nucleotide-resolution tracks of exact bases where the
@@ -519,6 +529,7 @@ def main():
 	temp_target = os.path.join(temp_exact_folder, "flag_completed")
 	exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
 
+	# this is the old way to do it (to be removed)
 	# cmd = tool_path("bedToExactWig.pl")
 	# cmd += " " + shift_bed
 	# cmd += " " + res.chrom_sizes
@@ -535,6 +546,7 @@ def main():
 	# pm.clean_add(os.path.join(temp_exact_folder, "*.bw"))
 
 	cmd = tool_path("bamSitesToWig.py")
+	cmd += " -b"  # request bed output
 	cmd += " -i " + rmdup_bam
 	cmd += " -c " + res.chrom_sizes
 	cmd += " -o " + exact_target
