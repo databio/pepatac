@@ -554,6 +554,10 @@ def main():
 	cmd2 = "touch " + temp_target
 	pm.run([cmd, cmd2], temp_target)
 
+	if not args.paired_end:
+		# TODO, make this always (not just single-end)
+		shift_bed = exact_target + ".bed"
+		
 	# TSS enrichment
 	if not os.path.exists(res.TSS_file):
 		print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}".format(res.TSS_file))

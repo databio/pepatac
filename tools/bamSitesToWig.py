@@ -17,6 +17,8 @@ import sys
 import pararead
 import pysam
 
+from pararead.processor import _LOGGER
+
 # A function object like this will be pickled by the parallel call to map,
 # So it cannot contain huge files or the pickling will limit everything.
 # For this reason I must rely on global vars for the big stuff.
@@ -56,15 +58,16 @@ class CutTracer(pararead.ParaReadProcessor):
         grab a subset of reads from the bamfile
         """
 
+        chrom_size = self.get_chrom_size(chrom)
+
+        #self.unbuffered_write("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
+        _LOGGER.info("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
         reads = self.fetch_chunk(chrom)
 
         # if isinstance(reads, list):
         #     print("Chrom has no reads: " + chrom)
         #     return None
 
-        chrom_size = self.get_chrom_size(chrom)
-
-        self.unbuffered_write("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
 
         chromOutFile = self._tempf(chrom)
         chromOutFileBw = chromOutFile + ".bw"
@@ -82,37 +85,57 @@ class CutTracer(pararead.ParaReadProcessor):
             chromOutFileBed = chromOutFile + ".bed"
 
             bedOut = open(chromOutFileBed, "w")
-            
+        
+
+        def get_shifted_pos(read, shift_factor):
+            if read.flag & 1:  # paired
+                if read.flag == 99:  # paired, mapped in pair, mate reversed, first in pair
+                    shifted_pos = read.reference_start + shift_factor["+"]
+                    #r.reference_length  # col 8
+                elif read.flag == 147:  # mate of 99
+                    shifted_pos = read.reference_end + shift_factor["-"]
+                elif read.flag == 163:  # paired, mapped in pair, mate reversed, second in pair
+                    shifted_pos = read.reference_start + shift_factor["+"]
+                elif read.flag == 83:   # mate of 163
+                    shifted_pos = read.reference_end + shift_factor["-"]
+            else:  # unpaired
+                if read.flag & 16:  # read reverse strand
+                    shifted_pos = read.reference_end + shift_factor["-"]
+                else:
+                    shifted_pos = read.reference_start + shift_factor["+"]
+
+
         begin = 1
         header_line = "fixedStep chrom=" + chrom + " start=" + str(begin) + " step=1\n";
         cutsToWigProcess.stdin.write(header_line)
         try:
-            for read in reads:
-                if read.flag & 1:  # paired
-                    if read.flag == 99:  # paired, mapped in pair, mate reversed, first in pair
-                        shifted_pos = read.reference_start + self.shift_factor["+"]
-                        #r.reference_length  # col 8
-                    elif read.flag == 147:  # mate of 99
-                        shifted_pos = read.reference_end + self.shift_factor["-"]
-                    elif read.flag == 163:  # paired, mapped in pair, mate reversed, second in pair
-                        shifted_pos = read.reference_start + self.shift_factor["+"]
-                    elif read.flag == 83:   # mate of 163
-                        shifted_pos = read.reference_end + self.shift_factor["-"]
-                else:  # unpaired
-                    if read.flag & 16:  # read reverse strand
-                        shifted_pos = read.reference_end + self.shift_factor["-"]
-                    else:
-                        shifted_pos = read.reference_start + self.shift_factor["+"]
-
-                cutsToWigProcess.stdin.write(str(shifted_pos) + "\n")
-                bedOut.write(" ".join([chrom, str(shifted_pos - self.smooth_length), str(shifted_pos + self.smooth_length)])+"\n")
+            if self.bedout:
+                # Put this test outside the for loop so we don't bother testing 
+                # it for every read, which would be bad.
+                for read in reads:
+                    shifted_pos = get_shifted_pos(read, shift_factor)
+                    cutsToWigProcess.stdin.write(str(shifted_pos) + "\n")
+                    strand = "-" if read.is_reverse else "+"
+                    # The bed file needs 6 columns (even though some are dummy) because
+                    # MACS says so.
+                    bedOut.write("\t".join([
+                        chrom,
+                        str(shifted_pos - self.smooth_length),
+                        str(shifted_pos + self.smooth_length), 
+                        "N", 
+                        "0",
+                        strand]) + "\n")
+            else:
+                # Only do the bigwig output
+                for read in reads:
+                    shifted_pos = get_shifted_pos(read, shift_factor)
+                    cutsToWigProcess.stdin.write(str(shifted_pos) + "\n")
 
             cutsToWigProcess.stdin.close()
 
             # For chroms with no reads, the 'read' variable will not be bound.
             #if read in locals():
-            print(chrom)
-            print("Encoding bigwig for " + chrom + " (last read position:" + str(read.pos) + ")...")
+            _LOGGER.debug("Encoding bigwig for " + chrom + " (last read position:" + str(read.pos) + ")...")
                 
             wigToBigWigProcess.communicate()
 
@@ -137,24 +160,24 @@ class CutTracer(pararead.ParaReadProcessor):
         file name.
         """
         if not good_chromosomes:
-            print("No successful chromosomes, so no combining.")
+            _LOGGER.info("No successful chromosomes, so no combining.")
             return
         elif len(good_chromosomes) == 1:
             subprocess.call(["mv", self._tempf(good_chromosomes[0]) + ".bw", self.outfile])
 
         else:
-            print("Merging {} files into output file: '{}'".
+            _LOGGER.info("Merging {} files into output file: '{}'".
                   format(len(good_chromosomes), self.outfile))
             temp_files = [self._tempf(chrom) + ".bw" for chrom in good_chromosomes]
             cmd = "bigWigCat " + self.outfile + " " + " ".join(temp_files)
-            print(cmd)
+            _LOGGER.debug(cmd)
             p = subprocess.call(['bigWigCat', self.outfile] + temp_files)
 
             if self.bedout:
                 temp_files = [self._tempf(chrom) + ".bed" for chrom in good_chromosomes]
                 cmd = "cat " + " ".join(temp_files) + " > " + self.outfile + ".bed"
-                print(cmd)
-                p = subprocess.call(cmd)
+                _LOGGER.debug(cmd)
+                p = subprocess.call(cmd, shell=True)
 
 
 
@@ -218,5 +241,5 @@ if __name__ == "__main__":
     ct.register_files()
     good_chromosomes = ct.run()
     
-    print("Reduce step...")
+    print("Reduce step (merge files)...")
     ct.combine(good_chromosomes)
