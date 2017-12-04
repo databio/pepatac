@@ -531,7 +531,9 @@ def main():
 
 		Tss_enrich =  os.path.join(QC_folder,  args.sample_name + ".TssEnrichment")
 		cmd = tool_path("pyTssEnrichment.py")
-		cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends -e 2000 -u -v -s 4 -o " + Tss_enrich
+		cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends"
+		cmd += " -c " + pm.cores
+		cmd += " -e 2000 -u -v -s 4 -o " + Tss_enrich
 		pm.run(cmd, Tss_enrich, nofail=True)
 		
 		#Call Rscript to plot TSS Enrichment
