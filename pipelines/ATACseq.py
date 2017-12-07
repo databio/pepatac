@@ -151,7 +151,10 @@ def _align_with_bt2(
 		cmd += bt2_opts_txt
 		cmd += " -x " + assembly_bt2
 		cmd += " --rg-id " + args.sample_name
-		cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+		if args.paired_end:
+			cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+		else:
+			cmd += " -U " + unmap_fq1
 		cmd += " --un-conc-gz " + out_fastq_bt2
 		cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
 		cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
@@ -248,7 +251,7 @@ def main():
 
 	args.paired_end = args.single_or_paired == "paired"
 	# TODO: for now, paired end sequencing input is required.
-	args.paired_end = True
+	#args.paired_end = True
 	
 	# Initialize, creating global PipelineManager and NGSTk instance for
 	# access in ancillary functions outside of main().
@@ -280,10 +283,12 @@ def main():
 	param.outfolder = outfolder
 
 	################################################################################
-	print("Local input file: " + args.input[0]) 
-	print("Local input file: " + args.input2[0]) 
 
-	pm.report_result("File_mb", ngstk.get_file_size([args.input, args.input2]))
+	print("Local input file: " + args.input[0])
+	if args.input2:
+		print("Local input file: " + args.input2[0])
+
+	pm.report_result("File_mb", ngstk.get_file_size([x for x in [args.input, args.input2] if x is not None]))
 	pm.report_result("read_type", args.single_or_paired)
 	pm.report_result("Genome", args.genome_assembly)
 
@@ -304,6 +309,8 @@ def main():
 		follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
 	pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 	print(local_input_files)
+	untrimmed_fastq1 = out_fastq_pre + "_R1.fastq"
+	untrimmed_fastq2 = out_fastq_pre + "_R2.fastq" if args.paired_end else None
 
 
 	########################
@@ -321,6 +328,8 @@ def main():
 
 	# Create trimming command(s).
 	if args.trimmer == "pyadapt":
+		if not args.paried_end:
+			raise NotImplementedError("pyadapt trimming requires paired-end reads.")
 		# TODO: make pyadapt give options for output file name.
 		trim_cmd_chunks = [
 			tool_path("pyadapter_trim.py"),
@@ -341,15 +350,18 @@ def main():
 			("-x", res.adapters),
 			"--quiet",
 			("-o", out_fastq_pre),
-			local_input_files[0],
-			local_input_files[1] if args.paired_end else None
+			untrimmed_fastq1,
+			untrimmed_fastq2 if args.paired_end else None
 		]
 		trimming_command = build_command(trim_cmd_chunks)
 
 		# Create the skewer file renaming commands.
-		skewer_filename_pairs = [("{}-trimmed-pair1.fastq".format(out_fastq_pre), trimmed_fastq)]
 		if args.paired_end:
+			skewer_filename_pairs = [("{}-trimmed-pair1.fastq".format(out_fastq_pre), trimmed_fastq)]
 			skewer_filename_pairs.append(("{}-trimmed-pair2.fastq".format(out_fastq_pre), trimmed_fastq_R2))
+		else:
+			skewer_filename_pairs = [("{}-trimmed.fastq".format(out_fastq_pre), trimmed_fastq)]
+
 		trimming_renaming_commands = [build_command(["mv", old, new]) for old, new in skewer_filename_pairs]
 		# Rename the logfile.
 		#skewer_filename_pairs.append(("{}-trimmed.log".format(out_fastq_pre), trimLog))
@@ -359,15 +371,17 @@ def main():
 
 	else:
 		# Default to trimmomatic.
+
 		trim_cmd_chunks = [
-			"{java} -Xmx{mem} -jar {trim} PE -threads {cores}".format(
-				java=tools.java, mem=pm.mem, trim=tools.trimmo, cores=pm.cores),
+			"{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
+				java=tools.java, mem=pm.mem, trim=tools.trimmo, PE="PE" if args.paired_end else "", 
+				cores=pm.cores),
 			local_input_files[0],
 			local_input_files[1],
 			trimmed_fastq,
 			trimming_prefix + "_R1_unpaired.fq",
-			trimmed_fastq_R2,
-			trimming_prefix + "_R2_unpaired.fq",
+			trimmed_fastq_R2 if args.paired_end else "",
+			trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
 			"ILLUMINACLIP:" + res.adapters + ":2:30:10"
 		]
 		cmd = build_command(trim_cmd_chunks)
@@ -419,7 +433,10 @@ def main():
 	cmd += bt2_options
 	cmd += " --rg-id " + args.sample_name
 	cmd += " -x " +  res.bt2_genome
-	cmd += " -1 " + unmap_fq1  + " -2 " + unmap_fq2
+	if args.paired_end:
+		cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+	else:
+		cmd += " -U " + unmap_fq1
 	cmd += " | " + tools.samtools + " view -bS - -@ 1 "
 	#cmd += " -f 2 -q 10"  # quality and pairing filter
 	cmd += " | " + tools.samtools + " sort - -@ 1"
@@ -428,8 +445,12 @@ def main():
 
 	# Split genome mapping result bamfile into two: high-quality aligned reads (keepers)
 	# and unmapped reads (in case we want to analyze the altogether unmapped reads)
-	cmd2 = "samtools view -f 2 -q 10 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_temp
-	cmd2 += " > " + mapping_genome_bam 
+	cmd2 = "samtools view -q 10 -b -@ " + str(pm.cores) + " "
+	if args.paired_end:
+		# add a step to accept only reads mapped in proper pair
+		cmd2 =  "-f 2 "
+
+	cmd2 += mapping_genome_bam_temp + " > " + mapping_genome_bam 
 
 	def check_alignment_genome():
 		ar = ngstk.count_mapped_reads(mapping_genome_bam, args.paired_end)
@@ -441,8 +462,16 @@ def main():
 
 	pm.run([cmd, cmd2], mapping_genome_bam, follow=check_alignment_genome)
 
-	cmd = "samtools view -f 12 -b -@ " + str(pm.cores) + " " + mapping_genome_bam_temp
-	cmd += " > " + unmap_genome_bam
+	# Now produce the unmapped file
+	cmd = "samtools view -b -@ " + str(pm.cores) 
+	if args.paired_end:
+		# require both read and mate unmapped
+		cmd += " -f 12 "
+	else:
+		# require only read unmapped
+		cmd += " -f 4 "
+
+	cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
 	pm.run(cmd, unmap_genome_bam)
 
 	pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
@@ -467,21 +496,23 @@ def main():
 	pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: estimate_lib_size(metrics_file))
 
 	# shift bam file and make bigwig file
-	shift_bed = os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bed")
-	cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
-	pm.run(cmd,shift_bed)
-	bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
-	cmd = tools.bedtools + " genomecov -bg -split"
-	cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
-	norm_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.bedGraph")
-	sort_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.sort.bedGraph")
-	cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"), bedGraph, norm_bedGraph)
-	bw_file =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
+	# this script is only compatible with paired-end at the moment
+	if args.paired_end:
+		shift_bed = os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bed")
+		cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
+		pm.run(cmd,shift_bed)
+		bedGraph = os.path.join( map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.bedGraph") 
+		cmd = tools.bedtools + " genomecov -bg -split"
+		cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
+		norm_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.bedGraph")
+		sort_bedGraph = os.path.join(map_genome_folder , args.sample_name + ".pe.q10.sort.rmdup.norm.sort.bedGraph")
+		cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"), bedGraph, norm_bedGraph)
+		bw_file =  os.path.join(map_genome_folder , args.sample_name + ".pe.q10.rmdup.norm.bw")
 
-	# bedGraphToBigWig requires lexicographical sort, which puts chr10 before chr2, for example
-	cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
-	cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw_file
-	pm.run([cmd, cmd2, cmd3, cmd4], bw_file)
+		# bedGraphToBigWig requires lexicographical sort, which puts chr10 before chr2, for example
+		cmd3 = "LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " + sort_bedGraph
+		cmd4 = tools.bedGraphToBigWig + " " + sort_bedGraph + " " + res.chrom_sizes + " " + bw_file
+		pm.run([cmd, cmd2, cmd3, cmd4], bw_file, nofail=True)
 
 
 	# "Exact cuts" are what I call nucleotide-resolution tracks of exact bases where the
@@ -498,6 +529,7 @@ def main():
 	temp_target = os.path.join(temp_exact_folder, "flag_completed")
 	exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
 
+	# this is the old way to do it (to be removed)
 	# cmd = tool_path("bedToExactWig.pl")
 	# cmd += " " + shift_bed
 	# cmd += " " + res.chrom_sizes
@@ -514,6 +546,7 @@ def main():
 	# pm.clean_add(os.path.join(temp_exact_folder, "*.bw"))
 
 	cmd = tool_path("bamSitesToWig.py")
+	cmd += " -b"  # request bed output
 	cmd += " -i " + rmdup_bam
 	cmd += " -c " + res.chrom_sizes
 	cmd += " -o " + exact_target
@@ -521,6 +554,10 @@ def main():
 	cmd2 = "touch " + temp_target
 	pm.run([cmd, cmd2], temp_target)
 
+	if not args.paired_end:
+		# TODO, make this always (not just single-end)
+		shift_bed = exact_target + ".bed"
+		
 	# TSS enrichment
 	if not os.path.exists(res.TSS_file):
 		print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}".format(res.TSS_file))
