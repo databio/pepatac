@@ -149,10 +149,6 @@ class CutTracer(pararead.ParaReadProcessor):
 
         return chrom
 
-
-    def write_cuts(self, cutsToWigProcess, cut):
-        cutsToWigProcess.stdin.write(str(read.reference_start + self.shift_factor["+"]) +"\n")
-
     def combine(self, good_chromosomes):
         """
         After running the process in parallel, this 'reduce' step will simply
