@@ -1,11 +1,24 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.6.0] -- Unreleased
+## [0.7.0] -- Unreleased
+
+
+
+## [0.6.0] -- 2017-12-13
 
 ### Added
 - Single-end reads are now allowed
 - Pipeline can now accommodate `.bam` input files
+- Added a single-base bed file output in addition to the smoothed version
+
+### Changed
+- Fixed a bug with peak counting for fseq
+- Fixed a bug with reporting estimated library sizes
+- Fixed issues with TSS enrichment calculation that could lead to stalled jobs or excess CPU use
+- Reduced verbosity of error messages for some tools
+- Reduced amount of resources requested by default
+- Introduced requirement on pypiper v0.7
 
 ## [0.5.0] -- 2017-09-13
 
