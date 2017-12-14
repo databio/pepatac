@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 
 
-## [0.6.0] -- 2017-12-13
+## [0.6.0] -- 2017-12-14
 
 ### Added
 - Single-end reads are now allowed
