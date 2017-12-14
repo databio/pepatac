@@ -110,12 +110,12 @@ def _align_with_bt2(
 		e.g. from parsing command-line options
 	:param looper.models.AttributeDict tools: binding between tool name and
 		value, e.g. for tools/resources used by the pipeline
-	:param str outfolder: path to output directory for the pipeline
 	:param str unmap_fq1: path to unmapped read1 FASTQ file
 	:param str unmap_fq2: path to unmapped read2 FASTQ file
 	:param str assembly_identifier: text identifying a genome assembly for the
 		pipeline
 	:param str assembly_bt2: assembly-specific bowtie2 folder (index, etc.)
+	:param str outfolder: path to output directory for the pipeline
 	:param str aligndir: name of folder for temporary output
 	:param str bt2_opts_txt: command-line text for bowtie2 options
 	:return (str, str): pair (R1, R2) of paths to FASTQ files
