@@ -17,11 +17,13 @@ tools:  # absolute paths to required tools
   bedGraphToBigWig: bedGraphToBigWig
   wigToBigWig: wigToBigWig
   bigWigCat: bigWigCat
+  Rscript: Rscript
+  perl: perl
 
 # user configure 
 resources:
   genomes: ${GENOMES}
-  adapter: null  # Use default, built-in adapter file.
+  adapters: null  # Set to null to use default adapter file included in repository
 
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool
   samtools:

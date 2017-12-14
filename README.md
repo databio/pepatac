@@ -76,7 +76,7 @@ You have two options for running the pipeline.
 
 ### Run option 1: Running the pipeline script directly
 
-To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See example command in [cmd.sh](cmd.sh) using test data.
+To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
 
@@ -139,6 +139,11 @@ URL="http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz"
 wget -O ${GENOME}_TSS_full.txt.gz ${URL}
 zcat ${GENOME}_TSS_full.txt.gz | awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}'  | LC_COLLATE=C sort -k1,1 -k2,2n -u > ${GENOME}_TSS.tsv
 echo ${GENOME}_TSS.tsv
+
+Mouse:
+GENOME="mm10"
+URL="http://hgdownload.soe.ucsc.edu/goldenPath/mm10/database/refGene.txt.gz"
+
 ```
 
 Another option from Gencode GTF:

@@ -130,7 +130,7 @@ starts=range(0,maxi,chunksize)
 # parallel processed computation of matrix for each chunk
 if __name__ == "__main__":
     pool = Pool(processes=int(options.c))
-    sub_mats=pool.map(sub_Mat, starts,1)
+    sub_mats=pool.map_async(sub_Mat, starts,1).get(9999999)
 
 # sum up matrices for each chunk into matrix for all
 mat = np.zeros([rows,cols])
