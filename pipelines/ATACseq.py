@@ -79,11 +79,11 @@ def calc_frip(bamfile, peakfile, frip_func, pipeline_manager, aligned_reads_key=
 	Use the given function and data from an aligned reads file and a called
 	peaks file, along with a PipelineManager, to calculate FRIP.
 
+	:param str peakfile: path to called peaks file
 	:param callable frip_func: how to calculate the fraction of reads in peaks;
 		this must accept the path to the aligned reads file and the path to
 		the called peaks file as arguments.
 	:param str bamfile: path to aligned reads file
-	:param str peakfile: path to called peaks file
 	:param pypiper.PipelineManager pipeline_manager: the PipelineManager in use
 		for the pipeline calling this function
 	:param str aligned_reads_key: name of the key from a stats (key-value) file
