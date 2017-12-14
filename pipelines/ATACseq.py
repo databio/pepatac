@@ -447,7 +447,7 @@ def main():
 	cmd2 = "samtools view -q 10 -b -@ " + str(pm.cores) + " "
 	if args.paired_end:
 		# add a step to accept only reads mapped in proper pair
-		cmd2 =  "-f 2 "
+		cmd2 +=  "-f 2 "
 
 	cmd2 += mapping_genome_bam_temp + " > " + mapping_genome_bam 
 
