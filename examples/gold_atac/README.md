@@ -13,7 +13,7 @@ python get_geo.py -i ~/code/ATACseq/examples/gold_atac/metadata/gold_atac_gse.cs
 
 I used resulting file [metadata/annocomb_gold_atac_gse.csv](metadata/annocomb_gold_atac_gse.csv) to create the looper metadata sheet, [metadata/gold_atac_annotation.csv](metadata/gold_atac_annotation.csv).
 
-I create project config file and sampled test data. The SRA fastq files should be stored in a folder `${SRAFQ}`, and then this will run with looper with no additional changes.
+I create project config file and sampled test data. The SRA fastq files should be stored in a folder pointed to by environment variable `SRAFQ`, and then this will run with `looper` with no additional changes.
 
 ## Run pipeline
 

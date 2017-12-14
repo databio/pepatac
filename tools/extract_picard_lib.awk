@@ -6,17 +6,22 @@
   for(i=1; i<=2; i++) {
     getline;
     c=-1;
+    # Find the column of interest
     for(j=1; j<=10; j++) { 
       if ($j == "ESTIMATED_LIBRARY_SIZE") c=j 
     }
 
-    if (c != -1) { 
-      getline;
+    if (c != -1) {
+    while(getline && $0 != "") {
+      #getline;
       if ($c == "") {
-        print "Unknown"
+        #print "Unknown"
       } else {
-        print $c
       }
+        # Aggregate library size for different read groups
+        t = t + $c
+    }
     }
   }
+  print t
 }

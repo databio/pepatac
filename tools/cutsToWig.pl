@@ -25,7 +25,7 @@
 $chrSize = shift;  # Size of chromosome is the first argument
 $countIndex = 1;
 $currentCount = 1;
-$header =  <>; #discard the first line (fixedstep)
+$header =  <>; # Discard the first line (fixedstep)
 print $header;
 $cutSite = <>;  # Grab the first cut
 
@@ -40,7 +40,7 @@ $previousCut = $cutSite;
 while($cutSite = <>) {
 	chomp($cutSite);
 	# if it's a duplicate read...
-	if ($cutSite == $previousCut) { # Sum up all reads for this spot.
+	if ($cutSite == $previousCut) { # sum up all reads for this spot.
 		$currentCount++;
 		next;						# skip to next read
 	}
