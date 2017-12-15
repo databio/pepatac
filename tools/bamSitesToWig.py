@@ -88,6 +88,9 @@ class CutTracer(pararead.ParaReadProcessor):
         
 
         def get_shifted_pos(read, shift_factor):
+
+            # default
+            shifted_pos = None
             if read.flag & 1:  # paired
                 if read.flag == 99:  # paired, mapped in pair, mate reversed, first in pair
                     shifted_pos = read.reference_start + shift_factor["+"]
@@ -104,6 +107,8 @@ class CutTracer(pararead.ParaReadProcessor):
                 else:
                     shifted_pos = read.reference_start + shift_factor["+"]
 
+            return shifted_pos    
+
 
         begin = 1
         header_line = "fixedStep chrom=" + chrom + " start=" + str(begin) + " step=1\n";
@@ -114,6 +119,9 @@ class CutTracer(pararead.ParaReadProcessor):
                 # it for every read, which would be bad.
                 for read in reads:
                     shifted_pos = get_shifted_pos(read, shift_factor)
+                    if not shifted_pos:
+                        continue
+                    
                     cutsToWigProcess.stdin.write(str(shifted_pos) + "\n")
                     strand = "-" if read.is_reverse else "+"
                     # The bed file needs 6 columns (even though some are dummy) because
