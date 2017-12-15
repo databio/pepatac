@@ -3,7 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [0.7.0] -- Unreleased
 
+## [0.6.1] -- 2017-12-15
 
+### Changed
+- Fixed a bug with paired-end reads that were not in proper pairs
+- Fixed a bug with paired-end commands
 
 ## [0.6.0] -- 2017-12-14
 
