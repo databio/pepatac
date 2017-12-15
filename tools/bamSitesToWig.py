@@ -88,7 +88,16 @@ class CutTracer(pararead.ParaReadProcessor):
         
 
         def get_shifted_pos(read, shift_factor):
-
+            """
+            Shifts a read according to a shift factor to account for either
+            transposition insertion site shifting or DNAse read shifting,
+            depending on the strand of the read. Returns the shifted position of
+            interest.
+            :param read: A pysam read object
+            :param shift_factor: A dict with positive or negative integer values
+                for keys ["+", "-"], indicating how much (and which direction)
+                to shift reads on the + or - strand
+            """
             # default
             shifted_pos = None
             if read.flag & 1:  # paired
