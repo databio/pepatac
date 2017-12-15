@@ -5,7 +5,7 @@ ATACseq  pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield"]
 __email__ = "xujin937@gmail.com"
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 
 from argparse import ArgumentParser
