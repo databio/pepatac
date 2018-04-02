@@ -496,11 +496,11 @@ def main():
 		rr = float(pm.get_stat("Raw_reads"))
 		tr = float(pm.get_stat("Trimmed_reads"))
 		dr = float(ar) - float(pdar)
-		pm.report_result("Number_of_Duplicate_Reads", dr)
-		pm.report_result("Aligned_Reads_Duplicates_Removed", pdar)
-		pm.report_result("Alignment_Rate_Duplicates_Removed",
+		pm.report_result("Duplicate_Reads", dr)
+		pm.report_result("Dedup_Aligned_Reads", pdar)
+		pm.report_result("Dedup_Alignment_Rate",
 		                 round(float(pdar) * 100 / float(tr), 2))
-		pm.report_result("Total_Efficiency_Duplicates_Removed",
+		pm.report_result("Dedup_Total_Efficiency",
 		                 round(float(pdar) * 100 / float(rr), 2))    
    
 	rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
