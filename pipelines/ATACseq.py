@@ -473,15 +473,36 @@ def main():
 
 	cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
 	pm.run(cmd, unmap_genome_bam)
+	# Delete the temporary bam file
+	pm.clean_add(mapping_genome_bam_temp)
 
 	pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
 
 	def estimate_lib_size(picard_log):
 		# In millions of reads; contributed by Ryan
+		# NOTE: from Picard manual: without optical duplicate counts,
+		#       library size estimation will be inaccurate.
 		cmd = "awk -F'\t' -f " + tool_path("extract_picard_lib.awk") + " " + picard_log
 		picard_est_lib_size = pm.checkprint(cmd)
 		pm.report_result("Picard_est_lib_size", picard_est_lib_size)
-	 
+	
+	def post_dup_aligned_reads(picard_log):
+		# Number of aligned reads post tools.picard REMOVE_DUPLICATES
+		cmd = ("awk -F'\t' -f " +
+               tool_path("extract_post_dup_aligned_reads.awk") + " " +
+               picard_log)
+		pdar = pm.checkprint(cmd)
+		ar = float(pm.get_stat("Aligned_reads"))
+		rr = float(pm.get_stat("Raw_reads"))
+		tr = float(pm.get_stat("Trimmed_reads"))
+		dr = float(ar) - float(pdar)
+		pm.report_result("Number_of_Duplicate_Reads", dr)
+		pm.report_result("Aligned_Reads_Duplicates_Removed", pdar)
+		pm.report_result("Alignment_Rate_Duplicates_Removed",
+		                 round(float(pdar) * 100 / float(tr), 2))
+		pm.report_result("Total_Efficiency_Duplicates_Removed",
+		                 round(float(pdar) * 100 / float(rr), 2))    
+   
 	rmdup_bam =  os.path.join(map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
 	metrics_file = os.path.join(map_genome_folder, args.sample_name + "_picard_metrics_bam.txt")
 	picard_log = os.path.join(map_genome_folder, args.sample_name + "_picard_metrics_log.txt")
@@ -493,7 +514,7 @@ def main():
 	cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " +  picard_log
 	cmd4 = tools.samtools + " index " + rmdup_bam 
 
-	pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: estimate_lib_size(metrics_file))
+	pm.run([cmd3,cmd4], rmdup_bam, follow = lambda: post_dup_aligned_reads(metrics_file))
 
 	# shift bam file and make bigwig file
 	# this script is only compatible with paired-end at the moment
@@ -643,10 +664,11 @@ def main():
 		chrom_peak_files = os.path.join(peak_folder, "*.npf")
 		merge_chrom_peaks_files = "cat {peakfiles} > {combined_peak_file}".format(
 			peakfiles=chrom_peak_files, combined_peak_file=peak_output_file)
-		delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
+		#delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
 
 		# Pypiper serially executes the commands.
-		cmd = [fseq_cmd, merge_chrom_peaks_files, delete_chrom_peaks_files]
+		cmd = [fseq_cmd, merge_chrom_peaks_files]
+		pm.clean_add(chrom_peak_files)
 
 	else:
 		# MACS2
