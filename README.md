@@ -23,7 +23,7 @@ These features are explained in more detail later in this README.
 ```
 pip install --user https://github.com/epigen/pypiper/zipball/master
 pip install --user https://github.com/epigen/looper/zipball/master
-pip install --user https://github.com/databio/pararead/zipball/master
+pip install --user pararead
 ```
 **R packages**. This pipeline uses R to generate QC metric plots. These are **optional** and if you don't install these R packages (or R in general), the pipeline will still work, but you will not get the QC plot outputs. 
 
