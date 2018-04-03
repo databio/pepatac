@@ -1,7 +1,8 @@
 ###############################################################################
 #5/18/17
-#Last Updated 3/07/18
-#Ryan Corces & Jason Smith
+#Last Updated 04/03/2018
+#Original Author: Ryan Corces
+#Updated by: Jason Smith
 #ATAC_Looper_Summary_plot.R
 #
 #This program is meant to plot multiple summary graphs from the summary table 
@@ -181,9 +182,9 @@ write(paste("\nGenerating plots in pdf format with ",
             summaryFile, "\n", sep=""), stdout())
 
 # Set absent values in table to zero
-stats[is.na(stats)] <- 0
+stats[is.na(stats)]   <- 0
 stats[is.null(stats)] <- 0
-stats[stats==""] <- 0
+stats[stats==""]      <- 0
 stats$Picard_est_lib_size[stats$Picard_est_lib_size=="Unknown"] <- 0
 
 ###############################################################################
@@ -195,9 +196,9 @@ for (i in 1:length(prealignments)) {
                stats[, (paste("Aligned_reads", prealignments[i], sep="_")),
                      with=FALSE][[1]]
 }
-alignRaw <- data.table(sample=stats$sample_name,
-                       Unaligned=Unaligned,
-                       Other=stats$Aligned_reads)
+alignRaw <- data.table(sample = stats$sample_name,
+                       Unaligned = Unaligned)
+alignRaw[, (unique(stats$Genome)) := stats$Aligned_reads]
 for (i in 1:length(prealignments)) {
   alignRaw[, (prealignments[i]) := 
            stats[, (paste("Aligned_reads", prealignments[i], sep="_")),
@@ -209,7 +210,7 @@ alignRaw$sample <- factor(alignRaw$sample, levels = alignRaw$sample)
 meltAlignRaw <- melt (alignRaw, id.vars = "sample")
 maxReads     <- max(rowSums(alignRaw[,2:ncol(alignRaw)]))
 upperLimit   <- roundUpNice(maxReads/1000000)
-chartHeight = ( length(unique(alignRaw$sample))) * 0.75
+chartHeight  <- (length(unique(alignRaw$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15", Other="#4876FF")
 moreColors <- colorpanel(length(prealignments), 
@@ -245,8 +246,9 @@ for (i in 1:length(prealignments)) {
                      with=FALSE][[1]]
 }
 alignPercent <- data.table(sample=stats$sample_name,
-                           Unaligned=Unaligned,
-                           Other=stats$Alignment_rate)
+                           Unaligned=Unaligned)
+alignPercent[, (unique(stats$Genome)) := stats$Alignment_rate]
+
 for (i in 1:length(prealignments)) {
   alignPercent[, (prealignments[i]) := 
                stats[, (paste("Alignment_rate", prealignments[i], sep="_")),
@@ -258,7 +260,7 @@ alignPercent$sample <- factor(alignPercent$sample,
 
 meltAlignPercent <- melt (alignPercent, id.vars = "sample")
 upperLimit       <- 103
-chartHeight = ( length(unique(alignPercent$sample))) * 0.75
+chartHeight      <- (length(unique(alignPercent$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15", Other="#4876FF")
 moreColors <- colorpanel(length(prealignments), 
@@ -290,24 +292,24 @@ set_panel_size(alignPercentPlot,
 
 ##### TSS PLOT #####
 #establish red/green color scheme
-redMin = 0
-redMax = TSS_CUTOFF-0.01
-redBreaks = seq(redMin,redMax,0.01)
-redColors = colorpanel(length(redBreaks), "#AF0000","#E40E00","#FF7A6A")
-greenMin = TSS_CUTOFF
-greenMax = 30
-greenBreaks = seq(greenMin,greenMax,0.01)
-greenColors = colorpanel(length(greenBreaks)-1, "#B4E896","#009405","#003B00")
-TSScolors <- c(redColors,greenColors)
+redMin <- 0
+redMax <- TSS_CUTOFF-0.01
+redBreaks <- seq(redMin,redMax,0.01)
+redColors <- colorpanel(length(redBreaks), "#AF0000","#E40E00","#FF7A6A")
+greenMin  <- TSS_CUTOFF
+greenMax  <- 30
+greenBreaks <- seq(greenMin,greenMax,0.01)
+greenColors <- colorpanel(length(greenBreaks)-1, "#B4E896","#009405","#003B00")
+TSScolors   <- c(redColors,greenColors)
 
 #Organize data for plotting
-TSSscore  <- cbind.data.frame(sample=stats$sample_name, 
-                              TSS=round(stats$TSS_Score, digits = 2), 
-                              QCcolor=(TSScolors[round(stats$TSS_Score+0.01, 
-                                                       digits = 2)*100]))
-maxTSS     <- max(stats$TSS_Score, na.rm=TRUE)
-upperLimit <- roundUpNice(maxTSS)
-chartHeight = ( length(unique(TSSscore$sample))) * 0.75
+TSSscore    <- cbind.data.frame(sample=stats$sample_name, 
+                                TSS=round(stats$TSS_Score, digits = 2), 
+                                QCcolor=(TSScolors[round(stats$TSS_Score+0.01, 
+                                                         digits = 2)*100]))
+maxTSS      <- max(stats$TSS_Score, na.rm=TRUE)
+upperLimit  <- roundUpNice(maxTSS)
+chartHeight <- (length(unique(TSSscore$sample))) * 0.75
 
 TSSscore$sample <- factor(TSSscore$sample, levels = TSSscore$sample)
 
@@ -331,29 +333,34 @@ set_panel_size(TSSPlot,
 ###############################################################################
 
 ##### LIBRARY SIZE PLOT #####
-PicardLibSize <- cbind.data.frame(sample=stats$sample_name, 
-                   LibSize=(as.numeric(stats$Picard_est_lib_size)/1000000))
-maxSize       <- max(PicardLibSize$LibSize)
-upperLimit    <- roundUpNice(maxSize)
-chartHeight = ( length(unique(PicardLibSize$sample))) * 0.75
-
-PicardLibSize$sample <- factor(PicardLibSize$sample, 
-                               levels = PicardLibSize$sample)
-
-LibSizePlot <- ggplot(PicardLibSize, 
-                      aes(x = sample, y = as.numeric(LibSize))) +
-               geom_col(colour="black", size = 0.25, width=0.8, 
-                        fill = "royalblue1") + 
-               labs(x = "", y = "Picard Library Size (M)") +
-               scale_x_discrete(limits = rev(levels(PicardLibSize$sample))) +
-               scale_y_continuous(limits = c(0,upperLimit), expand=c(0,0)) +
-               coord_flip() + 
-               alignTheme
-
-set_panel_size(LibSizePlot, 
-               file=gsub(pattern=".tsv", replacement=".LibSize.pdf", 
-                         x=summaryFile), 
-               width=unit(8,"inches"), 
-               height=unit(chartHeight,"inches"))
+if (any(!is.na(stats$Picard_est_lib_size))) {
+  PicardLibSize <- cbind.data.frame(
+                       sample=stats$sample_name, 
+                       LibSize=(as.numeric(stats$Picard_est_lib_size)/1000000))
+  maxSize       <- max(PicardLibSize$LibSize)
+  upperLimit    <- roundUpNice(maxSize)
+  chartHeight   <- (length(unique(PicardLibSize$sample))) * 0.75
+  
+  PicardLibSize$sample <- factor(PicardLibSize$sample, 
+                                 levels = PicardLibSize$sample)
+  
+  LibSizePlot <- ggplot(PicardLibSize, 
+                        aes(x = sample, y = as.numeric(LibSize))) +
+    geom_col(colour="black", size = 0.25, width=0.8, 
+             fill = "royalblue1") + 
+    labs(x = "", y = "Picard Library Size (M)") +
+    scale_x_discrete(limits = rev(levels(PicardLibSize$sample))) +
+    scale_y_continuous(limits = c(0,upperLimit), expand=c(0,0)) +
+    coord_flip() + 
+    alignTheme
+  
+  set_panel_size(LibSizePlot, 
+                 file=gsub(pattern=".tsv", replacement=".LibSize.pdf", 
+                           x=summaryFile), 
+                 width=unit(8,"inches"), 
+                 height=unit(chartHeight,"inches"))
+} else {
+    quit()
+}
 
 ###############################################################################
