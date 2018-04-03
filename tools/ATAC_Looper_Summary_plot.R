@@ -212,7 +212,8 @@ maxReads     <- max(rowSums(alignRaw[,2:ncol(alignRaw)]))
 upperLimit   <- roundUpNice(maxReads/1000000)
 chartHeight  <- (length(unique(alignRaw$sample))) * 0.75
 
-plotColors <- data.table(Unaligned="gray15", Other="#4876FF")
+plotColors <- data.table(Unaligned="gray15")
+plotColors[, (unique(stats$Genome)) := "#4876FF"]
 moreColors <- colorpanel(length(prealignments), 
                          low="#94d9ce", mid="#f6caa6", high="#f8666b")
 for (i in 1:length(prealignments)) {
@@ -262,7 +263,8 @@ meltAlignPercent <- melt (alignPercent, id.vars = "sample")
 upperLimit       <- 103
 chartHeight      <- (length(unique(alignPercent$sample))) * 0.75
 
-plotColors <- data.table(Unaligned="gray15", Other="#4876FF")
+plotColors <- data.table(Unaligned="gray15")
+plotColors[, (unique(stats$Genome)) := "#4876FF"]
 moreColors <- colorpanel(length(prealignments), 
                          low="#94d9ce", mid="#f6caa6", high="#f8666b")
 for (i in 1:length(prealignments)) {
