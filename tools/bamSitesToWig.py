@@ -2,7 +2,7 @@
 
 __author__ = "Nathan C. Sheffield"
 __credits__ = []
-__license__ = "GPL3"
+__license__ = "BSD2"
 __version__ = "0.1"
 __email__ = "nathan@code.databio.org"
 
