@@ -10,8 +10,10 @@ tools:  # absolute paths to required tools
   bowtie2: bowtie2
   fastqc: fastqc
   macs2: macs2
-  fseq: fseq
   picard: ${PICARD}
+  skewer: skewer
+  # optional
+  fseq: fseq  
   trimmo: ${TRIMMOMATIC}
   # ucsc tools
   bedGraphToBigWig: bedGraphToBigWig
