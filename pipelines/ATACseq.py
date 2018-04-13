@@ -424,17 +424,11 @@ def main():
         ]
         cmd = build_command(trim_cmd_chunks)
 
-    # pm.run(cmd, trimmed_fastq,
-    #        follow=ngstk.check_trim(
-    #           trimmed_fastq, args.paired_end, trimmed_fastq_R2,
-    #           fastqc_folder=os.path.join(param.outfolder, "fastqc")),
-    #        container=pm.container)
-    pm.run(cmd, trimmed_fastq, container=pm.container)
-
-    cmd = ngstk.check_trim(
+    pm.run(cmd, trimmed_fastq,
+           follow=ngstk.check_trim(
                trimmed_fastq, args.paired_end, trimmed_fastq_R2,
-               fastqc_folder=os.path.join(param.outfolder, "fastqc"))
-    pm.run(cmd, container=pm.container)
+               fastqc_folder=os.path.join(param.outfolder, "fastqc")),
+           container=pm.container)
 
     pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
     pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
