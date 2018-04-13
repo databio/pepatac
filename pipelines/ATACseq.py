@@ -411,7 +411,8 @@ def main():
 
         trim_cmd_chunks = [
             "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
-                java=tools.java, mem=pm.mem, trim=tools.trimmo,
+                java=tools.java, mem=pm.mem,
+                trim=os.path.expandvars(tools.trimmo),
                 PE="PE" if args.paired_end else "",
                 cores=pm.cores),
             local_input_files[0],
@@ -561,7 +562,7 @@ def main():
     picard_log = os.path.join(
         map_genome_folder, args.sample_name + "_picard_metrics_log.txt")
     cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " +
-            tools.picard + " MarkDuplicates")
+            os.path.expandvars(tools.picard) + " MarkDuplicates")
     cmd3 += " INPUT=" + mapping_genome_bam
     cmd3 += " OUTPUT=" + rmdup_bam
     cmd3 += " METRICS_FILE=" + metrics_file
