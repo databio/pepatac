@@ -20,7 +20,7 @@ pipelines:
       "--frip-ref-peaks": FRIP_ref
       "--prealignments": prealignments
       "--genome-size": macs_genome_size
-      "--docker": dockerize
+      "--container": container_name
     resources:
       default:
         file_size: "0"

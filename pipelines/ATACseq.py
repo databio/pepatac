@@ -55,10 +55,13 @@ def parse_arguments():
 
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {v}".format(v=__version__))
-                        
-    parser.add_argument("-d", "--docker", default='false', 
-                        help="Run the pipeline commands in a container, "
-                             "eliminating the need to install dependencies")
+
+    parser.add_argument("-c", "--container", default=None,
+                        dest="container_name", type=str,
+                        help="Run the pipeline commands in the user provided"
+                             " container, eliminating the need to install"
+                             " dependencies.  Can be either a docker or "
+                             " singularity image.")
 
     args = parser.parse_args()
 
@@ -296,13 +299,17 @@ def main():
         print("Local input file: " + args.input2[0])
 
     container = None
-    if args.docker.lower() in {'yes', 'true', 't', 'y'}:
-        # Set up some docker stuff
-        # Need to also pass symbolically linked folders!
+    if args.container_name is not None:
         infolder = os.path.dirname(args.input[0])
         mounts = [outfolder, infolder]
-        # TODO: add the container name to yaml file instead...
-        pm.get_container("jpsmith5/pepatac", mounts)
+        pm.get_container(args.container_name, mounts)
+    # if args.docker.lower() in {'yes', 'true', 't', 'y'}:
+        # # Set up some docker stuff
+        # # Need to also pass symbolically linked folders!
+        # infolder = os.path.dirname(args.input[0])
+        # mounts = [outfolder, infolder]
+        # # TODO: add the container name to yaml file instead...
+        # pm.get_container("jpsmith5/pepatac", mounts)
 
     ###########################################################################
 
@@ -418,12 +425,12 @@ def main():
         cmd = build_command(trim_cmd_chunks)
 
     # pm.run(cmd, trimmed_fastq,
-           # follow=ngstk.check_trim(
-               # trimmed_fastq, args.paired_end, trimmed_fastq_R2,
-               # fastqc_folder=os.path.join(param.outfolder, "fastqc")),
-           # container=pm.container)
+    #        follow=ngstk.check_trim(
+    #           trimmed_fastq, args.paired_end, trimmed_fastq_R2,
+    #           fastqc_folder=os.path.join(param.outfolder, "fastqc")),
+    #        container=pm.container)
     pm.run(cmd, trimmed_fastq, container=pm.container)
-    
+
     cmd = ngstk.check_trim(
                trimmed_fastq, args.paired_end, trimmed_fastq_R2,
                fastqc_folder=os.path.join(param.outfolder, "fastqc"))
@@ -703,7 +710,8 @@ def main():
         cmd2 = build_command(
             [tools.Rscript, tool_path("fragment_length_dist.R"),
              fragL, fragL_count, fragL_dis1, fragL_dis2])
-        pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True, container=pm.container)
+        pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True,
+               container=pm.container)
 
     # Peak calling
 
