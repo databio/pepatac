@@ -523,9 +523,10 @@ def main():
 
     unmap_cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
     # Remove temporary bam file after producing unmapped file
-    delete_temp_bam_file = "rm {}".format(mapping_genome_bam_temp)
-    cmd = [unmap_cmd, delete_temp_bam_file]
-    pm.run(cmd, unmap_genome_bam, container=pm.container)
+    #delete_temp_bam_file = "rm {}".format(mapping_genome_bam_temp)
+    #cmd = [unmap_cmd, delete_temp_bam_file]
+    pm.run(unmap_cmd, unmap_genome_bam, container=pm.container)
+    pm.clean_add(mapping_genome_bam_temp)
 
     pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
 
@@ -561,8 +562,21 @@ def main():
         map_genome_folder, args.sample_name + "_picard_metrics_bam.txt")
     picard_log = os.path.join(
         map_genome_folder, args.sample_name + "_picard_metrics_log.txt")
-    cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " +
-            os.path.expandvars(tools.picard) + " MarkDuplicates")
+    # the tools.picard command is being generated from OUTSIDE THE CONTAINER!!!
+    # therefore, it doesn't know how to expand that variable!!!!
+    # if I run as docker shell, it would expand, but not with exec!
+    if pm.container is not None:
+        # target is a file, not output
+        picard_temp = os.path.join(map_genome_folder, "picard.txt")
+        cmd = "printenv PICARD >" + picard_temp
+        pm.run(cmd, picard_temp, container=pm.container, clean=True)
+        cmd = "cat " + picard_temp
+        picard = pm.checkprint(cmd).rstrip()
+        cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+                picard + " MarkDuplicates")
+    else:    
+        cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+                tools.picard + " MarkDuplicates")
     cmd3 += " INPUT=" + mapping_genome_bam
     cmd3 += " OUTPUT=" + rmdup_bam
     cmd3 += " METRICS_FILE=" + metrics_file
