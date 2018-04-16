@@ -408,21 +408,36 @@ def main():
 
     else:
         # Default to trimmomatic.
-
-        trim_cmd_chunks = [
-            "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
-                java=tools.java, mem=pm.mem,
-                trim=os.path.expandvars(tools.trimmo),
-                PE="PE" if args.paired_end else "",
-                cores=pm.cores),
-            local_input_files[0],
-            local_input_files[1],
-            trimmed_fastq,
-            trimming_prefix + "_R1_unpaired.fq",
-            trimmed_fastq_R2 if args.paired_end else "",
-            trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
-            "ILLUMINACLIP:" + res.adapters + ":2:30:10"
-        ]
+        if pm.container is not None:
+            trim_cmd_chunks = [
+                "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
+                    java=tools.java, mem=pm.mem,
+                    trim="/home/src/Trimmomatic-0.36/trimmomatic-0.36.jar",
+                    PE="PE" if args.paired_end else "",
+                    cores=pm.cores),
+                local_input_files[0],
+                local_input_files[1],
+                trimmed_fastq,
+                trimming_prefix + "_R1_unpaired.fq",
+                trimmed_fastq_R2 if args.paired_end else "",
+                trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
+                "ILLUMINACLIP:" + res.adapters + ":2:30:10"
+            ]
+        else:
+            trim_cmd_chunks = [
+                "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
+                    java=tools.java, mem=pm.mem,
+                    trim=tools.trimmo,
+                    PE="PE" if args.paired_end else "",
+                    cores=pm.cores),
+                local_input_files[0],
+                local_input_files[1],
+                trimmed_fastq,
+                trimming_prefix + "_R1_unpaired.fq",
+                trimmed_fastq_R2 if args.paired_end else "",
+                trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
+                "ILLUMINACLIP:" + res.adapters + ":2:30:10"
+            ]
         cmd = build_command(trim_cmd_chunks)
 
     pm.run(cmd, trimmed_fastq,
