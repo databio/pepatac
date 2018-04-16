@@ -14,7 +14,7 @@ tools:  # absolute paths to required tools
   skewer: skewer
   # optional
   fseq: fseq  
-  trimmo: ${TRIMMOMATIC}
+  trimmo: ${TRIMMO}
   # ucsc tools
   bedGraphToBigWig: bedGraphToBigWig
   wigToBigWig: wigToBigWig

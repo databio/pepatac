@@ -565,15 +565,18 @@ def main():
     # the tools.picard command is being generated from OUTSIDE THE CONTAINER!!!
     # therefore, it doesn't know how to expand that variable!!!!
     # if I run as docker shell, it would expand, but not with exec!
+    # if pm.container is not None:
+        # # target is a file, not output
+        # picard_temp = os.path.join(map_genome_folder, "picard.txt")
+        # cmd = "printenv PICARD >" + picard_temp
+        # pm.run(cmd, picard_temp, container=pm.container, clean=True)
+        # cmd = "cat " + picard_temp
+        # picard = pm.checkprint(cmd).rstrip()
+        # cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+                # picard + " MarkDuplicates")
     if pm.container is not None:
-        # target is a file, not output
-        picard_temp = os.path.join(map_genome_folder, "picard.txt")
-        cmd = "printenv PICARD >" + picard_temp
-        pm.run(cmd, picard_temp, container=pm.container, clean=True)
-        cmd = "cat " + picard_temp
-        picard = pm.checkprint(cmd).rstrip()
         cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
-                picard + " MarkDuplicates")
+                "/home/tools/bin/picard.jar" + " MarkDuplicates")
     else:    
         cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
                 tools.picard + " MarkDuplicates")
