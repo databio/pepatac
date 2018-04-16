@@ -522,10 +522,8 @@ def main():
         unmap_cmd += " -f 4 "
 
     unmap_cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
-    # Remove temporary bam file after producing unmapped file
-    #delete_temp_bam_file = "rm {}".format(mapping_genome_bam_temp)
-    #cmd = [unmap_cmd, delete_temp_bam_file]
     pm.run(unmap_cmd, unmap_genome_bam, container=pm.container)
+    # Remove temporary bam file from unmapped file production
     pm.clean_add(mapping_genome_bam_temp)
 
     pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
@@ -549,11 +547,11 @@ def main():
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
         dr = float(ar) - float(pdar)
-        pm.report_result("Number_of_Duplicate_Reads", dr)
-        pm.report_result("Aligned_Reads_Duplicates_Removed", pdar)
-        pm.report_result("Alignment_Rate_Duplicates_Removed",
+        pm.report_result("Duplicate_reads", dr)
+        pm.report_result("Dedup_aligned_reads", pdar)
+        pm.report_result("Dedup_alignment_rate",
                          round(float(pdar) * 100 / float(tr), 2))
-        pm.report_result("Total_Efficiency_Duplicates_Removed",
+        pm.report_result("Dedup_total_efficiency",
                          round(float(pdar) * 100 / float(rr), 2))
 
     rmdup_bam = os.path.join(
@@ -565,6 +563,7 @@ def main():
     # the tools.picard command is being generated from OUTSIDE THE CONTAINER!!!
     # therefore, it doesn't know how to expand that variable!!!!
     # if I run as docker shell, it would expand, but not with exec!
+    # This method works, but is messy
     # if pm.container is not None:
         # # target is a file, not output
         # picard_temp = os.path.join(map_genome_folder, "picard.txt")
@@ -574,6 +573,7 @@ def main():
         # picard = pm.checkprint(cmd).rstrip()
         # cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
                 # picard + " MarkDuplicates")
+    # This also works, but is hard-coded...
     if pm.container is not None:
         cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
                 "/home/tools/bin/picard.jar" + " MarkDuplicates")
@@ -767,7 +767,8 @@ def main():
             "cat {peakfiles} > {combined_peak_file}"
             .format(peakfiles=chrom_peak_files,
                     combined_peak_file=peak_output_file))
-        delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
+        #delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
+        pm.clean_add(chrom_peak_files)
 
         # Pypiper serially executes the commands.
         cmd = [fseq_cmd, merge_chrom_peaks_files, delete_chrom_peaks_files]
