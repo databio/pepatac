@@ -16,6 +16,7 @@ tools:  # absolute paths to required tools
   fseq: fseq  
   trimmo: ${TRIMMO}
   # ucsc tools
+  bedSort: bedSort
   bedGraphToBigWig: bedGraphToBigWig
   wigToBigWig: wigToBigWig
   bigWigCat: bigWigCat
