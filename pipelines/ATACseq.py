@@ -159,6 +159,7 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         else:
             cmd += " -U " + unmap_fq1
         cmd += " --un-conc-gz " + out_fastq_bt2
+        # TODO: Pipes break singularity exec command... use shell?
         cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
         cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
         cmd += " -T " + tempdir
@@ -589,6 +590,10 @@ def main():
         # cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
                 # picard + " MarkDuplicates")
     # This also works, but is hard-coded...
+    # TODO: Alternative thought, in pypiper, check if command uses shell,
+    #       then check if command contains pipes...then if it does, split 
+    #       on those pipes and add a singularity exec instance:// before
+    #       each command, and let the host shell do the piping.
     if pm.container is not None:
         cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
                 "/home/tools/bin/picard.jar" + " MarkDuplicates")
@@ -630,8 +635,10 @@ def main():
 
         # bedGraphToBigWig requires lexicographical sort, which puts chr10
         # before chr2, for example
-        cmd3 = ("LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " +
-                sort_bedGraph)
+        # NOTE: original cmd3 is NOT container friendly...use bedSort instead
+        #cmd3 = ("LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " +
+        #        sort_bedGraph)
+        cmd3 = tools.bedSort + " " + norm_bedGraph + " " + sort_bedGraph
         cmd4 = (tools.bedGraphToBigWig + " " + sort_bedGraph + " " +
                 res.chrom_sizes + " " + bw_file)
         pm.run([cmd, cmd2, cmd3, cmd4], bw_file, nofail=True,
