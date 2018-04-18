@@ -80,7 +80,7 @@ To run on multiple samples, you can just write a loop to process each sample ind
 
 ### 3.2 Run option 2: Running the pipeline through looper
 
-[Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally or using any cluster resource manager.
+This pipeline is pre-configured to work with `looper`. [Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally or using any cluster resource manager.
 
 Start by running the example project in the [examples/test_project](examples/test_project) folder. This command runs the pipeline across all samples in the test project:
 
