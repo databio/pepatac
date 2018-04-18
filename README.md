@@ -18,7 +18,7 @@ These features are explained in more detail later in this README.
 
 ### Prequisites
 
-**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
+**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [pararead](https://github.com/databio/pararead) for parallel processing sequence reads, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of these like this:
 
 ```
 pip install --user https://github.com/epigen/pypiper/zipball/master
@@ -76,15 +76,16 @@ You have two options for running the pipeline.
 
 ### Run option 1: Running the pipeline script directly
 
-To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
+To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
 
 ### Run option 2: Running the pipeline through looper
 
-[Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy this pipeline across samples. To use it, you will need to tell looper about your project. 
+[Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally or using any cluster resource manager.
 
 Start by running the example project in the [examples/test_project](examples/test_project) folder. This command runs the pipeline across all samples in the test project:
+
 ```
 cd ATACseq
 looper run examples/test_project/test_config.yaml
@@ -96,7 +97,7 @@ If the looper executable in not your `$PATH`, add the following line to your `.b
 export PATH=$PATH:~/.local/bin
 ```
 
-Now, adapt the example project to your project. Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
+Now, adapt the example project to your project. Detailed instructions for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Looper reads the [standard Portable Encapsulated Project format](https://pepkit.github.io/docs/home/). Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
 
 - [project config file](examples/test_project/test_config.yaml) -- describes output locations, pointers to data, etc.
 - [sample annotation file](examples/test_project/test_annotation.csv) -- comma-separated value (CSV) list of your samples.
@@ -109,11 +110,7 @@ Your annotation file must specify these columns:
 - read2
 - whatever else you want
 
-Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
-
-### Arguments
-
-The arguments to the pipeline are the same whether you run it using looper or on the command line. 
+Run your project as above, by passing your project config file to `looper` with `looper run project_config.yaml`.
 
 ## Outline of analysis steps
 
