@@ -29,13 +29,14 @@ pip install --user https://github.com/databio/pararead/zipball/master
 
 The following packages are used by the qc scripts:
 - ggplot2
+- gtable (v0.2.0)
 - gplots (v3.0.1)
 - reshape2 (v1.4.2)
 
 You can install these packages like this:
 ```
 R # start R
-install.packages(c("ggplot2", "gplots", "reshape2"))
+install.packages(c("ggplot2", "gtable", "gplots", "reshape2"))
 ```
 
 **Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
@@ -119,7 +120,7 @@ The arguments to the pipeline are the same whether you run it using looper or on
 
 ### Prealignments
 
-Because of the high proportion of mtDNA reads in ATAC-seq data, we recommend first aligning to the mitochondrial DNA. This pipeline does this using prealignments, which are passed to the pipeline via the `--prealignments` argument. This has several advantages: it speeds up the process dramatically, and reduces noise from erroneous alignments (NuMTs). To do this, we use a doubled mtDNA reference that allows even non-circular aligners to draw all reads to the mtDNA. The pipeline will also align *sequentially* to other references, if provided via the `--prealignments` command-line option. For example, you may download the `repbase` assembly to align to all repeats. We have provided indexed assemblies for mtDNA and other repeat classes in the [ref_decoy](https://github.com/databio/ref_decoy) repository. The pipeline is already configured to work with these, but you can change to however you wish by adjusting the 
+Because of the high proportion of mtDNA reads in ATAC-seq data, we recommend first aligning to the mitochondrial DNA. This pipeline does this using prealignments, which are passed to the pipeline via the `--prealignments` argument. This has several advantages: it speeds up the process dramatically, and reduces noise from erroneous alignments (NuMTs). To do this, we use a doubled mtDNA reference that allows even non-circular aligners to draw all reads to the mtDNA. The pipeline will also align *sequentially* to other references, if provided via the `--prealignments` command-line option. For example, you may download the `repbase` assembly to align to all repeats. We have provided indexed assemblies for mtDNA and other repeat classes in the [ref_decoy](https://github.com/databio/ref_decoy) repository. The pipeline is already configured to work with these, but you can also adjust this parameter in your project_config.yaml file (see [project_config.yaml](/example/gold_atac/metadata/project_config.yaml)) as opposed to providing it at the command-line.
 
 ### FRIP
 
