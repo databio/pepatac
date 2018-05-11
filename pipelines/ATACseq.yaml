@@ -12,15 +12,16 @@ tools:  # absolute paths to required tools
   macs2: macs2
   picard: ${PICARD}
   skewer: skewer
+  perl: perl
   # optional
   fseq: fseq  
   trimmo: ${TRIMMOMATIC}
+  Rscript: Rscript 
   # ucsc tools
   bedGraphToBigWig: bedGraphToBigWig
   wigToBigWig: wigToBigWig
   bigWigCat: bigWigCat
-  Rscript: Rscript
-  perl: perl
+  bedSort: bedSort
 
 # user configure 
 resources:
