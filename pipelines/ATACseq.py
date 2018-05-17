@@ -56,12 +56,12 @@ def parse_arguments():
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {v}".format(v=__version__))
 
-    parser.add_argument("-c", "--container", default=None,
-                        dest="container_name", type=str,
-                        help="Run the pipeline commands in the user provided"
-                             " container, eliminating the need to install"
-                             " dependencies.  Can be either a docker or "
-                             " singularity image.")
+    parser.add_argument("-c", "--image", default=None,
+                        dest="image_name", type=str,
+                        help="Run the pipeline commands in a container built"
+                             " from a pipeline image, eliminating the need to"
+                             " install dependencies.  Can be either a docker"
+                             " or singularity image.")
 
     args = parser.parse_args()
 
@@ -170,6 +170,8 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         # uses a random temp file, so it won't choke if the job gets
         # interrupted and restarted at this step.
 
+        # TODO: this follow command leads to a samtools not found error...
+        #       likely need to modify _count_alignment function...
         pm.run(cmd, mapped_bam, follow=lambda: _count_alignment(
                assembly_identifier, mapped_bam, args.paired_end),
                container=pm.container)
