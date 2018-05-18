@@ -1,6 +1,6 @@
 ###############################################################################
 #5/18/17
-#Last Updated 04/05/2018
+#Last Updated 05/18/2018
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
 #ATAC_Looper_Summary_plot.R
@@ -198,7 +198,7 @@ for (i in 1:length(prealignments)) {
 }
 alignRaw <- data.table(sample = stats$sample_name,
                        Unaligned = Unaligned,
-                       Duplicates=stats$Duplicate_reads)
+                       Duplicates = as.integer(stats$Duplicate_reads))
 
 # Split counts based on genome name
 genomeNames <- unique(stats$Genome)
