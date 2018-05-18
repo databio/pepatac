@@ -20,16 +20,13 @@ ATACseq.py:
       cores: "2"
       mem: "4000"
       time: "0-04:00:00"
-      account: "shefflab"
     normal:
       file_size: "0.5"
       cores: "4"
       mem: "16000"
       time: "2-00:00:00"
-      account: "shefflab"
     large:
       file_size: "6"
       cores: "8"
       mem: "32000"
       time: "3-00:00:00"
-      account: "shefflab"
