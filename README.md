@@ -2,7 +2,7 @@
 
 This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs. You can download the latest version from the [releases page](https://github.com/databio/ATACseq/releases) and a history of version changes is in the [CHANGELOG](CHANGELOG.md).
 
-## Pipeline features at-a-glance
+## 1. Pipeline features at-a-glance
 
 These features are explained in more detail later in this README.
 
@@ -14,11 +14,11 @@ These features are explained in more detail later in this README.
 
 **TSS enrichments**. The pipeline produces various nice QC plots.
 
-## Installing
+## 2. Installing
 
-### Prequisites
+### 2.1 Prequisites
 
-**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
+**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [pararead](https://github.com/databio/pararead) for parallel processing sequence reads, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of these like this:
 
 ```
 pip install --user https://github.com/epigen/pypiper/zipball/master
@@ -42,7 +42,7 @@ install.packages(c("ggplot2", "gplots", "reshape2"))
 
 **Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
 
-### Configuring the pipeline
+### 2.2 Configuring the pipeline
 
 **Clone the pipeline**. Clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
@@ -68,23 +68,22 @@ There are two configuration options: You can either set up environment variables
 
 **Configuration option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
 
-## Usage
+## 3. Usage
 
 You have two options for running the pipeline. 
 
+### 3.1 Run option 1: Running the pipeline script directly
 
-
-### Run option 1: Running the pipeline script directly
-
-To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample_name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
+To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
 
-### Run option 2: Running the pipeline through looper
+### 3.2 Run option 2: Running the pipeline through looper
 
-[Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy this pipeline across samples. To use it, you will need to tell looper about your project. 
+This pipeline is pre-configured to work with `looper`. [Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally or using any cluster resource manager.
 
 Start by running the example project in the [examples/test_project](examples/test_project) folder. This command runs the pipeline across all samples in the test project:
+
 ```
 cd ATACseq
 looper run examples/test_project/test_config.yaml
@@ -96,7 +95,7 @@ If the looper executable in not your `$PATH`, add the following line to your `.b
 export PATH=$PATH:~/.local/bin
 ```
 
-Now, adapt the example project to your project. Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
+Now, adapt the example project to your project. Detailed instructions for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Looper reads the [standard Portable Encapsulated Project format](https://pepkit.github.io/docs/home/). Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
 
 - [project config file](examples/test_project/test_config.yaml) -- describes output locations, pointers to data, etc.
 - [sample annotation file](examples/test_project/test_annotation.csv) -- comma-separated value (CSV) list of your samples.
@@ -109,13 +108,13 @@ Your annotation file must specify these columns:
 - read2
 - whatever else you want
 
-Run your project as above, by passing your project config file to `looper run`. More detailed instructions and advanced options for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Of particular interest may be the section on [using looper derived columns](http://looper.readthedocs.io/en/latest/advanced.html#pointing-to-flexible-data-with-derived-columns).
+Run your project as above, by passing your project config file to `looper` with `looper run project_config.yaml`. Looper can also summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/). 
 
-### Arguments
+### 3.3 Using a cluster
 
-The arguments to the pipeline are the same whether you run it using looper or on the command line. 
+The pipeline itself does not specify any cluster resources, so you can submit individual jobs to a cluster however you choose. We recommend using `looper`, which will let you submit jobs to any cluster with a simple change to your configuration file. Follow instructions in [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html).
 
-## Outline of analysis steps
+## 4. Outline of analysis steps
 
 ### Prealignments
 
@@ -169,13 +168,6 @@ Rscript ATAC_Looper_Summary_plot.R </path/to/looper/summarize/summary.TSV>
 ```
 
 This results in the output of multiple PDF plots in the directory containing the TSV input file.
-
-
-## Using a cluster
-
-Once you've specified your project to work with this pipeline, you will also inherit all the power of looper for your project.  You can submit these jobs to a cluster with a simple change to your configuration file. Follow instructions in [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html).
-
-Looper can also summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/). 
 
 ## Contributing
 
