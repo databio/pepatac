@@ -20,6 +20,9 @@ pipelines:
       "--frip-ref-peaks": FRIP_ref
       "--prealignments": prealignments
       "--genome-size": macs_genome_size
+    compute:
+      singularity_image: ${SIMAGES}pepatac
+      docker_image: databio/pepatac
     resources:
       default:
         file_size: "0"

@@ -22,8 +22,6 @@ CMD ["/sbin/my_init"]
 WORKDIR /home/tools/
 RUN git clone https://github.com/databio/ATACseq.git
 
-# Install pipeline manager
-RUN pip install --user https://github.com/epigen/pypiper/zipball/master
 
 # Update path
 ENV PATH=/home/tools/ATACseq:/home/tools/ATACseq/pipelines:$PATH

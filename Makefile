@@ -4,3 +4,10 @@ test:
 	python pipelines/ATACseq.py  -P 3 -M 100 -O test_out -R -S liver -G hg19  -Q paired  -C ATACseq.yaml  --genome-size hs --prealignments rCRSd human_repeats -I examples/test_data/liver-CD31_test_R1.fastq.gz -I2 examples/test_data/liver-CD31_test_R2.fastq.gz  
 changtest:
 	python pipelines/ATACseq.py  -P 3 -M 100 -O test_out -R -S liver -G hg19  -Q paired  -C $HOME/code/ATACseq/examples/chang_project/ATACseq.yaml  -gs mm -I examples/test_data/liver-CD31_test_R1.fastq.gz -I2 examples/test_data/liver-CD31_test_R2.fastq.gz 
+
+
+docker:
+	docker build -t databio/pepatac -f containers/pepatac.Dockerfile .
+
+singularity:
+	singularity build $${SIMAGES}pepatac docker://databio/pepatac

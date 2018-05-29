@@ -109,7 +109,7 @@ RUN wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig 
     ln -s /home/tools/bigWigCat /usr/bin/ && \
     ln -s /home/tools/bedSort /usr/bin/
 
-# Install Skewer
+# Install skewer
 WORKDIR /home/src/
 RUN git clone git://github.com/relipmoc/skewer.git && \
     cd /home/src/skewer && \
@@ -127,11 +127,16 @@ RUN wget https://github.com/aboyle/F-seq/archive/master.zip && \
     tar xf fseq.tgz && \
     ln -s /home/src/F-seq-master/dist~/fseq/bin/fseq /usr/bin/
 
-# Install Trimmomatic
+# Install trimmomatic
 WORKDIR /home/src/
 RUN wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.36.zip && \
     unzip Trimmomatic-0.36.zip && \
     chmod +x Trimmomatic-0.36/trimmomatic-0.36.jar
+
+# Install pipeline manager
+RUN pip install --user https://github.com/epigen/pypiper/zipball/master
+
+RUN pip install --user pararead
 
 # Set environment variables
 ENV PATH=/home/tools/bin:/home/tools/:/home/tools/bin/kentUtils/:/home/src/F-seq-master/dist~/fseq/bin:/home/src/bowtie2-2.3.4.1:/home/src/skewer:/home/src/samtools-1.7:/home/src/Trimmomatic-0.36/:/home/src/htslib-1.7:$PATH \
