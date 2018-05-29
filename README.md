@@ -16,7 +16,7 @@ These features are explained in more detail later in this README.
 
 **Containerization**. The pipeline can be run using `docker` or `singularity` with no other prerequisites.
 
-# 3. Installing
+# 3. Container approach
 
 You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity` running; or 2) install all prerequisites natively.
 
@@ -48,75 +48,42 @@ make singularity
 
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image: ` attribute is pointing to the right location on disk.
 
-If you've got the container set up, skip to section 4.
+## 3.2 Configuring the pipeline with containers
 
-## 3.2 Native install
-
-*Note: you only need to install these prerequisites if you are not using a container*. First we'll need to install all the prerequisites:
-
-**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [pararead](https://github.com/databio/pararead) for parallel processing sequence reads, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of these like this:
-
-```
-pip install --user https://github.com/epigen/pypiper/zipball/master
-pip install --user https://github.com/epigen/looper/zipball/master
-pip install --user pararead
-```
-**R packages**. This pipeline uses R to generate QC metric plots. These are **optional** and if you don't install these R packages (or R in general), the pipeline will still work, but you will not get the QC plot outputs. 
-
-The following packages are used by the qc scripts:
-- ggplot2
-- gtable (v0.2.0)
-- gplots (v3.0.1)
-- reshape2 (v1.4.2)
-
-You can install these packages like this:
-```
-R # start R
-install.packages(c("ggplot2", "gtable", "gplots", "reshape2"))
-```
-
-**Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
-
-**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
-
-# 4. Usage
-
-## 4.1 Configuring the pipeline
-
-With the software installed (using either the containerized or native methods), we next need to configure the pipeline:
-
-**Clone the pipeline**. Clone this repository using one of these methods:
+1. Clone the pipeline using one of these methods:
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
 - using HTTPS: `git clone https://github.com/databio/ATACseq.git`
 
-There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
-
-### 4.1.1 Configuration option 1: Default configuration (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
-  - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH (unless using a container).
-  - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
-  ```
-  export PICARD="/path/to/picard.jar"
-  export TRIMMOMATIC="/path/to/trimmomatic.jar"
-  ```
-  
-  - Define environment variable `GENOMES` for refgenie genomes. 
+2. Define environment variable `GENOMES` for [refgenie](https://github.com/databio/refgenie) genomes. 
   ```
   export GENOMES="/path/to/genomes/folder/"
   ```
-  
-  - Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
 
+3. Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
 
-### 4.1.1  Configuration option 2: Custom configuration.
+# 4. Running the pipeline with looper
 
-Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
+We highly recommend using the [looper pipeline submission engine](http://looper.readthedocs.io/) to run the pipeline, but it's flexible enough to be run without `looper` if that serves your needs.
 
+## 4.1 Running the pipeline script directly
 
-## 4.2 Running the pipeline
+To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
-You have two options for running the pipeline: using the [looper pipeline submission engine](http://looper.readthedocs.io/), or directly. We highly recommend using `looper`, but it's flexible enough to be run without `looper` if that serves your needs.
+Individual jobs can be run in a container by simply running the `ATACseq.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. For example, run it locally in singularity like this:
 
-### 4.2.1 Run option 1: Running the pipeline through looper
+```
+singularity instance.start ${SIMAGES}pepatac atac_image
+singularity exec instance://atac_image pipelines/ATACseq.py
+```
+
+With docker, you can use:
+```
+docker run --rm -it {DOCKER_ARGS} databio/pepatac pipelines/ATACseq.py
+```
+
+To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
+
+## 4.2 Running the pipeline through looper
 
 This pipeline is pre-configured to work with `looper`. [Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally, in containers, using any cluster resource manager, or in containers on a cluster.
 
@@ -148,34 +115,92 @@ Your annotation file must specify these columns:
 
 Run your project as above, by passing your project config file to `looper` with `looper run project_config.yaml`. Looper can also summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/). 
 
-### 4.2.2 Run option 2: Running the pipeline script directly
+## 4.3 How to run on a cluster or in a container using looper
 
-To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
+The pipeline itself does not specify any container or cluster resources, so you can always just roll your own and submit individual jobs to a cluster however you choose. But looper provides a template system to build scripts for each job. These templates can be used to run the job in a container, to submit to a cluster resource manager, or both. This template system is centered around a *computing environment configuration file* called PEPENV.
 
-To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
+Complete instructions can be found in the documentation on [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html) and [configuring looper to use linux containers](https://looper.readthedocs.io/en/dev/containers.html). In short, you will need to:
+
+1. Set up a PEPENV file that includes a containerized or cluster compute package (or both)
+2. Run the pipeline with `looper run --compute PACKAGE` (PACKAGE can be any containerized compute package, such as `singularity_slurm` in the default PEPENV).
+
+You can read complete docs of PEPENV in the [pepenv readme](https://github.com/pepkit/pepenv).
+
+# 5. Native approach
+
+These instructions show you how to install the pipeline natively, if you don't want to use a container.
+
+## 5.1 Native install
+
+*Note: you only need to install these prerequisites if you are not using a container*. First we'll need to install all the prerequisites:
+
+**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [pararead](https://github.com/databio/pararead) for parallel processing sequence reads, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of these like this:
+
+```
+pip install --user https://github.com/epigen/pypiper/zipball/master
+pip install --user https://github.com/epigen/looper/zipball/master
+pip install --user pararead
+```
+**R packages**. This pipeline uses R to generate QC metric plots. These are **optional** and if you don't install these R packages (or R in general), the pipeline will still work, but you will not get the QC plot outputs. 
+
+The following packages are used by the qc scripts:
+- ggplot2
+- gtable (v0.2.0)
+- gplots (v3.0.1)
+- reshape2 (v1.4.2)
+
+You can install these packages like this:
+```
+R # start R
+install.packages(c("ggplot2", "gtable", "gplots", "reshape2"))
+```
+
+**Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
+
+**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
+
+## 5.2 Configuring the pipeline
+
+With the software installed natively, we next need to configure the pipeline:
+
+**Clone the pipeline**. Clone this repository using one of these methods:
+- using SSH: `git clone git@github.com:databio/ATACseq.git`
+- using HTTPS: `git clone https://github.com/databio/ATACseq.git`
+
+There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
+
+### 5.2.1 Configuration option 1: Default configuration (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
+  - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH (unless using a container).
+  - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
+  ```
+  export PICARD="/path/to/picard.jar"
+  export TRIMMOMATIC="/path/to/trimmomatic.jar"
+  ```
+  
+  - Define environment variable `GENOMES` for refgenie genomes. 
+  ```
+  export GENOMES="/path/to/genomes/folder/"
+  ```
+  
+  - Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
 
 
-## 4.3 Using a cluster
+### 5.2.2  Configuration option 2: Custom configuration.
 
-The pipeline itself does not specify any cluster resources, so you can submit individual jobs to a cluster however you choose. We recommend using `looper`, which will let you submit jobs to any cluster with a simple change to your configuration file. Follow instructions in [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html).
+Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
 
-## 4.4 Using a container
 
-Individual jobs can be run in a container by simply running the `ATACseq.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed.
+# 6. Outline of analysis steps
 
-To run it through a container using looper, you will only need to specify a container-aware compute package. To do this, please consult the docs on [configuring looper to use linux containers](https://looper.readthedocs.io/en/dev/containers.html).
-
-# 5. Outline of analysis steps
-
-## 5.1 Prealignments
+## 6.1 Prealignments
 
 Because of the high proportion of mtDNA reads in ATAC-seq data, we recommend first aligning to the mitochondrial DNA. This pipeline does this using prealignments, which are passed to the pipeline via the `--prealignments` argument. This has several advantages: it speeds up the process dramatically, and reduces noise from erroneous alignments (NuMTs). To do this, we use a doubled mtDNA reference that allows even non-circular aligners to draw all reads to the mtDNA. The pipeline will also align *sequentially* to other references, if provided via the `--prealignments` command-line option. For example, you may download the `repbase` assembly to align to all repeats. We have provided indexed assemblies for mtDNA and other repeat classes in the [ref_decoy](https://github.com/databio/ref_decoy) repository. The pipeline is already configured to work with these, but you can also adjust this parameter in your project_config.yaml file (see [project_config.yaml](/examples/gold_atac/metadata/project_config.yaml)) as opposed to providing it at the command-line.
 
-## 5.2 FRIP
+## 6.2 FRIP
 
 By default, the pipeline will calculate the FRIP as a quality control, using the peaks it identifies internally. If you want, it will **additionally** calculate a FRIP using a reference set of peaks (for example, from another experiment). For this you must provide a reference peak set (as a bed file) to the pipeline. You can do this by adding a column named `FRIP_ref` to your annotation sheet (see [pipeline_interface.yaml](/config/pipeline_interface.yaml)). Specify the reference peak filename (or use a derived column and specify the path in the project config file `data_sources` section).
 
-## 5.3 TSS enrichments
+## 6.3 TSS enrichments
 
 In order to calculate TSS enrichments, you will need a TSS annotation file in your reference genome directory. Here's code to generate that.
 
@@ -203,7 +228,7 @@ grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\
 
 ```
 
-## 5.4 Optional summary plots
+## 6.4 Optional summary plots
 
 1. Run `looper summarize` to generate a summary table in tab-separated values (TSV) format
 
@@ -221,7 +246,7 @@ Rscript ATAC_Looper_Summary_plot.R </path/to/looper/summarize/summary.TSV>
 This results in the output of multiple PDF plots in the directory containing the TSV input file.
 
 
-# 6. Contributing
+# 7. Contributing
 
 Pull requests welcome. Active development should occur in a development or feature branch.
 
