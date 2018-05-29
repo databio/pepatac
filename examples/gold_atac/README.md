@@ -20,3 +20,8 @@ I create project config file and sampled test data. The SRA fastq files should b
 ```
 looper run ${CODE}ATACseq/examples/gold_atac/metadata/project_config.yaml -d
 ```
+
+
+## Test data
+
+There's a small test sample stored right here as `test1`
