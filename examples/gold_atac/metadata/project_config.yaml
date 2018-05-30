@@ -32,6 +32,3 @@ implied_columns:
       genome: mm10
       macs_genome_size: "mm"
       prealignments: null
-
-compute:
-  image: ${SIMAGES}atacseq
