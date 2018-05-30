@@ -45,13 +45,13 @@ RUN pip install virtualenv && \
 # Install R
 RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-dev && \
     echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile && \
-    Rscript -e "install.packages('gtable')" \
-    Rscript -e "install.packages('argparser')" \
-    Rscript -e "install.packages('ggplot2')" \   
-    Rscript -e "install.packages('gplots')" \
-    Rscript -e "install.packages('grid')" \
-    Rscript -e "install.packages('reshape2')" \
-    Rscript -e "install.packages('scales')" \
+    Rscript -e "install.packages('gtable')" && \
+    Rscript -e "install.packages('argparser')" && \
+    Rscript -e "install.packages('ggplot2')" && \  
+    Rscript -e "install.packages('gplots')" && \
+    Rscript -e "install.packages('grid')" && \
+    Rscript -e "install.packages('reshape2')" && \
+    Rscript -e "install.packages('scales')" && \
     Rscript -e "install.packages('data.table')"
 
 # Install bedtools
