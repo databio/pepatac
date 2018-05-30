@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.1
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.5.0
+LABEL version 0.6.0
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -32,13 +32,15 @@ RUN apt-get update && \
 
 # Install MySQL server
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes mysql-server \
-    mysql-client libmysqlclient-dev
+    mysql-client \
+    libmysqlclient-dev
     
 # Install python tools
 RUN pip install --upgrade pip
 RUN pip install virtualenv && \
     pip install numpy && \
-    pip install MACS2
+    pip install MACS2 && \
+    pip install https://github.com/epigen/pypiper/zipball/master
 
 # Install R
 RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-dev && \
@@ -115,7 +117,7 @@ RUN git clone git://github.com/relipmoc/skewer.git && \
     cd /home/src/skewer && \
     make && \
     make install
-
+    
 # OPTIONAL REQUIREMENTS
 # Install F-seq
 WORKDIR /home/src/
