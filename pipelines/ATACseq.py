@@ -3,16 +3,17 @@
 ATACseq  pipeline
 """
 
+__author__ = ["Jin Xu", "Nathan Sheffield"]
+__email__ = "xujin937@gmail.com"
+__version__ = "0.6.1"
+
+
 from argparse import ArgumentParser
 import os
 import sys
 import tempfile
 import pypiper
 from pypiper import build_command
-
-__author__ = ["Jin Xu", "Nathan Sheffield"]
-__email__ = "xujin937@gmail.com"
-__version__ = "0.6.1"
 
 TOOLS_FOLDER = "tools"
 PEAK_CALLERS = ["fseq", "macs2"]
