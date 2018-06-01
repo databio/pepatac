@@ -23,6 +23,8 @@ pipelines:
     compute:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
+    summarizers:
+      - tools/ATAC_Looper_Summary_plot.R
     resources:
       default:
         file_size: "0"
