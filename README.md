@@ -8,7 +8,7 @@ These features are explained in more detail later in this README.
 
 **Prealignments**. The pipeline can (optionally) first align to any number of reference assemblies separately before the primary genome alignment. This increases both speed and accuracy and can be used, for example, to align sequentially to mtDNA, repeats, or spike-ins.
 
-**Scalability**. This pipeline is built on [looper](https://github.com/epigen/looper), so it can run locally or with any cluster resource manager.
+**Scalability**. This pipeline is built on [looper](https://github.com/pepkit/looper), so it can run locally or with any cluster resource manager.
 
 **Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP using the peaks it identifies. Optionally, it can **also** calculate a FRIP using a reference set of peaks (for example, from another experiment). 
 
@@ -18,7 +18,7 @@ These features are explained in more detail later in this README.
 
 ### Prequisites
 
-**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
+**Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, [looper](https://github.com/pepkit/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
 
 ```
 pip install --user https://github.com/databio/pypiper/zipball/master
