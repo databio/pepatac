@@ -53,11 +53,15 @@ if(suppressPackageStartupMessages(!require(reshape2))) {
 if(suppressPackageStartupMessages(!require(data.table))) {
     install.packages("data.table")
 }
+if(suppressPackageStartupMessages(!require(pepr))) {
+    devtools::install_github("pepkit/pepr")
+}
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(gplots))
 suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(reshape2))
 suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(pepr))
 
 ###############################################################################
 ##### Global Variables #####
@@ -144,15 +148,23 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 ###############################################################################
 
 configFile <- argv$config
-# read in project_config.yaml file
-    configYaml <- fread(configFile, header=TRUE, check.names=FALSE,
-                        sep="\t", quote="")
-colnames(configYaml) <- "config"
+# # read in project_config.yaml file
+#     configYaml <- fread(configFile, header=TRUE, check.names=FALSE,
+#                         sep="\t", quote="")
+# colnames(configYaml) <- "config"
 
-# expand output directory location to identify the stats_summary.tsv file
-summaryFile <- system(paste("echo ", paste(gsub("output_dir: ", "",
-                      configYaml$config[grep("output_dir", configYaml$config)]),
-                      "/*_stats_summary.tsv", sep=""), sep=""), intern=TRUE)
+yaml = Project(configFile)
+
+# # expand output directory location to identify the stats_summary.tsv file
+# summaryFile <- system(paste("echo ", paste(gsub("output_dir: ", "",
+#                       configYaml$config[grep("output_dir",
+#                       configYaml$config)]),
+#                       "/*_stats_summary.tsv", sep=""), sep=""), intern=TRUE)
+
+suppressMessages(summaryFile <- system(paste("echo ",
+                                             config(yaml)$metadata$output_dir,
+                                             "/*_stats_summary.tsv", sep=""),
+                                       intern=TRUE))
 setwd(dirname(summaryFile))
 
 # read in stats summary file
@@ -162,9 +174,8 @@ stats <- fread(summaryFile, header=TRUE, check.names=FALSE, sep="\t", quote="")
 if (!is.na(argv$pre)) {
     prealignments <- argv$pre
 } else {
-    prealignments <- gsub("Aligned_reads_", "",
-                          grep("Aligned_reads_.*", colnames(stats),
-                          value=TRUE))
+    prealignments <- gsub("Aligned_reads_", "", 
+                     grep("Aligned_reads_.*", colnames(stats), value=TRUE))
 }
 
 # confirm the provided prealignments exist in stats_summary.tsv
@@ -296,8 +307,8 @@ for (i in 1:length(prealignments)) {
     alignPercent[, 
                  (prealignments[i]) := 
                      stats[, (paste("Alignment_rate", prealignments[i],
-                                    sep="_")), 
-                           with=FALSE][[1]]]
+                     sep="_")), 
+                     with=FALSE][[1]]]
 }
 
 setcolorder(alignPercent, c("sample", "Unaligned", paste(prealignments),
