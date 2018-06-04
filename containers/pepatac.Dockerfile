@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.1
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.6.1
+LABEL version 0.7.0
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -46,6 +46,8 @@ RUN pip install virtualenv && \
 # Install R
 RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-dev && \
     echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile && \
+    Rscript -e "install.packages('devtools')" && \
+    Rscript -e "devtools::install_github('pepkit/pepr')" && \
     Rscript -e "install.packages('gtable')" && \
     Rscript -e "install.packages('argparser')" && \
     Rscript -e "install.packages('ggplot2')" && \  
@@ -53,7 +55,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-de
     Rscript -e "install.packages('grid')" && \
     Rscript -e "install.packages('reshape2')" && \
     Rscript -e "install.packages('scales')" && \
-    Rscript -e "install.packages('data.table')"
+    Rscript -e "install.packages('data.table')" && \
+    Rscript -e "install.packages('stringr')"
+
 
 # Install bedtools
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
@@ -144,7 +148,7 @@ RUN wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmoma
 ENV PATH=/home/tools/bin:/home/tools/:/home/tools/bin/kentUtils/:/home/src/F-seq-master/dist~/fseq/bin:/home/src/bowtie2-2.3.4.1:/home/src/skewer:/home/src/samtools-1.7:/home/src/Trimmomatic-0.36/:/home/src/htslib-1.7:$PATH \
     TRIMMOMATIC=/home/src/Trimmomatic-0.36/trimmomatic-0.36.jar \
     PICARD=/home/tools/bin/picard.jar \
-    CLASSPATH="$CLASSPATH:/home/tools/bin/picard.jar:/home/src/Trimmomatic-0.36/trimmomatic-0.36.jar"
+    R_LIBS_USER=/usr/local/lib/R/site-library/
 
 # Define default command
 WORKDIR /home/
