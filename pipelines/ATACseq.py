@@ -749,6 +749,7 @@ def main():
              fragL, fragL_count, fragL_dis1, fragL_dis2])
         pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True,
                container=pm.container)
+        pm.report_figure("Fragment distribution", fragL_dis1)
 
     # Peak calling
 
