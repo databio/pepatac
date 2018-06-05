@@ -26,7 +26,7 @@ This pipeline can be run in either singularity or docker containers. If you use 
 
 ### Docker
 
-You can pull the `docker` container from `dockerhub` like this:
+You can pull the `docker` image from `dockerhub` (https://hub.docker.com/r/databio/pepatac/) like this:
 
 ```
 docker pull databio/pepatac
