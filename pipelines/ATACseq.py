@@ -565,13 +565,16 @@ def main():
         ar = float(pm.get_stat("Aligned_reads"))
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
+        if pdar == "":
+            pdar = ar
+
         dr = float(ar) - float(pdar)
+        dar = round(float(pdar) * 100 / float(tr), 2)
+        dte = round(float(pdar) * 100 / float(rr), 2)
         pm.report_result("Duplicate_reads", dr)
         pm.report_result("Dedup_aligned_reads", pdar)
-        pm.report_result("Dedup_alignment_rate",
-                         round(float(pdar) * 100 / float(tr), 2))
-        pm.report_result("Dedup_total_efficiency",
-                         round(float(pdar) * 100 / float(rr), 2))
+        pm.report_result("Dedup_alignment_rate", dar)
+        pm.report_result("Dedup_total_efficiency", dte)
 
     rmdup_bam = os.path.join(
         map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
