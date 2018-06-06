@@ -29,7 +29,7 @@ Here are a few of the highlights that make `pepatac` valuable (explained in more
 
 # 3. Container approach
 
-You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#5.-native-approach)
+You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#5-native-approach)
 
 ## 3.1 Container install
 
