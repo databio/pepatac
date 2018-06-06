@@ -29,7 +29,7 @@ Here are a few of the highlights that make `pepatac` valuable (explained in more
 
 # 3. Installation
 
-# 3.1 Clone the pipeline
+## 3.1 Clone the pipeline
 
 First, **clone the pipeline**. Clone this repository using one of these methods:
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
