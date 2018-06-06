@@ -143,13 +143,24 @@ Alternatively, you can skip the `GENOMES` variable and simply change the value o
 
 # 5. Running the pipeline
 
-The pipeline can be run directly from the command line for a single sample. If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with `looper`, or sample handling engine. This section explains how to do both.
+The pipeline can be run directly from the command line for a single sample. If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with `looper`, our sample handling engine. This section explains how to do both.
 
 ## 5.1 Running the pipeline script directly (without looper)
 
 To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
-Individual jobs can be run in a container by simply running the `ATACseq.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. For example, run it locally in singularity like this:
+Here's the basic command to run the small test example through the pipeline:
+
+```
+pipelines/ATACseq.py --single-or-paired paired --genome hg38 --sample-name test1 --input examples/test_data/test1_r1.fastq.gz --input2 examples/test_data/test1_r2.fastq.gz --genome-size hs -O $HOME/test
+```
+
+This small example takes about 15 minutes to run to completion.
+
+
+## 5.1.1 Running the pipeline directly in a container
+
+A full tutorial on using containers it outside the scope of this readme, but here are the basics. Individual jobs can be run in a container by simply running the `ATACseq.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. For example, run it locally in singularity like this:
 
 ```
 singularity instance.start ${SIMAGES}pepatac atac_image
@@ -158,10 +169,12 @@ singularity exec instance://atac_image pipelines/ATACseq.py
 
 With docker, you can use:
 ```
-docker run --rm -it {DOCKER_ARGS} databio/pepatac pipelines/ATACseq.py
+docker run --rm -it databio/pepatac pipelines/ATACseq.py
 ```
 
-To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
+Be sure to mount the volumes you need with `--volume`.
+
+To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use...*looper*!
 
 ## 5.2 Running the pipeline through looper
 
@@ -180,7 +193,7 @@ cd ATACseq
 looper run -d examples/test_project/test_config.yaml
 ```
 
-If the looper executable in not your `$PATH`, add the following line to your `.bashrc` or `.profile`:
+If the looper executable is not in your `$PATH`, add the following line to your `.bashrc` or `.profile`:
 
 ```
 export PATH=$PATH:~/.local/bin
@@ -189,8 +202,12 @@ export PATH=$PATH:~/.local/bin
 If that worked, let's actually run the example by taking out the `-d` flag:
 
 ```
-looper run -d examples/test_project/test_config.yaml
+looper run examples/test_project/test_config.yaml
 ```
+
+There are lots of other cool things you can do with looper, like dry runs, summarize results, check on pipeline run status, clean intermediate files, lump multiple samples into one job, and more. For details, consult the [looper docs](http://looper.readthedocs.io/).
+
+### Adapting the example for your own project
 
 Now, adapt the example project to your project. (There are more examples in the [examples/test_project](examples/test_project/) folder). You need two files for your project :
 
