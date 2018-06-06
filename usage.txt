@@ -1,9 +1,12 @@
-usage: ATACseq.py [-h] [-N] [-I2 INPUT_FILES2 [INPUT_FILES2 ...]]
-                  [-M MEMORY_LIMIT] [-Q SINGLE_OR_PAIRED] [-S SAMPLE_NAME]
-                  [-P NUMBER_OF_CORES] [-D] [-I INPUT_FILES [INPUT_FILES ...]]
-                  [-F] [-R] [-C CONFIG_FILE] [-O PARENT_OUTPUT_FOLDER]
-                  [-G GENOME_ASSEMBLY] [-gs GENOME_SIZE]
-                  [--frip-ref-peaks FRIP_REF_PEAKS] [--pyadapt] [--skewer]
+usage: ATACseq.py [-h] [-N] [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]]
+                  [--stop-before STOP_BEFORE] [-M MEMORY_LIMIT]
+                  [--stop-after STOP_AFTER] [-Q SINGLE_OR_PAIRED]
+                  [-S SAMPLE_NAME] [-F] [-D] [-P NUMBER_OF_CORES]
+                  [-I INPUT_FILES [INPUT_FILES ...]] [-R] [-C CONFIG_FILE]
+                  [-O PARENT_OUTPUT_FOLDER] [-G GENOME_ASSEMBLY]
+                  [-gs GENOME_SIZE] [--frip-ref-peaks FRIP_REF_PEAKS]
+                  [--peak-caller {fseq,macs2}]
+                  [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
 
 Pipeline
@@ -11,37 +14,45 @@ Pipeline
 optional arguments:
   -h, --help            show this help message and exit
   -N, --new-start       Fresh start mode, overwrite all
-  -I2 INPUT_FILES2 [INPUT_FILES2 ...], --input2 INPUT_FILES2 [INPUT_FILES2 ...]
-                        One or more secondary input files (if they exists);
-                        for example, second read in pair.
+  -I2 [INPUT_FILES2 [INPUT_FILES2 ...]], --input2 [INPUT_FILES2 [INPUT_FILES2 ...]]
+                        Secondary input file(s), e.g. read2 for a paired-end
+                        protocol
+  --stop-before STOP_BEFORE
+                        Name of pipeline stage at which to stop (exclusive,
+                        i.e. not run)
   -M MEMORY_LIMIT, --mem MEMORY_LIMIT
-                        Memory string for processes that accept memory limits
-                        (like java)
+                        Amount of memory (Mb) use to allow for processes for
+                        which that can be specified
+  --stop-after STOP_AFTER
+                        Name of pipeline stage at which to stop (inclusive,
+                        i.e. run)
   -Q SINGLE_OR_PAIRED, --single-or-paired SINGLE_OR_PAIRED
-                        single or paired end? default: single
+                        Single- or paired-end sequencing protocol
   -S SAMPLE_NAME, --sample-name SAMPLE_NAME
-                        unique name for output subfolder and files (required)
-  -P NUMBER_OF_CORES, --cores NUMBER_OF_CORES
-                        number of cores to use for parallel processes
+                        Name for sample to run
+  -F, --follow          Run all 'follow' commands, even if the primary command
+                        is not run
   -D, --dirty           Make all cleanups manual
+  -P NUMBER_OF_CORES, --cores NUMBER_OF_CORES
+                        Number of cores for parallelized processes
   -I INPUT_FILES [INPUT_FILES ...], --input INPUT_FILES [INPUT_FILES ...]
                         One or more primary input files (required)
-  -F, --follow          Run all follow commands, even if command is not run
   -R, --recover         Recover mode, overwrite locks
   -C CONFIG_FILE, --config CONFIG_FILE
-                        pipeline config file in YAML format; relative paths
-                        are considered relative to the pipeline script.
-                        defaults to ATACseq.yaml
+                        Pipeline configuration file (YAML). Relative paths are
+                        with respect to the pipeline script.
   -O PARENT_OUTPUT_FOLDER, --output-parent PARENT_OUTPUT_FOLDER
-                        parent output directory of the project (required).
+                        Parent output directory of project
   -G GENOME_ASSEMBLY, --genome GENOME_ASSEMBLY
-                        identifier for genome assempbly (required)
+                        Identifier for genome assembly
   -gs GENOME_SIZE, --genome-size GENOME_SIZE
                         genome size for MACS2
   --frip-ref-peaks FRIP_REF_PEAKS
                         Reference peak set for calculating FRIP
-  --pyadapt             Use pyadapter_trim for trimming? [Default: False]
-  --skewer              Use skewer for trimming? [Default: False]
+  --peak-caller {fseq,macs2}
+                        Name of peak caller
+  --trimmer {trimmomatic,pyadapt,skewer}
+                        Name of read trimming program
   --prealignments PREALIGNMENTS [PREALIGNMENTS ...]
                         Space-delimited list of reference genomes to align to
                         before primary alignment.

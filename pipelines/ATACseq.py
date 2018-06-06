@@ -39,12 +39,7 @@ def parse_arguments():
 
     parser.add_argument("--peak-caller", dest="peak_caller",
                         default="macs2", choices=PEAK_CALLERS,
-                        help="Name of peak caller; if 'fseq' fails to create "
-                        "a peaks file and the log file indicates an "
-                        "ArrayIndexOutOfBoundsException, this is likely "
-                        "due to a low read count and can probably be "
-                        "overcome by specifying fragment size with "
-                        "fseq's -f option.")
+                        help="Name of peak caller")
 
     parser.add_argument("--trimmer", dest="trimmer",
                         default="skewer", choices=TRIMMERS,
@@ -57,12 +52,12 @@ def parse_arguments():
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {v}".format(v=__version__))
 
-    parser.add_argument("-c", "--image", default=None,
-                        dest="image_name", type=str,
-                        help="Run the pipeline commands in a container built"
-                             " from a pipeline image, eliminating the need to"
-                             " install dependencies.  Can be either a docker"
-                             " or singularity image.")
+    # parser.add_argument("-c", "--image", default=None,
+    #                     dest="image_name", type=str,
+    #                     help="Run the pipeline commands in a container built"
+    #                          " from a pipeline image, eliminating the need to"
+    #                          " install dependencies.  Can be either a docker"
+    #                          " or singularity image.")
 
     args = parser.parse_args()
 
