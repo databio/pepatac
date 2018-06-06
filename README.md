@@ -117,9 +117,16 @@ Instead, you can also put absolute paths to each tool or resource in the configu
 
 # 4. Configuring reference genome assemblies
 
-Whether using the container or native version, you will need to provide external reference genome assemblies. The pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://big.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). 
+## 4.1 Downloading refgenie assemblies
 
-Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy). By default, the pipeline will pre-align to the mitochondrial genome, so you if you want to use the default settings, you should download the `rCRSd` genome (for human) or the `mouse_chrM` (for mouse) in addition to the primary assembly you wish to use.
+Whether using the container or native version, you will need to provide external reference genome assemblies. The pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). 
+
+One feature of the pipeline is *prealignments*, which siphons off reads by aligning to small genomes before the main alignment to the primary reference genome. Any prealignments you want to do use will also require refgenie assemblies. By default, the pipeline will pre-align to the mitochondrial genome, so you if you want to use the default settings, you will need refgenie assemblies for `rCRSd` genome (for human) or `mouse_chrM` (for mouse) in addition to the primary assembly you wish to use. Other ideas for common prealignment references are provided by [ref_decoy](https://github.com/databio/ref_decoy). 
+
+You may [download pre-indexed references](http://big.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). 
+
+ 
+## 4.2 Configuring the pipeline to use refgenie assemblies
 
 Once you've procured assemblies for all genomes you wish to use, you must point the pipeline to where you store these. You can do this in two ways, either: 1) with an environment variable, or 2) by adjusting a configuration option.
 
@@ -136,7 +143,7 @@ Alternatively, you can skip the `GENOMES` variable and simply change the value o
 
 # 5. Running the pipeline
 
-We highly recommend using the [looper pipeline submission engine](http://looper.readthedocs.io/) to run the pipeline, but it's flexible enough to be run without `looper` if that serves your needs.
+The pipeline can be run directly from the command line for a single sample. If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with `looper`, or sample handling engine. This section explains how to do both.
 
 ## 5.1 Running the pipeline script directly (without looper)
 
@@ -166,17 +173,23 @@ Install looper using `pip`:
 pip install --user https://github.com/pepkit/looper/zipball/master
 ```
 
-Start by running the example project in the [examples/test_project](examples/test_project) folder. This command runs the pipeline across all samples in the test project:
+Start by running the example project in the [examples/test_project](examples/test_project) folder. Let's use the `-d` argument to do a *dry run*, which will create job scripts for every sample in the project, but will not execute them:
 
 ```
 cd ATACseq
-looper run examples/test_project/test_config.yaml
+looper run -d examples/test_project/test_config.yaml
 ```
 
 If the looper executable in not your `$PATH`, add the following line to your `.bashrc` or `.profile`:
 
 ```
 export PATH=$PATH:~/.local/bin
+```
+
+If that worked, let's actually run the example by taking out the `-d` flag:
+
+```
+looper run -d examples/test_project/test_config.yaml
 ```
 
 Now, adapt the example project to your project. (There are more examples in the [examples/test_project](examples/test_project/) folder). You need two files for your project :
