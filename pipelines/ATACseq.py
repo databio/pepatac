@@ -26,8 +26,9 @@ def parse_arguments():
     """
     # Argument Parsing from yaml file
     ###########################################################################
-    parser = ArgumentParser(description='Pipeline')
-    parser = pypiper.add_pypiper_args(parser, all_args=True)
+    parser = ArgumentParser(description='ATACseq version ' + __version__)
+    parser = pypiper.add_pypiper_args(parser, groups=
+        ['pypiper', 'resource', 'looper', 'ngs'])
 
     # Pipeline-specific arguments
     parser.add_argument("-gs", "--genome-size", default="hs", type=str,
