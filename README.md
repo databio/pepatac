@@ -291,3 +291,12 @@ Pull requests welcome. Active development should occur in a development or featu
 * Jin Xu, jinxu9@stanford.edu
 * Nathan Sheffield
 * Others... (add your name)
+
+
+# 8. Troubleshooting
+
+A few common issues running the pipeline:
+
+- If 'fseq' fails to create a peaks file and the log file indicates an ArrayIndexOutOfBoundsException, this is likely due to a low read count and can probably be overcome by specifying fragment size with fseq's -f option.
+
+
