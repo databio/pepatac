@@ -4,8 +4,8 @@
 metadata:  # relative paths are relative to this config file
   sample_annotation: test_annotation.csv  # sheet listing all samples in the project
   output_dir: $HOME/atac_out  # ABSOLUTE PATH to the parent, shared space where project results go
-  pipelines_dir: "../../pipeline_interface.yaml"  # ABSOLUTE PATH the directory where looper will find the pipeline repository
-  merge_table: null  # (optional) input for samples with more than one input file
+  pipeline_interfaces: "../../pipeline_interface.yaml"  # ABSOLUTE PATH the directory where looper will find the pipeline repository
+  sample_subannotation: null  # (optional) input for samples with more than one input file
 
 # in your sample_annotation, columns with these names will be populated as described 
 # in the data_sources section below
