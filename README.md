@@ -1,6 +1,6 @@
 # 1. ATACseq pipeline overview
 
-This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs. You can download the latest version from the [releases page](https://github.com/databio/ATACseq/releases) and a history of version changes is in the [CHANGELOG](CHANGELOG.md).
+This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs. You can download the latest version from the [releases page](https://github.com/databio/ATACseq/releases), or find changes listed in the [CHANGELOG](CHANGELOG.md).
 
 # 2. Pipeline features at-a-glance
 
@@ -14,9 +14,9 @@ Here are a few of the highlights that make `pepatac` valuable (explained in more
 
 **Flexibility**. The pipeline provides options for multiple peak callers, multiple adapter trimmers, and fully configurable parameterization for many underlying tools.
 
-**Portability**. Run it using `docker` or `singularity` with no other prerequisites, or it can be run natively without containers. The choice is yours
+**Portability**. Run it using `docker` or `singularity` with no other prerequisites, or it can be run natively without containers. The choice is yours.
 
-**Standardized user interface**. The pipeline reads projects formated in [standard PEP format](http://pepkit.github.io), so you can use the same sample annotation sheets for your downstream R or python analysis using tools from `pepkit`.
+**Standardized user interface**. The pipeline input is formatted in [standard PEP format](http://pepkit.github.io), so you can use the same sample annotation sheets for your downstream R or python analysis using tools from `pepkit`.
 
 **Standardized reference genome assembly**. The pipeline uses standard reference genome assemblies produced by [refgenie](http://github.com/databio/refgenie), which provides a *scripted* way to produce a compatible reference assembly for any custom genome. For common genomes, you can either download pre-indexed assemblies or build your own. 
 
@@ -29,7 +29,7 @@ Here are a few of the highlights that make `pepatac` valuable (explained in more
 
 # 3. Container approach
 
-You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#5-native-approach)
+You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#5-native-approach).
 
 ## 3.1 Container install
 
@@ -43,7 +43,7 @@ You can pull the `docker` image from `dockerhub` (https://hub.docker.com/r/datab
 docker pull databio/pepatac
 ```
 
-Or build the container using the included [Dockerfile](containers/) (you can use a recipe in the included [Makefile](/Makefile)):
+Or build the image using the included [Dockerfile](containers/) (you can use a recipe in the included [Makefile](/Makefile)):
 
 ```
 cd ATACseq
@@ -58,11 +58,11 @@ cd ATACseq
 make singularity
 ```
 
-Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
+Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the [pipeline_interface.yaml](pipeline_interface.yaml) file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
 
 ## 3.2 Configuring the pipeline with containers
 
-Now you'll need to `looper` to run the pipeline in the container, since the default is to run it natively.
+Now you'll need to tell `looper` to run the pipeline in the container, since the default is to run it natively.
 
 1. Clone the pipeline using one of these methods:
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
@@ -100,6 +100,12 @@ To run on multiple samples, you can just write a loop to process each sample ind
 ## 4.2 Running the pipeline through looper
 
 This pipeline is pre-configured to work with `looper`. [Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally, in containers, using any cluster resource manager, or in containers on a cluster.
+
+Install looper using `pip`:
+
+```
+pip install --user https://github.com/pepkit/looper/zipball/master
+```
 
 Start by running the example project in the [examples/test_project](examples/test_project) folder. This command runs the pipeline across all samples in the test project:
 
@@ -146,7 +152,9 @@ These instructions show you how to install the pipeline natively, if you don't w
 
 ## 5.1 Native install
 
-*Note: you only need to install these prerequisites if you are not using a container*. First we'll need to install all the prerequisites:
+*Note: you only need to install these prerequisites if you are not using a container*. 
+
+First we'll need to install all the prerequisites:
 
 **Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, [pararead](https://github.com/databio/pararead) for parallel processing sequence reads, and [looper](https://github.com/pepkit/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of these like this:
 
