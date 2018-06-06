@@ -27,11 +27,19 @@ Here are a few of the highlights that make `pepatac` valuable (explained in more
 **Prealignments**. The pipeline can (optionally) first align to any number of reference assemblies separately before the primary genome alignment. This increases both speed and accuracy and can be used, for example, to align sequentially to mtDNA, repeats, or spike-ins.
 
 
-# 3. Container approach
+# 3. Installation
 
-You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#5-native-approach).
+# 3.1 Clone the pipeline
 
-## 3.1 Container install
+First, **clone the pipeline**. Clone this repository using one of these methods:
+- using SSH: `git clone git@github.com:databio/ATACseq.git`
+- using HTTPS: `git clone https://github.com/databio/ATACseq.git`
+
+Next, specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
+
+Next, you have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#3.3-native-approach).
+
+## 3.2 Use containers
 
 Choose either `docker` or `singularity`, and pull the container image:
 
@@ -57,25 +65,74 @@ You can download the singularity image from http://big.databio.org/simages/pepat
 cd ATACseq
 make singularity
 ```
-
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the [pipeline_interface.yaml](pipeline_interface.yaml) file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
 
-## 3.2 Configuring the pipeline with containers
+# 3.3. Install software requirements natively
 
-Now you'll need to tell `looper` to run the pipeline in the container, since the default is to run it natively.
+*Note: you only need to install these prerequisites if you are not using a container*. 
 
-1. Clone the pipeline using one of these methods:
-- using SSH: `git clone git@github.com:databio/ATACseq.git`
-- using HTTPS: `git clone https://github.com/databio/ATACseq.git`
+First we'll need to install all the prerequisites:
 
-2. Define environment variable `GENOMES` for [refgenie](https://github.com/databio/refgenie) genomes. 
+**Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
+
+```
+pip install --user https://github.com/databio/pypiper/zipball/master
+pip install --user pararead
+```
+
+**R packages**. This pipeline uses R to generate QC metric plots. These are **optional** and if you don't install these R packages (or R in general), the pipeline will still work, but you will not get the QC plot outputs. 
+
+The following packages are used by the qc scripts:
+- ggplot2
+- gtable (v0.2.0)
+- gplots (v3.0.1)
+- reshape2 (v1.4.2)
+
+You can install these packages like this:
+```
+R # start R
+install.packages(c("ggplot2", "gtable", "gplots", "reshape2"))
+```
+
+**Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
+
+With the software installed natively, we next need to configure the pipeline:
+
+There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
+
+### 3.3.1 Configuration option 1: Default configuration (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
+  - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH (unless using a container).
+  - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
+  ```
+  export PICARD="/path/to/picard.jar"
+  export TRIMMOMATIC="/path/to/trimmomatic.jar"
+  ```
+    
+  - Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
+
+
+### 3.3.2  Configuration option 2: Custom configuration.
+
+Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
+
+# 4. Configuring reference genome assemblies
+
+Whether using the container or native version, you will need to provide external reference genome assemblies. The pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
+
+Once you've procured assemblies for all genomes you wish to use, you can point the pipeline to where you store these either using an environment variable, or by adjusting a configuration option:
+
+The pipeline looks for genomes stored in a folder specified by the `resources.genomes` attribute in the [pipeline config file](pipelines/ATACseq.yaml). By default, this points to the shell variable `GENOMES`, so all you have to do is set an environment variable to the location of your [refgenie](https://github.com/databio/refgenie) genomes:
+
   ```
   export GENOMES="/path/to/genomes/folder/"
   ```
 
-3. Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
+  (Add this to your `.bashrc` or `.profile` to ensure it persists).
+ 
+Alternatively, you can skip the `GENOMES` variable and simply change the value of that configuration option to point to the folder where you stored the assemblies. The advantage of using an environment variable is that it makes the configuration file portable, so the same pipeline can be run on any computing environment, as the location to reference assemblies is not hard-coded to a specific computing environment.
 
-# 4. Running the pipeline with looper
+
+# 4. Running the pipeline
 
 We highly recommend using the [looper pipeline submission engine](http://looper.readthedocs.io/) to run the pipeline, but it's flexible enough to be run without `looper` if that serves your needs.
 
@@ -148,70 +205,6 @@ Complete instructions can be found in the documentation on [configuring looper t
 
 You can read complete docs of PEPENV in the [pepenv readme](https://github.com/pepkit/pepenv).
 
-# 5. Native approach
-
-These instructions show you how to install the pipeline natively, if you don't want to use a container.
-
-## 5.1 Native install
-
-*Note: you only need to install these prerequisites if you are not using a container*. 
-
-First we'll need to install all the prerequisites:
-
-**Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, [pararead](https://github.com/databio/pararead) for parallel processing sequence reads, and [looper](https://github.com/pepkit/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of these like this:
-
-```
-pip install --user https://github.com/databio/pypiper/zipball/master
-pip install --user https://github.com/pepkit/looper/zipball/master
-pip install --user pararead
-```
-**R packages**. This pipeline uses R to generate QC metric plots. These are **optional** and if you don't install these R packages (or R in general), the pipeline will still work, but you will not get the QC plot outputs. 
-
-The following packages are used by the qc scripts:
-- ggplot2
-- gtable (v0.2.0)
-- gplots (v3.0.1)
-- reshape2 (v1.4.2)
-
-You can install these packages like this:
-```
-R # start R
-install.packages(c("ggplot2", "gtable", "gplots", "reshape2"))
-```
-
-**Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
-
-**Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
-
-## 5.2 Configuring the pipeline
-
-With the software installed natively, we next need to configure the pipeline:
-
-**Clone the pipeline**. Clone this repository using one of these methods:
-- using SSH: `git clone git@github.com:databio/ATACseq.git`
-- using HTTPS: `git clone https://github.com/databio/ATACseq.git`
-
-There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
-
-### 5.2.1 Configuration option 1: Default configuration (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
-  - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH (unless using a container).
-  - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
-  ```
-  export PICARD="/path/to/picard.jar"
-  export TRIMMOMATIC="/path/to/trimmomatic.jar"
-  ```
-  
-  - Define environment variable `GENOMES` for refgenie genomes. 
-  ```
-  export GENOMES="/path/to/genomes/folder/"
-  ```
-  
-  - Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
-
-
-### 5.2.2  Configuration option 2: Custom configuration.
-
-Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
 
 
 # 6. Outline of analysis steps
