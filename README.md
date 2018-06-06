@@ -117,7 +117,7 @@ Instead, you can also put absolute paths to each tool or resource in the configu
 
 # 4. Configuring reference genome assemblies
 
-Whether using the container or native version, you will need to provide external reference genome assemblies. The pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
+Whether using the container or native version, you will need to provide external reference genome assemblies. The pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://big.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). Any prealignments you want to do use will also require refgenie assemblies. Some common examples are provided by [ref_decoy](https://github.com/databio/ref_decoy).
 
 Once you've procured assemblies for all genomes you wish to use, you can point the pipeline to where you store these either using an environment variable, or by adjusting a configuration option:
 
