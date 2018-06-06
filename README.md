@@ -120,7 +120,7 @@ If the looper executable in not your `$PATH`, add the following line to your `.b
 export PATH=$PATH:~/.local/bin
 ```
 
-Now, adapt the example project to your project. Detailed instructions for how to define your project are in the [Looper documentation on defining a project](http://looper.readthedocs.io/en/latest/define-your-project.html). Looper reads the [standard Portable Encapsulated Project format](https://pepkit.github.io/docs/home/). Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
+Now, adapt the example project to your project. (There are more examples in the [examples/test_project](examples/test_project/) folder). You need two files for your project :
 
 - [project config file](examples/test_project/test_config.yaml) -- describes output locations, pointers to data, etc.
 - [sample annotation file](examples/test_project/test_annotation.csv) -- comma-separated value (CSV) list of your samples.
@@ -133,7 +133,9 @@ Your annotation file must specify these columns:
 - read2
 - whatever else you want
 
-Run your project as above, by passing your project config file to `looper` with `looper run project_config.yaml`. Looper can also summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/). 
+Run your project as above, by passing your project config file to `looper` with `looper run project_config.yaml`. This project format called the *standard Portable Encapsulated Project format* and is outlined in more detail in the [pepkit docs](https://pepkit.github.io/docs/home/).
+
+Looper can also summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/). 
 
 ## 4.3 How to run on a cluster or in a container using looper
 
