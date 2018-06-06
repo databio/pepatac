@@ -444,6 +444,18 @@ def main():
                trimmed_fastq, args.paired_end, trimmed_fastq_R2,
                fastqc_folder=os.path.join(param.outfolder, "fastqc")),
            container=pm.container)
+    
+    # Access FastQC results
+    fastqc_r1 = os.path.splitext(os.path.basename(trimmed_fastq))[0]
+    fastqc_r1 += "_fastqc.html"
+    fastqc_r1 = os.path.join(param.outfolder, "fastqc", fastqc_r1)
+    fastqc_r2 = os.path.splitext(os.path.basename(trimmed_fastq_R2))[0]
+    fastqc_r2 += "_fastqc.html"
+    fastqc_r2 = os.path.join(param.outfolder, "fastqc", fastqc_r2)
+
+    # Report FastQC results
+    pm.report_object("FastQC report r1", fastqc_r1, anchor_image=fastqc_r1)
+    pm.report_object("FastQC report r2", fastqc_r2, anchor_image=fastqc_r2)
 
     pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
     pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
