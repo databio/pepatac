@@ -4,25 +4,36 @@ This repository contains a pipeline to process ATAC-seq data. It does adapter tr
 
 # 2. Pipeline features at-a-glance
 
-These features are explained in more detail later in this README.
+Here are a few of the highlights that make `pepatac` valuable (explained in more detail later in this README).
 
-**Prealignments**. The pipeline can (optionally) first align to any number of reference assemblies separately before the primary genome alignment. This increases both speed and accuracy and can be used, for example, to align sequentially to mtDNA, repeats, or spike-ins.
+**Scalability**. Run the pipeline easily on a project with a single sample or a thousand. This pipeline is compatible with [looper](https://github.com/pepkit/looper), so it can run locally or with *any* cluster resource manager (*e.g.* SLURM, SGE, or LFS).
 
-**Scalability**. This pipeline is built on [looper](https://github.com/epigen/looper), so it can run locally or with any cluster resource manager.
+**Restartability**. The pipeline is built using [pypiper](https://github.com/databio/pypiper), so it automatically picks up where it left off in case of preemption or crash.
+
+**Copious logging**. The pipeline produces a detailed log file recording all output from every command run, and also records the time and memory use of every process, the version of the pipeline and other software, and other useful run information.
+
+**Flexibility**. The pipeline provides options for multiple peak callers, multiple adapter trimmers, and fully configurable parameterization for many underlying tools.
+
+**Portability**. Run it using `docker` or `singularity` with no other prerequisites, or it can be run natively without containers. The choice is yours
+
+**Standardized user interface**. The pipeline reads projects formated in [standard PEP format](http://pepkit.github.io), so you can use the same sample annotation sheets for your downstream R or python analysis using tools from `pepkit`.
+
+**Standardized reference genome assembly**. The pipeline uses standard reference genome assemblies produced by [refgenie](http://github.com/databio/refgenie), which provides a *scripted* way to produce a compatible reference assembly for any custom genome. For common genomes, you can either download pre-indexed assemblies or build your own. 
 
 **Fraction of reads in peaks (FRIP)**. By default, the pipeline will calculate the FRIP using the peaks it identifies. Optionally, it can **also** calculate a FRIP using a reference set of peaks (for example, from another experiment). 
 
 **TSS enrichments**. The pipeline produces various nice QC plots.
 
-**Containerization**. The pipeline can be run using `docker` or `singularity` with no other prerequisites.
+**Prealignments**. The pipeline can (optionally) first align to any number of reference assemblies separately before the primary genome alignment. This increases both speed and accuracy and can be used, for example, to align sequentially to mtDNA, repeats, or spike-ins.
+
 
 # 3. Container approach
 
-You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity` running; or 2) install all prerequisites natively.
+You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#5.-native-approach)
 
 ## 3.1 Container install
 
-This pipeline can be run in either singularity or docker containers. If you use this route, you need either `docker` or `singularity` running, and then you'll need to pull the container image:
+Choose either `docker` or `singularity`, and pull the container image:
 
 ### Docker
 
@@ -32,7 +43,7 @@ You can pull the `docker` image from `dockerhub` (https://hub.docker.com/r/datab
 docker pull databio/pepatac
 ```
 
-Or build the container using a recipe in the Makefile:
+Or build the container using the included [Dockerfile](containers/) (you can use a recipe in the included [Makefile](/Makefile)):
 
 ```
 cd ATACseq
@@ -41,14 +52,17 @@ make docker
 
 ### Singularity
 
-You can download the singularity image from http://big.databio.org/simages/pepatac or build it from the docker image with:
+You can download the singularity image from http://big.databio.org/simages/pepatac or build it from the docker image following the recipe in the [Makefile]:
 ```
+cd ATACseq
 make singularity
 ```
 
-Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image: ` attribute is pointing to the right location on disk.
+Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
 
 ## 3.2 Configuring the pipeline with containers
+
+Now you'll need to `looper` to run the pipeline in the container, since the default is to run it natively.
 
 1. Clone the pipeline using one of these methods:
 - using SSH: `git clone git@github.com:databio/ATACseq.git`
@@ -134,11 +148,11 @@ These instructions show you how to install the pipeline natively, if you don't w
 
 *Note: you only need to install these prerequisites if you are not using a container*. First we'll need to install all the prerequisites:
 
-**Python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [pararead](https://github.com/databio/pararead) for parallel processing sequence reads, and [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of these like this:
+**Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, [pararead](https://github.com/databio/pararead) for parallel processing sequence reads, and [looper](https://github.com/pepkit/looper) to handle multi-sample projects (for either local or cluster computation). You can do a user-specific install of these like this:
 
 ```
-pip install --user https://github.com/epigen/pypiper/zipball/master
-pip install --user https://github.com/epigen/looper/zipball/master
+pip install --user https://github.com/databio/pypiper/zipball/master
+pip install --user https://github.com/pepkit/looper/zipball/master
 pip install --user pararead
 ```
 **R packages**. This pipeline uses R to generate QC metric plots. These are **optional** and if you don't install these R packages (or R in general), the pipeline will still work, but you will not get the QC plot outputs. 
