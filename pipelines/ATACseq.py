@@ -445,6 +445,7 @@ def main():
                trimmed_fastq, args.paired_end, trimmed_fastq_R2,
                fastqc_folder=os.path.join(param.outfolder, "fastqc")),
            container=pm.container)
+
     
     # Access FastQC results
     fastqc_r1 = os.path.splitext(os.path.basename(trimmed_fastq))[0]
@@ -472,7 +473,7 @@ def main():
     # We recommend mapping to chrM first for ATAC-seq data
     pm.timestamp("### Prealignments")
     if len(args.prealignments) == 0:
-        print("You may use `--prealignments` to align to references before",
+        print("You may use `--prealignments` to align to references before"
               "the genome alignment step. See docs.")
     else:
         print("Prealignment assemblies: " + str(args.prealignments))
