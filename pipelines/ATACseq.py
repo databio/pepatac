@@ -28,7 +28,7 @@ def parse_arguments():
     ###########################################################################
     parser = ArgumentParser(description='ATACseq version ' + __version__)
     parser = pypiper.add_pypiper_args(parser, groups=
-        ['pypiper', 'resource', 'looper', 'ngs'])
+        ['pypiper', 'looper', 'ngs'], required=["input", "genome", "sample-name"])
 
     # Pipeline-specific arguments
     parser.add_argument("-gs", "--genome-size", default="hs", type=str,
