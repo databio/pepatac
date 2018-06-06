@@ -37,7 +37,7 @@ First, **clone the pipeline**. Clone this repository using one of these methods:
 
 Next, specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
 
-Next, you have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#3.3-native-approach).
+Next, you have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#33-native-approach).
 
 ## 3.2 Use containers
 
@@ -67,7 +67,7 @@ make singularity
 ```
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the [pipeline_interface.yaml](pipeline_interface.yaml) file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
 
-# 3.3. Install software requirements natively
+## 3.3. Install software requirements natively
 
 *Note: you only need to install these prerequisites if you are not using a container*. 
 
