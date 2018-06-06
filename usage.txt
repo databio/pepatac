@@ -1,50 +1,34 @@
-usage: ATACseq.py [-h] [-N] [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]]
-                  [--stop-before STOP_BEFORE] [-M MEMORY_LIMIT]
-                  [--stop-after STOP_AFTER] [-Q SINGLE_OR_PAIRED]
-                  [-S SAMPLE_NAME] [-F] [-D] [-P NUMBER_OF_CORES]
-                  [-I INPUT_FILES [INPUT_FILES ...]] [-R] [-C CONFIG_FILE]
-                  [-O PARENT_OUTPUT_FOLDER] [-G GENOME_ASSEMBLY]
-                  [-gs GENOME_SIZE] [--frip-ref-peaks FRIP_REF_PEAKS]
+usage: ATACseq.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE]
+                  [-O PARENT_OUTPUT_FOLDER] [-M MEMORY_LIMIT]
+                  [-P NUMBER_OF_CORES] -S SAMPLE_NAME -I INPUT_FILES
+                  [INPUT_FILES ...] [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G
+                  GENOME_ASSEMBLY [-Q SINGLE_OR_PAIRED] [-gs GENOME_SIZE]
+                  [--frip-ref-peaks FRIP_REF_PEAKS]
                   [--peak-caller {fseq,macs2}]
                   [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
 
-Pipeline
+ATACseq version 0.7.0-dev
 
 optional arguments:
   -h, --help            show this help message and exit
-  -N, --new-start       Fresh start mode, overwrite all
-  -I2 [INPUT_FILES2 [INPUT_FILES2 ...]], --input2 [INPUT_FILES2 [INPUT_FILES2 ...]]
-                        Secondary input file(s), e.g. read2 for a paired-end
-                        protocol
-  --stop-before STOP_BEFORE
-                        Name of pipeline stage at which to stop (exclusive,
-                        i.e. not run)
-  -M MEMORY_LIMIT, --mem MEMORY_LIMIT
-                        Amount of memory (Mb) use to allow for processes for
-                        which that can be specified
-  --stop-after STOP_AFTER
-                        Name of pipeline stage at which to stop (inclusive,
-                        i.e. run)
-  -Q SINGLE_OR_PAIRED, --single-or-paired SINGLE_OR_PAIRED
-                        Single- or paired-end sequencing protocol
-  -S SAMPLE_NAME, --sample-name SAMPLE_NAME
-                        Name for sample to run
-  -F, --follow          Run all 'follow' commands, even if the primary command
-                        is not run
-  -D, --dirty           Make all cleanups manual
-  -P NUMBER_OF_CORES, --cores NUMBER_OF_CORES
-                        Number of cores for parallelized processes
-  -I INPUT_FILES [INPUT_FILES ...], --input INPUT_FILES [INPUT_FILES ...]
-                        One or more primary input files (required)
-  -R, --recover         Recover mode, overwrite locks
+  -R, --recover         Overwrite locks to recover from previous failed run
+  -N, --new-start       Overwrite all results to start a fresh run
+  -D, --dirty           Don't auto-delete intermediate files
+  -F, --force-follow    Always run 'follow' commands
   -C CONFIG_FILE, --config CONFIG_FILE
                         Pipeline configuration file (YAML). Relative paths are
                         with respect to the pipeline script.
   -O PARENT_OUTPUT_FOLDER, --output-parent PARENT_OUTPUT_FOLDER
                         Parent output directory of project
-  -G GENOME_ASSEMBLY, --genome GENOME_ASSEMBLY
-                        Identifier for genome assembly
+  -M MEMORY_LIMIT, --mem MEMORY_LIMIT
+                        Memory limit (in Mb) for processes accepting such
+  -P NUMBER_OF_CORES, --cores NUMBER_OF_CORES
+                        Number of cores for parallelized processes
+  -I2 [INPUT_FILES2 [INPUT_FILES2 ...]], --input2 [INPUT_FILES2 [INPUT_FILES2 ...]]
+                        Secondary input files, such as read2
+  -Q SINGLE_OR_PAIRED, --single-or-paired SINGLE_OR_PAIRED
+                        Single- or paired-end sequencing protocol
   -gs GENOME_SIZE, --genome-size GENOME_SIZE
                         genome size for MACS2
   --frip-ref-peaks FRIP_REF_PEAKS
@@ -57,3 +41,11 @@ optional arguments:
                         Space-delimited list of reference genomes to align to
                         before primary alignment.
   -V, --version         show program's version number and exit
+
+required named arguments:
+  -S SAMPLE_NAME, --sample-name SAMPLE_NAME
+                        Name for sample to run
+  -I INPUT_FILES [INPUT_FILES ...], --input INPUT_FILES [INPUT_FILES ...]
+                        One or more primary input files
+  -G GENOME_ASSEMBLY, --genome GENOME_ASSEMBLY
+                        Identifier for genome assembly
