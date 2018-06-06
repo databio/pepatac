@@ -134,11 +134,11 @@ The pipeline looks for genomes stored in a folder specified by the `resources.ge
 Alternatively, you can skip the `GENOMES` variable and simply change the value of that configuration option to point to the folder where you stored the assemblies. The advantage of using an environment variable is that it makes the configuration file portable, so the same pipeline can be run on any computing environment, as the location to reference assemblies is not hard-coded to a specific computing environment.
 
 
-# 4. Running the pipeline
+# 5. Running the pipeline
 
 We highly recommend using the [looper pipeline submission engine](http://looper.readthedocs.io/) to run the pipeline, but it's flexible enough to be run without `looper` if that serves your needs.
 
-## 4.1 Running the pipeline script directly
+## 5.1 Running the pipeline script directly (without looper)
 
 To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
@@ -156,7 +156,7 @@ docker run --rm -it {DOCKER_ARGS} databio/pepatac pipelines/ATACseq.py
 
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use *option 2*...
 
-## 4.2 Running the pipeline through looper
+## 5.2 Running the pipeline through looper
 
 This pipeline is pre-configured to work with `looper`. [Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally, in containers, using any cluster resource manager, or in containers on a cluster.
 
@@ -196,17 +196,21 @@ Run your project as above, by passing your project config file to `looper` with 
 
 Looper can also summarize your results, monitor your runs, clean intermediate files to save disk space, and more. You can find additional details on what you can do with this in the [looper docs](http://looper.readthedocs.io/). 
 
-## 4.3 How to run on a cluster or in a container using looper
+## 5.3 How to run on a cluster or in a container using looper
 
-The pipeline itself does not specify any container or cluster resources, so you can always just roll your own and submit individual jobs to a cluster however you choose. But looper provides a template system to build scripts for each job. These templates can be used to run the job in a container, to submit to a cluster resource manager, or both. This template system is centered around a *computing environment configuration file* called PEPENV.
+The pipeline itself does not specify any container or cluster resources, so you *could* just roll your own and submit individual jobs to a cluster however you choose. The easier way is to use `looper`'s built-in template system, which `looper` uses to build flexible shell scripts for job submission. These templates can be used to run jobs in a container, to submit to a cluster resource manager, or both.
 
-Complete instructions can be found in the documentation on [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html) and [configuring looper to use linux containers](https://looper.readthedocs.io/en/dev/containers.html). In short, you will need to:
+### 5.3.1 PEPENV
 
-1. Set up a PEPENV file that includes a containerized or cluster compute package (or both)
-2. Run the pipeline with `looper run --compute PACKAGE` (PACKAGE can be any containerized compute package, such as `singularity_slurm` in the default PEPENV).
+To use `looper` templates, we must create a *computing environment configuration file* called `PEPENV`. In short, you will need to:
 
-You can read complete docs of PEPENV in the [pepenv readme](https://github.com/pepkit/pepenv).
+1. Set up a compute configuration file that includes a containerized or cluster compute template (or both).
+2. Point the environment variable `PEPENV` to the location of this file.
+3. Run the pipeline with `looper run --compute PACKAGE` (where PACKAGE is specified in your PEPENV file).
 
+This enables you to adjust your computing preferences on-the-fly when you run a project.
+
+The complete description of setting up `looper` to use `PEPENV` is generic to any pipeline, and therefore omitted from this readme. If you want to use `looper` with containers or clusters, you should consulte the complete docs in the [pepenv readme](https://github.com/pepkit/pepenv). Further instructions can also be found in the documentation on [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html) and [configuring looper to use linux containers](https://looper.readthedocs.io/en/dev/containers.html).
 
 
 # 6. Outline of analysis steps
