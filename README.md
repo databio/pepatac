@@ -60,7 +60,7 @@ make docker
 
 ### Singularity
 
-You can download the singularity image from http://big.databio.org/simages/pepatac or build it from the docker image following the recipe in the [Makefile]:
+You can download the singularity image from http://big.databio.org/simages/pepatac or build it from the docker image following the recipe in the [Makefile](/Makefile):
 ```
 cd ATACseq
 make singularity
@@ -240,7 +240,7 @@ To use `looper` templates, we must create a *computing environment configuration
 
 This enables you to adjust your computing preferences on-the-fly when you run a project.
 
-The complete description of setting up `looper` to use `PEPENV` is generic to any pipeline, and therefore omitted from this readme. If you want to use `looper` with containers or clusters, you should consulte the complete docs in the [pepenv readme](https://github.com/pepkit/pepenv). Further instructions can also be found in the documentation on [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html) and [configuring looper to use linux containers](https://looper.readthedocs.io/en/dev/containers.html).
+The complete description of setting up `looper` to use `PEPENV` is generic to any pipeline, and therefore omitted from this readme. If you want to use `looper` with containers or clusters, you should consult the complete docs in the [pepenv readme](https://github.com/pepkit/pepenv). Further instructions can also be found in the documentation on [configuring looper to use a cluster](http://looper.readthedocs.io/en/latest/cluster-computing.html) and [configuring looper to use linux containers](https://looper.readthedocs.io/en/dev/containers.html).
 
 
 # 6. Outline of analysis steps
