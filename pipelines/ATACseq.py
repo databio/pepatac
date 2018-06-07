@@ -741,7 +741,7 @@ def main():
         try:
             # Just wrapping this in a try temporarily so that old versions of
             # pypiper will work. v0.6 release of pypiper adds this function
-            pm.report_figure("TSS enrichment", Tss_plot)
+            
             Tss_png = os.path.join(QC_folder,  args.sample_name +
                                 ".TssEnrichment.png")
             pm.report_object("TSS enrichment", Tss_plot, anchor_image=Tss_png)
@@ -767,7 +767,7 @@ def main():
         try:
             fragL_png = os.path.join(QC_folder, args.sample_name +
                                   ".fragL.distribution.png")
-            pm.report_figure("Fragment distribution", fragL_dis1)
+            
             pm.report_object("Fragment distribution", fragL_dis1, anchor_image=fragL_png)
         except:
             pass
