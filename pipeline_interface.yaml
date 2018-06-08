@@ -25,6 +25,9 @@ pipelines:
       docker_image: databio/pepatac
     summarizers:
       - tools/ATAC_Looper_Summary_plot.R
+    summary_results:
+      "Alignment file": "summary/{project_name}.alignmentPercent.pdf"
+      "Library size file": "summary/{project_name}.LibSize.pdf"
     resources:
       default:
         file_size: "0"
