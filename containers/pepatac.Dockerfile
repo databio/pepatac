@@ -40,7 +40,7 @@ RUN pip install --upgrade pip
 RUN pip install virtualenv && \
     pip install numpy && \
     pip install MACS2 && \
-    pip install https://github.com/epigen/pypiper/zipball/master && \
+    pip install https://github.com/databio/pypiper/zipball/master && \
     pip install pararead
 
 # Install R
