@@ -3,7 +3,7 @@
 metadata:  # relative paths are relative to this config file
   sample_annotation: gold_atac_annotation.csv  # sheet listing all samples in the project
   output_dir: ${PROCESSED}gold_atac  # ABSOLUTE PATH to the parent, shared space where project results go
-  pipelines_dir: "${CODEBASE}ATACseq"  # ABSOLUTE PATH the directory where looper will find the pipeline repository
+  pipeline_interfaces: ${CODEBASE}ATACseq/pipeline_interface.yaml
 
 # in your sample_annotation, columns with these names will be populated as described 
 # in the data_sources section below
