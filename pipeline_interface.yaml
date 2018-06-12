@@ -1,6 +1,6 @@
 protocol_mapping:
   ATAC: ATACseq.py
-  ATAC-SEQ: ATACseq.py
+  ATAC-SEQ: ATACseq.py 
 
 pipelines:
   ATACseq.py:
@@ -20,6 +20,14 @@ pipelines:
       "--frip-ref-peaks": FRIP_ref
       "--prealignments": prealignments
       "--genome-size": macs_genome_size
+    compute:
+      singularity_image: ${SIMAGES}pepatac
+      docker_image: databio/pepatac
+    summarizers:
+      - tools/ATAC_Looper_Summary_plot.R
+    summary_results:
+      "Alignment file": "summary/{project_name}.alignmentPercent.pdf"
+      "Library size file": "summary/{project_name}.LibSize.pdf"
     resources:
       default:
         file_size: "0"
@@ -51,3 +59,5 @@ pipelines:
         cores: "16"
         mem: "64000"
         time: "03-00:00:00"
+
+
