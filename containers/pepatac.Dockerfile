@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.1
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.7.4
+LABEL version 0.8.0
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -40,9 +40,8 @@ RUN pip install --upgrade pip
 RUN pip install virtualenv && \
     pip install numpy && \
     pip install MACS2 && \
-    pip install https://github.com/epigen/pypiper/zipball/master && \
     pip install pararead && \
-    pip install pyyaml
+    pip install piper
 
 # Install R
 RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-dev && \
