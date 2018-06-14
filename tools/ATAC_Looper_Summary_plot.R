@@ -157,7 +157,7 @@ configFile <- argv$config
 #                         sep="\t", quote="")
 # colnames(configYaml) <- "config"
 
-yaml = Project(configFile)
+prj = Project(configFile)
 
 # # expand output directory location to identify the stats_summary.tsv file
 # summaryFile <- system(paste("echo ", paste(gsub("output_dir: ", "",
@@ -166,15 +166,17 @@ yaml = Project(configFile)
 #                       "/*_stats_summary.tsv", sep=""), sep=""), intern=TRUE)
 
 suppressMessages(summaryFile <- system(paste("echo ",
-                                             config(yaml)$metadata$output_dir,
+                                             config(prj)$metadata$output_dir,
                                              "/*_stats_summary.tsv", sep=""),
                                        intern=TRUE))
+
+summaryFile = paste0(config(prj)$metadata$output_dir, "/", config(prj)$name, "_stats_summary.tsv")
 #setwd(dirname(summaryFile))  # Local testing purposes only
 
 # Produce output directory
 dir.create(
     suppressMessages(
-        file.path(config(yaml)$metadata$output_dir, "summary")),
+        file.path(config(prj)$metadata$output_dir, "summary")),
         showWarnings = FALSE)
 
 # read in stats summary file
@@ -308,9 +310,9 @@ base_pdf = basename(pdf_name)
 png_name = gsub(pattern=".tsv", replacement=".alignmentRaw.png", x=summaryFile)
 base_png = basename(png_name)
 pdf_file = suppressMessages(
-            file.path(config(yaml)$metadata$output_dir, "summary", base_pdf))
+            file.path(config(prj)$metadata$output_dir, "summary", base_pdf))
 png_file = suppressMessages(
-            file.path(config(yaml)$metadata$output_dir, "summary", base_png))
+            file.path(config(prj)$metadata$output_dir, "summary", base_png))
 
 # Produce both PDF and PNG
 set_panel_size(
@@ -397,9 +399,9 @@ png_name = gsub(pattern=".tsv", replacement=".alignmentPercent.png",
                 x=summaryFile)
 base_png = basename(png_name)
 pdf_file = suppressMessages(
-            file.path(config(yaml)$metadata$output_dir, "summary", base_pdf))
+            file.path(config(prj)$metadata$output_dir, "summary", base_pdf))
 png_file = suppressMessages(
-            file.path(config(yaml)$metadata$output_dir, "summary", base_png))
+            file.path(config(prj)$metadata$output_dir, "summary", base_png))
 
 # Produce both PDF and PNG     
 set_panel_size(
@@ -477,9 +479,9 @@ png_name = gsub(pattern=".tsv", replacement=".TSS_Enrichment.png",
                 x=summaryFile)
 base_png = basename(png_name)
 pdf_file = suppressMessages(
-            file.path(config(yaml)$metadata$output_dir, "summary", base_pdf))
+            file.path(config(prj)$metadata$output_dir, "summary", base_pdf))
 png_file = suppressMessages(
-            file.path(config(yaml)$metadata$output_dir, "summary", base_png))
+            file.path(config(prj)$metadata$output_dir, "summary", base_png))
 
 # Produce both PDF and PNG   
 set_panel_size(
@@ -520,9 +522,9 @@ if (any(!is.na(stats$Picard_est_lib_size))) {
     png_name = gsub(pattern=".tsv", replacement=".LibSize.png", x=summaryFile)
     base_png = basename(png_name)
     pdf_file = suppressMessages(
-                file.path(config(yaml)$metadata$output_dir, "summary", base_pdf))
+                file.path(config(prj)$metadata$output_dir, "summary", base_pdf))
     png_file = suppressMessages(
-                file.path(config(yaml)$metadata$output_dir, "summary", base_png))
+                file.path(config(prj)$metadata$output_dir, "summary", base_png))
 
     # Produce both PDF and PNG
     
