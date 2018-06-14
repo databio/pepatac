@@ -170,8 +170,15 @@ suppressMessages(summaryFile <- system(paste("echo ",
                                              "/*_stats_summary.tsv", sep=""),
                                        intern=TRUE))
 
-summaryFile = paste0(config(prj)$metadata$output_dir, "/", config(prj)$name, "_stats_summary.tsv")
+summaryFile = file.path(config(prj)$metadata$output_dir, paste0(config(prj)$name, "_stats_summary.tsv"))
 #setwd(dirname(summaryFile))  # Local testing purposes only
+
+
+# Helper function to build a file path to the correct output folder using a
+# specified suffix
+buildFilePath = function(suffix, pep=prj) {
+  file.path(config(pep)$metadata$output_dir, "summary", paste0(config(pep)$name, suffix))
+}
 
 # Produce output directory
 dir.create(
@@ -305,24 +312,15 @@ alignRawPlot <- (
         coord_flip() + 
         alignTheme)
 
-pdf_name = gsub(pattern=".tsv", replacement=".alignmentRaw.pdf", x=summaryFile)
-base_pdf = basename(pdf_name)
-png_name = gsub(pattern=".tsv", replacement=".alignmentRaw.png", x=summaryFile)
-base_png = basename(png_name)
-pdf_file = suppressMessages(
-            file.path(config(prj)$metadata$output_dir, "summary", base_pdf))
-png_file = suppressMessages(
-            file.path(config(prj)$metadata$output_dir, "summary", base_png))
-
 # Produce both PDF and PNG
 set_panel_size(
     alignRawPlot, 
-    file=pdf_file, 
+    file=buildFilePath("_alignmentRaw.pdf", prj), 
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
 set_panel_size(
     alignRawPlot, 
-    file=png_file, 
+    file=buildFilePath("_alignmentRaw.png", prj), 
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
 
@@ -392,26 +390,15 @@ alignPercentPlot <- (
         coord_flip() + 
         alignTheme)
 
-pdf_name = gsub(pattern=".tsv", replacement=".alignmentPercent.pdf",
-                x=summaryFile)
-base_pdf = basename(pdf_name)
-png_name = gsub(pattern=".tsv", replacement=".alignmentPercent.png",
-                x=summaryFile)
-base_png = basename(png_name)
-pdf_file = suppressMessages(
-            file.path(config(prj)$metadata$output_dir, "summary", base_pdf))
-png_file = suppressMessages(
-            file.path(config(prj)$metadata$output_dir, "summary", base_png))
-
 # Produce both PDF and PNG     
 set_panel_size(
     alignPercentPlot, 
-    file=pdf_file, 
+    file=buildFilePath("_alignmentPercent.pdf", prj), 
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
 set_panel_size(
     alignPercentPlot, 
-    file=png_file, 
+    file=buildFilePath("_alignmentPercent.png", prj), 
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
 
@@ -472,24 +459,13 @@ TSSPlot <- ggplot(
     coord_flip() + 
     alignTheme
 
-pdf_name = gsub(pattern=".tsv", replacement=".TSS_Enrichment.pdf",
-                x=summaryFile)
-base_pdf = basename(pdf_name)
-png_name = gsub(pattern=".tsv", replacement=".TSS_Enrichment.png",
-                x=summaryFile)
-base_png = basename(png_name)
-pdf_file = suppressMessages(
-            file.path(config(prj)$metadata$output_dir, "summary", base_pdf))
-png_file = suppressMessages(
-            file.path(config(prj)$metadata$output_dir, "summary", base_png))
-
 # Produce both PDF and PNG   
 set_panel_size(
-    TSSPlot, file=pdf_file,
+    TSSPlot, file=buildFilePath("_TSSEnrichment.pdf", prj),
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
 set_panel_size(
-    TSSPlot, file=png_file,
+    TSSPlot, file=buildFilePath("_TSSEnrichment.png", prj),
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
 
@@ -516,24 +492,14 @@ if (any(!is.na(stats$Picard_est_lib_size))) {
         scale_y_continuous(limits = c(0,upperLimit), expand=c(0,0)) +
         coord_flip() + 
         alignTheme
-    
-    pdf_name = gsub(pattern=".tsv", replacement=".LibSize.pdf", x=summaryFile)
-    base_pdf = basename(pdf_name)
-    png_name = gsub(pattern=".tsv", replacement=".LibSize.png", x=summaryFile)
-    base_png = basename(png_name)
-    pdf_file = suppressMessages(
-                file.path(config(prj)$metadata$output_dir, "summary", base_pdf))
-    png_file = suppressMessages(
-                file.path(config(prj)$metadata$output_dir, "summary", base_png))
 
     # Produce both PDF and PNG
-    
     set_panel_size(LibSizePlot, 
-                   file=pdf_file, 
+                   file=buildFilePath("_LibSize.pdf", prj), 
                    width=unit(8,"inches"), 
                    height=unit(chartHeight,"inches"))
     set_panel_size(LibSizePlot, 
-                   file=png_file, 
+                   file=buildFilePath("_LibSize.png", prj), 
                    width=unit(8,"inches"), 
                    height=unit(chartHeight,"inches"))
 } else {
