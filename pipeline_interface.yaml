@@ -29,12 +29,12 @@ pipelines:
       - alignment_file:
         caption: "Alignment file"
         description: "Plots alignment rates to all pre-alignments and primary genome."
-        thumbnail_path: "summary/{project_name}.alignmentPercent.png"
-        path: "summary/{project_name}.alignmentPercent.pdf"
+        thumbnail_path: "summary/{name}.alignmentPercent.png"
+        path: "summary/{name}.alignmentPercent.pdf"
       - lib_file:
         caption: "Library size file"
-        thumbnail_path: "summary/{project_name}.LibSize.png"
-        path: "summary/{project_name}.LibSize.pdf"
+        thumbnail_path: "summary/{name}.LibSize.png"
+        path: "summary/{name}.LibSize.pdf"
     resources:
       default:
         file_size: "0"
