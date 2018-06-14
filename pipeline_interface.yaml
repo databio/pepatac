@@ -29,22 +29,22 @@ pipelines:
       - alignment_percent_file:
         caption: "Alignment percent file"
         description: "Plots percent of total alignment to all pre-alignments and primary genome."
-        thumbnail_path: "summary/{name}.alignmentPercent.png"
-        path: "summary/{name}.alignmentPercent.pdf"
+        thumbnail_path: "summary/{name}_alignmentPercent.png"
+        path: "summary/{name}_alignmentPercent.pdf"
       - alignment_raw_file:
         caption: "Alignment raw file"
         description: "Plots raw alignment rates to all pre-alignments and primary genome."
-        thumbnail_path: "summary/{name}.alignmentRaw.png"
-        path: "summary/{name}.alignmentRaw.pdf"
+        thumbnail_path: "summary/{name}_alignmentRaw.png"
+        path: "summary/{name}_alignmentRaw.pdf"
       - tss_file:
         caption: "TSS enrichment file"
         description: "Plots TSS scores for each sample."
-        thumbnail_path: "summary/{name}.TSS_Enrichment.png"
-        path: "summary/{name}.TSS_Enrichment.pdf"
+        thumbnail_path: "summary/{name}_TSSEnrichment.png"
+        path: "summary/{name}_TSSEnrichment.pdf"
       - lib_file:
         caption: "Library size file"
-        thumbnail_path: "summary/{name}.LibSize.png"
-        path: "summary/{name}.LibSize.pdf"
+        thumbnail_path: "summary/{name}_LibSize.png"
+        path: "summary/{name}_LibSize.pdf"
     resources:
       default:
         file_size: "0"
