@@ -166,7 +166,13 @@ suppressMessages(summaryFile <- system(paste("echo ",
                                              config(yaml)$metadata$output_dir,
                                              "/*_stats_summary.tsv", sep=""),
                                        intern=TRUE))
-setwd(dirname(summaryFile))
+#setwd(dirname(summaryFile))  # Local testing purposes only
+
+# Produce output directory
+dir.create(
+    suppressMessages(
+        file.path(config(yaml)$metadata$output_dir, "summary")),
+        showWarnings = FALSE)
 
 # read in stats summary file
 stats <- fread(summaryFile, header=TRUE, check.names=FALSE, sep="\t", quote="")
@@ -199,7 +205,7 @@ for (i in 1:length(prealignments)) {
     }
 }
 
-write(paste("\nGenerating plots in pdf format with ", 
+write(paste("\nGenerating plots in both png and pdf format with ", 
             summaryFile, "\n", sep=""), stdout())
 
 # Set absent values in table to zero
@@ -273,9 +279,24 @@ alignRawPlot <- (
         coord_flip() + 
         alignTheme)
 
+pdf_name = gsub(pattern=".tsv", replacement=".alignmentRaw.pdf", x=summaryFile)
+base_pdf = basename(pdf_name)
+png_name = gsub(pattern=".tsv", replacement=".alignmentRaw.png", x=summaryFile)
+base_png = basename(png_name)
+pdf_file = suppressMessages(
+            file.path(config(yaml)$metadata$output_dir, "summary", base_pdf))
+png_file = suppressMessages(
+            file.path(config(yaml)$metadata$output_dir, "summary", base_png))
+
+# Produce both PDF and PNG
 set_panel_size(
     alignRawPlot, 
-    file=gsub(pattern=".tsv", replacement=".alignmentRaw.pdf", x=summaryFile), 
+    file=pdf_file, 
+    width=unit(8,"inches"), 
+    height=unit(chartHeight,"inches"))
+set_panel_size(
+    alignRawPlot, 
+    file=png_file, 
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
 
@@ -345,13 +366,28 @@ alignPercentPlot <- (
         coord_flip() + 
         alignTheme)
 
+pdf_name = gsub(pattern=".tsv", replacement=".alignmentPercent.pdf",
+                x=summaryFile)
+base_pdf = basename(pdf_name)
+png_name = gsub(pattern=".tsv", replacement=".alignmentPercent.png",
+                x=summaryFile)
+base_png = basename(png_name)
+pdf_file = suppressMessages(
+            file.path(config(yaml)$metadata$output_dir, "summary", base_pdf))
+png_file = suppressMessages(
+            file.path(config(yaml)$metadata$output_dir, "summary", base_png))
+
+# Produce both PDF and PNG     
 set_panel_size(
     alignPercentPlot, 
-    file=gsub(pattern=".tsv", replacement=".alignmentPercent.pdf", 
-              x=summaryFile), 
+    file=pdf_file, 
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
-
+set_panel_size(
+    alignPercentPlot, 
+    file=png_file, 
+    width=unit(8,"inches"), 
+    height=unit(chartHeight,"inches"))
 
 ###############################################################################
 
@@ -389,9 +425,24 @@ TSSPlot <- ggplot(
     coord_flip() + 
     alignTheme
 
+pdf_name = gsub(pattern=".tsv", replacement=".TSS_Enrichment.pdf",
+                x=summaryFile)
+base_pdf = basename(pdf_name)
+png_name = gsub(pattern=".tsv", replacement=".TSS_Enrichment.png",
+                x=summaryFile)
+base_png = basename(png_name)
+pdf_file = suppressMessages(
+            file.path(config(yaml)$metadata$output_dir, "summary", base_pdf))
+png_file = suppressMessages(
+            file.path(config(yaml)$metadata$output_dir, "summary", base_png))
+
+# Produce both PDF and PNG   
 set_panel_size(
-    TSSPlot, file=gsub(pattern=".tsv", replacement=".TSS_Enrichment.pdf", 
-                       x=summaryFile), 
+    TSSPlot, file=pdf_file,
+    width=unit(8,"inches"), 
+    height=unit(chartHeight,"inches"))
+set_panel_size(
+    TSSPlot, file=png_file,
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
 
@@ -419,9 +470,23 @@ if (any(!is.na(stats$Picard_est_lib_size))) {
         coord_flip() + 
         alignTheme
     
+    pdf_name = gsub(pattern=".tsv", replacement=".LibSize.pdf", x=summaryFile)
+    base_pdf = basename(pdf_name)
+    png_name = gsub(pattern=".tsv", replacement=".LibSize.png", x=summaryFile)
+    base_png = basename(png_name)
+    pdf_file = suppressMessages(
+                file.path(config(yaml)$metadata$output_dir, "summary", base_pdf))
+    png_file = suppressMessages(
+                file.path(config(yaml)$metadata$output_dir, "summary", base_png))
+
+    # Produce both PDF and PNG
+    
     set_panel_size(LibSizePlot, 
-                   file=gsub(pattern=".tsv", replacement=".LibSize.pdf", 
-                             x=summaryFile), 
+                   file=pdf_file, 
+                   width=unit(8,"inches"), 
+                   height=unit(chartHeight,"inches"))
+    set_panel_size(LibSizePlot, 
+                   file=png_file, 
                    width=unit(8,"inches"), 
                    height=unit(chartHeight,"inches"))
 } else {

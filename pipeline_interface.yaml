@@ -26,11 +26,21 @@ pipelines:
     summarizers:
       - tools/ATAC_Looper_Summary_plot.R
     summary_results:
-      - alignment_file:
-        caption: "Alignment file"
-        description: "Plots alignment rates to all pre-alignments and primary genome."
+      - alignment_percent_file:
+        caption: "Alignment percent file"
+        description: "Plots percent of total alignment to all pre-alignments and primary genome."
         thumbnail_path: "summary/{name}.alignmentPercent.png"
         path: "summary/{name}.alignmentPercent.pdf"
+      - alignment_raw_file:
+        caption: "Alignment raw file"
+        description: "Plots raw alignment rates to all pre-alignments and primary genome."
+        thumbnail_path: "summary/{name}.alignmentRaw.png"
+        path: "summary/{name}.alignmentRaw.pdf"
+      - tss_file:
+        caption: "TSS enrichment file"
+        description: "Plots TSS scores for each sample."
+        thumbnail_path: "summary/{name}.TSS_Enrichment.png"
+        path: "summary/{name}.TSS_Enrichment.pdf"
       - lib_file:
         caption: "Library size file"
         thumbnail_path: "summary/{name}.LibSize.png"
