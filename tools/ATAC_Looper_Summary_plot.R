@@ -39,6 +39,8 @@ argv <- parse_args(p)
 ###############################################################################
 
 ##### LOAD DEPENDENCIES #####
+warnSetting <- getOption("warn")
+options(warn = -1)
 if(suppressPackageStartupMessages(!require(ggplot2))) {
     install.packages("ggplot2")
 }
@@ -63,6 +65,7 @@ suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(reshape2))
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(pepr))
+options(warn = warnSetting)
 
 ###############################################################################
 ##### Global Variables #####
