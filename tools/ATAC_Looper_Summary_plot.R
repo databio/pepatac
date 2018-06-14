@@ -223,9 +223,30 @@ for (i in 1:length(prealignments)) {
         stats[, (paste("Aligned_reads", prealignments[i], sep="_")),
               with=FALSE][[1]]
 }
-alignRaw <- data.table(sample = stats$sample_name,
-                       Unaligned = Unaligned,
-                       Duplicates = as.integer(stats$Duplicate_reads))
+
+alignRaw <- tryCatch(
+    {
+        data.table(sample = stats$sample_name,
+                   Unaligned = as.integer(Unaligned),
+                   Duplicates = as.integer(stats$Duplicate_reads))
+    },
+    error=function(e) {
+        message("\nThe summary file appears incomplete")
+        message("\tHere's the original error message:")
+        message(e)
+        return(NULL)
+    },
+    warning=function(e) {
+            message("\nThe summary file appears incomplete")
+            message("\tHere's the original warning message:")
+            message(e)
+            return(NULL)
+    }
+)
+
+if (is.null(alignRaw)) {
+    quit()
+}
 
 # Split counts based on genome name
 genomeNames <- unique(stats$Genome)
@@ -404,10 +425,31 @@ greenColors <- colorpanel(length(greenBreaks)-1, "#B4E896","#009405","#003B00")
 TSScolors   <- c(redColors,greenColors)
 
 #Organize data for plotting
-TSSscore    <- cbind.data.frame(sample=stats$sample_name, 
-                                TSS=round(stats$TSS_Score, digits=2), 
-                                QCcolor=(TSScolors[round(stats$TSS_Score+0.01, 
-                                                         digits=2)*100]))
+# TODO: Add try catch for when pipeline is still running
+TSSscore <- tryCatch(
+    {
+        cbind.data.frame(sample=stats$sample_name, 
+            TSS=round(stats$TSS_Score, digits=2),
+            QCcolor=(TSScolors[round(stats$TSS_Score+0.01, digits=2)*100]))
+    },
+    error=function(e) {
+        message("\nThe summary file appears incomplete")
+        message("\tHere's the original error message:")
+        message(e)
+        return(NULL)
+    },
+    warning=function(e) {
+            message("\nThe summary file appears incomplete")
+            message("\tHere's the original warning message:")
+            message(e)
+            return(NULL)
+    }
+)
+
+if (is.null(TSSscore)) {
+    quit()
+}
+
 maxTSS      <- max(stats$TSS_Score, na.rm=TRUE)
 upperLimit  <- roundUpNice(maxTSS)
 chartHeight <- (length(unique(TSSscore$sample))) * 0.75
