@@ -233,10 +233,46 @@ def _get_bowtie2_index(genomes_folder, genome_assembly):
         e.g. 'mm10'
     :return str: path to bowtie2 index subfolder within central assemblies
         home, for assembly indicated
-    """
+    """   
     return os.path.join(genomes_folder, genome_assembly,
                         "indexed_bowtie2", genome_assembly)
 
+
+def _check_bowtie2_index(genomes_folder, genome_assembly):
+    """
+    Confirm bowtie2 index is present.
+
+    Checks by simple file count whether the bowtie2 index for a genome
+    assembly (produced by the RefGenie reference builder) contains the
+    correct number of files.
+
+    :param str genomes_folder: path to central genomes directory, i.e. the
+        root for multiple assembly subdirectories
+    :param str genome_assembly: name of the specific assembly of interest,
+        e.g. 'mm10'
+    """
+    bt2_path = os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2")
+
+    try:        
+        path, dirs, files = next(os.walk(bt2_path))
+    except StopIteration as e:
+        pm.fail_pipeline(StopIteration(
+            "There is no " + genome_assembly + " genome present in the " +
+            genomes_folder + " directory"))
+    bt_count = 0
+    fa_count = 0
+    for f in files:
+        if os.stat(os.path.join(bt2_path, f)).st_size != 0:
+            file_name, file_extension = os.path.splitext(f)
+            if file_extension in [".bt2", ".bt2l"]:
+                bt_count += 1
+            elif file_extension == ".fa":
+                fa_count += 1
+            else:
+                continue
+    if fa_count != 1 and bt_count != 6:
+        pm.fail_pipeline(IOError(
+            "Index for " + genome_assembly + " appears incomplete"))
 
 def tool_path(tool_name):
     """
@@ -288,6 +324,9 @@ def main():
 
     # Get bowtie2 indexes
     res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
+    _check_bowtie2_index(res.genomes, args.genome_assembly)
+    for reference in args.prealignments:
+        _check_bowtie2_index(res.genomes, reference)
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
