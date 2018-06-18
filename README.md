@@ -73,28 +73,48 @@ Now you'll need to tell the pipeline where you saved the singularity image. You 
 
 First we'll need to install all the prerequisites:
 
-**Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
+**Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [MACS2](https://github.com/taoliu/MACS/) as the default.  You can do a user-specific install of these like this:
 
 ```
-pip install --user https://github.com/databio/pypiper/zipball/master
+pip install --user piper
 pip install --user pararead
+pip install --user MACS2
 ```
 
 **R packages**. This pipeline uses R to generate QC metric plots. These are **optional** and if you don't install these R packages (or R in general), the pipeline will still work, but you will not get the QC plot outputs. 
 
 The following packages are used by the qc scripts:
-- ggplot2
-- gtable (v0.2.0)
+- argparser (v0.4)
+- data.table (v1.11.2)
+- ggplot2 (v2.2.1)
 - gplots (v3.0.1)
+- gtable (v0.2.0)
+- pepr (v0.0.2)
 - reshape2 (v1.4.2)
+- scales (v0.5.0)
+- stringr (v1.3.1)
 
 You can install these packages like this:
 ```
 R # start R
-install.packages(c("ggplot2", "gtable", "gplots", "reshape2"))
+install.packages(c("argparser", "data.table", "ggplot2", "gplots", "gtable", "reshape2", "scales", "stringr"))
+devtools::install_github('pepkit/pepr')
 ```
 
-**Required executables**. You will need some common bioinformatics tools installed. The list is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
+**Required executables**. You will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
+
+The following tools are used by the pipeline:
+- [bedtools](http://bedtools.readthedocs.io/en/latest/) (v2.25.0+)
+- [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) (v2.2.9+)
+- [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) (v0.11.5+)
+- [picard](https://broadinstitute.github.io/picard/) (v2.17.4+)
+- [samtools](http://www.htslib.org/) (v1.7)
+- [skewer](https://github.com/relipmoc/skewer) (v0.1.126+)
+- UCSC tools (v3.5.1)
+  - [bedGraphToBigWig](https://www.encodeproject.org/software/bedgraphtobigwig/) (v4)
+  - [wigToBigWig](https://www.encodeproject.org/software/wigtobigwig/) (v4)
+  - [bigWigCat](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/) (v4)
+  - [bedSort](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
 
 With the software installed natively, we next need to configure the pipeline:
 
