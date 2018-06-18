@@ -153,7 +153,8 @@ plotRuntime = function(timeFile, sampleName) {
     startTime  <- word(startTime, -1, sep=" ")
 
     # Get the run times for each pipeline command
-    timeStamps <- read.delim2(timeFile, skip=2, header = FALSE, as.is=TRUE)
+    timeStamps <- read.delim2(timeFile, skip=2, header = FALSE,
+                              as.is=TRUE, comment.char = '#')
 
     # Remove leading directory structure
     for (i in 1:nrow(timeStamps)) {
