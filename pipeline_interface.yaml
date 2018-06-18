@@ -41,10 +41,6 @@ pipelines:
         description: "Plots TSS scores for each sample."
         thumbnail_path: "summary/{name}_TSSEnrichment.png"
         path: "summary/{name}_TSSEnrichment.pdf"
-      - lib_file:
-        caption: "Library size file"
-        thumbnail_path: "summary/{name}_LibSize.png"
-        path: "summary/{name}_LibSize.pdf"
     resources:
       default:
         file_size: "0"
