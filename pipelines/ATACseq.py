@@ -269,10 +269,20 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
             elif file_extension == ".fa":
                 fa_count += 1
             else:
+                # Ignore any other files that are > 0 bytes.
                 continue
+        elif "flag" in f:
+            # If built with refgenie it will contain a *.flag file of 
+            # size 0.
+            continue
+        else:
+            # A file is either missing or empty.
+            pm.fail_pipeline(IOError(
+            "Index for " + genome_assembly + " is incomplete"))
     if fa_count != 1 and bt_count != 6:
+        # A file is missing.
         pm.fail_pipeline(IOError(
-            "Index for " + genome_assembly + " appears incomplete"))
+            "Index for " + genome_assembly + " is incomplete"))
 
 def tool_path(tool_name):
     """
