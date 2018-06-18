@@ -303,20 +303,20 @@ grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\
 
 ## 6.4 Optional summary plots
 
-1. Run `looper summarize` to generate a summary table in tab-separated values (TSV) format
+1. Run `looper summarize` to generate a summary table in tab-separated values (TSV) format as well as an HTML report describing sample and project level results.
 
 ```
 looper summarize examples/test_project/test_config.yaml
 ```
 
-2. Run `ATAC_Looper_Summary_plot.R` to produce summary plots.
+2. You can specify in the [pipeline interface file](pipeline_interface.yaml) any additional summarizers you wish to run, such as the `ATAC_Looper_Summary_plot.R`. Alternatively, you may run `ATAC_Looper_Summary_plot.R` directly to produce summary plots.
 
-You must pass the full path to your TSV file that resulted from the call to looper summarize.
+You must pass the path to your project configuration file used to run looper.
 ```
-Rscript ATAC_Looper_Summary_plot.R </path/to/looper/summarize/summary.TSV>
+Rscript ATAC_Looper_Summary_plot.R examples/test_project/test_config.yaml
 ```
 
-This results in the output of multiple PDF plots in the directory containing the TSV input file.
+This results in the output of multiple PDF plots in a summary/ subdirectory within the project parent directory.
 
 
 # 7. Contributing
@@ -327,6 +327,7 @@ Pull requests welcome. Active development should occur in a development or featu
 
 * Jin Xu, jinxu9@stanford.edu
 * Nathan Sheffield
+* Jason Smith, jasonsmith@virginia.edu
 * Others... (add your name)
 
 
