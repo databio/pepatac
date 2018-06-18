@@ -153,6 +153,7 @@ plotRuntime = function(timeFile, sampleName) {
     startTime  <- word(startTime, -1, sep=" ")
 
     # Get the run times for each pipeline command
+    # Ignore any lines containing '#'
     timeStamps <- read.delim2(timeFile, skip=2, header = FALSE,
                               as.is=TRUE, comment.char = '#')
 
@@ -164,6 +165,33 @@ plotRuntime = function(timeFile, sampleName) {
     colnames(timeStamps) <- c("cmd","time")
 
     timeStamps$time <- toSeconds(timeStamps$time)
+    # Combine any of the same commands to get total time spent per command
+    # Eliminate only sequentially duplicated commands
+    cmdList <- timeStamps[with(timeStamps,c(tail(cmd,-1) != head(cmd,-1),TRUE)),]$cmd
+    combinedTime <- data.frame(cmd=character(length(cmdList)),
+                               time=numeric(length(cmdList)),
+                               stringsAsFactors=FALSE)
+    currentPos <- 1
+    counter    <- 1
+    while (counter <= nrow(timeStamps)) {
+        print (paste("counter: ", counter))
+        currentCmd <- timeStamps$cmd[counter]
+        totalTime  <- timeStamps$time[counter]
+        if (counter + 1 < nrow(timeStamps)) {
+            nextCmd    <- timeStamps$cmd[counter+1]
+            while (nextCmd == currentCmd) {
+                counter <- counter + 1
+                print (paste("new counter: ", counter))
+                totalTime <- totalTime + timeStamps$time[counter]
+                nextCmd   <- timeStamps$cmd[counter+1]
+            }
+        }
+        combinedTime$cmd[currentPos]  <- currentCmd
+        combinedTime$time[currentPos] <- totalTime
+        currentPos <- currentPos + 1
+        counter    <- counter + 1
+        print (paste("currentPos: ", currentPos))
+    }
     totalTime       <- sum(timeStamps$time)
     finishTime      <- secondsToString(toSeconds(startTime) + totalTime)
 
