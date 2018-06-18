@@ -1,6 +1,7 @@
+#! /usr/bin/env Rscript
 ###############################################################################
 #06/04/18
-#Last Updated 06/04/18
+#Last Updated 06/18/18
 #Original Author: Jason Smith
 #ATAC_Rscript_Runtime_plot.R
 #
@@ -9,14 +10,13 @@
 #
 #NOTES:
 #usage: Rscript /path/to/Rscript/ATAC_Rscript_Runtime_plot.R 
-#       /path/to/ATACseq_profile.tsv
-#       --output pdf
+#       /path/to/project_config.yaml
 #
 #requirements: argparser, ggplot2, stringr
 #
-################################################################################
-####                              DEPENDENCIES                              ####
-################################################################################
+###############################################################################
+####                              DEPENDENCIES                             ####
+###############################################################################
 ##### LOAD ARGUMENTPARSER #####
 if(suppressPackageStartupMessages(!require(argparser))) {
     install.packages("argparser")
@@ -27,28 +27,39 @@ suppressPackageStartupMessages(library(argparser, quietly=TRUE))
 p <- arg_parser("Produce an ATACseq pipeline (PEPATAC) runtime plot")
 
 # Add command line arguments
-p <- add_argument(p, "stats", 
-                  help="PEPATAC *_profile.tsv")
-p <- add_argument(p, "--output", 
-                  help="PNG or PDF",
-                  default = "PDF")
+p <- add_argument(p, "config", 
+                  help="PEPATAC project_config.yaml")
+# p <- add_argument(p, "--output", 
+                  # help="PNG or PDF",
+                  # default = "PDF")
 
 # Parse the command line arguments
 argv <- parse_args(p)
 
 ##### LOAD ADDITIONAL DEPENDENCIES #####
+warnSetting <- getOption("warn")
+options(warn = -1)
 if(suppressPackageStartupMessages(!require(ggplot2))) {
     install.packages("ggplot2")
+}
+if(suppressPackageStartupMessages(!require(grid))) {
+    install.packages("grid")
 }
 if(suppressPackageStartupMessages(!require(stringr))) {
     install.packages("stringr")
 }
+if(suppressPackageStartupMessages(!require(pepr))) {
+    devtools::install_github("pepkit/pepr")
+}
 suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(stringr))
+suppressPackageStartupMessages(library(pepr))
+options(warn = warnSetting)
 
-################################################################################
-####                               FUNCTIONS                                ####
-################################################################################
+###############################################################################
+####                               FUNCTIONS                               ####
+###############################################################################
 # Convert Hours:Minutes:Seconds to Seconds 
 toSeconds <- function(HMS){
     if (!is.character(HMS)) {
@@ -85,70 +96,128 @@ secondsToString <- function(secs, digits=2){
                }))
 }
 
-################################################################################
-####                               OPEN FILE                                ####
-################################################################################
-time.file <- argv$stats
-setwd(dirname(time.file))
-
-# Get just the first line to get pipeline start time
-start.time  <- readLines(time.file, n=1)
-
-# Extract just the starting time timestamp
-start.time  <- word(start.time, -1, sep=" ")
-# Convert to a time format
-#start.time  <- format(as.POSIXct(start.time,format='%H:%M:%OS'),
-#                      format='%H:%M:%OS')
-
-# Get the run times for each pipeline command
-time.stamps <- read.delim2(time.file, skip=2, header = FALSE, as.is=TRUE)
-
-# Remove leading directory structure
-for (i in 1:nrow(time.stamps)) {
-    time.stamps[i,1]  <- sub('.*\\/', '', time.stamps[i,1])   
+# Taken from https://github.com/baptiste/egg/blob/master/R/set_panel_size.r
+set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL, 
+                           margin=unit(1, "in"),
+                           width=unit(4, "in"), 
+                           height=unit(4, "in")){
+    
+    panels <- grep("panel", g$layout$name)
+    panel_index_w <- unique(g$layout$l[panels])
+    panel_index_h <- unique(g$layout$t[panels])
+    nw <- length(panel_index_w)
+    nh <- length(panel_index_h)
+    
+    if(getRversion() < "3.3.0"){
+        
+        # the following conversion is necessary
+        # because there is no `[<-`.unit method
+        # so promoting to unit.list allows standard list indexing
+        g$widths  <- grid:::unit.list(g$widths)
+        g$heights <- grid:::unit.list(g$heights)
+        
+        g$widths[panel_index_w]  <- rep(list(width), nw)
+        g$heights[panel_index_h] <- rep(list(height), nh)
+        
+    } else {
+        
+        g$widths[panel_index_w]  <- rep(width, nw)
+        g$heights[panel_index_h] <- rep(height, nh)
+        
+    }
+    
+    if(!is.null(file))
+        ggsave(file, g, limitsize = FALSE,
+               width=convertWidth(sum(g$widths) + margin, 
+                                  unitTo="in", valueOnly=TRUE),
+               height=convertHeight(sum(g$heights) + margin,  
+                                    unitTo="in", valueOnly=TRUE))
+    
+    invisible(g)
 }
-time.stamps           <- time.stamps[,-c(2,4)]
-colnames(time.stamps) <- c("cmd","time")
 
-time.stamps$time <- toSeconds(time.stamps$time)
-total.time       <- sum(time.stamps$time)
-finish.time      <- secondsToString(toSeconds(start.time) + total.time)
-
-num.rows <- nrow(time.stamps)
-time.stamps[num.rows+1, 1] <- "total.time"
-time.stamps[num.rows+1, 2] <- as.character(total.time)
-
-time.stamps$time  <- as.numeric(time.stamps$time)
-time.stamps$cmd   <- as.character(time.stamps$cmd)
-# Set order for plotting purposes
-time.stamps$order <- as.factor(as.numeric(row.names(time.stamps)))
-
-# Create plot
-p <- ggplot(data=time.stamps, aes(x=order, y=time)) +
-            geom_bar(stat="identity", position=position_dodge())+
-            scale_fill_brewer(palette="Paired")+
-            theme_minimal() +
-            coord_flip() +
-            labs(y = paste("Time (s)\n", "[Start: ", start.time, " | ", 
-                           "End: ", finish.time, "]", sep=""),
-                 x = "PEPATAC Command") +
-            scale_x_discrete(labels=time.stamps$cmd) +
-            theme(plot.title = element_text(hjust = 0.5))
-# real.time=grobTree(textGrob(paste("[Start: ", start.time, " | ", 
-#                                   "End: ", finish.time, "]", sep=""),
-#                             x=0.720, y=0.04,hjust=0.25,
-#                             gp=gpar(col="darkslategray",fontsize=12)))
-# p <- p + annotation_custom(real.time)
-
-if (argv$output == "png") {
-    png(filename = gsub(pattern="profile.tsv", replacement="Runtime.png",
-                        x=time.file), width = 800, height = 550)
-    p
-} else {
-    pdf(file = gsub(pattern="profile.tsv", replacement="Runtime.pdf",
-                    x=time.file), width= 8, height = 5.5, useDingbats=F)
-    p
+# Helper function to build a file path to the correct output folder using a
+# specified suffix
+buildFilePath = function(sampleName, suffix, pep=prj) {
+    invisible(capture.output(outputDir <- config(pep)$metadata$output_dir))
+    file.path(outputDir, "results_pipeline", sampleName,
+              paste(sampleName, suffix, sep=""))
 }
-invisible(dev.off())
+
+# Produce a runtime plot for a sample
+plotRuntime = function(timeFile, sampleName) {
+    # Get just the first line to get pipeline start time
+    startTime  <- readLines(timeFile, n=1)
+
+    # Extract just the starting time timestamp
+    startTime  <- word(startTime, -1, sep=" ")
+
+    # Get the run times for each pipeline command
+    timeStamps <- read.delim2(timeFile, skip=2, header = FALSE, as.is=TRUE)
+
+    # Remove leading directory structure
+    for (i in 1:nrow(timeStamps)) {
+        timeStamps[i,1]  <- sub('.*\\/', '', timeStamps[i,1])   
+    }
+    timeStamps           <- timeStamps[,-c(2,4)]
+    colnames(timeStamps) <- c("cmd","time")
+
+    timeStamps$time <- toSeconds(timeStamps$time)
+    totalTime       <- sum(timeStamps$time)
+    finishTime      <- secondsToString(toSeconds(startTime) + totalTime)
+
+    num.rows <- nrow(timeStamps)
+    timeStamps[num.rows+1, 1] <- "totalTime"
+    timeStamps[num.rows+1, 2] <- as.character(totalTime)
+
+    timeStamps$time  <- as.numeric(timeStamps$time)
+    timeStamps$cmd   <- as.character(timeStamps$cmd)
+    # Set order for plotting purposes
+    timeStamps$order <- as.factor(as.numeric(row.names(timeStamps)))
+
+    # Create plot
+    p <- ggplot(data=timeStamps, aes(x=order, y=time)) +
+                geom_bar(stat="identity", position=position_dodge())+
+                scale_fill_brewer(palette="Paired")+
+                theme_minimal() +
+                coord_flip() +
+                labs(y = paste("Time (s)\n", "[Start: ", startTime, " | ", 
+                               "End: ", finishTime, "]", sep=""),
+                     x = "PEPATAC Command") +
+                scale_x_discrete(labels=timeStamps$cmd) +
+                theme(plot.title = element_text(hjust = 0.5))
+    
+    # Produce both PDF and PNG
+    set_panel_size(
+        p, 
+        file=buildFilePath(sampleName, "_Runtime.pdf", prj), 
+        width=unit(8,"inches"), 
+        height=unit(5.5,"inches"))
+    set_panel_size(
+        p, 
+        file=buildFilePath(sampleName, "_Runtime.png", prj), 
+        width=unit(8,"inches"), 
+        height=unit(5.5,"inches"))
+}
+
+###############################################################################
+####                               OPEN FILE                               ####
+###############################################################################
+
+configFile <- argv$config
+prj = Project(configFile)
+
+###############################################################################
+####                                 MAIN                                  ####
+###############################################################################
+# For each sample in the project, produce a runtime summary plot
+invisible(capture.output(outputDir <- config(prj)$metadata$output_dir))
+invisible(capture.output(numSamples <- length(samples(prj)$sample_name)))
+for (i in 1:numSamples) {
+    invisible(capture.output(sampleName <- samples(prj)$sample_name[i]))
+    timeFile <- file.path(outputDir, "results_pipeline",
+                          sampleName, "ATACseq_profile.tsv")
+    plotRuntime(timeFile, sampleName)
+}
 
 write("Completed!\n", stdout())
