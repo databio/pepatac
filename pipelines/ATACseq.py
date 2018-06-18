@@ -243,8 +243,8 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
     Confirm bowtie2 index is present.
 
     Checks by simple file count whether the bowtie2 index for a genome
-    assembly (produced by the RefGenie reference builder) contains the
-    correct number of files.
+    assembly (as produced by the RefGenie reference builder) contains the
+    correct number of non-empty files.
 
     :param str genomes_folder: path to central genomes directory, i.e. the
         root for multiple assembly subdirectories
@@ -276,13 +276,15 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
             # size 0.
             continue
         else:
-            # A file is either missing or empty.
+            # A file is empty.
             pm.fail_pipeline(IOError(
-            "Index for " + genome_assembly + " is incomplete"))
+            "The bowtie2 index for " + genome_assembly +
+            " contains an empty file."))
     if fa_count != 1 and bt_count != 6:
         # A file is missing.
         pm.fail_pipeline(IOError(
-            "Index for " + genome_assembly + " is incomplete"))
+            "The bowtie2 index for " + genome_assembly +
+            " is missing a required file."))
 
 def tool_path(tool_name):
     """
