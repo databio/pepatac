@@ -12,7 +12,7 @@
 #usage: Rscript /path/to/Rscript/ATAC_Rscript_Runtime_plot.R 
 #       /path/to/project_config.yaml
 #
-#requirements: argparser, ggplot2, stringr
+#requirements: argparser, ggplot2, grid, stringr, pepr
 #
 ###############################################################################
 ####                              DEPENDENCIES                             ####
