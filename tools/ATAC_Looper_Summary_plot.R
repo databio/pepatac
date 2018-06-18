@@ -150,34 +150,23 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 }
 
 ###############################################################################
-
+# Identify the project configuration file
 configFile <- argv$config
-# # read in project_config.yaml file
-#     configYaml <- fread(configFile, header=TRUE, check.names=FALSE,
-#                         sep="\t", quote="")
-# colnames(configYaml) <- "config"
-
 prj = Project(configFile)
+# suppressMessages(summaryFile <- system(paste("echo ",
+                                             # config(prj)$metadata$output_dir,
+                                             # "/*_stats_summary.tsv", sep=""),
+                                       # intern=TRUE))
 
-# # expand output directory location to identify the stats_summary.tsv file
-# summaryFile <- system(paste("echo ", paste(gsub("output_dir: ", "",
-#                       configYaml$config[grep("output_dir",
-#                       configYaml$config)]),
-#                       "/*_stats_summary.tsv", sep=""), sep=""), intern=TRUE)
-
-suppressMessages(summaryFile <- system(paste("echo ",
-                                             config(prj)$metadata$output_dir,
-                                             "/*_stats_summary.tsv", sep=""),
-                                       intern=TRUE))
-
-summaryFile = file.path(config(prj)$metadata$output_dir, paste0(config(prj)$name, "_stats_summary.tsv"))
-#setwd(dirname(summaryFile))  # Local testing purposes only
-
+# Create the project configuration file path
+summaryFile <- file.path(config(prj)$metadata$output_dir,
+                         paste0(config(prj)$name, "_stats_summary.tsv"))
 
 # Helper function to build a file path to the correct output folder using a
 # specified suffix
 buildFilePath = function(suffix, pep=prj) {
-  file.path(config(pep)$metadata$output_dir, "summary", paste0(config(pep)$name, suffix))
+    file.path(config(pep)$metadata$output_dir, "summary",
+    paste0(config(pep)$name, suffix))
 }
 
 # Produce output directory
@@ -187,7 +176,31 @@ dir.create(
         showWarnings = FALSE)
 
 # read in stats summary file
-stats <- fread(summaryFile, header=TRUE, check.names=FALSE, sep="\t", quote="")
+#stats <- fread(summaryFile, header=TRUE, check.names=FALSE, sep="\t", quote="")
+stats <- tryCatch(
+    {
+        fread(summaryFile, header=TRUE, check.names=FALSE, sep="\t", quote="")
+    },
+    error=function(e) {
+        message("")
+        message("ATAC_Looper_Summary_plot.R was unable to find the summary file.")
+        message("The error message was:")
+        message(e)
+        message("")
+        return(NULL)
+    },
+    warning=function(e) {
+        message("")
+        message("ATAC_Looper_Summary_plot.R was unable to find the summary file.")
+        message("The warning message was:")
+        message(e)
+        message("")
+        return(NULL)
+    }
+)
+if (is.null(stats)) {
+    quit()
+}
 
 # get prealignments
 if (!is.na(argv$pre)) {
