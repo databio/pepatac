@@ -1,11 +1,11 @@
 
 # This project config file describes your project. See looper docs for details.
+name: test_project # The name that summary files will be prefaced with
 
 metadata:  # relative paths are relative to this config file
   sample_annotation: test_annotation.csv  # sheet listing all samples in the project
-  output_dir: $HOME/atac_out  # ABSOLUTE PATH to the parent, shared space where project results go
-  pipeline_interfaces: "../../pipeline_interface.yaml"  # ABSOLUTE PATH the directory where looper will find the pipeline repository
-  sample_subannotation: null  # (optional) input for samples with more than one input file
+  output_dir: "$HOME/atac_out"  # ABSOLUTE PATH to the parent, shared space where project results go
+  pipeline_interfaces: "$CODEBASE/ATACseq/pipeline_interface.yaml"  # ABSOLUTE PATH to the directory where looper will find the pipeline repository
 
 # in your sample_annotation, columns with these names will be populated as described 
 # in the data_sources section below
@@ -18,8 +18,8 @@ data_sources:  # This section describes paths to your data
   # Variable syntax: {column_name}. For example, use {sample_name} to populate
   # the file name with the value in the sample_name column for each sample.
   # example_data_source: "/path/to/data/{sample_name}_R1.fastq.gz"
-  test_data_R1: "examples/test_data/{sample_name}_r1.fastq.gz"
-  test_data_R2: "examples/test_data/{sample_name}_r2.fastq.gz"
+  test_data_R1: "$CODEBASE/ATACseq/examples/test_data/{sample_name}_r1.fastq.gz"
+  test_data_R2: "$CODEBASE/ATACseq/examples/test_data/{sample_name}_r2.fastq.gz"
 
 implied_columns:
   organism:
