@@ -786,20 +786,24 @@ def main():
         # I'm open to. Just adding for the idea.
         with open(Tss_enrich) as f:
             floats = map(float, f)
-        Tss_score = ((sum(floats[1950:2050]) / 100) /
-                     (sum(floats[1:200]) / 200))
-        pm.report_result("TSS_Score", Tss_score)
+        try:
+            # If the TSS enrichment is 0, don't report
+            Tss_score = ((sum(floats[1950:2050]) / 100) /
+                         (sum(floats[1:200]) / 200))
+            pm.report_result("TSS_Score", Tss_score)
+        except ZeroDivisionError:
+            #print("ZeroDivisionError: {0}".format(err))
+            pass        
         try:
             # Just wrapping this in a try temporarily so that old versions of
-            # pypiper will work. v0.6 release of pypiper adds this function
-            
+            # pypiper will work. v0.6 release of pypiper adds this function           
             Tss_png = os.path.join(QC_folder,  args.sample_name +
-                                ".TssEnrichment.png")
+                                   ".TssEnrichment.png")
             pm.report_object("TSS enrichment", Tss_plot, anchor_image=Tss_png)
         except:
             pass
 
-        # fragment  distribution
+        # fragment distribution
         fragL = os.path.join(QC_folder, args.sample_name + ".fragLen.txt")
         frag_dist_tool = tool_path("fragment_length_dist.pl")
         cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
