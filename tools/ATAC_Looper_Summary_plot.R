@@ -256,17 +256,15 @@ alignRaw <- tryCatch(
                    Duplicates = as.integer(stats$Duplicate_reads))
     },
     error=function(e) {
-        message("\nThe summary file appears incomplete")
-        message("\tHere's the original error message:")
-        message(e)
-        message("")
+        message("The summary file values for unaligned reads",
+                " is missing or incomplete.")
+        message("Here's the original error message: ", e)
         return(NULL)
     },
     warning=function(e) {
-        message("\nThe summary file appears incomplete")
-        message("\tHere's the original warning message:")
-        message(e)
-        message("")
+        message("The summary file values for unaligned reads",
+                " is missing or incomplete.")
+        message("Here's the original error message: ", e)
         return(NULL)
     }
 )
@@ -440,17 +438,15 @@ TSSscore <- tryCatch(
             QCcolor=(TSScolors[round(stats$TSS_Score+0.01, digits=2)*100]))
     },
     error=function(e) {
-        message("\nThe summary file appears incomplete")
-        message("\tHere's the original error message:")
-        message(e)
-        message("")
+        message("The summary file value(s) for the TSS score(s)",
+                " is/are missing or incomplete.")
+        message("Here's the original error message: ", e)
         return(NULL)
     },
     warning=function(e) {
-        message("\nThe summary file appears incomplete")
-        message("\tHere's the original warning message:")
-        message(e)
-        message("")
+        message("The summary file value(s) for the TSS score(s)",
+                " is/are missing or incomplete.")
+        message("Here's the original warning message: ", e)
         return(NULL)
     }
 )
