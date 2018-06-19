@@ -174,14 +174,12 @@ plotRuntime = function(timeFile, sampleName) {
     currentPos <- 1
     counter    <- 1
     while (counter <= nrow(timeStamps)) {
-        print (paste("counter: ", counter))
         currentCmd <- timeStamps$cmd[counter]
         totalTime  <- timeStamps$time[counter]
         if (counter + 1 < nrow(timeStamps)) {
             nextCmd    <- timeStamps$cmd[counter+1]
             while (nextCmd == currentCmd) {
                 counter <- counter + 1
-                print (paste("new counter: ", counter))
                 totalTime <- totalTime + timeStamps$time[counter]
                 nextCmd   <- timeStamps$cmd[counter+1]
             }
@@ -190,22 +188,21 @@ plotRuntime = function(timeFile, sampleName) {
         combinedTime$time[currentPos] <- totalTime
         currentPos <- currentPos + 1
         counter    <- counter + 1
-        print (paste("currentPos: ", currentPos))
     }
-    totalTime       <- sum(timeStamps$time)
+    totalTime       <- sum(combinedTime$time)
     finishTime      <- secondsToString(toSeconds(startTime) + totalTime)
 
-    num.rows <- nrow(timeStamps)
-    timeStamps[num.rows+1, 1] <- "totalTime"
-    timeStamps[num.rows+1, 2] <- as.character(totalTime)
+    num.rows <- nrow(combinedTime)
+    combinedTime[num.rows+1, 1] <- "totalTime"
+    combinedTime[num.rows+1, 2] <- as.character(totalTime)
 
-    timeStamps$time  <- as.numeric(timeStamps$time)
-    timeStamps$cmd   <- as.character(timeStamps$cmd)
+    combinedTime$time  <- as.numeric(combinedTime$time)
+    combinedTime$cmd   <- as.character(combinedTime$cmd)
     # Set order for plotting purposes
-    timeStamps$order <- as.factor(as.numeric(row.names(timeStamps)))
+    combinedTime$order <- as.factor(as.numeric(row.names(combinedTime)))
 
     # Create plot
-    p <- ggplot(data=timeStamps, aes(x=order, y=time)) +
+    p <- ggplot(data=combinedTime, aes(x=order, y=time)) +
                 geom_bar(stat="identity", position=position_dodge())+
                 scale_fill_brewer(palette="Paired")+
                 theme_minimal() +
@@ -213,7 +210,7 @@ plotRuntime = function(timeFile, sampleName) {
                 labs(y = paste("Time (s)\n", "[Start: ", startTime, " | ", 
                                "End: ", finishTime, "]", sep=""),
                      x = "PEPATAC Command") +
-                scale_x_discrete(labels=timeStamps$cmd) +
+                scale_x_discrete(labels=combinedTime$cmd) +
                 theme(plot.title = element_text(hjust = 0.5))
     
     # Produce both PDF and PNG
