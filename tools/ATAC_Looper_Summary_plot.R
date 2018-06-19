@@ -259,13 +259,15 @@ alignRaw <- tryCatch(
         message("\nThe summary file appears incomplete")
         message("\tHere's the original error message:")
         message(e)
+        message("")
         return(NULL)
     },
     warning=function(e) {
-            message("\nThe summary file appears incomplete")
-            message("\tHere's the original warning message:")
-            message(e)
-            return(NULL)
+        message("\nThe summary file appears incomplete")
+        message("\tHere's the original warning message:")
+        message(e)
+        message("")
+        return(NULL)
     }
 )
 
@@ -441,13 +443,15 @@ TSSscore <- tryCatch(
         message("\nThe summary file appears incomplete")
         message("\tHere's the original error message:")
         message(e)
+        message("")
         return(NULL)
     },
     warning=function(e) {
-            message("\nThe summary file appears incomplete")
-            message("\tHere's the original warning message:")
-            message(e)
-            return(NULL)
+        message("\nThe summary file appears incomplete")
+        message("\tHere's the original warning message:")
+        message(e)
+        message("")
+        return(NULL)
     }
 )
 
