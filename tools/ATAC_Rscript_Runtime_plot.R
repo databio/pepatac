@@ -144,6 +144,34 @@ buildFilePath = function(sampleName, suffix, pep=prj) {
               paste(sampleName, suffix, sep=""))
 }
 
+# Remove sequentially duplicated values in a column, summing the values
+# in the other
+dedupSequential = function(dupDF) {
+    dupList <- dupDF[c(tail(dupDF[,1],-1) != head(dupDF[,1],-1), TRUE),][,1]
+    dedupDF <- data.frame(cmd=character(length(dupList)),
+                          val=numeric(length(dupList)),
+                          stringsAsFactors=FALSE)
+    currentPos <- 1
+    counter    <- 1
+    while (counter <= nrow(dupDF)) {
+        currentCmd <- dupDF[counter, 1]
+        total      <- dupDF[counter, 2]
+        if (counter + 1 < nrow(dupDF)) {
+            nextCmd     <- dupDF[counter + 1, 1]
+            while (nextCmd == currentCmd) {
+                counter <- counter + 1
+                total   <- total + dupDF[counter, 2]
+                nextCmd <- dupDF[counter + 1, 1]
+            }
+        }
+        dedupDF[currentPos, 1] <- currentCmd
+        dedupDF[currentPos, 2] <- total
+        currentPos <- currentPos + 1
+        counter    <- counter + 1
+    }
+    return (dedupDF)
+}
+
 # Produce a runtime plot for a sample
 plotRuntime = function(timeFile, sampleName) {
     # Get just the first line to get pipeline start time
@@ -165,30 +193,12 @@ plotRuntime = function(timeFile, sampleName) {
     colnames(timeStamps) <- c("cmd","time")
 
     timeStamps$time <- toSeconds(timeStamps$time)
+    
     # Combine any of the same commands to get total time spent per command
     # Eliminate only sequentially duplicated commands
-    cmdList <- timeStamps[with(timeStamps,c(tail(cmd,-1) != head(cmd,-1),TRUE)),]$cmd
-    combinedTime <- data.frame(cmd=character(length(cmdList)),
-                               time=numeric(length(cmdList)),
-                               stringsAsFactors=FALSE)
-    currentPos <- 1
-    counter    <- 1
-    while (counter <= nrow(timeStamps)) {
-        currentCmd <- timeStamps$cmd[counter]
-        totalTime  <- timeStamps$time[counter]
-        if (counter + 1 < nrow(timeStamps)) {
-            nextCmd    <- timeStamps$cmd[counter+1]
-            while (nextCmd == currentCmd) {
-                counter <- counter + 1
-                totalTime <- totalTime + timeStamps$time[counter]
-                nextCmd   <- timeStamps$cmd[counter+1]
-            }
-        }
-        combinedTime$cmd[currentPos]  <- currentCmd
-        combinedTime$time[currentPos] <- totalTime
-        currentPos <- currentPos + 1
-        counter    <- counter + 1
-    }
+    combinedTime <- dedupSequential(timeStamps)
+    colnames(combinedTime) <- c("cmd", "time")
+    
     totalTime       <- sum(combinedTime$time)
     finishTime      <- secondsToString(toSeconds(startTime) + totalTime)
 
