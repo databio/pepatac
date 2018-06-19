@@ -1,6 +1,6 @@
 ###############################################################################
 #5/18/17
-#Last Updated 06/05/18
+#Last Updated 06/19/18
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
 #ATAC_Rscript_TSSenrichmentPlot_pyPiper.R
@@ -22,7 +22,11 @@ TSS_CUTOFF <- 6
 ###############################################################################
 ## Load dependencies
 # suppressPackageStartupMessages(require(optparse))
+warnSetting <- getOption("warn")
+# Briefly ignore any package warnings
+options(warn = -1)
 suppressPackageStartupMessages(require(ggplot2))
+options(warn = warnSetting)
 ###############################################################################
 ## uses optparse package to read in command line arguments
 # option_list <- list(
@@ -46,7 +50,7 @@ if (is.null(TSSfile)) {
 
 #write(paste("\nGenerating TSS plot in ",outputType," format with ",
 #            TSSfile, sep=""), stdout())
-write(paste("\nGenerating TSS plot in with ", TSSfile, sep=""), stdout())
+write(paste("\nGenerating TSS plot with ", TSSfile, sep=""), stdout())
 
 t1<-theme(
   plot.background  = element_blank(),
@@ -74,7 +78,10 @@ insertionsMat <- read.table(TSSfile, header=FALSE, row.names=NULL,
 normTSS <- insertionsMat / mean(insertionsMat[1:200,])
 colnames(normTSS) <- c("score")
 TSSscore <- round(mean(normTSS[1950:2050,]),1)
-
+if (is.nan(TSSscore)) {
+    message(paste("\nNaN produced.  Check ", TSSfile, "\n", sep=""))
+    quit()
+}
 lineColor <- "red2"
 if (TSSscore > TSS_CUTOFF)
 {
