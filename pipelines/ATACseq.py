@@ -5,7 +5,7 @@ ATACseq  pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield"]
 __email__ = "xujin937@gmail.com"
-__version__ = "0.7.0-dev"
+__version__ = "0.7.0"
 
 
 from argparse import ArgumentParser
@@ -52,13 +52,6 @@ def parse_arguments():
 
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {v}".format(v=__version__))
-
-    # parser.add_argument("-c", "--image", default=None,
-    #                     dest="image_name", type=str,
-    #                     help="Run the pipeline commands in a container built"
-    #                          " from a pipeline image, eliminating the need to"
-    #                          " install dependencies.  Can be either a docker"
-    #                          " or singularity image.")
 
     args = parser.parse_args()
 
