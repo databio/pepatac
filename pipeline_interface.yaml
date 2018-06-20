@@ -24,7 +24,7 @@ pipelines:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
     summarizers:
-      - tools/ATAC_Looper_Summary_plot.R
+      - tools/PEPATAC_summarizer.R
     summary_results:
       - alignment_percent_file:
         caption: "Alignment percent file"
