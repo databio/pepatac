@@ -1,16 +1,16 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #5/18/17
-#Last Updated 06/04/2018
+#Last Updated 06/20/2018
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
-#ATAC_Looper_Summary_plot.R
+#PEPATAC_summarizer.R
 #
 #This program is meant to plot multiple summary graphs from the summary table 
 #made by the Looper summarize command
 #
 #NOTES:
-#usage: Rscript /path/to/Rscript/ATAC_Looper_Summary_plot.R 
+#usage: Rscript /path/to/Rscript/PEPATAC_summarizer.R 
 #       /path/to/project_config.yaml
 #       --pre human_alphasat rCRSd human_alu human_rDNA human_repeats
 #
@@ -230,8 +230,7 @@ for (i in 1:length(prealignments)) {
     }
 }
 
-write(paste("\nGenerating plots in both png and pdf format with ", 
-            summaryFile, "\n", sep=""), stdout())
+message("Generating plots in both png and pdf format with ", summaryFile)
 
 # Set absent values in table to zero
 stats[is.na(stats)]   <- 0
