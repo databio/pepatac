@@ -18,10 +18,7 @@
 ###############################################################################
 
 ##### LOAD ARGUMENTPARSER #####
-if(suppressPackageStartupMessages(!require(argparser))) {
-    install.packages("argparser")
-}
-suppressPackageStartupMessages(library(argparser, quietly=TRUE))
+suppressPackageStartupMessages(library(argparser))
 
 # Create a parser
 p <- arg_parser("Produce ATACseq Summary Plots")
@@ -36,29 +33,11 @@ argv <- parse_args(p)
 ###############################################################################
 
 ##### LOAD DEPENDENCIES #####
-warnSetting <- getOption("warn")
-options(warn = -1)
-if(suppressPackageStartupMessages(!require(ggplot2))) {
-    install.packages("ggplot2")
-}
-if(suppressPackageStartupMessages(!require(gplots))) {
-    install.packages("gplots")
-}
-if(suppressPackageStartupMessages(!require(grid))) {
-    install.packages("grid")
-}
-if(suppressPackageStartupMessages(!require(data.table))) {
-    install.packages("data.table")
-}
-if(suppressPackageStartupMessages(!require(pepr))) {
-    devtools::install_github("pepkit/pepr")
-}
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(gplots))
 suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(pepr))
-options(warn = warnSetting)
 
 ###############################################################################
 ##### Global Variables #####
