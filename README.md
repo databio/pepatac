@@ -73,10 +73,11 @@ Now you'll need to tell the pipeline where you saved the singularity image. You 
 
 First we'll need to install all the prerequisites:
 
-**Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [MACS2](https://github.com/taoliu/MACS/) as the default.  You can do a user-specific install of these like this:
+**Python packages**. This pipeline uses [pypiper](https://github.com/databio/pypiper) to run a single sample, [looper](https://github.com/pepkit/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads.  For peak calling, the pipeline uses [MACS2](https://github.com/taoliu/MACS/) as the default.  You can do a user-specific install of these like this:
 
 ```
 pip install --user piper
+pip install --user https://github.com/pepkit/looper/zipball/master
 pip install --user pararead
 pip install --user MACS2
 ```
