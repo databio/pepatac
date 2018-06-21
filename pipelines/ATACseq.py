@@ -478,13 +478,11 @@ def main():
            container=pm.container)
 
     
-    # Access FastQC results
-    fastqc_r1 = os.path.splitext(os.path.basename(trimmed_fastq))[0]
-    fastqc_r1 += "_fastqc.html"
-    fastqc_r1 = os.path.join(param.outfolder, "fastqc", fastqc_r1)
-    fastqc_r2 = os.path.splitext(os.path.basename(trimmed_fastq_R2))[0]
-    fastqc_r2 += "_fastqc.html"
-    fastqc_r2 = os.path.join(param.outfolder, "fastqc", fastqc_r2)
+    # Create names for FastQC results
+    fastqc_r1 = os.path.join(param.outfolder, "fastqc",
+                             args.sample_name + "_R1.trim_fastqc.html")
+    fastqc_r2 = os.path.join(param.outfolder, "fastqc",
+                             args.sample_name + "_R2.trim_fastqc.html")
 
     # Report FastQC results
     pm.report_object("FastQC report r1", fastqc_r1, anchor_image=fastqc_r1)
