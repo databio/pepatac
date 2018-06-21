@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.1
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.8.0
+LABEL version 0.8.1
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -53,7 +53,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-de
     Rscript -e "install.packages('ggplot2')" && \  
     Rscript -e "install.packages('gplots')" && \
     Rscript -e "install.packages('grid')" && \
-    Rscript -e "install.packages('reshape2')" && \
     Rscript -e "install.packages('scales')" && \
     Rscript -e "install.packages('data.table')" && \
     Rscript -e "install.packages('stringr')"
