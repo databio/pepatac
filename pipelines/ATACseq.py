@@ -341,17 +341,6 @@ def main():
         print("Local input file: " + args.input2[0])
 
     container = None
-    # if args.container_name is not None:
-        # infolder = os.path.dirname(args.input[0])
-        # mounts = [outfolder, infolder]
-        # pm.get_container(args.container_name, mounts)
-    # if args.docker.lower() in {'yes', 'true', 't', 'y'}:
-        # # Set up some docker stuff
-        # # Need to also pass symbolically linked folders!
-        # infolder = os.path.dirname(args.input[0])
-        # mounts = [outfolder, infolder]
-        # # TODO: add the container name to yaml file instead...
-        # pm.get_container("jpsmith5/pepatac", mounts)
 
     ###########################################################################
 
