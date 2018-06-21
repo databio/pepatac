@@ -90,14 +90,13 @@ The following packages are used by the qc scripts:
 - gplots (v3.0.1)
 - gtable (v0.2.0)
 - pepr (v0.0.2)
-- reshape2 (v1.4.2)
 - scales (v0.5.0)
 - stringr (v1.3.1)
 
 You can install these packages like this:
 ```
 R # start R
-install.packages(c("argparser", "data.table", "ggplot2", "gplots", "gtable", "reshape2", "scales", "stringr"))
+install.packages(c("argparser", "data.table", "ggplot2", "gplots", "gtable", "scales", "stringr"))
 devtools::install_github('pepkit/pepr')
 ```
 
