@@ -18,7 +18,25 @@
 ###############################################################################
 
 ##### LOAD ARGUMENTPARSER #####
-suppressPackageStartupMessages(library(argparser))
+loadLibrary <- tryCatch (
+    {
+        suppressWarnings(suppressPackageStartupMessages(library(argparser)))
+    },
+    error=function(e) {
+        message("Error: Install the \"argparser\"",
+                " library before proceeding.")
+        return(NULL)
+    },
+    warning=function(e) {
+        message(e)
+        return(TRUE)
+    }
+)
+if (length(loadLibrary)!=0) {
+    suppressWarnings(library(argparser))
+} else {
+    quit()
+}
 
 # Create a parser
 p <- arg_parser("Produce ATACseq Summary Plots")
@@ -33,11 +51,29 @@ argv <- parse_args(p)
 ###############################################################################
 
 ##### LOAD DEPENDENCIES #####
-suppressPackageStartupMessages(library(ggplot2))
-suppressPackageStartupMessages(library(gplots))
-suppressPackageStartupMessages(library(grid))
-suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(pepr))
+required_libraries <- c("ggplot2", "gplots", "grid", "data.table", "pepr")
+for (i in required_libraries) {
+    loadLibrary <- tryCatch (
+        {
+            suppressPackageStartupMessages(
+                suppressWarnings(library(i, character.only=TRUE)))
+        },
+        error=function(e) {
+            message("Error: Install the \"", i,
+                    "\" library before proceeding.")
+            return(NULL)
+        },
+        warning=function(e) {
+            message(e)
+            return(1)
+        }
+    )
+    if (length(loadLibrary)!=0) {
+        suppressWarnings(library(i, character.only=TRUE))
+    } else {
+        quit()
+    }
+}
 
 ###############################################################################
 ##### Global Variables #####
