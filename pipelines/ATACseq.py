@@ -299,8 +299,6 @@ def main():
     args = parse_arguments()
 
     args.paired_end = args.single_or_paired == "paired"
-    # TODO: for now, paired end sequencing input is required.
-    # args.paired_end = True
 
     # Initialize, creating global PipelineManager and NGSTk instance for
     # access in ancillary functions outside of main().
