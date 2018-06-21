@@ -1,7 +1,7 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #5/18/17
-#Last Updated 06/20/2018
+#Last Updated 06/21/2018
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
 #PEPATAC_summarizer.R
@@ -12,9 +12,8 @@
 #NOTES:
 #usage: Rscript /path/to/Rscript/PEPATAC_summarizer.R 
 #       /path/to/project_config.yaml
-#       --pre human_alphasat rCRSd human_alu human_rDNA human_repeats
 #
-#requirements: argparser, ggplot2, gplots, grid, reshape2, data.table
+#requirements: argparser, ggplot2, gplots, grid, data.table, pepr
 #
 ###############################################################################
 
@@ -30,8 +29,6 @@ p <- arg_parser("Produce ATACseq Summary Plots")
 # Add command line arguments
 p <- add_argument(p, "config", 
                   help="PEPATAC project_config.yaml")
-p <- add_argument(p, "--pre", 
-                  help="[OPT] Specify names of prealignments used", nargs=Inf)
 
 # Parse the command line arguments
 argv <- parse_args(p)
@@ -50,9 +47,6 @@ if(suppressPackageStartupMessages(!require(gplots))) {
 if(suppressPackageStartupMessages(!require(grid))) {
     install.packages("grid")
 }
-if(suppressPackageStartupMessages(!require(reshape2))) {
-    install.packages("reshape2")
-}
 if(suppressPackageStartupMessages(!require(data.table))) {
     install.packages("data.table")
 }
@@ -62,7 +56,6 @@ if(suppressPackageStartupMessages(!require(pepr))) {
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(gplots))
 suppressPackageStartupMessages(library(grid))
-suppressPackageStartupMessages(library(reshape2))
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(pepr))
 options(warn = warnSetting)
@@ -100,7 +93,6 @@ alignTheme<-theme(
 )
 
 ###############################################################################
-
 ##### Functions #####
 
 # Taken from https://stackoverflow.com/questions/6461209/how-to-round-up-to-the-nearest-10-or-100-or-x
@@ -149,25 +141,23 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
     invisible(g)
 }
 
-###############################################################################
-# Identify the project configuration file
-configFile <- argv$config
-prj = Project(configFile)
-# suppressMessages(summaryFile <- system(paste("echo ",
-                                             # config(prj)$metadata$output_dir,
-                                             # "/*_stats_summary.tsv", sep=""),
-                                       # intern=TRUE))
-
-# Create the project configuration file path
-summaryFile <- file.path(config(prj)$metadata$output_dir,
-                         paste0(config(prj)$name, "_stats_summary.tsv"))
-
 # Helper function to build a file path to the correct output folder using a
 # specified suffix
 buildFilePath = function(suffix, pep=prj) {
     file.path(config(pep)$metadata$output_dir, "summary",
     paste0(config(pep)$name, suffix))
 }
+
+###############################################################################
+##### Main #####
+
+# Identify the project configuration file
+configFile <- argv$config
+prj = Project(configFile)
+
+# Build the stats summary file path
+summaryFile <- file.path(config(prj)$metadata$output_dir,
+                         paste0(config(prj)$name, "_stats_summary.tsv"))
 
 # Produce output directory
 dir.create(
@@ -176,41 +166,29 @@ dir.create(
         showWarnings = FALSE)
 
 # read in stats summary file
-#stats <- fread(summaryFile, header=TRUE, check.names=FALSE, sep="\t", quote="")
-stats <- tryCatch(
-    {
-        fread(summaryFile, header=TRUE, check.names=FALSE, sep="\t", quote="")
-    },
-    error=function(e) {
-        message("")
-        message("ATAC_Looper_Summary_plot.R was unable to find the summary file.")
-        message("The error message was:")
-        message(e)
-        message("")
-        return(NULL)
-    },
-    warning=function(e) {
-        message("")
-        message("ATAC_Looper_Summary_plot.R was unable to find the summary file.")
-        message("The warning message was:")
-        message(e)
-        message("")
-        return(NULL)
-    }
-)
-if (is.null(stats)) {
+if (file.exists(summaryFile)) {
+    stats <- fread(summaryFile, header=TRUE, check.names=FALSE,
+                   sep="\t", quote="")
+} else {
+    message("PEPATAC_summarizer.R was unable to find the summary file.")
     quit()
 }
 
-# get prealignments
-if (!is.na(argv$pre)) {
-    prealignments <- argv$pre
-} else {
-    prealignments <- gsub("Aligned_reads_", "", 
-                     grep("Aligned_reads_.*", colnames(stats), value=TRUE))
+# Check for prealignments
+fileName <- config(prj)$metadata$sample_annotation
+if (file.exists(fileName)) {
+    annotation    <- fread(fileName, header=TRUE, check.names=FALSE,
+                           sep=",", quote="")
+    organisms     <- unique(annotation$organism)
+    prealignments <- list()
+    # Get prealignments for each organism
+    for (i in 1:length(organisms)) {      
+        pre <- config(prj)$implied_columns$organism[[organisms[i]]]
+        prealignments <- c(prealignments, pre$prealignments)
+    }
 }
 
-# confirm the provided prealignments exist in stats_summary.tsv
+# confirm the prealignments exist in stats_summary.tsv
 for (i in 1:length(prealignments)) {
     # get number of prealignments in stats_summary.tsv file
     if(length(grep("Aligned_reads_.*", colnames(stats))) != length(prealignments)){
@@ -239,7 +217,6 @@ stats[stats==""]      <- 0
 stats$Picard_est_lib_size[stats$Picard_est_lib_size=="Unknown"] <- 0
 
 ###############################################################################
-
 ##### ALIGN RAW PLOT #####
 Unaligned <- stats$Fastq_reads - stats$Aligned_reads
 for (i in 1:length(prealignments)) {
@@ -255,14 +232,14 @@ alignRaw <- tryCatch(
                    Duplicates = as.integer(stats$Duplicate_reads))
     },
     error=function(e) {
-        message("The summary file values for unaligned reads",
-                " is missing or incomplete.")
+        message("The summary file values for Unaligned or Duplicate reads",
+                " are missing.")
         message("Here's the original error message: ", e)
         return(NULL)
     },
     warning=function(e) {
-        message("The summary file values for unaligned reads",
-                " is missing or incomplete.")
+        message("The summary file contains missing values for the number",
+                " of Unaligned or Duplicate_reads.")
         message("Here's the original error message: ", e)
         return(NULL)
     }
@@ -285,7 +262,7 @@ for (i in 1:length(genomeNames)) {
 }
 
 for (i in 1:length(prealignments)) {
-    alignRaw[, (prealignments[i]) := 
+    alignRaw[, unlist(prealignments[i]) := 
                  stats[, (paste("Aligned_reads", prealignments[i], sep="_")),
                        with=FALSE][[1]]]
 }
@@ -304,7 +281,7 @@ plotColors <- data.table(Unaligned="gray15")
 moreColors <- colorpanel(length(prealignments), 
                          low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
 for (i in 1:length(prealignments)) {
-    plotColors[, (prealignments[i]) := moreColors[i]]
+    plotColors[, unlist(prealignments[i]) := moreColors[i]]
 }
 plotColors[, Duplicates := "#FC1E25"]
 moreColors <- colorpanel(length(genomeNames), 
@@ -337,7 +314,6 @@ set_panel_size(
     height=unit(chartHeight,"inches"))
 
 ###############################################################################
-
 ##### ALIGN PERCENT PLOT #####
 Unaligned <- 100 - stats$Alignment_rate
 for (i in 1:length(prealignments)) {
@@ -362,11 +338,9 @@ for (i in 1:length(genomeNames)) {
     alignPercent[, (genomeNames[i]) := as.numeric(readCount)]
 }
 for (i in 1:length(prealignments)) {
-    alignPercent[, 
-                 (prealignments[i]) := 
-                     stats[, (paste("Alignment_rate", prealignments[i],
-                     sep="_")), 
-                     with=FALSE][[1]]]
+    alignPercent[, unlist(prealignments[i]) :=
+                 stats[, (paste("Alignment_rate", prealignments[i], sep="_")), 
+                 with=FALSE][[1]]]
 }
 
 setcolorder(alignPercent, c("sample", "Unaligned", paste(prealignments),
@@ -382,7 +356,7 @@ plotColors <- data.table(Unaligned="gray15")
 moreColors <- colorpanel(length(prealignments), 
                          low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
 for (i in 1:length(prealignments)) {
-    plotColors[, (prealignments[i]) := moreColors[i]]
+    plotColors[, unlist(prealignments[i]) := moreColors[i]]
 }
 plotColors[, Duplicates := "#FC1E25"]
 moreColors <- colorpanel(length(genomeNames), 
@@ -415,21 +389,20 @@ set_panel_size(
     height=unit(chartHeight,"inches"))
 
 ###############################################################################
-
 ##### TSS PLOT #####
-#establish red/green color scheme
-redMin <- 0
-redMax <- TSS_CUTOFF-0.01
-redBreaks <- seq(redMin,redMax,0.01)
-redColors <- colorpanel(length(redBreaks), "#AF0000","#E40E00","#FF7A6A")
-greenMin  <- TSS_CUTOFF
-greenMax  <- 30
+
+# Establish red/green color scheme
+redMin      <- 0
+redMax      <- TSS_CUTOFF-0.01
+redBreaks   <- seq(redMin,redMax,0.01)
+redColors   <- colorpanel(length(redBreaks), "#AF0000","#E40E00","#FF7A6A")
+greenMin    <- TSS_CUTOFF
+greenMax    <- 30
 greenBreaks <- seq(greenMin,greenMax,0.01)
 greenColors <- colorpanel(length(greenBreaks)-1, "#B4E896","#009405","#003B00")
 TSScolors   <- c(redColors,greenColors)
 
-#Organize data for plotting
-# TODO: Add try catch for when pipeline is still running
+# Organize data for plotting
 TSSscore <- tryCatch(
     {
         cbind.data.frame(sample=stats$sample_name, 
@@ -438,13 +411,13 @@ TSSscore <- tryCatch(
     },
     error=function(e) {
         message("The summary file value(s) for the TSS score(s)",
-                " is/are missing or incomplete.")
+                " is/are missing.")
         message("Here's the original error message: ", e)
         return(NULL)
     },
     warning=function(e) {
         message("The summary file value(s) for the TSS score(s)",
-                " is/are missing or incomplete.")
+                " is/are incomplete.")
         message("Here's the original warning message: ", e)
         return(NULL)
     }
