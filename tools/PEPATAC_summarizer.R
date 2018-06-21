@@ -184,24 +184,25 @@ if (file.exists(fileName)) {
     # Get prealignments for each organism
     for (i in 1:length(organisms)) {      
         pre <- config(prj)$implied_columns$organism[[organisms[i]]]
-        prealignments <- c(prealignments, pre$prealignments)
+        prealignments <- c(prealignments, strsplit(pre$prealignments, "\\s+"))
     }
 }
 
 # confirm the prealignments exist in stats_summary.tsv
-for (i in 1:length(prealignments)) {
+for (i in 1:length(unlist(prealignments))) {
     # get number of prealignments in stats_summary.tsv file
-    if(length(grep("Aligned_reads_.*", colnames(stats))) != length(prealignments)){
-        cat("\n")
-        errorMessage <- paste("There are additional prealignments present in ", 
-                              summaryFile, ".  ",
+    if(length(grep("Aligned_reads_.*", colnames(stats))) != length(unlist(prealignments))){
+        errorMessage <- paste("PEPATAC summarizer found additional ",
+                              "prealignments in ",
+                              paste(config(prj)$name, "_stats_summary.tsv", sep=""),
                               "\nConfirm the prealignments you performed.",
                               sep="", collapse="\n")
         stop(errorMessage)
-    } else if (!(paste("Aligned_reads", prealignments[i], sep="_") 
+    } else if (!(paste("Aligned_reads", unlist(prealignments)[i], sep="_") 
                  %in% colnames(stats))) {
-        errorMessage <- paste(prealignments[i],  
-                              " is not present in ", summaryFile, ".  ",
+        errorMessage <- paste(unlist(prealignments)[i],
+                              " is not present in ",
+                              paste(config(prj)$name, "_stats_summary.tsv", sep=""),
                               "\nConfirm the prealignments you performed.",
                               sep="", collapse="\n")
         stop(errorMessage)
@@ -219,9 +220,9 @@ stats$Picard_est_lib_size[stats$Picard_est_lib_size=="Unknown"] <- 0
 ###############################################################################
 ##### ALIGN RAW PLOT #####
 Unaligned <- stats$Fastq_reads - stats$Aligned_reads
-for (i in 1:length(prealignments)) {
+for (i in 1:length(unlist(prealignments))) {
     Unaligned <- Unaligned - 
-        stats[, (paste("Aligned_reads", prealignments[i], sep="_")),
+        stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
               with=FALSE][[1]]
 }
 
@@ -261,13 +262,13 @@ for (i in 1:length(genomeNames)) {
     alignRaw[, (genomeNames[i]) := as.integer(readCount)]
 }
 
-for (i in 1:length(prealignments)) {
-    alignRaw[, unlist(prealignments[i]) := 
-                 stats[, (paste("Aligned_reads", prealignments[i], sep="_")),
+for (i in 1:length(unlist(prealignments))) {
+    alignRaw[, unlist(prealignments)[i] := 
+                 stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
                        with=FALSE][[1]]]
 }
 
-setcolorder(alignRaw, c("sample", "Unaligned", paste(prealignments),
+setcolorder(alignRaw, c("sample", "Unaligned", paste(unlist(prealignments)),
                         "Duplicates", paste(unique(stats$Genome))))
 
 alignRaw$sample <- factor(alignRaw$sample, levels = alignRaw$sample)
@@ -278,10 +279,10 @@ upperLimit   <- roundUpNice(maxReads/1000000)
 chartHeight  <- (length(unique(alignRaw$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15")
-moreColors <- colorpanel(length(prealignments), 
+moreColors <- colorpanel(length(unlist(prealignments)), 
                          low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
-for (i in 1:length(prealignments)) {
-    plotColors[, unlist(prealignments[i]) := moreColors[i]]
+for (i in 1:length(unlist(prealignments))) {
+    plotColors[, unlist(prealignments)[i] := moreColors[i]]
 }
 plotColors[, Duplicates := "#FC1E25"]
 moreColors <- colorpanel(length(genomeNames), 
@@ -316,9 +317,9 @@ set_panel_size(
 ###############################################################################
 ##### ALIGN PERCENT PLOT #####
 Unaligned <- 100 - stats$Alignment_rate
-for (i in 1:length(prealignments)) {
+for (i in 1:length(unlist(prealignments))) {
     Unaligned <- Unaligned - 
-        stats[, (paste("Alignment_rate", prealignments[i], sep="_")),
+        stats[, (paste("Alignment_rate", unlist(prealignments)[i], sep="_")),
               with=FALSE][[1]]
 }
 alignPercent <- data.table(sample=stats$sample_name,
@@ -337,13 +338,13 @@ for (i in 1:length(genomeNames)) {
     }
     alignPercent[, (genomeNames[i]) := as.numeric(readCount)]
 }
-for (i in 1:length(prealignments)) {
-    alignPercent[, unlist(prealignments[i]) :=
-                 stats[, (paste("Alignment_rate", prealignments[i], sep="_")), 
+for (i in 1:length(unlist(prealignments))) {
+    alignPercent[, unlist(prealignments)[i] :=
+                 stats[, (paste("Alignment_rate", unlist(prealignments)[i], sep="_")), 
                  with=FALSE][[1]]]
 }
 
-setcolorder(alignPercent, c("sample", "Unaligned", paste(prealignments),
+setcolorder(alignPercent, c("sample", "Unaligned", paste(unlist(prealignments)),
                             "Duplicates", paste(unique(stats$Genome))))
 
 alignPercent$sample <- factor(alignPercent$sample, levels=alignPercent$sample)
@@ -353,10 +354,10 @@ upperLimit       <- 103
 chartHeight      <- (length(unique(alignPercent$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15")
-moreColors <- colorpanel(length(prealignments), 
+moreColors <- colorpanel(length(unlist(prealignments)), 
                          low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
-for (i in 1:length(prealignments)) {
-    plotColors[, unlist(prealignments[i]) := moreColors[i]]
+for (i in 1:length(unlist(prealignments))) {
+    plotColors[, unlist(prealignments)[i] := moreColors[i]]
 }
 plotColors[, Duplicates := "#FC1E25"]
 moreColors <- colorpanel(length(genomeNames), 
