@@ -1,4 +1,4 @@
-usage: ATACseq.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE]
+usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE]
                   [-O PARENT_OUTPUT_FOLDER] [-M MEMORY_LIMIT]
                   [-P NUMBER_OF_CORES] -S SAMPLE_NAME -I INPUT_FILES
                   [INPUT_FILES ...] [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G
@@ -8,7 +8,7 @@ usage: ATACseq.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE]
                   [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
 
-ATACseq version 0.7.0
+PEPATAC version 0.7.0
 
 optional arguments:
   -h, --help            show this help message and exit
