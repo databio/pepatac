@@ -8,7 +8,7 @@ Here are a few of the highlights that make `pepatac` valuable (explained in more
 
 **Beautiful HTML reports**. Your results are an easy-to-navigate HTML report with a sample table, job status, summary statistics, and QC plots at your fingertips. 
 
-**Scalability**. Run the pipeline easily on a project with a single sample or a thousand. This pipeline is compatible with [looper](https://github.com/pepkit/looper), so it can run locally or with *any* cluster resource manager (*e.g.* SLURM, SGE, or LFS).
+**Scalability**. Run the pipeline easily on a project with a single sample or a thousand. This pipeline is compatible with [looper](https://github.com/pepkit/looper), so it can run locally, in a cloud container engine, or with *any* cluster resource manager (*e.g.* SLURM, SGE, or LFS).
 
 **Restartability**. The pipeline is built using [pypiper](https://github.com/databio/pypiper), so it automatically picks up where it left off in case of preemption or crash.
 
