@@ -182,8 +182,8 @@ dir.create(
 
 # read in stats summary file
 if (file.exists(summaryFile)) {
-    stats <- fread(summaryFile, header=TRUE, check.names=FALSE,
-                   sep="\t", quote="")
+    stats <- suppressWarnings(fread(summaryFile, header=TRUE,
+                                    check.names=FALSE, sep="\t", quote=""))
 } else {
     message("PEPATAC_summarizer.R was unable to find the summary file.")
     quit()
