@@ -6,6 +6,8 @@ This repository contains a pipeline to process ATAC-seq data. It does adapter tr
 
 Here are a few of the highlights that make `pepatac` valuable (explained in more detail later in this README).
 
+**Beautiful HTML reports**. Your results are an easy-to-navigate HTML report with a sample table, job status, summary statistics, and QC plots at your fingertips. 
+
 **Scalability**. Run the pipeline easily on a project with a single sample or a thousand. This pipeline is compatible with [looper](https://github.com/pepkit/looper), so it can run locally or with *any* cluster resource manager (*e.g.* SLURM, SGE, or LFS).
 
 **Restartability**. The pipeline is built using [pypiper](https://github.com/databio/pypiper), so it automatically picks up where it left off in case of preemption or crash.
@@ -16,7 +18,7 @@ Here are a few of the highlights that make `pepatac` valuable (explained in more
 
 **Portability**. Run it using `docker` or `singularity` with no other prerequisites, or it can be run natively without containers. The choice is yours.
 
-**Standardized user interface**. The pipeline input is formatted in [standard PEP format](http://pepkit.github.io), so you can use the same sample annotation sheets for your downstream R or python analysis using tools from `pepkit`.
+**Standardized user interface**. The pipeline reads sample metadata formatted in [standard PEP format](http://pepkit.github.io), so you can use the same sample annotation sheets for your downstream R or python analysis using tools from [pepkit](http://pepkit.github.io).
 
 **Standardized reference genome assembly**. The pipeline uses standard reference genome assemblies produced by [refgenie](http://github.com/databio/refgenie), which provides a *scripted* way to produce a compatible reference assembly for any custom genome. For common genomes, you can either download pre-indexed assemblies or build your own. 
 
@@ -41,7 +43,7 @@ Next, you have two options for installing the software prerequisites: 1) use a c
 
 ## 3.2 Use containers
 
-Choose either `docker` or `singularity`, and pull the container image:
+First, make sure your environment is set up to run either [docker](http://docker.com) or [singularity](https://singularity.lbl.gov/) containers. Then, pull the container image:
 
 ### Docker
 
@@ -163,11 +165,11 @@ Alternatively, you can skip the `GENOMES` variable and simply change the value o
 
 # 5. Running the pipeline
 
-The pipeline can be run directly from the command line for a single sample. If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with `looper`, our sample handling engine. This section explains how to do both.
+The pipeline can be run directly from the command line for a single sample. If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with [looper](http://looper.readthedocs.io), our sample handling engine. This section explains how to do both.
 
 ## 5.1 Running the pipeline script directly (without looper)
 
-To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
+The pipeline is at core just a python script, and you can run it on the command line for a single sample. To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
 Here's the basic command to run the small test example through the pipeline:
 
@@ -309,11 +311,11 @@ grep "level 1" ${GENOME}.gtf | grep "gene" | awk  '{if($7=="+"){print $1"\t"$4"\
 looper summarize examples/test_project/test_config.yaml
 ```
 
-2. You can specify in the [pipeline interface file](pipeline_interface.yaml) any additional summarizers you wish to run, such as the `ATAC_Looper_Summary_plot.R`. Alternatively, you may run `ATAC_Looper_Summary_plot.R` directly to produce summary plots.
+2. You can specify in the [pipeline interface file](pipeline_interface.yaml) any additional summarizers you wish to run, such as the `PEPATAC_summarizer.R`. Alternatively, you may run `PEPATAC_summarizer.R` directly to produce summary plots.
 
 You must pass the path to your project configuration file used to run looper.
 ```
-Rscript ATAC_Looper_Summary_plot.R examples/test_project/test_config.yaml
+Rscript PEPATAC_summarizer.R examples/test_project/test_config.yaml
 ```
 
 This results in the output of multiple PDF plots in a summary/ subdirectory within the project parent directory.
@@ -326,7 +328,7 @@ Pull requests welcome. Active development should occur in a development or featu
 ## Contributors
 
 * Jin Xu, jinxu9@stanford.edu
-* Nathan Sheffield
+* Nathan Sheffield, nathan@code.databio.org
 * Jason Smith, jasonsmith@virginia.edu
 * Others... (add your name)
 
