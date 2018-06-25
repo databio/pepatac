@@ -9,7 +9,7 @@ import pytest
 TEST_PATH = os.path.dirname(__file__)
 ATAC_PATH = os.path.join(TEST_PATH, "..", "pipelines")
 sys.path.append(ATAC_PATH)
-from ATACseq import build_command
+from pepatac import build_command
 
 
 __author__ = "Vince Reuter"

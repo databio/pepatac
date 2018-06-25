@@ -4,7 +4,7 @@
 # Modified from pyMakeVplot.py: Jason Buenrostro
 # Last updated 7/16/17: Vince Reuter
 #
-# Dependencies: Script requires ATAC_Rscript_TSSenrichmentPlot_pyPiper.R to be in the same directory
+# Dependencies: Script requires PEPATAC_TSSenrichmentPlot.R to be in the same directory
 #				For pyPiper, these two scripts would be in the tools directory
 #
 # Function: Script takes as input a BAM file and a bed file of single base positions and plots the enrichment of signal around those regions

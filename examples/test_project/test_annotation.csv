@@ -1,2 +1,2 @@
-sample_name,library,organism,read1,read2,read_length,read_type
+sample_name,protocol,organism,read1,read2,read_length,read_type
 test1,ATAC,human,test_data_R1,test_data_R2,75,paired

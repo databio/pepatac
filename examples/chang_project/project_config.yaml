@@ -33,6 +33,6 @@ implied_columns:
       prealignments: null
 
 pipeline_config:
-  ATACseq.py: ATACseq_chang.yaml  # Use this to load Chang Lab settings
-  #ATACseq.py: null  # Use this to load default environment settings
+  pepatac.py: pepatac_chang.yaml  # Use this to load Chang Lab settings
+  #pepatac.py: null  # Use this to load default environment settings
   
