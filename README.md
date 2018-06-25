@@ -6,7 +6,7 @@ This repository contains a pipeline to process ATAC-seq data. It does adapter tr
 
 Here are a few of the highlights that make `pepatac` valuable (explained in more detail later in this README).
 
-**Beautiful HTML reports**. Your results are an easy-to-navigate HTML report with a sample table, job status, summary statistics, and QC plots at your fingertips. 
+**Beautiful HTML reports**. Your results include an easy-to-navigate HTML report with a sample table, job status, summary statistics, and QC plots at your fingertips. 
 
 **Scalability**. Run the pipeline easily on a project with a single sample or a thousand. This pipeline is compatible with [looper](https://github.com/pepkit/looper), so it can run locally, in a cloud container engine, or with *any* cluster resource manager (*e.g.* SLURM, SGE, or LFS).
 
