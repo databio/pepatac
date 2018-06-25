@@ -1,11 +1,11 @@
 protocol_mapping:
-  ATAC: ATACseq.py
-  ATAC-SEQ: ATACseq.py 
+  ATAC: pepatac.py
+  ATAC-SEQ: pepatac.py 
 
 pipelines:
   ATACseq.py:
-    name: ATACseq
-    path: pipelines/ATACseq.py
+    name: PEPATAC
+    path: pipelines/pepatac.py
     looper_args: True
     required_input_files: [read1]
     all_input_files: [read1, read2]

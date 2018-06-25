@@ -1,13 +1,13 @@
-# Example commands of using pepATAC through pypiper. 
-# For the example commands of using pepATAC with looper, please see the xxx Users Guide.
+# Example commands of using PEPATAC through pypiper. 
+# For the example commands of using PEPATAC with looper, please see the xxx Users Guide.
 
 INPUT=/path/to/sequencing_results/fastq_files
 
-# run pepATAC on a human paired-end reads dataset using 5 threads:
-python pipelines/ATACseq.py -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+# run PEPATAC on a human paired-end reads dataset using 5 threads:
+python pipelines/pepatac.py -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C pepatac.yaml  -gs hs -I $INPUT/pepatac_results_PE_R1.fastq.gz -I2 $INPUT/pepatac_results_PE_R2.fastq.gz  
 
-# run pepATAC on multiple datasets at the same time:  <- this could be wrong as I don't see an explaination of how to use -I and -I2 with multiple samples
-python pipelines/ATACseq.py -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results1_PE_R1.fastq.gz $INPUT/ATACseq_results2_PE_R1.fastq.gz $INPUT/ATACseq_results3_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results1_PE_R2.fastq.gz $INPUT/ATACseq_results2_PE_R2.fastq.gz $INPUT/ATACseq_results3_PE_R2.fastq.gz 
+# run PEPATAC on multiple datasets at the same time:  <- this could be wrong as I don't see an explaination of how to use -I and -I2 with multiple samples
+python pipelines/pepatac.py -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C pepatac.yaml  -gs hs -I $INPUT/pepatac_results1_PE_R1.fastq.gz $INPUT/pepatac_results2_PE_R1.fastq.gz $INPUT/pepatac_results3_PE_R1.fastq.gz -I2 $INPUT/pepatac_results1_PE_R2.fastq.gz $INPUT/pepatac_results2_PE_R2.fastq.gz $INPUT/pepatac_results3_PE_R2.fastq.gz 
 
 # run multiple samples with a for loop:
 declare -a sample_name_arr=("sample1","sample2","sample3")
@@ -15,19 +15,19 @@ for sample_name in "${sample_name_arr[@]}"
 do
 file1=$INPUT/{$file1}_PE_R1.fastq.gz
 file2=${file1/R1/R2}
-python pipelines/ATACseq.py -P 5 -O output_folder -S $sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $file1 -I2 $file2  
+python pipelines/pepatac.py -P 5 -O output_folder -S $sample_name -G hg38  -Q paired  -C pepatac.yaml  -gs hs -I $file1 -I2 $file2  
 done
 
-# run pepATAC on a mouse single-end reads dataset using 8 threads:
-python pipelines/ATACseq.py -P 8 -O output_folder -S output_sample_name -G mm10  -Q single  -C ATACseq.yaml  -gs mm -I $INPUT/ATACseq_results_PE_R1.fastq.gz  
+# run PEPATAC on a mouse single-end reads dataset using 8 threads:
+python pipelines/pepatac.py -P 8 -O output_folder -S output_sample_name -G mm10  -Q single  -C pepatac.yaml  -gs mm -I $INPUT/pepatac_results_PE_R1.fastq.gz  
 
-# run pepATAC with different trimming tools then default trimmomatic, currectly supports skewer and pyadapt: 
-python pipelines/ATACseq.py --skewer TRUE -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
-python pipelines/ATACseq.py --pyadapt TRUE -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+# run PEPATAC with different trimming tools then default trimmomatic, currectly supports skewer and pyadapt: 
+python pipelines/pepatac.py --skewer TRUE -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C pepatac.yaml  -gs hs -I $INPUT/pepatac_results_PE_R1.fastq.gz -I2 $INPUT/pepatac_results_PE_R2.fastq.gz  
+python pipelines/pepatac.py --pyadapt TRUE -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C pepatac.yaml  -gs hs -I $INPUT/pepatac_results_PE_R1.fastq.gz -I2 $INPUT/pepatac_results_PE_R2.fastq.gz  
 
-# re-run pepATAC and over-write the previous output: 
-python pipelines/ATACseq.py -N -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+# re-run PEPATAC and over-write the previous output: 
+python pipelines/pepatac.py -N -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C pepatac.yaml  -gs hs -I $INPUT/pepatac_results_PE_R1.fastq.gz -I2 $INPUT/pepatac_results_PE_R2.fastq.gz  
 
-# continue to run pepATAC since a locked step (usually locked due to failure): 
-python pipelines/ATACseq.py -R -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C ATACseq.yaml  -gs hs -I $INPUT/ATACseq_results_PE_R1.fastq.gz -I2 $INPUT/ATACseq_results_PE_R2.fastq.gz  
+# continue to run PEPATAC since a locked step (usually locked due to failure): 
+python pipelines/pepatac.py -R -P 5 -O output_folder -S output_sample_name -G hg38  -Q paired  -C pepatac.yaml  -gs hs -I $INPUT/pepatac_results_PE_R1.fastq.gz -I2 $INPUT/pepatac_results_PE_R2.fastq.gz  
 

@@ -1,6 +1,6 @@
-# 1. ATACseq pipeline overview
+# 1. PEPATAC pipeline overview
 
-This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs. You can download the latest version from the [releases page](https://github.com/databio/ATACseq/releases), or find changes listed in the [CHANGELOG](CHANGELOG.md).
+This repository contains a pipeline to process ATAC-seq data. It does adapter trimming, mapping, peak calling, and creates bigwig tracks, TSS enrichment files, and other outputs. You can download the latest version from the [releases page](https://github.com/databio/pepatac/releases), or find changes listed in the [CHANGELOG](CHANGELOG.md).
 
 # 2. Pipeline features at-a-glance
 
@@ -34,10 +34,10 @@ Here are a few of the highlights that make `pepatac` valuable (explained in more
 ## 3.1 Clone the pipeline
 
 First, **clone the pipeline**. Clone this repository using one of these methods:
-- using SSH: `git clone git@github.com:databio/ATACseq.git`
-- using HTTPS: `git clone https://github.com/databio/ATACseq.git`
+- using SSH: `git clone git@github.com:databio/pepatac.git`
+- using HTTPS: `git clone https://github.com/databio/pepatac.git`
 
-Next, specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
+Next, specify custom sequencing adapter file if desired (in [pipelines/pepatac.yaml](pipelines/pepatac.yaml)).
 
 Next, you have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#33-native-approach).
 
@@ -56,7 +56,7 @@ docker pull databio/pepatac
 Or build the image using the included [Dockerfile](containers/) (you can use a recipe in the included [Makefile](/Makefile)):
 
 ```
-cd ATACseq
+cd pepatac
 make docker
 ```
 
@@ -64,7 +64,7 @@ make docker
 
 You can download the singularity image from http://big.databio.org/simages/pepatac or build it from the docker image following the recipe in the [Makefile](/Makefile):
 ```
-cd ATACseq
+cd pepatac
 make singularity
 ```
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the [pipeline_interface.yaml](pipeline_interface.yaml) file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
@@ -103,7 +103,7 @@ install.packages(c("argparser", "data.table", "ggplot2", "gplots", "gtable", "sc
 devtools::install_github('pepkit/pepr')
 ```
 
-**Required executables**. You will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) tools section.
+**Required executables**. You will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the pipeline configuration file ([pipelines/pepatac.yaml](pipelines/pepatac.yaml)) tools section.
 
 The following tools are used by the pipeline:
 - [bedtools](http://bedtools.readthedocs.io/en/latest/) (v2.25.0+)
@@ -122,7 +122,7 @@ With the software installed natively, we next need to configure the pipeline:
 
 There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. For the Chang lab, you may use the pre-made config file and project template described on the [Chang lab configuration](examples/chang_project) page. For others, choose one:
 
-### 3.3.1 Configuration option 1: Default configuration (recommended; [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)). 
+### 3.3.1 Configuration option 1: Default configuration (recommended; [pipelines/pepatac.yaml](pipelines/pepatac.yaml)). 
   - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH (unless using a container).
   - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
   ```
@@ -130,12 +130,12 @@ There are two configuration options: You can either set up environment variables
   export TRIMMOMATIC="/path/to/trimmomatic.jar"
   ```
     
-  - Specify custom sequencing adapter file if desired (in [pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)).
+  - Specify custom sequencing adapter file if desired (in [pipelines/pepatac.yaml](pipelines/pepatac.yaml)).
 
 
 ### 3.3.2  Configuration option 2: Custom configuration.
 
-Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/ATACseq.yaml](pipelines/ATACseq.yaml)) appropriately. 
+Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([pipelines/pepatac.yaml](pipelines/pepatac.yaml)) appropriately. 
 
 # 4. Configuring reference genome assemblies
 
@@ -152,7 +152,7 @@ You may [download pre-indexed references](http://big.databio.org/refgenomes) or 
 
 Once you've procured assemblies for all genomes you wish to use, you must point the pipeline to where you store these. You can do this in two ways, either: 1) with an environment variable, or 2) by adjusting a configuration option.
 
-The pipeline looks for genomes stored in a folder specified by the `resources.genomes` attribute in the [pipeline config file](pipelines/ATACseq.yaml). By default, this points to the shell variable `GENOMES`, so all you have to do is set an environment variable to the location of your [refgenie](https://github.com/databio/refgenie) genomes:
+The pipeline looks for genomes stored in a folder specified by the `resources.genomes` attribute in the [pipeline config file](pipelines/pepatac.yaml). By default, this points to the shell variable `GENOMES`, so all you have to do is set an environment variable to the location of your [refgenie](https://github.com/databio/refgenie) genomes:
 
   ```
   export GENOMES="/path/to/genomes/folder/"
@@ -169,12 +169,12 @@ The pipeline can be run directly from the command line for a single sample. If y
 
 ## 5.1 Running the pipeline script directly (without looper)
 
-The pipeline is at core just a python script, and you can run it on the command line for a single sample. To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/ATACseq.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
+The pipeline is at core just a python script, and you can run it on the command line for a single sample. To see the command-line options for usage, see [usage.txt](usage.txt), which you can get on the command line by running `pipelines/pepatac.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](example_cmd.txt) that use test data.
 
 Here's the basic command to run the small test example through the pipeline:
 
 ```
-pipelines/ATACseq.py --single-or-paired paired --genome hg38 --sample-name test1 --input examples/test_data/test1_r1.fastq.gz --input2 examples/test_data/test1_r2.fastq.gz --genome-size hs -O $HOME/test
+pipelines/pepatac.py --single-or-paired paired --genome hg38 --sample-name test1 --input examples/test_data/test1_r1.fastq.gz --input2 examples/test_data/test1_r2.fastq.gz --genome-size hs -O $HOME/test
 ```
 
 This small example takes about 15 minutes to run to completion.
@@ -182,16 +182,16 @@ This small example takes about 15 minutes to run to completion.
 
 ## 5.1.1 Running the pipeline directly in a container
 
-A full tutorial on using containers it outside the scope of this readme, but here are the basics. Individual jobs can be run in a container by simply running the `ATACseq.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. For example, run it locally in singularity like this:
+A full tutorial on using containers it outside the scope of this readme, but here are the basics. Individual jobs can be run in a container by simply running the `pepatac.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. For example, run it locally in singularity like this:
 
 ```
 singularity instance.start ${SIMAGES}pepatac atac_image
-singularity exec instance://atac_image pipelines/ATACseq.py
+singularity exec instance://atac_image pipelines/pepatac.py
 ```
 
 With docker, you can use:
 ```
-docker run --rm -it databio/pepatac pipelines/ATACseq.py
+docker run --rm -it databio/pepatac pipelines/pepatac.py
 ```
 
 Be sure to mount the volumes you need with `--volume`.
@@ -211,7 +211,7 @@ pip install --user https://github.com/pepkit/looper/zipball/master
 Start by running the example project in the [examples/test_project](examples/test_project) folder. Let's use the `-d` argument to do a *dry run*, which will create job scripts for every sample in the project, but will not execute them:
 
 ```
-cd ATACseq
+cd pepatac
 looper run -d examples/test_project/test_config.yaml
 ```
 
