@@ -245,39 +245,54 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
         e.g. 'mm10'
     """
     bt2_path = os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2")
-
-    try:        
-        path, dirs, files = next(os.walk(bt2_path))
-    except StopIteration as e:
-        pm.fail_pipeline(StopIteration(
-            "There is no " + genome_assembly + " genome present in the " +
-            genomes_folder + " directory"))
-    bt_count = 0
-    fa_count = 0
-    for f in files:
-        if os.stat(os.path.join(bt2_path, f)).st_size != 0:
-            file_name, file_extension = os.path.splitext(f)
-            if file_extension in [".bt2", ".bt2l"]:
-                bt_count += 1
-            elif file_extension == ".fa":
-                fa_count += 1
-            else:
-                # Ignore any other files that are > 0 bytes.
-                continue
-        elif "flag" in f:
-            # If built with refgenie it will contain a *.flag file of 
-            # size 0.
-            continue
+    
+    if os.path.isdir(bt2_path):
+        if not os.listdir(bt2_path):
+            err_msg = "There are no {} bowtie2 index files"
+            pm.fail_pipeline(Exception(err_msg.format(genome_assembly)))
         else:
-            # A file is empty.
-            pm.fail_pipeline(IOError(
-            "The bowtie2 index for " + genome_assembly +
-            " contains an empty file."))
-    if fa_count != 1 and bt_count != 6:
-        # A file is missing.
+            path, dirs, files = next(os.walk(bt2_path))
+    else:
+        err_msg = "There is no bowtie2 index directory for {}"
+        pm.fail_pipeline(Exception(err_msg.format(genome_assembly)))
+    # check for bowtie small index
+    if [bt for bt in files if bt.endswith('bt2')]:
+        bt = ['.1.bt2', '.2.bt2', '.3.bt2', '.4.bt2',
+              '.rev.1.bt2', '.rev.2.bt2']
+    # check for bowtie large index
+    elif [bt for bt in files if bt.endswith('bt2l')]:
+        bt = ['.1.bt2l', '.2.bt2l', '.3.bt2l', '.4.bt2l',
+              '.rev.1.bt2l', '.rev.2.bt2l']
+    # if neither file type present, fail
+    else:
+        err_msg = "There are no bowtie2 index files for {} in {}"
+        pm.fail_pipeline(Exception(
+            err_msg.format(genome_assembly, genomes_folder)))
+
+    bt_expected = [genome_assembly + s for s in bt]
+    bt_present  = [bt for bt in files if any(s in bt for s in bt_expected)]
+    bt_missing  = list(set(bt_expected) - set(bt_present))
+    # if there are any missing files (bowtie2 file naming is constant), fail
+    if bt_missing:
+        err_msg = "The {} bowtie2 index is missing the following file(s): {}"
         pm.fail_pipeline(IOError(
-            "The bowtie2 index for " + genome_assembly +
-            " is missing a required file."))
+            err_msg.format(genome_assembly,
+                           ', '.join(str(s) for s in bt_missing))))
+    else:
+        for f in bt_present:
+            # If any bowtie2 files are empty, fail
+            if os.stat(os.path.join(bt2_path, f)).st_size == 0:
+                err_msg = "The bowtie2 index file, {}, is empty."
+                pm.fail_pipeline(IOError(err_msg.format(f)))
+
+    genome_file = genome_assembly + ".fa"
+    fa_files = [fa for fa in files if genome_file in fa]
+    if not fa_files:
+        # The fasta file does not exist
+        pm.fail_pipeline(IOError("{}.fa does not exist.".format(genome_assembly)))
+    for f in fa_files:
+        if os.stat(os.path.join(bt2_path, f)).st_size == 0:
+            pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
 
 def tool_path(tool_name):
     """
