@@ -3,7 +3,7 @@ protocol_mapping:
   ATAC-SEQ: pepatac.py 
 
 pipelines:
-  ATACseq.py:
+  pepatac.py:
     name: PEPATAC
     path: pipelines/pepatac.py
     looper_args: True
