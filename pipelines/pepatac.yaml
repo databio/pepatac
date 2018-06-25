@@ -1,4 +1,4 @@
-# Configuration file for ATACseq pipeline based on pypiper
+# PEPATAC configuration file for an ATACseq pipeline based on pypiper
 
 # basic tools 
 # public tools
@@ -10,15 +10,18 @@ tools:  # absolute paths to required tools
   bowtie2: bowtie2
   fastqc: fastqc
   macs2: macs2
-  fseq: fseq
   picard: ${PICARD}
-  trimmo: ${TRIMMOMATIC}
+  skewer: skewer
+  perl: perl
   # ucsc tools
   bedGraphToBigWig: bedGraphToBigWig
   wigToBigWig: wigToBigWig
   bigWigCat: bigWigCat
-  Rscript: Rscript
-  perl: perl
+  bedSort: bedSort
+  # optional tools
+  fseq: fseq  
+  trimmo: ${TRIMMOMATIC}
+  Rscript: Rscript 
 
 # user configure 
 resources:

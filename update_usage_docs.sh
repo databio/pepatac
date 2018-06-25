@@ -1,3 +1,3 @@
 # this script will auto-generate the usage docs.
 
-pipelines/ATACseq.py --help > usage.md 2>&1
+pipelines/ATACseq.py --help > usage.txt 2>&1
