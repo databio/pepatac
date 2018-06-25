@@ -1,4 +1,4 @@
-# configure file for ATACseq pipeline based on pypiper
+# PEPATAC configuration file for an ATACseq pipeline based on pypiper
 #system configure
 tools:
 

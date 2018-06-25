@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-ATACseq  pipeline
+PEPATAC - ATACseq pipeline
 """
 
-__author__ = ["Jin Xu", "Nathan Sheffield"]
+__author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "xujin937@gmail.com"
 __version__ = "0.7.0"
 
@@ -26,7 +26,7 @@ def parse_arguments():
     """
     # Argument Parsing from yaml file
     ###########################################################################
-    parser = ArgumentParser(description='ATACseq version ' + __version__)
+    parser = ArgumentParser(description='PEPATAC version ' + __version__)
     parser = pypiper.add_pypiper_args(parser, groups=
         ['pypiper', 'looper', 'ngs'], required=["input", "genome", "sample-name"])
 
@@ -321,7 +321,7 @@ def main():
         os.path.join(args.output_parent, args.sample_name))
     global pm
     pm = pypiper.PipelineManager(
-        name="ATACseq", outfolder=outfolder, args=args, version=__version__)
+        name="PEPATAC", outfolder=outfolder, args=args, version=__version__)
     global ngstk
     ngstk = pypiper.NGSTk(pm=pm)
 
@@ -769,7 +769,7 @@ def main():
         Tss_plot = os.path.join(QC_folder,  args.sample_name +
                                 ".TssEnrichment.pdf")
         cmd = ("Rscript " +
-               tool_path("ATAC_Rscript_TSSenrichmentPlot_pyPiper.R"))
+               tool_path("PEPATAC_TSSenrichmentPlot.R"))
         cmd += " " + Tss_enrich + " pdf"
         pm.run(cmd, Tss_plot, nofail=True, container=pm.container)
 

@@ -1,15 +1,15 @@
 ###############################################################################
 #5/18/17
-#Last Updated 06/19/18
+#Last Updated 06/25/18
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
-#ATAC_Rscript_TSSenrichmentPlot_pyPiper.R
+#PEPATAC_TSSenrichmentPlot.R
 #
 #This program is meant to plot multiple TSS enrichments on the same graph in R
 #Produces both pdf and png for easy html embedding
 #
 #NOTES:
-#usage: Rscript /path/to/Rscript/ATAC_Rscript_TSSenrichmentPlot.R --TSSfile
+#usage: Rscript /path/to/Rscript/PEPATAC_TSSenrichmentPlot.R --TSSfile
 #       /path/to/file.TssEnrichment
 #
 #requirements: ggplot2
@@ -43,7 +43,7 @@ TSSfile <- args[1]
 
 if (is.null(TSSfile)) {
   # print usage information if .TssEnrichment file is not provided
-  cat("\n Usage: Rscript /path/to/ATAC_Rscript_TSSenrichmentPlot.R 
+  cat("\n Usage: Rscript /path/to/PEPATAC_TSSenrichmentPlot.R 
       /path/to/file.TssEnrichment \n
       .TssEnrichment file is required \n\n")
 }

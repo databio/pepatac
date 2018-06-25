@@ -2,11 +2,17 @@
 All notable changes to this project will be documented in this file.
 
 ## [0.7.0] -- 2018-06-25
+
+### Added
 - Added containerization feature
     - Run with either [docker](https://www.docker.com/) or [singularity](https://singularity.lbl.gov/)
+- Added early bowtie2 index check
+
+### Changed
+- Renamed pipeline
 - Improved summary figure reporting
 - Integrated summary results into pipeline interface
-- Added early bowtie2 index check
+
 
 ## [0.6.1] -- 2017-12-15
 
