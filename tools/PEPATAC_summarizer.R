@@ -168,7 +168,7 @@ buildFilePath = function(suffix, pep=prj) {
 
 # Identify the project configuration file
 configFile <- argv$config
-prj = Project(configFile)
+prj = suppressWarnings(Project(configFile))
 
 # Build the stats summary file path
 summaryFile <- file.path(config(prj)$metadata$output_dir,
@@ -192,8 +192,24 @@ if (file.exists(summaryFile)) {
 # Check for prealignments
 fileName <- config(prj)$metadata$sample_annotation
 if (file.exists(fileName)) {
-    annotation    <- fread(fileName, header=TRUE, check.names=FALSE,
-                           sep=",", quote="")
+    annotation <- tryCatch (
+        {
+            fread(fileName, header=TRUE, check.names=FALSE, sep=",", quote="")
+        },
+        error=function(e) {
+            message("Error: ", fileName, " could not be loaded.")
+            message(e)
+            return(NULL)
+        },
+        warning=function(e) {
+            message(fileName, " contained unexpected fields.")
+            message("The original messaging is: ", e)
+            return (1)
+        }
+    )
+    if (is.null(annotation) || annotation == 1) {
+        quit()
+    }
     organisms     <- unique(annotation$organism)
     prealignments <- list()
     # Get prealignments for each organism
@@ -278,9 +294,9 @@ for (i in 1:length(genomeNames)) {
 }
 
 for (i in 1:length(unlist(prealignments))) {
-    alignRaw[, unlist(prealignments)[i] := 
-                 stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
-                       with=FALSE][[1]]]
+    alignRaw[, unlist(prealignments)[i] := as.integer(stats[,
+        (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
+        with=FALSE][[1]])]
 }
 
 setcolorder(alignRaw, c("sample", "Unaligned", paste(unlist(prealignments)),
@@ -354,15 +370,30 @@ for (i in 1:length(genomeNames)) {
     alignPercent[, (genomeNames[i]) := as.numeric(readCount)]
 }
 for (i in 1:length(unlist(prealignments))) {
-    alignPercent[, unlist(prealignments)[i] :=
-                 stats[, (paste("Alignment_rate", unlist(prealignments)[i], sep="_")), 
-                 with=FALSE][[1]]]
+    alignPercent[, unlist(prealignments)[i] := as.double(stats[,
+        (paste("Alignment_rate", unlist(prealignments)[i], sep="_")), 
+        with=FALSE][[1]])]
 }
 
 setcolorder(alignPercent, c("sample", "Unaligned", paste(unlist(prealignments)),
                             "Duplicates", paste(unique(stats$Genome))))
 
 alignPercent$sample <- factor(alignPercent$sample, levels=alignPercent$sample)
+
+# Warn user if sample has aberrant values
+for (i in 1:nrow(alignPercent)) {
+    for (j in 2:ncol(alignPercent)) {
+        aberrant <- FALSE
+        if (alignPercent[i][[j]] < 0 || alignPercent[i][[j]] > 100) {
+            alignPercent[i, j] <- 0
+            aberrant <- TRUE
+        }
+    }
+    if (aberrant) {
+        message(alignPercent$sample[i], " has aberrant alignment rates.")
+        message("Rates have been set to 0.  Check the sample log file.")
+    }
+}
 
 meltAlignPercent <- melt(alignPercent, id.vars="sample")
 upperLimit       <- 103
