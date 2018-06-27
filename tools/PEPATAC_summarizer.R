@@ -163,6 +163,16 @@ buildFilePath = function(suffix, pep=prj) {
     paste0(config(pep)$name, suffix))
 }
 
+getPrealignments = function(statsFile) {
+    pre <- gsub("Aligned_reads_","",
+           unique(grep("Aligned_reads_.*", colnames(statsFile), value=TRUE)))
+    if (length(pre) > 0) {
+        return(pre)
+    } else {
+        return(NULL)
+    }
+}
+
 ###############################################################################
 ##### Main #####
 
@@ -189,75 +199,8 @@ if (file.exists(summaryFile)) {
     quit()
 }
 
-# Check for prealignments
-prealignments_exist = TRUE
-annotationFile <- config(prj)$metadata$sample_annotation
-if (file.exists(annotationFile)) {
-    annotation <- tryCatch (
-        {
-            fread(annotationFile, header=TRUE, check.names=FALSE)
-        },
-        error=function(e) {
-            message("Error: ", annotationFile, " could not be loaded.")
-            message(e)
-            return(NULL)
-        },
-        warning=function(e) {
-            message(annotationFile, " contained unexpected fields.")
-            message("The original messaging is: ", e)
-            return (1)
-        }
-    )
-    if (is.null(annotation) || annotation == 1) {
-        quit()
-    }
-    organisms     <- unique(annotation$organism)
-    prealignments <- list()
-    # Determine if prealignments exist in the config file
-    pre <- config(prj)$implied_columns$organism[[organisms[1]]]$prealignments
-    if (is.null(pre)) {
-        # There are no prealignments
-        prealignments_exist = FALSE
-        message("No prealignments present in ", configFile)
-    } else {
-        # Get prealignments for each organism
-        for (i in 1:length(organisms)) {      
-            pre <- config(prj)$implied_columns$organism[[organisms[i]]]
-            prealignments <- c(prealignments, strsplit(pre$prealignments, "\\s+"))
-        }
-    }
-}
-
-prealignments <- unique(prealignments)
-
-# confirm the prealignments exist in stats_summary.tsv
-if (prealignments_exist) {
-    for (i in 1:length(unlist(prealignments))) {
-        # get number of prealignments in stats_summary.tsv file
-        if(length(grep("Aligned_reads_.*", colnames(stats))) > length(unlist(prealignments))){
-            errorMessage <- paste("PEPATAC summarizer found additional ",
-                                  "prealignments in ",
-                                  paste(config(prj)$name, "_stats_summary.tsv", sep=""),
-                                  "\nConfirm the prealignments you performed.",
-                                  sep="", collapse="\n")
-            stop(errorMessage)
-        } else if (length(grep("Aligned_reads_.*", colnames(stats))) < length(unlist(prealignments))) {
-            errorMessage <- paste("PEPATAC summarizer found additional ",
-                                  "prealignments in ", configFile, ".",
-                                  "\nConfirm the prealignments you performed.",
-                                  sep="", collapse="\n")
-            stop(errorMessage)
-        } else if (!(paste("Aligned_reads", unlist(prealignments)[i], sep="_") 
-                     %in% colnames(stats))) {
-            errorMessage <- paste(unlist(prealignments)[i],
-                                  " is not present in ",
-                                  paste(config(prj)$name, "_stats_summary.tsv", sep=""),
-                                  "\nConfirm the prealignments you performed.",
-                                  sep="", collapse="\n")
-            stop(errorMessage)
-        }
-    }
-}
+# Get prealignments if they exist
+prealignments <- getPrealignments(stats)
 
 message("Generating plots in both png and pdf format with ", summaryFile)
 
@@ -271,7 +214,7 @@ stats$Picard_est_lib_size[stats$Picard_est_lib_size=="Unknown"] <- 0
 ##### ALIGN RAW PLOT #####
 Unaligned <- stats$Fastq_reads - stats$Aligned_reads
 # If prealignments exist...include in Unaligned reads count
-if (prealignments_exist) {
+if (!is.null(prealignments)) {
     for (i in 1:length(unlist(prealignments))) {
         Unaligned <- Unaligned - 
             stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
@@ -316,7 +259,7 @@ for (i in 1:length(genomeNames)) {
 }
 
 # If prealignments exist...add to data.table
-if (prealignments_exist) {
+if (!is.null(prealignments)) {
     for (i in 1:length(unlist(prealignments))) {
         alignRaw[, unlist(prealignments)[i] := as.integer(stats[,
             (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
@@ -338,7 +281,7 @@ upperLimit   <- roundUpNice(maxReads/1000000)
 chartHeight  <- (length(unique(alignRaw$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15")
-if (prealignments_exist) {
+if (!is.null(prealignments)) {
     moreColors <- colorpanel(length(unlist(prealignments)), 
                              low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
     for (i in 1:length(unlist(prealignments))) {
@@ -379,7 +322,7 @@ set_panel_size(
 ###############################################################################
 ##### ALIGN PERCENT PLOT #####
 Unaligned <- 100 - stats$Alignment_rate
-if (prealignments_exist) {
+if (!is.null(prealignments)) {
     for (i in 1:length(unlist(prealignments))) {
         Unaligned <- Unaligned - 
             stats[, (paste("Alignment_rate", unlist(prealignments)[i], sep="_")),
@@ -404,7 +347,7 @@ for (i in 1:length(genomeNames)) {
     alignPercent[, (genomeNames[i]) := as.numeric(readCount)]
 }
 
-if (prealignments_exist) {
+if (!is.null(prealignments)) {
     for (i in 1:length(unlist(prealignments))) {
         alignPercent[, unlist(prealignments)[i] := as.double(stats[,
             (paste("Alignment_rate", unlist(prealignments)[i], sep="_")), 
@@ -441,7 +384,7 @@ chartHeight      <- (length(unique(alignPercent$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15")
 
-if (prealignments_exist) {
+if (!is.null(prealignments)) {
     moreColors <- colorpanel(length(unlist(prealignments)), 
                              low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
     for (i in 1:length(unlist(prealignments))) {
