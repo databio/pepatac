@@ -190,19 +190,20 @@ if (file.exists(summaryFile)) {
 }
 
 # Check for prealignments
-fileName <- config(prj)$metadata$sample_annotation
-if (file.exists(fileName)) {
+prealignments_exist = TRUE
+annotationFile <- config(prj)$metadata$sample_annotation
+if (file.exists(annotationFile)) {
     annotation <- tryCatch (
         {
-            fread(fileName, header=TRUE, check.names=FALSE)
+            fread(annotationFile, header=TRUE, check.names=FALSE)
         },
         error=function(e) {
-            message("Error: ", fileName, " could not be loaded.")
+            message("Error: ", annotationFile, " could not be loaded.")
             message(e)
             return(NULL)
         },
         warning=function(e) {
-            message(fileName, " contained unexpected fields.")
+            message(annotationFile, " contained unexpected fields.")
             message("The original messaging is: ", e)
             return (1)
         }
@@ -213,57 +214,48 @@ if (file.exists(fileName)) {
     organisms     <- unique(annotation$organism)
     prealignments <- list()
     # Determine if prealignments exist in the config file
-    pre <- tryCatch (
-        {
-            config(prj)$implied_columns$organism[[organisms[1]]]
-        },
-        error=function(e) {
-            message("Error: ", configFile, " does not contain prealignments.")
-            message("See: ", e)
-            return(NULL)
-        },
-        warning=function(e) {
-            message("Warning: ", configFile, " contained unexpected fields.")
-            message("See: ", e)
-            return (NULL)
-        }
-    )
+    pre <- config(prj)$implied_columns$organism[[organisms[1]]]$prealignments
     if (is.null(pre)) {
-        quit()
-    }
-    # Get prealignments for each organism
-    for (i in 1:length(organisms)) {      
-        pre <- config(prj)$implied_columns$organism[[organisms[i]]]
-        prealignments <- c(prealignments, strsplit(pre$prealignments, "\\s+"))
+        # There are no prealignments
+        prealignments_exist = FALSE
+        message("No prealignments present in ", configFile)
+    } else {
+        # Get prealignments for each organism
+        for (i in 1:length(organisms)) {      
+            pre <- config(prj)$implied_columns$organism[[organisms[i]]]
+            prealignments <- c(prealignments, strsplit(pre$prealignments, "\\s+"))
+        }
     }
 }
 
 prealignments <- unique(prealignments)
 
 # confirm the prealignments exist in stats_summary.tsv
-for (i in 1:length(unlist(prealignments))) {
-    # get number of prealignments in stats_summary.tsv file
-    if(length(grep("Aligned_reads_.*", colnames(stats))) > length(unlist(prealignments))){
-        errorMessage <- paste("PEPATAC summarizer found additional ",
-                              "prealignments in ",
-                              paste(config(prj)$name, "_stats_summary.tsv", sep=""),
-                              "\nConfirm the prealignments you performed.",
-                              sep="", collapse="\n")
-        stop(errorMessage)
-    } else if (length(grep("Aligned_reads_.*", colnames(stats))) < length(unlist(prealignments))) {
-        errorMessage <- paste("PEPATAC summarizer found additional ",
-                              "prealignments in ", configFile, ".",
-                              "\nConfirm the prealignments you performed.",
-                              sep="", collapse="\n")
-        stop(errorMessage)
-    } else if (!(paste("Aligned_reads", unlist(prealignments)[i], sep="_") 
-                 %in% colnames(stats))) {
-        errorMessage <- paste(unlist(prealignments)[i],
-                              " is not present in ",
-                              paste(config(prj)$name, "_stats_summary.tsv", sep=""),
-                              "\nConfirm the prealignments you performed.",
-                              sep="", collapse="\n")
-        stop(errorMessage)
+if (prealignments_exist) {
+    for (i in 1:length(unlist(prealignments))) {
+        # get number of prealignments in stats_summary.tsv file
+        if(length(grep("Aligned_reads_.*", colnames(stats))) > length(unlist(prealignments))){
+            errorMessage <- paste("PEPATAC summarizer found additional ",
+                                  "prealignments in ",
+                                  paste(config(prj)$name, "_stats_summary.tsv", sep=""),
+                                  "\nConfirm the prealignments you performed.",
+                                  sep="", collapse="\n")
+            stop(errorMessage)
+        } else if (length(grep("Aligned_reads_.*", colnames(stats))) < length(unlist(prealignments))) {
+            errorMessage <- paste("PEPATAC summarizer found additional ",
+                                  "prealignments in ", configFile, ".",
+                                  "\nConfirm the prealignments you performed.",
+                                  sep="", collapse="\n")
+            stop(errorMessage)
+        } else if (!(paste("Aligned_reads", unlist(prealignments)[i], sep="_") 
+                     %in% colnames(stats))) {
+            errorMessage <- paste(unlist(prealignments)[i],
+                                  " is not present in ",
+                                  paste(config(prj)$name, "_stats_summary.tsv", sep=""),
+                                  "\nConfirm the prealignments you performed.",
+                                  sep="", collapse="\n")
+            stop(errorMessage)
+        }
     }
 }
 
@@ -278,10 +270,13 @@ stats$Picard_est_lib_size[stats$Picard_est_lib_size=="Unknown"] <- 0
 ###############################################################################
 ##### ALIGN RAW PLOT #####
 Unaligned <- stats$Fastq_reads - stats$Aligned_reads
-for (i in 1:length(unlist(prealignments))) {
-    Unaligned <- Unaligned - 
-        stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
-              with=FALSE][[1]]
+# If prealignments exist...include in Unaligned reads count
+if (prealignments_exist) {
+    for (i in 1:length(unlist(prealignments))) {
+        Unaligned <- Unaligned - 
+            stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
+                  with=FALSE][[1]]
+    }
 }
 
 alignRaw <- tryCatch(
@@ -320,14 +315,20 @@ for (i in 1:length(genomeNames)) {
     alignRaw[, (genomeNames[i]) := as.integer(readCount)]
 }
 
-for (i in 1:length(unlist(prealignments))) {
-    alignRaw[, unlist(prealignments)[i] := as.integer(stats[,
-        (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
-        with=FALSE][[1]])]
+# If prealignments exist...add to data.table
+if (prealignments_exist) {
+    for (i in 1:length(unlist(prealignments))) {
+        alignRaw[, unlist(prealignments)[i] := as.integer(stats[,
+            (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
+            with=FALSE][[1]])]
+    }
+    setcolorder(alignRaw, c("sample", "Unaligned",
+                            paste(unlist(prealignments)),
+                            "Duplicates", paste(unique(stats$Genome))))
+} else {
+    setcolorder(alignRaw, c("sample", "Unaligned", "Duplicates",
+                            paste(unique(stats$Genome))))
 }
-
-setcolorder(alignRaw, c("sample", "Unaligned", paste(unlist(prealignments)),
-                        "Duplicates", paste(unique(stats$Genome))))
 
 alignRaw$sample <- factor(alignRaw$sample, levels = alignRaw$sample)
 
@@ -337,11 +338,14 @@ upperLimit   <- roundUpNice(maxReads/1000000)
 chartHeight  <- (length(unique(alignRaw$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15")
-moreColors <- colorpanel(length(unlist(prealignments)), 
-                         low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
-for (i in 1:length(unlist(prealignments))) {
+if (prealignments_exist) {
+    moreColors <- colorpanel(length(unlist(prealignments)), 
+                             low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
+    for (i in 1:length(unlist(prealignments))) {
     plotColors[, unlist(prealignments)[i] := moreColors[i]]
+    }
 }
+
 plotColors[, Duplicates := "#FC1E25"]
 moreColors <- colorpanel(length(genomeNames), 
                          low="#4876FF", mid="#94D9CE", high="#7648FF")
@@ -375,15 +379,18 @@ set_panel_size(
 ###############################################################################
 ##### ALIGN PERCENT PLOT #####
 Unaligned <- 100 - stats$Alignment_rate
-for (i in 1:length(unlist(prealignments))) {
-    Unaligned <- Unaligned - 
-        stats[, (paste("Alignment_rate", unlist(prealignments)[i], sep="_")),
-              with=FALSE][[1]]
+if (prealignments_exist) {
+    for (i in 1:length(unlist(prealignments))) {
+        Unaligned <- Unaligned - 
+            stats[, (paste("Alignment_rate", unlist(prealignments)[i], sep="_")),
+                  with=FALSE][[1]]
+    }
 }
+
 alignPercent <- data.table(sample=stats$sample_name,
                            Unaligned=Unaligned,
                            Duplicates=stats$Alignment_rate - 
-                               stats$Dedup_alignment_rate)
+                                      stats$Dedup_alignment_rate)
 
 # Split percents based on genome name
 genomeNames <- unique(stats$Genome)
@@ -396,14 +403,20 @@ for (i in 1:length(genomeNames)) {
     }
     alignPercent[, (genomeNames[i]) := as.numeric(readCount)]
 }
-for (i in 1:length(unlist(prealignments))) {
-    alignPercent[, unlist(prealignments)[i] := as.double(stats[,
-        (paste("Alignment_rate", unlist(prealignments)[i], sep="_")), 
-        with=FALSE][[1]])]
-}
 
-setcolorder(alignPercent, c("sample", "Unaligned", paste(unlist(prealignments)),
-                            "Duplicates", paste(unique(stats$Genome))))
+if (prealignments_exist) {
+    for (i in 1:length(unlist(prealignments))) {
+        alignPercent[, unlist(prealignments)[i] := as.double(stats[,
+            (paste("Alignment_rate", unlist(prealignments)[i], sep="_")), 
+            with=FALSE][[1]])]
+    }
+    setcolorder(alignPercent, c("sample", "Unaligned",
+                                paste(unlist(prealignments)),
+                                "Duplicates", paste(unique(stats$Genome))))
+} else {
+    setcolorder(alignPercent, c("sample", "Unaligned", "Duplicates",
+                                paste(unique(stats$Genome))))
+}
 
 alignPercent$sample <- factor(alignPercent$sample, levels=alignPercent$sample)
 
@@ -427,11 +440,15 @@ upperLimit       <- 103
 chartHeight      <- (length(unique(alignPercent$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15")
-moreColors <- colorpanel(length(unlist(prealignments)), 
-                         low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
-for (i in 1:length(unlist(prealignments))) {
-    plotColors[, unlist(prealignments)[i] := moreColors[i]]
+
+if (prealignments_exist) {
+    moreColors <- colorpanel(length(unlist(prealignments)), 
+                             low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
+    for (i in 1:length(unlist(prealignments))) {
+        plotColors[, unlist(prealignments)[i] := moreColors[i]]
+    }
 }
+
 plotColors[, Duplicates := "#FC1E25"]
 moreColors <- colorpanel(length(genomeNames), 
                          low="#4876FF", mid="#94D9CE", high="#7648FF")
