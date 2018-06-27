@@ -182,8 +182,8 @@ dir.create(
 
 # read in stats summary file
 if (file.exists(summaryFile)) {
-    stats <- suppressWarnings(fread(summaryFile, header=TRUE,
-                                    check.names=FALSE, sep="\t", quote=""))
+    stats <- suppressWarnings(fread(
+                summaryFile, header=TRUE, check.names=FALSE))
 } else {
     message("PEPATAC_summarizer.R was unable to find the summary file.")
     quit()
@@ -194,7 +194,7 @@ fileName <- config(prj)$metadata$sample_annotation
 if (file.exists(fileName)) {
     annotation <- tryCatch (
         {
-            fread(fileName, header=TRUE, check.names=FALSE, sep=",", quote="")
+            fread(fileName, header=TRUE, check.names=FALSE)
         },
         error=function(e) {
             message("Error: ", fileName, " could not be loaded.")
@@ -212,6 +212,25 @@ if (file.exists(fileName)) {
     }
     organisms     <- unique(annotation$organism)
     prealignments <- list()
+    # Determine if prealignments exist in the config file
+    pre <- tryCatch (
+        {
+            config(prj)$implied_columns$organism[[organisms[1]]]
+        },
+        error=function(e) {
+            message("Error: ", fileName, " could not be loaded.")
+            message(e)
+            return(NULL)
+        },
+        warning=function(e) {
+            message(fileName, " contained unexpected fields.")
+            message("The original messaging is: ", e)
+            return (NULL)
+        }
+    )
+    if (is.null(pre)) {
+        quit()
+    }
     # Get prealignments for each organism
     for (i in 1:length(organisms)) {      
         pre <- config(prj)$implied_columns$organism[[organisms[i]]]
@@ -219,13 +238,21 @@ if (file.exists(fileName)) {
     }
 }
 
+prealignments <- unique(prealignments)
+
 # confirm the prealignments exist in stats_summary.tsv
 for (i in 1:length(unlist(prealignments))) {
     # get number of prealignments in stats_summary.tsv file
-    if(length(grep("Aligned_reads_.*", colnames(stats))) != length(unlist(prealignments))){
+    if(length(grep("Aligned_reads_.*", colnames(stats))) > length(unlist(prealignments))){
         errorMessage <- paste("PEPATAC summarizer found additional ",
                               "prealignments in ",
                               paste(config(prj)$name, "_stats_summary.tsv", sep=""),
+                              "\nConfirm the prealignments you performed.",
+                              sep="", collapse="\n")
+        stop(errorMessage)
+    } else if (length(grep("Aligned_reads_.*", colnames(stats))) < length(unlist(prealignments))) {
+        errorMessage <- paste("PEPATAC summarizer found additional ",
+                              "prealignments in ", configFile, ".",
                               "\nConfirm the prealignments you performed.",
                               sep="", collapse="\n")
         stop(errorMessage)
