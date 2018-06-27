@@ -218,13 +218,13 @@ if (file.exists(fileName)) {
             config(prj)$implied_columns$organism[[organisms[1]]]
         },
         error=function(e) {
-            message("Error: ", fileName, " could not be loaded.")
-            message(e)
+            message("Error: ", configFile, " does not contain prealignments.")
+            message("See: ", e)
             return(NULL)
         },
         warning=function(e) {
-            message(fileName, " contained unexpected fields.")
-            message("The original messaging is: ", e)
+            message("Warning: ", configFile, " contained unexpected fields.")
+            message("See: ", e)
             return (NULL)
         }
     )
