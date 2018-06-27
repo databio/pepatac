@@ -6,7 +6,7 @@ This repository contains a pipeline to process ATAC-seq data. It does adapter tr
 
 Here are a few of the highlights that make `pepatac` valuable (explained in more detail later in this README).
 
-**Beautiful HTML reports**. Your results are an easy-to-navigate HTML report with a sample table, job status, summary statistics, and QC plots at your fingertips. 
+**Beautiful HTML reports**. Your results include an easy-to-navigate HTML report with a sample table, job status, summary statistics, and QC plots at your fingertips. 
 
 **Scalability**. Run the pipeline easily on a project with a single sample or a thousand. This pipeline is compatible with [looper](https://github.com/pepkit/looper), so it can run locally, in a cloud container engine, or with *any* cluster resource manager (*e.g.* SLURM, SGE, or LFS).
 
@@ -39,7 +39,7 @@ First, **clone the pipeline**. Clone this repository using one of these methods:
 
 Next, specify custom sequencing adapter file if desired (in [pipelines/pepatac.yaml](pipelines/pepatac.yaml)).
 
-Next, you have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#33-native-approach).
+Next, you have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](#33-install-software-requirements-natively).
 
 ## 3.2 Use containers
 
@@ -69,7 +69,7 @@ make singularity
 ```
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the *folder where your image is stored*, or you can tweak the [pipeline_interface.yaml](pipeline_interface.yaml) file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
 
-## 3.3. Install software requirements natively
+## 3.3 Install software requirements natively
 
 *Note: you only need to install these prerequisites if you are not using a container*. 
 
