@@ -1,7 +1,7 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #5/18/17
-#Last Updated 06/21/2018
+#Last Updated 06/27/2018
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
 #PEPATAC_summarizer.R
@@ -158,12 +158,13 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 
 # Helper function to build a file path to the correct output folder using a
 # specified suffix
-buildFilePath = function(suffix, pep=prj) {
+buildFilePath <- function(suffix, pep=prj) {
     file.path(config(pep)$metadata$output_dir, "summary",
     paste0(config(pep)$name, suffix))
 }
 
-getPrealignments = function(statsFile) {
+# Return a list of prealignments from the stats_summary.tsv file if they exist
+getPrealignments <- function(statsFile) {
     pre <- gsub("Aligned_reads_","",
            unique(grep("Aligned_reads_.*", colnames(statsFile), value=TRUE)))
     if (length(pre) > 0) {
@@ -177,8 +178,8 @@ getPrealignments = function(statsFile) {
 ##### Main #####
 
 # Identify the project configuration file
-configFile <- argv$config
-prj = suppressWarnings(Project(configFile))
+configFile  <- argv$config
+prj         <- suppressWarnings(Project(configFile))
 
 # Build the stats summary file path
 summaryFile <- file.path(config(prj)$metadata$output_dir,
