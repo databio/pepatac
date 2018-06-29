@@ -330,11 +330,16 @@ if (!is.null(prealignments)) {
                   with=FALSE][[1]]
     }
 }
-
+# If the pipeline hasn't performed duplicate removal yet, or there are actually
+# no duplicates, set the duplicate alignment rate to zero
+if (stats$Dedup_alignment_rate == 0) {
+    Duplicates <- 0
+} else {
+    Duplicates <- stats$Alignment_rate - stats$Dedup_alignment_rate
+}
 alignPercent <- data.table(sample=stats$sample_name,
                            Unaligned=Unaligned,
-                           Duplicates=stats$Alignment_rate - 
-                                      stats$Dedup_alignment_rate)
+                           Duplicates=Duplicates)
 
 # Split percents based on genome name
 genomeNames <- unique(stats$Genome)
@@ -342,6 +347,11 @@ for (i in 1:length(genomeNames)) {
     rowPos    <- grep(genomeNames[i], stats$Genome)
     readCount <- rep(0,nrow(stats))
     reads     <- stats$Dedup_alignment_rate[stats$Genome==genomeNames[i]]
+    if (stats$Dedup_alignment_rate == 0) {
+        # If the pipeline has yet to remove duplicates, or there are actually
+        # no duplicate, use the Alignment_rate parameter instead
+        reads <- stats$Alignment_rate[stats$Genome==genomeNames[i]]
+    }
     for (j in 1:length(reads)) {
         readCount[rowPos[j]] <- reads[j]
     }
