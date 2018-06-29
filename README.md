@@ -145,7 +145,7 @@ Whether using the container or native version, you will need to provide external
 
 One feature of the pipeline is *prealignments*, which siphons off reads by aligning to small genomes before the main alignment to the primary reference genome. Any prealignments you want to do use will also require refgenie assemblies. By default, the pipeline will pre-align to the mitochondrial genome, so you if you want to use the default settings, you will need refgenie assemblies for `rCRSd` genome (for human) or `mouse_chrM` (for mouse) in addition to the primary assembly you wish to use. Other ideas for common prealignment references are provided by [ref_decoy](https://github.com/databio/ref_decoy). 
 
-You may [download pre-indexed references](http://big.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). 
+You may [download pre-indexed references](http://big.databio.org/refgenomes) or you may index your own (see [refgenie](https://github.com/databio/refgenie) instructions). The pre-indexed references are compressed files, so you need to untar/unzip them after download.
 
  
 ## 4.2 Configuring the pipeline to use refgenie assemblies
@@ -185,8 +185,8 @@ This small example takes about 15 minutes to run to completion.
 A full tutorial on using containers it outside the scope of this readme, but here are the basics. Individual jobs can be run in a container by simply running the `pepatac.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. For example, run it locally in singularity like this:
 
 ```
-singularity instance.start ${SIMAGES}pepatac atac_image
-singularity exec instance://atac_image pipelines/pepatac.py
+singularity exec --bind $GENOMES $SIMAGES pipelines/pepatac.py 
+
 ```
 
 With docker, you can use:
