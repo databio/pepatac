@@ -349,7 +349,7 @@ for (i in 1:length(genomeNames)) {
     reads     <- stats$Dedup_alignment_rate[stats$Genome==genomeNames[i]]
     if (stats$Dedup_alignment_rate == 0) {
         # If the pipeline has yet to remove duplicates, or there are actually
-        # no duplicate, use the Alignment_rate parameter instead
+        # no duplicates, use the Alignment_rate parameter instead
         reads <- stats$Alignment_rate[stats$Genome==genomeNames[i]]
     }
     for (j in 1:length(reads)) {
