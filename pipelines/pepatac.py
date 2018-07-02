@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 import os
 import sys
 import tempfile
+import tarfile
 import pypiper
 from pypiper import build_command
 
@@ -248,13 +249,18 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
     
     if os.path.isdir(bt2_path):
         if not os.listdir(bt2_path):
-            err_msg = "There are no {} bowtie2 index files"
-            pm.fail_pipeline(Exception(err_msg.format(genome_assembly)))
+            err_msg = "{} does not contain any files."
+            pm.fail_pipeline(IOError(err_msg.format(bt2_path)))
         else:
             path, dirs, files = next(os.walk(bt2_path))
+    elif os.path.isfile(os.path.join(genomes_folder, (genome_assembly + ".tar.gz"))):
+        print("Did you mean this: {}".format(os.path.join(
+            genomes_folder, (genome_assembly + ".tar.gz"))))
+        err_msg = "Extract {} before proceeding."
+        pm.fail_pipeline(IOError(err_msg.format(genome_assembly + ".tar.gz")))
     else:
-        err_msg = "There is no bowtie2 index directory for {}"
-        pm.fail_pipeline(Exception(err_msg.format(genome_assembly)))
+        err_msg = "Could not find the {} index located at: {}"
+        pm.fail_pipeline(IOError(err_msg.format(genome_assembly, bt2_path)))
     # check for bowtie small index
     if [bt for bt in files if bt.endswith('bt2')]:
         bt = ['.1.bt2', '.2.bt2', '.3.bt2', '.4.bt2',
@@ -265,9 +271,8 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
               '.rev.1.bt2l', '.rev.2.bt2l']
     # if neither file type present, fail
     else:
-        err_msg = "There are no bowtie2 index files for {} in {}"
-        pm.fail_pipeline(Exception(
-            err_msg.format(genome_assembly, genomes_folder)))
+        err_msg = "{} does not contain any bowtie2 index files."
+        pm.fail_pipeline(IOError(err_msg.format(bt2_path)))
 
     bt_expected = [genome_assembly + s for s in bt]
     bt_present  = [bt for bt in files if any(s in bt for s in bt_expected)]
@@ -289,7 +294,9 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
     fa_files = [fa for fa in files if genome_file in fa]
     if not fa_files:
         # The fasta file does not exist
-        pm.fail_pipeline(IOError("{}.fa does not exist.".format(genome_assembly)))
+        err_msg = "Could not find {}.fa in {}."
+        pm.fail_pipeline(IOError(
+            err_msg.format(genome_assembly, bt2_path)))
     for f in fa_files:
         if os.stat(os.path.join(bt2_path, f)).st_size == 0:
             pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
