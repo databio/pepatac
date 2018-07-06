@@ -83,28 +83,28 @@ for (i in required_libraries) {
 TSS_CUTOFF <- 6
 
 # Theme for all plots
-alignTheme<-theme(
-    plot.background  = element_blank(),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border     = element_rect(colour = "black", fill=NA, size=0.5),
-    panel.background = element_blank(),
-    axis.line    = element_blank(),
-    axis.text.x  = element_text(face = "plain", color = "black", 
-                                size = 20, hjust = 0.5),
-    axis.text.y  = element_text(face = "plain", color = "black",
-                                size = 20, hjust = 1),
-    axis.title.x = element_text(face = "plain", color = "black", 
-                                size = 22, hjust = 0.5, vjust=0.5),
-    axis.title.y = element_text(face = "plain", color = "black", 
-                                size = 22, hjust = 0.5),
-    plot.title   = element_text(face="bold", color = "black", 
-                                size=12, hjust=0.5),
-    axis.ticks   = element_line(size = 0.5),
+alignTheme <- theme(
+    plot.background   = element_blank(),
+    panel.grid.major  = element_blank(),
+    panel.grid.minor  = element_blank(),
+    panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+    panel.background  = element_blank(),
+    axis.line         = element_blank(),
+    axis.text.x       = element_text(face = "plain", color = "black", 
+                                      size = 20, hjust = 0.5),
+    axis.text.y       = element_text(face = "plain", color = "black",
+                                      size = 20, hjust = 1),
+    axis.title.x      = element_text(face = "plain", color = "black", 
+                                      size = 22, hjust = 0.5, vjust = 0.5),
+    axis.title.y      = element_text(face = "plain", color = "black", 
+                                      size = 22, hjust = 0.5),
+    plot.title        = element_text(face = "bold", color = "black", 
+                                      size = 12, hjust = 0.5),
+    axis.ticks        = element_line(size = 0.5),
     axis.ticks.length = unit(2, "mm"),
-    legend.background = element_rect(fill="transparent"),
-    legend.text  = element_text(size=16),
-    legend.title = element_blank()
+    legend.background = element_rect(fill = "transparent"),
+    legend.text       = element_text(size = 16),
+    legend.title      = element_blank()
 )
 
 ###############################################################################
@@ -122,11 +122,11 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
                            width=unit(4, "in"), 
                            height=unit(4, "in")){
     
-    panels <- grep("panel", g$layout$name)
+    panels        <- grep("panel", g$layout$name)
     panel_index_w <- unique(g$layout$l[panels])
     panel_index_h <- unique(g$layout$t[panels])
-    nw <- length(panel_index_w)
-    nh <- length(panel_index_h)
+    nw            <- length(panel_index_w)
+    nh            <- length(panel_index_h)
     
     if(getRversion() < "3.3.0"){
         
@@ -134,8 +134,7 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
         # because there is no `[<-`.unit method
         # so promoting to unit.list allows standard list indexing
         g$widths  <- grid:::unit.list(g$widths)
-        g$heights <- grid:::unit.list(g$heights)
-        
+        g$heights <- grid:::unit.list(g$heights)        
         g$widths[panel_index_w]  <- rep(list(width), nw)
         g$heights[panel_index_h] <- rep(list(height), nh)
         
@@ -152,7 +151,7 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
                                   unitTo="in", valueOnly=TRUE),
                height=convertHeight(sum(g$heights) + margin,  
                                     unitTo="in", valueOnly=TRUE))
-    
+
     invisible(g)
 }
 
@@ -160,13 +159,14 @@ set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 # specified suffix
 buildFilePath <- function(suffix, pep=prj) {
     file.path(config(pep)$metadata$output_dir, "summary",
-    paste0(config(pep)$name, suffix))
+              paste0(config(pep)$name, suffix))
 }
 
 # Return a list of prealignments from the stats_summary.tsv file if they exist
 getPrealignments <- function(statsFile) {
     pre <- gsub("Aligned_reads_","",
-           unique(grep("Aligned_reads_.*", colnames(statsFile), value=TRUE)))
+                unique(grep("Aligned_reads_.*",
+                colnames(statsFile), value=TRUE)))
     if (length(pre) > 0) {
         return(pre)
     } else {
@@ -189,12 +189,12 @@ summaryFile <- file.path(config(prj)$metadata$output_dir,
 dir.create(
     suppressMessages(
         file.path(config(prj)$metadata$output_dir, "summary")),
-        showWarnings = FALSE)
+    showWarnings = FALSE)
 
 # read in stats summary file
 if (file.exists(summaryFile)) {
     stats <- suppressWarnings(fread(
-                summaryFile, header=TRUE, check.names=FALSE))
+        summaryFile, header=TRUE, check.names=FALSE))
 } else {
     message("PEPATAC_summarizer.R was unable to find the summary file.")
     quit()
@@ -217,9 +217,9 @@ Unaligned <- stats$Fastq_reads - stats$Aligned_reads
 # If prealignments exist...include in Unaligned reads count
 if (!is.null(prealignments)) {
     for (i in 1:length(unlist(prealignments))) {
-        Unaligned <- Unaligned - 
-            stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
-                  with=FALSE][[1]]
+        Unaligned <- Unaligned - stats[, (paste("Aligned_reads",
+                                       unlist(prealignments)[i], sep="_")),
+                                       with=FALSE][[1]]
     }
 }
 
@@ -248,7 +248,7 @@ if (is.null(alignRaw)) {
 }
 
 # Split counts based on genome name
-genomeNames <- unique(stats$Genome)
+genomeNames   <- unique(stats$Genome)
 for (i in 1:length(genomeNames)) {
     rowPos    <- grep(genomeNames[i], stats$Genome)
     readCount <- rep(0,nrow(stats))
@@ -262,9 +262,9 @@ for (i in 1:length(genomeNames)) {
 # If prealignments exist...add to data.table
 if (!is.null(prealignments)) {
     for (i in 1:length(unlist(prealignments))) {
-        alignRaw[, unlist(prealignments)[i] := as.integer(stats[,
-            (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
-            with=FALSE][[1]])]
+        alignRaw[, unlist(prealignments)[i] := as.integer(
+           stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
+           with=FALSE][[1]])]
     }
     setcolorder(alignRaw, c("sample", "Unaligned",
                             paste(unlist(prealignments)),
@@ -283,15 +283,15 @@ chartHeight  <- (length(unique(alignRaw$sample))) * 0.75
 
 plotColors <- data.table(Unaligned="gray15")
 if (!is.null(prealignments)) {
-    moreColors <- colorpanel(length(unlist(prealignments)), 
+    moreColors <- colorpanel(length(unlist(prealignments)),
                              low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
     for (i in 1:length(unlist(prealignments))) {
-    plotColors[, unlist(prealignments)[i] := moreColors[i]]
+        plotColors[, unlist(prealignments)[i] := moreColors[i]]
     }
 }
 
 plotColors[, Duplicates := "#FC1E25"]
-moreColors <- colorpanel(length(genomeNames), 
+moreColors <- colorpanel(length(genomeNames),
                          low="#4876FF", mid="#94D9CE", high="#7648FF")
 for (i in 1:length(genomeNames)) {
     plotColors[, (genomeNames[i]) := moreColors[i]]
@@ -299,25 +299,49 @@ for (i in 1:length(genomeNames)) {
 
 alignRawPlot <- (
     ggplot(meltAlignRaw, aes(x=sample, y=as.numeric(value)/1000000)) +
-        geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) + 
+        geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) +
         guides(fill=guide_legend(reverse=TRUE)) +
         labs(x="", y="Number of reads (M)") +
         scale_x_discrete(limits=rev(levels(meltAlignRaw$sample))) +
         scale_y_continuous(limits=c(0,upperLimit), expand=c(0,0)) +
         scale_fill_manual(values=paste(plotColors)) +
-        coord_flip() + 
+        coord_flip() +
         alignTheme)
 
-# Produce both PDF and PNG
+# Produce full-size PDF
 set_panel_size(
-    alignRawPlot, 
-    file=buildFilePath("_alignmentRaw.pdf", prj), 
-    width=unit(8,"inches"), 
+    alignRawPlot,
+    file=buildFilePath("_alignmentRaw.pdf", prj),
+    width=unit(8,"inches"),
     height=unit(chartHeight,"inches"))
+
+# Produce snap-shot thumbnail PNG for HTML display
+# Limit to 25 samples max
+if (length(alignRaw$sample) > 25) {
+    alignRawThumb <- alignRaw[1:25]
+    moreToSee     <- data.frame(t(c("...", rep(0, (ncol(alignRawThumb)-1)))))
+    colnames(moreToSee)   <- colnames(alignRawThumb)
+    alignRawThumb         <- rbind(alignRawThumb, moreToSee)
+    alignRawThumb$sample  <- droplevels(alignRawThumb)$sample
+    meltAlignRawThumb     <- melt(alignRawThumb, id.vars="sample")
+} else {meltAlignRawThumb <- meltAlignRaw}
+
+chartHeight  <- (length(unique(alignRawThumb$sample))) * 0.75
+thumbRawPlot <- (
+    ggplot(meltAlignRawThumb, aes(x=sample, y=as.numeric(value)/1000000)) +
+        geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) +
+        guides(fill=guide_legend(reverse=TRUE)) +
+        labs(x="", y="Number of reads (M)") +
+        scale_x_discrete(limits=rev(levels(meltAlignRawThumb$sample))) +
+        scale_y_continuous(limits=c(0,upperLimit), expand=c(0,0)) +
+        scale_fill_manual(values=paste(plotColors)) +
+        coord_flip() +
+        alignTheme)
+
 set_panel_size(
-    alignRawPlot, 
-    file=buildFilePath("_alignmentRaw.png", prj), 
-    width=unit(8,"inches"), 
+    thumbRawPlot,
+    file=buildFilePath("_alignmentRaw.png", prj),
+    width=unit(8,"inches"),
     height=unit(chartHeight,"inches"))
 
 ###############################################################################
@@ -325,44 +349,51 @@ set_panel_size(
 Unaligned <- 100 - stats$Alignment_rate
 if (!is.null(prealignments)) {
     for (i in 1:length(unlist(prealignments))) {
-        Unaligned <- Unaligned - 
-            stats[, (paste("Alignment_rate", unlist(prealignments)[i], sep="_")),
-                  with=FALSE][[1]]
+        Unaligned <- Unaligned - stats[, (paste("Alignment_rate",
+                                       unlist(prealignments)[i], sep="_")),
+                                       with=FALSE][[1]]
     }
 }
 # If the pipeline hasn't performed duplicate removal yet, or there are actually
 # no duplicates, set the duplicate alignment rate to zero
-if (stats$Dedup_alignment_rate == 0) {
-    Duplicates <- 0
-} else {
-    Duplicates <- stats$Alignment_rate - stats$Dedup_alignment_rate
+Duplicates <- list()
+for (i in 1:length(stats$Alignment_rate)) {
+    if (stats$Dedup_alignment_rate[i] == 0) {
+        Duplicates[[i]] <- as.numeric(0)
+    } else {
+        Duplicates[[i]] <- as.numeric(stats$Alignment_rate[i] -
+                                      stats$Dedup_alignment_rate[i])
+    }
 }
+
 alignPercent <- data.table(sample=stats$sample_name,
                            Unaligned=Unaligned,
-                           Duplicates=Duplicates)
+                           Duplicates=as.numeric(Duplicates))
 
 # Split percents based on genome name
-genomeNames <- unique(stats$Genome)
+genomeNames   <- unique(stats$Genome)
 for (i in 1:length(genomeNames)) {
     rowPos    <- grep(genomeNames[i], stats$Genome)
-    readCount <- rep(0,nrow(stats))
+    readCount <- rep(0, nrow(stats))
     reads     <- stats$Dedup_alignment_rate[stats$Genome==genomeNames[i]]
-    if (stats$Dedup_alignment_rate == 0) {
+    for (j in 1:length(grep('^0', reads))) {
         # If the pipeline has yet to remove duplicates, or there are actually
         # no duplicates, use the Alignment_rate parameter instead
-        reads <- stats$Alignment_rate[stats$Genome==genomeNames[i]]
+        rowNum        <- grep('^0', reads)[j]
+        reads[rowNum] <- stats$Alignment_rate[stats$Genome==genomeNames[i]][rowNum]
     }
-    for (j in 1:length(reads)) {
-        readCount[rowPos[j]] <- reads[j]
+    for (k in 1:length(reads)) {
+        readCount[rowPos[k]] <- reads[k]
     }
     alignPercent[, (genomeNames[i]) := as.numeric(readCount)]
 }
 
 if (!is.null(prealignments)) {
     for (i in 1:length(unlist(prealignments))) {
-        alignPercent[, unlist(prealignments)[i] := as.double(stats[,
-            (paste("Alignment_rate", unlist(prealignments)[i], sep="_")), 
-            with=FALSE][[1]])]
+        alignPercent[, unlist(prealignments)[i] := as.double(
+            stats[, (paste("Alignment_rate",
+                  unlist(prealignments)[i], sep="_")),
+                  with=FALSE][[1]])]
     }
     setcolorder(alignPercent, c("sample", "Unaligned",
                                 paste(unlist(prealignments)),
@@ -421,14 +452,39 @@ alignPercentPlot <- (
         coord_flip() + 
         alignTheme)
 
-# Produce both PDF and PNG     
+# Produce full-size PDF     
 set_panel_size(
     alignPercentPlot, 
     file=buildFilePath("_alignmentPercent.pdf", prj), 
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
+
+# Produce snap-shot thumbnail PNG for HTML display
+# Limit to 25 samples max
+if (length(alignPercent$sample) > 25) {
+    alignPercentThumb <- alignPercent[1:25]
+    moreToSee         <- data.frame(t(c("...",
+                                    rep(0, (ncol(alignPercentThumb)-1)))))
+    colnames(moreToSee)       <- colnames(alignPercentThumb)
+    alignPercentThumb         <- rbind(alignPercentThumb, moreToSee)
+    alignPercentThumb$sample  <- droplevels(alignPercentThumb)$sample
+    meltAlignPercentThumb     <- melt(alignPercentThumb, id.vars="sample")
+} else {meltAlignPercentThumb <- meltAlignPercent}
+
+chartHeight      <- (length(unique(alignPercentThumb$sample))) * 0.75
+thumbPercentPlot <- (
+    ggplot(meltAlignPercentThumb, aes(x=sample, y=as.numeric(value))) +
+        geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) + 
+        guides(fill=guide_legend(reverse=TRUE)) +
+        labs(x="", y="Percent of reads") +
+        scale_x_discrete(limits=rev(levels(meltAlignPercentThumb$sample))) +
+        scale_y_continuous(limits=c(0,upperLimit), expand=c(0,0)) +
+        scale_fill_manual(values=paste(plotColors)) +
+        coord_flip() +
+        alignTheme)
+
 set_panel_size(
-    alignPercentPlot, 
+    thumbPercentPlot, 
     file=buildFilePath("_alignmentPercent.png", prj), 
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
@@ -451,8 +507,9 @@ TSScolors   <- c(redColors,greenColors)
 TSSscore <- tryCatch(
     {
         cbind.data.frame(sample=stats$sample_name, 
-            TSS=round(stats$TSS_Score, digits=2),
-            QCcolor=(TSScolors[round(stats$TSS_Score+0.01, digits=2)*100]))
+                         TSS=round(stats$TSS_Score, digits=2),
+                         QCcolor=(TSScolors[round(stats$TSS_Score+0.01,
+                                                  digits=2)*100]))
     },
     error=function(e) {
         message("The summary file value(s) for the TSS score(s)",
@@ -480,13 +537,13 @@ TSSscore$sample <- factor(TSSscore$sample, levels=TSSscore$sample)
 
 TSSPlot <- ggplot(
     TSSscore, aes(x=sample, y=as.numeric(TSS))) +
-    geom_bar(colour="black", size=0.25, width=0.7, stat="identity", 
+    geom_bar(colour="black", size=0.25, width=0.7, stat="identity",
              fill=rev(TSSscore$QCcolor)) +
     geom_hline(yintercept=6, linetype=2, color="grey", size=0.25) +
     labs(x="", y="TSS Enrichment Score") +
     scale_x_discrete(limits=rev(TSSscore$sample)) +
     scale_y_continuous(limits=c(0,upperLimit), expand=c(0,0)) +
-    coord_flip() + 
+    coord_flip() +
     alignTheme
 
 # Produce both PDF and PNG   
@@ -494,6 +551,28 @@ set_panel_size(
     TSSPlot, file=buildFilePath("_TSSEnrichment.pdf", prj),
     width=unit(8,"inches"), 
     height=unit(chartHeight,"inches"))
+
+# Produce snap-shot thumbnail PNG for HTML display
+# Limit to 25 samples max
+if (length(TSSscore$sample) > 25) {
+    TSSscoreThumb <- TSSscore[1:25, ]
+    chartHeight   <- (length(unique(TSSscoreThumb$sample))) * 0.75
+    moreToSee     <- data.frame(t(c("...", "0", "#AF0000")))
+    colnames(moreToSee) <- colnames(TSSscoreThumb)
+    TSSscoreThumb       <- rbind(TSSscoreThumb, moreToSee)
+} else {TSSscoreThumb   <- TSSscore}
+
+TSSPlot <- ggplot(
+    TSSscoreThumb, aes(x=sample, y=as.numeric(TSS))) +
+    geom_bar(colour="black", size=0.25, width=0.7, stat="identity",
+             fill=rev(TSSscoreThumb$QCcolor)) +
+    geom_hline(yintercept=6, linetype=2, color="grey", size=0.25) +
+    labs(x="", y="TSS Enrichment Score") +
+    scale_x_discrete(limits=rev(TSSscoreThumb$sample)) +
+    scale_y_continuous(limits=c(0,upperLimit), expand=c(0,0)) +
+    coord_flip() +
+    alignTheme
+
 set_panel_size(
     TSSPlot, file=buildFilePath("_TSSEnrichment.png", prj),
     width=unit(8,"inches"), 
@@ -522,7 +601,7 @@ if (any(!is.na(stats$Picard_est_lib_size))) {
         scale_y_continuous(limits = c(0,upperLimit), expand=c(0,0)) +
         coord_flip() + 
         alignTheme
-
+    
     # Produce both PDF and PNG
     set_panel_size(LibSizePlot, 
                    file=buildFilePath("_LibSize.pdf", prj), 
