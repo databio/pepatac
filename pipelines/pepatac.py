@@ -524,7 +524,7 @@ def main():
     # We recommend mapping to chrM first for ATAC-seq data
     pm.timestamp("### Prealignments")
     if len(args.prealignments) == 0:
-        print("You may use `--prealignments` to align to references before"
+        print("You may use `--prealignments` to align to references before "
               "the genome alignment step. See docs.")
     else:
         print("Prealignment assemblies: " + str(args.prealignments))
