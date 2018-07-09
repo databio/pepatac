@@ -324,9 +324,9 @@ if (length(alignRaw$sample) > 25) {
     alignRawThumb         <- rbind(alignRawThumb, moreToSee)
     alignRawThumb$sample  <- droplevels(alignRawThumb)$sample
     meltAlignRawThumb     <- melt(alignRawThumb, id.vars="sample")
+    chartHeight           <- (length(unique(alignRawThumb$sample))) * 0.75
 } else {meltAlignRawThumb <- meltAlignRaw}
 
-chartHeight  <- (length(unique(alignRawThumb$sample))) * 0.75
 thumbRawPlot <- (
     ggplot(meltAlignRawThumb, aes(x=sample, y=as.numeric(value)/1000000)) +
         geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) +
@@ -469,9 +469,10 @@ if (length(alignPercent$sample) > 25) {
     alignPercentThumb         <- rbind(alignPercentThumb, moreToSee)
     alignPercentThumb$sample  <- droplevels(alignPercentThumb)$sample
     meltAlignPercentThumb     <- melt(alignPercentThumb, id.vars="sample")
+    chartHeight               <- ((length(unique(alignPercentThumb$sample))) *
+                                   0.75)
 } else {meltAlignPercentThumb <- meltAlignPercent}
 
-chartHeight      <- (length(unique(alignPercentThumb$sample))) * 0.75
 thumbPercentPlot <- (
     ggplot(meltAlignPercentThumb, aes(x=sample, y=as.numeric(value))) +
         geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) + 
