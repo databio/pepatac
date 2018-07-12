@@ -168,9 +168,10 @@ class bamQC(pararead.ParaReadProcessor):
             M2 = max(1, float(stats['M2']))
             PBC1 = float(stats['M1'])/max(1, float(stats['M_DISTINCT']))
             PBC2 = float(stats['M1'])/float(M2)
+            header = ["Duplicate_rate", "NRF", "PBC1", "PBC2"]
             np.savetxt(self.outfile, np.c_[dupRate, NRF, PBC1, PBC2],
-                       header="Duplicate_rate, NRF, PBC1, PBC2", fmt='%s',
-                       delimiter=',')
+                       header='\t'.join(header), fmt='%s', delimiter='\t',
+                       comments='')
 
 # read options from command line
 def parse_args(cmdl):
