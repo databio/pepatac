@@ -123,7 +123,7 @@ class bamQC(pararead.ParaReadProcessor):
                 read2 = getRead2(self.fetch_chunk(chrom))
             merge = _pd.merge(read1, read2, on = 'query_name')
             merge = merge.drop(columns='query_name')
-            if chrom == 'chrM':
+            if ('chrM' or 'rCRSd') in chrom:
                 mitoCount = mitoCount + float(flags['num_pairs'])
             M_DISTINCT = len(merge.drop_duplicates())
             M1 = (flags['num_pairs']) - len(merge[merge.duplicated(keep=False)])
