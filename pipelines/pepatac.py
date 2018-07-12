@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "xujin937@gmail.com"
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 
 from argparse import ArgumentParser
@@ -168,14 +168,6 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
                container=pm.container)
 
         # filter genome reads not mapped
-        # unmapped_bam = os.path.join(sub_outdir, args.sample_name +
-        #                             "_unmap_" + assembly_identifier + ".bam")
-        # cmd = tools.samtools + " view -b -@ " + str(pm.cores) + " -f 12  "
-        # cmd +=  mapped_bam + " > " + unmapped_bam
-
-        # cmd2, unmap_fq1, unmap_fq2 = \
-        # ngstk.bam_to_fastq_awk(unmapped_bam, out_fastq_pre, args.paired_end)
-        # pm.run([cmd,cmd2], unmap_fq2, container=pm.container)
         unmap_fq1 = out_fastq_pre + "_R1.fq.gz"
         unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
         return unmap_fq1, unmap_fq2
@@ -591,6 +583,42 @@ def main():
     pm.run([cmd, cmd2], mapping_genome_bam, follow=check_alignment_genome,
            container=pm.container)
 
+    # Calculate quality control metrics for the alignment file  
+    pm.timestamp("### Calculate NRF, PBC1, and PBC2")
+    QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
+    ngstk.make_dir(QC_folder)
+
+    # Need index for mapping_genome_bam before calculating bamQC metrics
+    mapping_genome_index = os.path.join(mapping_genome_bam + ".bai")
+    cmd = tools.samtools + " index " + mapping_genome_bam
+    pm.run(cmd, mapping_genome_index, container=pm.container)
+    
+    bamQC = os.path.join(QC_folder, args.sample_name + ".bamQC")
+    cmd = tool_path("bamQC.py")
+    cmd += " -i " + mapping_genome_bam
+    cmd += " -c " + str(pm.cores)
+    cmd += " -o " + bamQC
+
+    def report_bam_qc(bamqc_log):
+        # Reported BAM QC metrics via the bamQC metrics file
+        cmd1 = ("awk '{ for (i=1; i<=NF; ++i) {" +
+                " if ($i ~ \"NRF\") c=i } getline; print $c }' " + bamqc_log)
+        cmd2 = ("awk '{ for (i=1; i<=NF; ++i) {" +
+                " if ($i ~ \"PBC1\") c=i } getline; print $c }' " + bamqc_log)
+        cmd3 = ("awk '{ for (i=1; i<=NF; ++i) {" +
+                " if ($i ~ \"PBC2\") c=i } getline; print $c }' " + bamqc_log)
+
+        nrf = pm.checkprint(cmd1)
+        pbc1 = pm.checkprint(cmd2)
+        pbc2 = pm.checkprint(cmd3)
+
+        pm.report_result("NRF", nrf)
+        pm.report_result("PBC1", pbc1)
+        pm.report_result("PBC2", pbc2)
+
+    pm.run(cmd, bamQC, follow=lambda: report_bam_qc(bamQC),
+           container=pm.container)
+
     # Now produce the unmapped file
     unmap_cmd = "samtools view -b -@ " + str(pm.cores)
     if args.paired_end:
@@ -642,24 +670,7 @@ def main():
         map_genome_folder, args.sample_name + "_picard_metrics_bam.txt")
     picard_log = os.path.join(
         map_genome_folder, args.sample_name + "_picard_metrics_log.txt")
-    # the tools.picard command is being generated from OUTSIDE THE CONTAINER!!!
-    # therefore, it doesn't know how to expand that variable!!!!
-    # if I run as docker shell, it would expand, but not with exec!
-    # This method works, but is messy
-    # if pm.container is not None:
-        # # target is a file, not output
-        # picard_temp = os.path.join(map_genome_folder, "picard.txt")
-        # cmd = "printenv PICARD >" + picard_temp
-        # pm.run(cmd, picard_temp, container=pm.container, clean=True)
-        # cmd = "cat " + picard_temp
-        # picard = pm.checkprint(cmd).rstrip()
-        # cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
-                # picard + " MarkDuplicates")
-    # This also works, but is hard-coded...
-    # TODO: Alternative thought, in pypiper, check if command uses shell,
-    #       then check if command contains pipes...then if it does, split 
-    #       on those pipes and add a singularity exec instance:// before
-    #       each command, and let the host shell do the piping.
+
     if pm.container is not None:
         cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
                 "/home/tools/bin/picard.jar" + " MarkDuplicates")
@@ -724,14 +735,6 @@ def main():
     temp_target = os.path.join(temp_exact_folder, "flag_completed")
     exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
 
-    # this is the old way to do it (to be removed)
-    # cmd = tool_path("bedToExactWig.pl")
-    # cmd += " " + shift_bed
-    # cmd += " " + res.chrom_sizes
-    # cmd += " " + temp_exact_folder
-    # cmd2 = "touch " + temp_target
-    # pm.run([cmd, cmd2], temp_target, container=pm.container)
-
     # # Aside: since this bigWigCat command uses shell expansion, pypiper
     # # cannot profile memory. We could use glob.glob if we want to preserve
     # # memory; like so: glob.glob(os.path.join(...)). But I don't because
@@ -761,8 +764,8 @@ def main():
               .format(res.TSS_file))
     else:
         pm.timestamp("### Calculate TSS enrichment")
-        QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
-        ngstk.make_dir(QC_folder)
+        #QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
+        #ngstk.make_dir(QC_folder)
 
         Tss_enrich = os.path.join(QC_folder, args.sample_name +
                                   ".TssEnrichment")
