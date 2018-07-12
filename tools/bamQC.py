@@ -134,7 +134,7 @@ class bamQC(pararead.ParaReadProcessor):
             for key, value in cTable['template_length_y'].items():
                 if key == 2:
                     M2 = value
-            chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2}         
+            chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2, 'mitoReads':mitoCount}         
             chrStats.update(flags)
             np.save(chrom_out_file, chrStats)
             return chrom
@@ -163,13 +163,14 @@ class bamQC(pararead.ParaReadProcessor):
                 chrStats = np.load(temp_files[i] + '.npy')
                 stats = {k: stats.get(k, 0) + chrStats.item().get(k, 0) for k in set(stats) | set(chrStats.item())}
             total = max(1, float(stats['num_pairs'])) 
-            dupRate = stats['dups']/total
+            dupRate = float(stats['dups'])/total
             NRF = float(stats['M1'])/total
             M2 = max(1, float(stats['M2']))
             PBC1 = float(stats['M1'])/max(1, float(stats['M_DISTINCT']))
             PBC2 = float(stats['M1'])/float(M2)
-            header = ["Duplicate_rate", "NRF", "PBC1", "PBC2"]
-            np.savetxt(self.outfile, np.c_[dupRate, NRF, PBC1, PBC2],
+            mitoRate = float(stats['mitoReads'])/total
+            header = ["Duplicate_rate", "Mitochondria_rate", "NRF", "PBC1", "PBC2"]
+            np.savetxt(self.outfile, np.c_[dupRate, mitoRate, NRF, PBC1, PBC2],
                        header='\t'.join(header), fmt='%s', delimiter='\t',
                        comments='')
 
