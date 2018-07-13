@@ -172,11 +172,10 @@ class bamQC(pararead.ParaReadProcessor):
             M2 = max(1, float(stats['M2']))
             PBC1 = float(stats['M1'])/max(1, float(stats['M_DISTINCT']))
             PBC2 = float(stats['M1'])/float(M2)
-            mitoRate = float(stats['mitoReads'])/total
-            # _LOGGER.info("Total Read Pairs: " + str(total))
-            # _LOGGER.info("Distinct Read Pairs: " + str(stats['M_DISTINCT']))
-            # _LOGGER.info("One Read Pair: " + str(stats['M1']))
-            # _LOGGER.info("Two Read Pairs: " + str(M2))
+            try:
+                mitoRate = float(stats['mitoReads'])/total
+            except KeyError:
+                mitoRate = 0
             header = ["Total_read_pairs", "Distinct_read_pairs",
             "One_read_pair", "Two_read_pairs", "Duplicate_rate",
             "Mitochondria_rate", "NRF", "PBC1", "PBC2"]
