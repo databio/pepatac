@@ -118,13 +118,17 @@ class bamQC(pararead.ParaReadProcessor):
             mitoCount = 0
             isPE = isPaired(self.fetch_chunk(chrom))   
             flags = countFlags(self.fetch_chunk(chrom))
+            if ('chrM' or 'rCRSd') in chrom:
+                mitoCount = mitoCount + float(flags['num_pairs'])
+                chrStats = {'mitoReads':mitoCount}         
+                #chrStats.update(flags)
+                np.save(chrom_out_file, chrStats)
+                return chrom
             if isPE:
                 read1 = getRead1(self.fetch_chunk(chrom))
                 read2 = getRead2(self.fetch_chunk(chrom))
             merge = _pd.merge(read1, read2, on = 'query_name')
-            merge = merge.drop(columns='query_name')
-            if ('chrM' or 'rCRSd') in chrom:
-                mitoCount = mitoCount + float(flags['num_pairs'])
+            merge = merge.drop(columns='query_name')            
             M_DISTINCT = len(merge.drop_duplicates())
             M1 = (flags['num_pairs']) - len(merge[merge.duplicated(keep=False)])
             posDup = merge[merge.duplicated(keep=False)]
@@ -134,7 +138,7 @@ class bamQC(pararead.ParaReadProcessor):
             for key, value in cTable['template_length_y'].items():
                 if key == 2:
                     M2 = value
-            chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2, 'mitoReads':mitoCount}         
+            chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2}         
             chrStats.update(flags)
             np.save(chrom_out_file, chrStats)
             return chrom
@@ -169,8 +173,15 @@ class bamQC(pararead.ParaReadProcessor):
             PBC1 = float(stats['M1'])/max(1, float(stats['M_DISTINCT']))
             PBC2 = float(stats['M1'])/float(M2)
             mitoRate = float(stats['mitoReads'])/total
-            header = ["Duplicate_rate", "Mitochondria_rate", "NRF", "PBC1", "PBC2"]
-            np.savetxt(self.outfile, np.c_[dupRate, mitoRate, NRF, PBC1, PBC2],
+            # _LOGGER.info("Total Read Pairs: " + str(total))
+            # _LOGGER.info("Distinct Read Pairs: " + str(stats['M_DISTINCT']))
+            # _LOGGER.info("One Read Pair: " + str(stats['M1']))
+            # _LOGGER.info("Two Read Pairs: " + str(M2))
+            header = ["Total_read_pairs", "Distinct_read_pairs",
+            "One_read_pair", "Two_read_pairs", "Duplicate_rate",
+            "Mitochondria_rate", "NRF", "PBC1", "PBC2"]
+            np.savetxt(self.outfile, np.c_[total, stats['M_DISTINCT'],
+                       stats['M1'], M2, dupRate, mitoRate, NRF, PBC1, PBC2],
                        header='\t'.join(header), fmt='%s', delimiter='\t',
                        comments='')
 
