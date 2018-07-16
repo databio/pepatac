@@ -920,6 +920,15 @@ def main():
                              frip_func=ngstk.simple_frip, pipeline_manager=pm)
         pm.report_result("FRIP_ref", frip_ref)
 
+    # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
+    bigNarrowPeak = os.path.join(peak_folder, args.sample_name +
+                                 "_peaks.bigBed")
+    cmd = build_command(
+            [tools.Rscript, tool_path("narrowPeakToBigBed.R"),
+             peak_folder, res.chrom_sizes, tools.bedToBigBed,
+             " --outdir ", peak_folder])
+    pm.run(cmd, bigNarrowPeak, nofail=False, container=pm.container)
+
     pm.stop_pipeline()
 
 
