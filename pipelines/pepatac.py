@@ -921,12 +921,13 @@ def main():
         pm.report_result("FRIP_ref", frip_ref)
 
     # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
+    pm.timestamp("### # Produce bigBed formatted narrowPeak files")
     bigNarrowPeak = os.path.join(peak_folder, args.sample_name +
                                  "_peaks.bigBed")
     cmd = build_command(
             [tools.Rscript, tool_path("narrowPeakToBigBed.R"),
-             peak_folder, res.chrom_sizes, tools.bedToBigBed,
-             " --outdir ", peak_folder])
+             peak_sorted_file, res.chrom_sizes, tools.bedToBigBed,
+             bigNarrowPeak])
     pm.run(cmd, bigNarrowPeak, nofail=False, container=pm.container)
 
     pm.stop_pipeline()
