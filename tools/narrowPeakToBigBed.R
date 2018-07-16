@@ -1,7 +1,7 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #3/09/18
-#Last Updated 7/15/18
+#Last Updated 7/16/18
 #Jason Smith
 #narrowPeakToBigBed.R
 #
@@ -13,7 +13,7 @@
 #       /path/to/*.narrowPeak /path/to/chrom.sizes /path/to/bedToBigBed
 #       --outdir /path/to/output_directory (default = cwd)
 #
-#requirements: argparser, dplyr, rescale
+#requirements: argparser, scales
 #
 ###############################################################################
 
@@ -61,7 +61,7 @@ argv <- parse_args(p)
 ###############################################################################
 
 ##### LOAD DEPENDENCIES #####
-required_libraries <- c("dplyr", "scales")
+required_libraries <- c("scales")
 for (i in required_libraries) {
     loadLibrary <- tryCatch (
         {
@@ -98,8 +98,8 @@ if (file.exists(file.path(argv$chromsizes))) {
     stop(errMsg)
 }
 
-fileList    <- list.files(path = argv$indir, 
-                          pattern = "*.narrowPeak", 
+fileList    <- list.files(path = file.path(argv$indir),
+                          pattern = "*.narrowPeak",
                           recursive = TRUE)
 
 for (i in 1:length(fileList)) {
@@ -111,19 +111,18 @@ for (i in 1:length(fileList)) {
                          "character", "double", "double", "double",
                          "integer"))
     } else {break}   
-
-    # some 'score' values are greater than 1000, 
-    # that's more than BED format allows
+    
+    # some 'score' values are greater than 1000 (more than BED format allows); 
+    # rescale the scores to 0-1000 based on the 99th percentile being 1000
     nineNine <- quantile(np$V5, 0.99)
-    np       <- np %>% mutate(V5 = replace(V5, V5>nineNine, nineNine))
+    np$V5    <- replace(np$V5, np$V5 > nineNine, nineNine)
     np$V5    <- rescale(log(np$V5), to = c(0, 1000))
     name     <- unlist(strsplit(basename(fileList[i]), split="[.]"))[1]
-    #np <- np %>% mutate(V5=replace(V5, V5>1000, 1000))  # simple fix version
     
-    np <- inner_join(np, chrom.sizes, by="V1")
+    np <- merge(np, chrom.sizes, by="V1")
     colnames(np) <- c("V1","V2","V3","V4","V5","V6","V7","V8","V9","V10","V11")
     
-    # some 'chromEnd' positions are greater than the max chrom.size?
+    # make sure 'chromEnd' positions are not greater than the max chrom.size
     for (j in 1:nrow(np)) {
         if (np$V3[j] > np$V11[j]) np$V3[j] <- np$V11[j]
     }
@@ -151,7 +150,8 @@ for (i in 1:length(fileList)) {
     
     system2(paste(argv$ucsc), 
             args=c(paste("-as=", argv$indir, "bigNarrowPeak.as", sep="/"), 
-                   "-type=bed6+4", tmpFile, argv$chromsizes, outName, sep=" "))
+                   "-type=bed6+4", tmpFile, argv$chromsizes, outName, sep=" ")
+
     file.remove(file.path(argv$indir, "bigNarrowPeak.as"))
     if (!argv$keep) file.remove(tmpFile)
 }
