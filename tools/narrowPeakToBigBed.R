@@ -132,7 +132,7 @@ for (i in 1:length(fileList)) {
     tmpFile <- file.path(argv$outdir, paste(name, ".bed", sep=""))
     outName <- file.path(argv$outdir, paste(name, ".bigBed", sep=""))
     
-    write.table(np, tmpFile, col.names=FALSE, quote=FALSE)
+    write.table(np, tmpFile, col.names=FALSE, row.names=FALSE, quote=FALSE)
     
     cat("table bigNarrowPeak\n", 
         "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n",
