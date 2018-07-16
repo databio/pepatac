@@ -150,7 +150,7 @@ for (i in 1:length(fileList)) {
     
     system2(paste(argv$ucsc), 
             args=c(paste("-as=", argv$indir, "bigNarrowPeak.as", sep="/"), 
-                   "-type=bed6+4", tmpFile, argv$chromsizes, outName, sep=" ")
+                   "-type=bed6+4", tmpFile, argv$chromsizes, outName, sep=" "))
 
     file.remove(file.path(argv$indir, "bigNarrowPeak.as"))
     if (!argv$keep) file.remove(tmpFile)
