@@ -926,7 +926,7 @@ def main():
                                  "_peaks.bigBed")
     cmd = build_command(
             [tools.Rscript, tool_path("narrowPeakToBigBed.R"),
-             peak_sorted_file, res.chrom_sizes, tools.bedToBigBed,
+             peak_output_file, res.chrom_sizes, tools.bedToBigBed,
              bigNarrowPeak])
     pm.run(cmd, bigNarrowPeak, nofail=False, container=pm.container)
 
