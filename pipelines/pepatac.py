@@ -128,7 +128,10 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         out_fastq_pre = os.path.join(
             sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
         # bowtie2 unmapped filename format
-        out_fastq_bt2 = out_fastq_pre + '_R%.fq.gz'
+        if args.paried_end:
+            out_fastq_bt2 = out_fastq_pre + '_R%.fq.gz'
+        else:
+            out_fastq_bt2 = out_fastq_pre + '_R1.fq.gz'
 
         if not bt2_opts_txt:
             # Default options
