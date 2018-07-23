@@ -147,9 +147,10 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         cmd += " --rg-id " + args.sample_name
         if args.paired_end:
             cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+            cmd += " --un-conc-gz " + out_fastq_bt2
         else:
             cmd += " -U " + unmap_fq1
-        cmd += " --un-conc-gz " + out_fastq_bt2
+            cmd += " --un-gz " + out_fastq_bt2
         # TODO: Pipes break singularity exec command... use shell?
         cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
         cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
