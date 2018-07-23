@@ -18,6 +18,7 @@ tools:  # absolute paths to required tools
   wigToBigWig: wigToBigWig
   bigWigCat: bigWigCat
   bedSort: bedSort
+  bedToBigBed: bedToBigBed
   # optional tools
   fseq: fseq  
   trimmo: ${TRIMMOMATIC}

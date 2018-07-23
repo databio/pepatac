@@ -20,7 +20,7 @@ while(<PH>){
         if($line[1] == 99 || $line[1] == 163){
             # score 99 (first good mate pair alignment on pos strand, mate has score 147)
 		my $start=$line[3];
-		my $end=$start+abs($line[8]); # fragment length should be considering the read lenght of R2.
+		my $end=$start+abs($line[8]); # fragment length should be considering the read length of R2.
 		$start_extl = $start + 4 - 25;
   		$start_extr = $start + 4 + 25;
   		$end_extl = $end - 5 - 25;
