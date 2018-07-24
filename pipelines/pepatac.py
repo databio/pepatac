@@ -868,6 +868,7 @@ def main():
             fseq_cmd_chunks.append(fseq_optval)
 
         # Create the peak calling command
+        fseq_cmd_chunks.append(peak_input_file)
         fseq_cmd = build_command(fseq_cmd_chunks)
 
         # Create the file merge/delete commands.
