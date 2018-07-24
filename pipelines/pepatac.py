@@ -880,7 +880,7 @@ def main():
         pm.clean_add(chrom_peak_files)
 
         # Pypiper serially executes the commands.
-        cmd = [fseq_cmd, merge_chrom_peaks_files, delete_chrom_peaks_files]
+        cmd = [fseq_cmd, merge_chrom_peaks_files]
 
     else:
         # MACS2
