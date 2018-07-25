@@ -158,13 +158,12 @@ class bamQC(pararead.ParaReadProcessor):
                 M_DISTINCT = len(readSE.drop_duplicates())
                 M1 = (flags['num_reads']) - len(readSE[readSE.duplicated(keep=False)])
                 posDup = readSE[readSE.duplicated(keep=False)]
-                posDupTable = posDup.groupby(['query_pos','template_length']).count()
-                cTable = posDupTable.groupby(['query_pos']).count()
+                cTable = posDup.groupby(['query_pos']).count()
                 M2 = 0
                 if not cTable.empty:
-                    for key, value in cTable['template_length'].items():
-                        if key == 2:
-                            M2 = value
+                    for key,value in cTable['template_length'].items():
+                        if value == 2:
+                            M2 += 1
                 chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2}         
                 chrStats.update(flags)
                 np.save(chrom_out_file, chrStats)
