@@ -70,7 +70,9 @@ class bamQC(pararead.ParaReadProcessor):
             prop_pair = 0
             qcfail = 0
             num_pairs = 0
+            num_reads = 0
             for read in chr:
+                num_reads += 1
                 if read.is_paired:
                     num_pairs += 1
                 if read.is_duplicate:
@@ -83,9 +85,9 @@ class bamQC(pararead.ParaReadProcessor):
                     prop_pair += 1
                 if read.is_qcfail:
                     qcfail += 1   
-            return {'num_pairs':num_pairs/2, 'dups':dups, 'unmap':unmap,
-                    'unmap_mate':unmap_mate, 'prop_pair':prop_pair,
-                    'qcfail':qcfail}
+            return {'num_reads':num_reads, 'num_pairs':num_pairs/2,
+                    'dups':dups, 'unmap':unmap, 'unmap_mate':unmap_mate,
+                    'prop_pair':prop_pair, 'qcfail':qcfail}
             
         def getRead1(chr):
             keyDict = {'query_name', 'query_pos', 'template_length'}
@@ -109,6 +111,15 @@ class bamQC(pararead.ParaReadProcessor):
                         read2['template_length'].append(read.template_length)
             return _pd.DataFrame(read2)
 
+        def getRead(chr):
+            keyDict = {'query_name', 'query_pos', 'template_length'}
+            readDict = dict([(key, []) for key in keyDict])
+            for read in chr:
+                readDict['query_name'].append(read.query_name)
+                readDict['query_pos'].append(read.pos)
+                readDict['template_length'].append(read.query_length)
+            return _pd.DataFrame(readDict)
+
         ##### MAIN #####
         _LOGGER.info("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
         if os.path.isfile(self.reads_filename):
@@ -127,20 +138,36 @@ class bamQC(pararead.ParaReadProcessor):
             if isPE:
                 read1 = getRead1(self.fetch_chunk(chrom))
                 read2 = getRead2(self.fetch_chunk(chrom))
-            merge = _pd.merge(read1, read2, on = 'query_name')
-            merge = merge.drop(columns='query_name')            
-            M_DISTINCT = len(merge.drop_duplicates())
-            M1 = (flags['num_pairs']) - len(merge[merge.duplicated(keep=False)])
-            posDup = merge[merge.duplicated(keep=False)]
-            posDupTable = posDup.groupby(['query_pos_x','template_length_x']).count()
-            cTable = posDupTable.groupby(['query_pos_y']).count()
-            M2 = 0
-            for key, value in cTable['template_length_y'].items():
-                if key == 2:
-                    M2 = value
-            chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2}         
-            chrStats.update(flags)
-            np.save(chrom_out_file, chrStats)
+                merge = _pd.merge(read1, read2, on = 'query_name')
+                merge = merge.drop(columns='query_name')            
+                M_DISTINCT = len(merge.drop_duplicates())
+                M1 = (flags['num_pairs']) - len(merge[merge.duplicated(keep=False)])
+                posDup = merge[merge.duplicated(keep=False)]
+                posDupTable = posDup.groupby(['query_pos_x','template_length_x']).count()
+                cTable = posDupTable.groupby(['query_pos_y']).count()
+                M2 = 0
+                for key, value in cTable['template_length_y'].items():
+                    if key == 2:
+                        M2 = value
+                chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2}         
+                chrStats.update(flags)
+                np.save(chrom_out_file, chrStats)
+            else:
+                readSE = getRead(self.fetch_chunk(chrom))
+                readSE = readSE.drop(columns='query_name')
+                M_DISTINCT = len(readSE.drop_duplicates())
+                M1 = (flags['num_reads']) - len(readSE[readSE.duplicated(keep=False)])
+                posDup = readSE[readSE.duplicated(keep=False)]
+                posDupTable = posDup.groupby(['query_pos','template_length']).count()
+                cTable = posDupTable.groupby(['query_pos']).count()
+                M2 = 0
+                if not cTable.empty:
+                    for key, value in cTable['template_length'].items():
+                        if key == 2:
+                            M2 = value
+                chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2}         
+                chrStats.update(flags)
+                np.save(chrom_out_file, chrStats)
             return chrom
         else:
             _LOGGER.warn("{} could not be found.".format(self.reads_filename))
@@ -166,7 +193,10 @@ class bamQC(pararead.ParaReadProcessor):
                 # load chrom data and add to dict                
                 chrStats = np.load(temp_files[i] + '.npy')
                 stats = {k: stats.get(k, 0) + chrStats.item().get(k, 0) for k in set(stats) | set(chrStats.item())}
-            total = max(1, float(stats['num_pairs'])) 
+            if stats['num_pairs'] == 0:
+                total = max(1, float(stats['num_reads'])) 
+            else:
+                total = max(1, float(stats['num_pairs'])) 
             dupRate = float(stats['dups'])/total
             NRF = float(stats['M1'])/total
             M2 = max(1, float(stats['M2']))

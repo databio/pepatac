@@ -14,9 +14,9 @@ pipelines:
       "--sample-name": sample_name
       "--genome": genome
       "--input": read1
-      "--input2": read2
       "--single-or-paired": read_type
     optional_arguments:
+      "--input2": read2
       "--peak-caller": peak_caller
       "--frip-ref-peaks": FRIP_ref
       "--prealignments": prealignments
