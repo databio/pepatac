@@ -108,7 +108,11 @@ if (file.exists(file.path(argv$infile)) && info$size != 0) {
                      "integer", "integer", "character", "integer",
                      "character", "double", "double", "double",
                      "integer"))
-} else {break}   
+} else {
+	outFile <- file.path(argv$outfile)
+	system2(paste("touch"), outFile)
+	quit()
+}   
 
 # some 'score' values are greater than 1000 (more than BED format allows); 
 # rescale the scores to 0-1000 based on the 99th percentile being 1000
