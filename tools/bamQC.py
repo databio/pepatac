@@ -64,13 +64,8 @@ class bamQC(pararead.ParaReadProcessor):
             return False
 
         def countFlags(chr):
-            dups = 0
-            unmap = 0
-            unmap_mate = 0
-            prop_pair = 0
-            qcfail = 0
-            num_pairs = 0
-            num_reads = 0
+            dups, unmap, unmap_mate, prop_pair, \
+                qcfail, num_pairs, num_reads = (0, 0, 0, 0, 0, 0, 0)
             for read in chr:
                 num_reads += 1
                 if read.is_paired:
@@ -88,37 +83,33 @@ class bamQC(pararead.ParaReadProcessor):
             return {'num_reads':num_reads, 'num_pairs':num_pairs/2,
                     'dups':dups, 'unmap':unmap, 'unmap_mate':unmap_mate,
                     'prop_pair':prop_pair, 'qcfail':qcfail}
-            
-        def getRead1(chr):
-            keyDict = {'query_name', 'query_pos', 'template_length'}
-            read1 = dict([(key, []) for key in keyDict])
-            for read in chr:
-                if read.is_paired:
-                    if read.is_read1:
-                        read1['query_name'].append(read.query_name)
-                        read1['query_pos'].append(read.pos)
-                        read1['template_length'].append(read.template_length)
-            return _pd.DataFrame(read1)
-        
-        def getRead2(chr):
-            keyDict = {'query_name', 'query_pos', 'template_length'}
-            read2 = dict([(key, []) for key in keyDict])
-            for read in chr:
-                if read.is_paired:
-                    if read.is_read2:
-                        read2['query_name'].append(read.query_name)
-                        read2['query_pos'].append(read.pos)
-                        read2['template_length'].append(read.template_length)
-            return _pd.DataFrame(read2)
 
-        def getRead(chr):
-            keyDict = {'query_name', 'query_pos', 'template_length'}
-            readDict = dict([(key, []) for key in keyDict])
-            for read in chr:
-                readDict['query_name'].append(read.query_name)
-                readDict['query_pos'].append(read.pos)
-                readDict['template_length'].append(read.query_length)
-            return _pd.DataFrame(readDict)
+        def getRead(chr, paired):
+            if not paired:
+                keyDict = {'query_name', 'query_pos', 'template_length'}
+                readDict = dict([(key, []) for key in keyDict])
+                for read in chr:
+                    readDict['query_name'].append(read.query_name)
+                    readDict['query_pos'].append(read.pos)
+                    readDict['template_length'].append(read.query_length)
+                return _pd.DataFrame(readDict)
+            else:
+                keyDict = {'query_name', 'query_pos', 'template_length'}
+                read1 = dict([(key, []) for key in keyDict])
+                read2 = dict([(key, []) for key in keyDict])
+                for read in chr:
+                    if read.is_paired:
+                        if read.is_read1:
+                            read1['query_name'].append(read.query_name)
+                            read1['query_pos'].append(read.pos)
+                            read1['template_length'].append(read.template_length)
+                        elif read.is_read2:
+                            read2['query_name'].append(read.query_name)
+                            read2['query_pos'].append(read.pos)
+                            read2['template_length'].append(read.template_length)
+                merge = _pd.merge(_pd.DataFrame(read1), _pd.DataFrame(read2),
+                                  on = 'query_name')
+                return merge 
 
         ##### MAIN #####
         _LOGGER.info("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
@@ -136,13 +127,12 @@ class bamQC(pararead.ParaReadProcessor):
                 np.save(chrom_out_file, chrStats)
                 return chrom
             if isPE:
-                read1 = getRead1(self.fetch_chunk(chrom))
-                read2 = getRead2(self.fetch_chunk(chrom))
-                merge = _pd.merge(read1, read2, on = 'query_name')
-                merge = merge.drop(columns='query_name')            
-                M_DISTINCT = len(merge.drop_duplicates())
-                M1 = (flags['num_pairs']) - len(merge[merge.duplicated(keep=False)])
-                posDup = merge[merge.duplicated(keep=False)]
+                readVals = getRead(self.fetch_chunk(chrom), isPE)
+                readVals = readVals.drop(columns='query_name')            
+                M_DISTINCT = len(readVals.drop_duplicates())
+                M1 = ((flags['num_pairs']) -
+                       len(readVals[readVals.duplicated(keep=False)]))
+                posDup = readVals[readVals.duplicated(keep=False)]
                 posDupTable = posDup.groupby(['query_pos_x','template_length_x']).count()
                 cTable = posDupTable.groupby(['query_pos_y']).count()
                 M2 = 0
@@ -153,7 +143,7 @@ class bamQC(pararead.ParaReadProcessor):
                 chrStats.update(flags)
                 np.save(chrom_out_file, chrStats)
             else:
-                readSE = getRead(self.fetch_chunk(chrom))
+                readSE = getRead(self.fetch_chunk(chrom), isPE)
                 readSE = readSE.drop(columns='query_name')
                 M_DISTINCT = len(readSE.drop_duplicates())
                 M1 = (flags['num_reads']) - len(readSE[readSE.duplicated(keep=False)])
