@@ -196,10 +196,12 @@ class bamQC(pararead.ParaReadProcessor):
             except KeyError:
                 mitoRate = 0
             header = ["Total_read_pairs", "Distinct_read_pairs",
-            "One_read_pair", "Two_read_pairs", "Duplicate_rate",
-            "Mitochondria_rate", "NRF", "PBC1", "PBC2"]
+                      "One_read_pair", "Two_read_pairs", "Duplicate_rate",
+                      "Mitochondria_reads", "Mitochondria_rate", "NRF",
+                      "PBC1", "PBC2"]
             np.savetxt(self.outfile, np.c_[total, stats['M_DISTINCT'],
-                       stats['M1'], M2, dupRate, mitoRate, NRF, PBC1, PBC2],
+                       stats['M1'], M2, dupRate, float(stats['mitoReads']),
+                       mitoRate, NRF, PBC1, PBC2],
                        header='\t'.join(header), fmt='%s', delimiter='\t',
                        comments='')
 
