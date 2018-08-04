@@ -12,11 +12,17 @@
       if ($j == "READ_PAIRS_EXAMINED") c=j
       if ($j == "READ_PAIR_DUPLICATES") d=j
     }
-
+    if (c == -1 && d == -1) {
+      for(j=1; j<=NF; j++) { 
+        if ($j == "UNPAIRED_READS_EXAMINED") c=j
+        if ($j == "UNPAIRED_READ_DUPLICATES") d=j
+      }
+    }
+    
     if (c != -1 && d != -1) {
     while(getline && $0 != "") {
       if ($c == -1 || $d == -1) {
-        print "Unknown"
+        print "Could not extract the number of duplicates"
       } else {     
         # Calculate total number of reads remaining after duplicate removal
         t = ($c-$d)*2
