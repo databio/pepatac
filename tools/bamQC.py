@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # bamQC.py
 #
-# Last updated 7/11/18: Jason Smith
+# Last updated 8/4/18: Jason Smith
 #
 # Function: Script takes as input a BAM file and calculates the non-redundant
 #           fraction (NRF) and the PCR bottleneck coefficients 1 (PBC1)
