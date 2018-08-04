@@ -3,32 +3,30 @@
 # awk -F'\t' -f extract_post_dup_aligned_reads.awk metrics_file.txt
 
 /## METRICS CLASS/ { 
-  for(i=1; i<=2; i++) {
-    getline;
-    c=-1;
-    d=-1;
-    # Get the columns of interest
-    for(j=1; j<=NF; j++) { 
-      if ($j == "READ_PAIRS_EXAMINED") c=j
-      if ($j == "READ_PAIR_DUPLICATES") d=j
-    }
-    if (c == -1 && d == -1) {
-      for(j=1; j<=NF; j++) { 
-        if ($j == "UNPAIRED_READS_EXAMINED") c=j
-        if ($j == "UNPAIRED_READ_DUPLICATES") d=j
-      }
-    }
-    
-    if (c != -1 && d != -1) {
+  getline;
+  c=-1;
+  d=-1;
+  e=-1;
+  f=-1;
+  # Get the columns of interest
+  for(j=1; j<=NF; j++) { 
+	if ($j == "UNPAIRED_READS_EXAMINED") e=j
+    if ($j == "READ_PAIRS_EXAMINED") c=j
+	if ($j == "UNPAIRED_READ_DUPLICATES") f=j
+    if ($j == "READ_PAIR_DUPLICATES") d=j
+  }  
+  if (c != -1 && d != -1 && e != -1 && f != -1) {
     while(getline && $0 != "") {
-      if ($c == -1 || $d == -1) {
-        print "Could not extract the number of duplicates"
+      if ($c == 0 && $d == 0) {
+	    # Calculate total number of SE reads remaining after duplicate removal
+        t = ($e-$f)*2
       } else {     
-        # Calculate total number of reads remaining after duplicate removal
+        # Calculate total number of PE reads remaining after duplicate removal
         t = ($c-$d)*2
       }
     }
-    }
+  } else {
+	print "Could not extract the number of duplicates"
   }
   print t
 }
