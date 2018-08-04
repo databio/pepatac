@@ -169,10 +169,6 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
                assembly_identifier, mapped_bam, args.paired_end),
                container=pm.container)
 
-        # count concordantly aligned reads ONLY
-        ar = ngstk.count_concordant(mapped_bam)
-        pm.report_result("Aligned_reads_new_" + assembly_identifier, ar)
-        
         # filter genome reads not mapped
         unmap_fq1 = out_fastq_pre + "_R1.fq.gz"
         unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
@@ -198,7 +194,10 @@ def _count_alignment(assembly_identifier, aligned_bam, paired_end):
     :param bool paired_end: Whether the sequencing employed a paired-end
                             strategy.
     """
-    ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
+	# count concordantly aligned reads ONLY
+    ar = ngstk.count_concordant(mapped_bam)
+	# Count all aligned reads
+    #ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
     pm.report_result("Aligned_reads_" + assembly_identifier, ar)
     try:
         # wrapped in try block in case Trimmed_reads is not reported in this
