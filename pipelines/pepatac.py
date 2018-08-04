@@ -195,7 +195,7 @@ def _count_alignment(assembly_identifier, aligned_bam, paired_end):
                             strategy.
     """
 	# count concordantly aligned reads ONLY
-    ar = ngstk.count_concordant(mapped_bam)
+    ar = ngstk.count_concordant(aligned_bam)
 	# Count all aligned reads
     #ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
     pm.report_result("Aligned_reads_" + assembly_identifier, ar)
