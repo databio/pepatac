@@ -126,7 +126,7 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
         mapped_bam = os.path.join(sub_outdir, bamname)
         out_fastq_pre = os.path.join(
-            sub_outdir, args.sample_name + "_unmap_" + assembly_identifier)
+            sub_outdir, args.sample_name + assembly_identifier + "_unmap")
         # bowtie2 unmapped filename format
         if args.paired_end:
             out_fastq_bt2 = out_fastq_pre + '_R%.fq.gz'
@@ -165,12 +165,14 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         # uses a random temp file, so it won't choke if the job gets
         # interrupted and restarted at this step.
 
-        # TODO: this follow command leads to a samtools not found error...
-        #       likely need to modify _count_alignment function...
         pm.run(cmd, mapped_bam, follow=lambda: _count_alignment(
                assembly_identifier, mapped_bam, args.paired_end),
                container=pm.container)
 
+        # count concordantly aligned reads ONLY
+        ar = ngstk.count_concordant(mapped_bam)
+        pm.report_result("Aligned_reads_new_" + assembly_identifier, ar)
+        
         # filter genome reads not mapped
         unmap_fq1 = out_fastq_pre + "_R1.fq.gz"
         unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
@@ -366,7 +368,7 @@ def main():
         "File_mb",
         ngstk.get_file_size(
             [x for x in [args.input, args.input2] if x is not None]))
-    pm.report_result("read_type", args.single_or_paired)
+    pm.report_result("Read_type", args.single_or_paired)
     pm.report_result("Genome", args.genome_assembly)
 
     # ATACseq pipeline
@@ -537,9 +539,9 @@ def main():
     ngstk.make_dir(map_genome_folder)
 
     mapping_genome_bam = os.path.join(
-        map_genome_folder, args.sample_name + ".pe.q10.sort.bam")
+        map_genome_folder, args.sample_name + "_sort.bam")
     mapping_genome_bam_temp = os.path.join(
-        map_genome_folder, args.sample_name + ".temp.bam")
+        map_genome_folder, args.sample_name + "_temp.bam")
     unmap_genome_bam = os.path.join(
         map_genome_folder, args.sample_name + "_unmap.bam")
 
@@ -567,6 +569,7 @@ def main():
     # Split genome mapping result bamfile into two: high-quality aligned
     # reads (keepers) and unmapped reads (in case we want to analyze the
     # altogether unmapped reads)
+    # -q 10: skip alignments with MAPQ less than 10
     cmd2 = "samtools view -q 10 -b -@ " + str(pm.cores) + " "
     if args.paired_end:
         # add a step to accept only reads mapped in proper pair
@@ -597,7 +600,7 @@ def main():
     cmd = tools.samtools + " index " + mapping_genome_bam
     pm.run(cmd, mapping_genome_index, container=pm.container)
     
-    bamQC = os.path.join(QC_folder, args.sample_name + ".bamQC")
+    bamQC = os.path.join(QC_folder, args.sample_name + ".tsv")
     cmd = tool_path("bamQC.py")
     cmd += " -i " + mapping_genome_bam
     cmd += " -c " + str(pm.cores)
@@ -669,7 +672,7 @@ def main():
         pm.report_result("Dedup_total_efficiency", dte)
 
     rmdup_bam = os.path.join(
-        map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bam")
+        map_genome_folder, args.sample_name + "_sort_dedup.bam")
     metrics_file = os.path.join(
         map_genome_folder, args.sample_name + "_picard_metrics_bam.txt")
     picard_log = os.path.join(
@@ -696,23 +699,23 @@ def main():
     # this script is only compatible with paired-end at the moment
     if args.paired_end:
         shift_bed = os.path.join(
-            map_genome_folder, args.sample_name + ".pe.q10.sort.rmdup.bed")
+            map_genome_folder, args.sample_name + "_shift.bed")
         cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
         pm.run(cmd, shift_bed, container=pm.container)
         bedGraph = os.path.join(map_genome_folder, args.sample_name +
-                                ".pe.q10.sort.rmdup.bedGraph")
+                                ".bedGraph")
         cmd = tools.bedtools + " genomecov -bg -split"
         cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
         norm_bedGraph = os.path.join(
             map_genome_folder, args.sample_name +
-            ".pe.q10.sort.rmdup.norm.bedGraph")
+            "_norm.bedGraph")
         sort_bedGraph = os.path.join(
             map_genome_folder, args.sample_name +
-            ".pe.q10.sort.rmdup.norm.sort.bedGraph")
+            "_norm_sort.bedGraph")
         cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"),
                                  bedGraph, norm_bedGraph)
         bw_file = os.path.join(
-            map_genome_folder, args.sample_name + ".pe.q10.rmdup.norm.bw")
+            map_genome_folder, args.sample_name + "_smooth.bw")
 
         # bedGraphToBigWig requires lexicographical sort, which puts chr10
         # before chr2, for example
@@ -757,10 +760,11 @@ def main():
     cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
     cmd2 = "touch " + temp_target
     pm.run([cmd, cmd2], temp_target, container=pm.container)
-
+	pm.clean_add(temp_exact_folder)
+	
     if not args.paired_end:
         # TODO, make this always (not just single-end)
-        shift_bed = exact_target + ".bed"
+        shift_bed = os.path.join(exact_folder, args.sample_name + "_exact.bed")
 
     # TSS enrichment
     if not os.path.exists(res.TSS_file):
@@ -772,7 +776,7 @@ def main():
         #ngstk.make_dir(QC_folder)
 
         Tss_enrich = os.path.join(QC_folder, args.sample_name +
-                                  ".TssEnrichment")
+                                  ".txt")
         cmd = tool_path("pyTssEnrichment.py")
         cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends"
         cmd += " -c " + str(pm.cores)
@@ -781,7 +785,7 @@ def main():
 
         # Call Rscript to plot TSS Enrichment
         Tss_plot = os.path.join(QC_folder,  args.sample_name +
-                                ".TssEnrichment.pdf")
+                                "_TssEnrichment.pdf")
         cmd = ("Rscript " +
                tool_path("PEPATAC_TSSenrichmentPlot.R"))
         cmd += " " + Tss_enrich + " pdf"
@@ -805,22 +809,22 @@ def main():
             # Just wrapping this in a try temporarily so that old versions of
             # pypiper will work. v0.6 release of pypiper adds this function           
             Tss_png = os.path.join(QC_folder,  args.sample_name +
-                                   ".TssEnrichment.png")
+                                   "_TssEnrichment.png")
             pm.report_object("TSS enrichment", Tss_plot, anchor_image=Tss_png)
         except:
             pass
 
         # fragment distribution
-        fragL = os.path.join(QC_folder, args.sample_name + ".fragLen.txt")
+        fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
         frag_dist_tool = tool_path("fragment_length_dist.pl")
         cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
-        frag_length_counts_file = args.sample_name + ".frag_count.txt"
+        frag_length_counts_file = args.sample_name + "_fragCount.txt"
         fragL_count = os.path.join(QC_folder, frag_length_counts_file)
         cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
         fragL_dis1 = os.path.join(QC_folder, args.sample_name +
-                                  ".fragL.distribution.pdf")
+                                  "_fragLenDistribution.pdf")
         fragL_dis2 = os.path.join(QC_folder, args.sample_name +
-                                  ".fragL.distribution.txt")
+                                  "_fragLenDistribution.txt")
         cmd2 = build_command(
             [tools.Rscript, tool_path("fragment_length_dist.R"),
              fragL, fragL_count, fragL_dis1, fragL_dis2])
@@ -828,7 +832,7 @@ def main():
                container=pm.container)
         try:
             fragL_png = os.path.join(QC_folder, args.sample_name +
-                                  ".fragL.distribution.png")
+                                  "_fragLenDistribution.png")
             
             pm.report_object("Fragment distribution", fragL_dis1, anchor_image=fragL_png)
         except:
@@ -906,7 +910,7 @@ def main():
     # Filter peaks in blacklist.
     if os.path.exists(res.blacklist):
         filter_peak = os.path.join(peak_folder, args.sample_name +
-                                   "_peaks.narrowPeak.rmBlacklist")
+                                   "_peaks_rmBlacklist.narrowPeak")
         cmd = (tools.bedtools + " intersect " + " -a " + peak_output_file +
                " -b " + res.blacklist + " -v  >" + filter_peak)
 
