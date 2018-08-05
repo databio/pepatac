@@ -82,7 +82,7 @@ class CutTracer(pararead.ParaReadProcessor):
                                                 stdin=cutsToWigProcess.stdout)
 
         if self.bedout:
-			root, ext = os.path.splitext(chromOutFile)
+            root, ext = os.path.splitext(chromOutFile)
             chromOutFileBed = root + ".bed"
 
             bedOut = open(chromOutFileBed, "w")
