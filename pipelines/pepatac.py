@@ -599,7 +599,7 @@ def main():
     cmd = tools.samtools + " index " + mapping_genome_bam
     pm.run(cmd, mapping_genome_index, container=pm.container)
     
-    bamQC = os.path.join(QC_folder, args.sample_name + ".tsv")
+    bamQC = os.path.join(QC_folder, args.sample_name + "_bamQC.tsv")
     cmd = tool_path("bamQC.py")
     cmd += " -i " + mapping_genome_bam
     cmd += " -c " + str(pm.cores)
@@ -698,7 +698,7 @@ def main():
     # this script is only compatible with paired-end at the moment
     if args.paired_end:
         shift_bed = os.path.join(
-            map_genome_folder, args.sample_name + "_shift.bed")
+            map_genome_folder, args.sample_name + "_sort_dedup.bed")
         cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
         pm.run(cmd, shift_bed, container=pm.container)
         bedGraph = os.path.join(map_genome_folder, args.sample_name +
@@ -775,7 +775,7 @@ def main():
         #ngstk.make_dir(QC_folder)
 
         Tss_enrich = os.path.join(QC_folder, args.sample_name +
-                                  ".txt")
+                                  "_TssEnrichment.txt")
         cmd = tool_path("pyTssEnrichment.py")
         cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends"
         cmd += " -c " + str(pm.cores)
