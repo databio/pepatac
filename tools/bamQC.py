@@ -191,9 +191,9 @@ class bamQC(pararead.ParaReadProcessor):
             M2 = max(1, float(stats['M2']))
             PBC1 = float(stats['M1'])/max(1, float(stats['M_DISTINCT']))
             PBC2 = float(stats['M1'])/float(M2)
-			try:
-				mitoReads = float(stats['mitoReads'])
-			except KeyError:
+            try:
+                mitoReads = float(stats['mitoReads'])
+            except KeyError:
                 mitoReads = 0	
             try:
                 mitoRate = float(stats['mitoReads'])/total
