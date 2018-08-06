@@ -1,6 +1,6 @@
 ###############################################################################
 #5/18/17
-#Last Updated 06/25/18
+#Last Updated 08/06/18
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
 #PEPATAC_TSSenrichmentPlot.R
@@ -10,7 +10,7 @@
 #
 #NOTES:
 #usage: Rscript /path/to/Rscript/PEPATAC_TSSenrichmentPlot.R --TSSfile
-#       /path/to/file.TssEnrichment
+#       /path/to/file_TssEnrichment.txt
 #
 #requirements: ggplot2
 #
@@ -44,8 +44,8 @@ TSSfile <- args[1]
 if (is.null(TSSfile)) {
   # print usage information if .TssEnrichment file is not provided
   cat("\n Usage: Rscript /path/to/PEPATAC_TSSenrichmentPlot.R 
-      /path/to/file.TssEnrichment \n
-      .TssEnrichment file is required \n\n")
+      /path/to/file_TssEnrichment.txt \n
+      _TssEnrichment.txt file is required \n\n")
 }
 
 #write(paste("\nGenerating TSS plot in ",outputType," format with ",
@@ -88,8 +88,9 @@ if (TSSscore > TSS_CUTOFF)
   lineColor <- "springgreen4"
 }
 
-png(filename = gsub(pattern=".TssEnrichment", replacement=".TssEnrichment.png",
-                    x=TSSfile), width = 480, height = 480)
+
+png(filename = paste(tools::file_path_sans_ext(TSSfile), ".png", sep=""),
+    width = 480, height = 480)
 pre <- ggplot(normTSS, aes(x=(as.numeric(rownames(normTSS))-2000), y=score,
               group=1, colour="black")) +
               geom_hline(yintercept = 6, linetype = 2,
@@ -108,8 +109,8 @@ pre + t1 + scale_x_continuous(expand=c(0,0)) +
     annotate("text", x=1750, y=29, label=TSSscore, fontface = 2,
              size=10, hjust=0.5)
 
-pdf(file = gsub(pattern=".TssEnrichment", replacement=".TssEnrichment.pdf",
-                x=TSSfile), width= 7, height = 7, useDingbats=F)
+pdf(file = paste(tools::file_path_sans_ext(TSSfile), ".pdf", sep=""),
+    width= 7, height = 7, useDingbats=F)
 pre <- ggplot(normTSS, aes(x=(as.numeric(rownames(normTSS))-2000), y=score,
               group=1, colour="black")) +
               geom_hline(yintercept = 6, linetype = 2,
