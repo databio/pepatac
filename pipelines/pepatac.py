@@ -126,12 +126,12 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
         mapped_bam = os.path.join(sub_outdir, bamname)
         out_fastq_pre = os.path.join(
-            sub_outdir, args.sample_name + assembly_identifier + "_unmap")
+            sub_outdir, args.sample_name + "_" + assembly_identifier)
         # bowtie2 unmapped filename format
         if args.paired_end:
-            out_fastq_bt2 = out_fastq_pre + '_R%.fq.gz'
+            out_fastq_bt2 = out_fastq_pre + '_unmap_R%.fq.gz'
         else:
-            out_fastq_bt2 = out_fastq_pre + '_R1.fq.gz'
+            out_fastq_bt2 = out_fastq_pre + '_unmap_R1.fq.gz'
 
         if not bt2_opts_txt:
             # Default options
@@ -170,8 +170,8 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
                container=pm.container)
 
         # filter genome reads not mapped
-        unmap_fq1 = out_fastq_pre + "_R1.fq.gz"
-        unmap_fq2 = out_fastq_pre + "_R2.fq.gz"
+        unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
+        unmap_fq2 = out_fastq_pre + "_unmap_R2.fq.gz"
         return unmap_fq1, unmap_fq2
     else:
         msg = "No {} index found in {}; skipping.".format(
