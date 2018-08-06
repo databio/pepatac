@@ -759,6 +759,7 @@ def main():
     cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
     cmd2 = "touch " + temp_target
     pm.run([cmd, cmd2], temp_target, container=pm.container)
+    pm.clean_add(temp_target)
     pm.clean_add(temp_exact_folder)
 
     if not args.paired_end:
