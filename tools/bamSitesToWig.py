@@ -82,8 +82,7 @@ class CutTracer(pararead.ParaReadProcessor):
                                                 stdin=cutsToWigProcess.stdout)
 
         if self.bedout:
-            root, ext = os.path.splitext(chromOutFile)
-            chromOutFileBed = root + ".bed"
+            chromOutFileBed = chromOutFile + ".bed"
 
             bedOut = open(chromOutFileBed, "w")
         
@@ -188,8 +187,9 @@ class CutTracer(pararead.ParaReadProcessor):
             p = subprocess.call(['bigWigCat', self.outfile] + temp_files)
 
             if self.bedout:
+                root, ext = os.path.splitext(self.outfile) 
                 temp_files = [self._tempf(chrom) + ".bed" for chrom in good_chromosomes]
-                cmd = "cat " + " ".join(temp_files) + " > " + self.outfile + ".bed"
+                cmd = "cat " + " ".join(temp_files) + " > " + root + ".bed"
                 _LOGGER.debug(cmd)
                 p = subprocess.call(cmd, shell=True)
 
