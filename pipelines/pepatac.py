@@ -125,6 +125,9 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         ngstk.make_dir(sub_outdir)
         bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
         mapped_bam = os.path.join(sub_outdir, bamname)
+        summary_name = "{}_{}_bt_aln_summary.log".format(args.sample_name,
+                                                          assembly_identifier)
+        summary_file = os.path.join(sub_outdir, summary_name)
         out_fastq_pre = os.path.join(
             sub_outdir, args.sample_name + "_" + assembly_identifier)
         # bowtie2 unmapped filename format
@@ -144,7 +147,7 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         pm.clean_add(tempdir)
 
         # Build bowtie2 command
-        cmd = tools.bowtie2 + " -p " + str(pm.cores)
+        cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
         cmd += bt2_opts_txt
         cmd += " -x " + assembly_bt2
         cmd += " --rg-id " + args.sample_name
@@ -154,21 +157,28 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         else:
             cmd += " -U " + unmap_fq1
             cmd += " --un-gz " + out_fastq_bt2
-        # TODO: Pipes break singularity exec command... use shell?
         cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
         cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
         cmd += " -T " + tempdir
         cmd += " -o " + mapped_bam
+        cmd += ") 2>" + summary_file
 
         # In this samtools sort command we print to stdout and then use > to
         # redirect instead of  `+ " -o " + mapped_bam` because then samtools
         # uses a random temp file, so it won't choke if the job gets
         # interrupted and restarted at this step.
 
-        pm.run(cmd, mapped_bam, follow=lambda: _count_alignment(
-               assembly_identifier, mapped_bam, args.paired_end),
-               container=pm.container)
-
+        #pm.run(cmd, mapped_bam, follow=lambda: _count_alignment(
+        #       assembly_identifier, mapped_bam, args.paired_end),
+        #       container=pm.container)
+        
+        pm.run(cmd, mapped_bam, container=pm.container)
+        # get concordant aligned reads
+        cmd = ("grep 'aligned concordantly exactly 1 time' " + summary_file +
+               " | awk '{print $1}'")
+        concordant = pm.checkprint(cmd)
+        pm.report_result("Aligned_reads_" + assembly_identifier, concordant)
+        
         # filter genome reads not mapped
         unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
         unmap_fq2 = out_fastq_pre + "_unmap_R2.fq.gz"
