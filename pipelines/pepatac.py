@@ -178,6 +178,15 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
                " | awk '{print $1}'")
         concordant = pm.checkprint(cmd)
         pm.report_result("Aligned_reads_" + assembly_identifier, concordant)
+        try:
+            # wrapped in try block in case Trimmed_reads is not reported in this
+            # pipeline.
+            tr = float(pm.get_stat("Trimmed_reads"))
+        except:
+            print("Trimmed reads is not reported.")
+        else:
+            res_key = "Alignment_rate_" + assembly_identifier
+            pm.report_result(res_key, round(float(concordant)*100/float(tr), 2))
         
         # filter genome reads not mapped
         unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
