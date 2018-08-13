@@ -949,7 +949,7 @@ def main():
         pm.report_result("FRIP_ref", frip_ref)
 
     # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
-    pm.timestamp("### # Produce bigBed formatted narrowPeak files")
+    pm.timestamp("### # Produce bigBed formatted narrowPeak file")
     bigNarrowPeak = os.path.join(peak_folder, args.sample_name +
                                  "_peaks.bigBed")
     cmd = build_command(
@@ -957,7 +957,43 @@ def main():
              peak_output_file, res.chrom_sizes, tools.bedToBigBed,
              bigNarrowPeak])
     pm.run(cmd, bigNarrowPeak, nofail=False, container=pm.container)
+    
+    # Calculate peak coverage
+    pm.timestamp("### # Calculate peak coverage")
+    peakBed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
+    chrOrder = os.path.join(peak_folder, "chr_order.txt")
+    cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peakBed)
+    cmd2 = (tools.samtools + " view -H " + rmdup_bam +
+            " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+            "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chrOrder)
+    sortPeakBed = os.path.join(peak_folder, args.sample_name +
+                               "_peaks_sort.bed")
+    cmd3 = (tools.bedtools + " sort -i " + peakBed + " -faidx " + chrOrder +
+            " > " + sortPeakBed)
+    pm.run([cmd1, cmd2, cmd3], sortPeakBed, nofail=True, container=pm.container)
+    
+    peakCoverage = os.path.join(peak_folder, args.sample_name +
+                                "_peaks_coverage.bed")
+    cmd = (tools.bedtools + " coverage -sorted -counts -a " + sortPeakBed +
+           " -b " + rmdup_bam + " -g " + chrOrder + " > " + peakCoverage)
+    pm.run(cmd, peakCoverage, nofail=True, container=pm.container)
+    
+    pm.clean_add(peakBed)
+    pm.clean_add(chrOrder)
+    pm.clean_add(sortPeakBed)
 
+    # Plot FRiP
+    pm.timestamp("### # Plot FRiP by peak number")
+    cmd = (tools.samtools + " view -@ " + str(pm.cores) + " -q 15 -c -F4 " +
+           rmdup_bam)
+    totalReads = pm.checkprint(cmd)
+    fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
+    fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
+    cmd = build_command([tools.Rscript, tool_path("PEPATAC_frip.R"),
+                         peakCoverage, totalReads, fripPDF])
+    pm.run(cmd, fripPDF, nofail=False, container=pm.container)           
+    pm.report_object("FRiP distribution", fripPDF, anchor_image=fripPNG)
+            
     pm.stop_pipeline()
 
 
