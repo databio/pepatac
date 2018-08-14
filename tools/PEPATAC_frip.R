@@ -110,6 +110,6 @@ png(filename = paste(tools::file_path_sans_ext(argv$output), ".png", sep=""),
 p
 invisible(dev.off())
 
-write("FRiP plot completed!\n", stdout())
+write("Cumulative FRiP plot completed!\n", stdout())
 
 ###############################################################################
