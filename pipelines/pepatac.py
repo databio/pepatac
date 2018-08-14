@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "xujin937@gmail.com"
-__version__ = "0.7.1"
+__version__ = "0.7.2"
 
 
 from argparse import ArgumentParser
@@ -992,7 +992,7 @@ def main():
     cmd = build_command([tools.Rscript, tool_path("PEPATAC_frip.R"),
                          peakCoverage, totalReads, fripPDF])
     pm.run(cmd, fripPDF, nofail=False, container=pm.container)           
-    pm.report_object("FRiP distribution", fripPDF, anchor_image=fripPNG)
+    pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
             
     pm.stop_pipeline()
 
