@@ -885,6 +885,12 @@ def main():
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
     peak_input_file = shift_bed
+    
+    if os.path.isfile(peak_input_file):
+        if os.stat(peak_input_file).st_size == 0:
+            print("Cannot call peaks, {} is empty".format(peak_input_file))
+            print("Check your reads and alignment to primary genome.")
+            pm.stop_pipeline()
 
     if args.peak_caller == "fseq":
         fseq_cmd_chunks = [tools.fseq, ("-o", peak_folder)]
