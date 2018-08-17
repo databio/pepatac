@@ -631,16 +631,24 @@ def main():
 
     def report_bam_qc(bamqc_log):
         # Reported BAM QC metrics via the bamQC metrics file
-        cmd1 = ("awk '{ for (i=1; i<=NF; ++i) {" +
-                " if ($i ~ \"NRF\") c=i } getline; print $c }' " + bamqc_log)
-        cmd2 = ("awk '{ for (i=1; i<=NF; ++i) {" +
-                " if ($i ~ \"PBC1\") c=i } getline; print $c }' " + bamqc_log)
-        cmd3 = ("awk '{ for (i=1; i<=NF; ++i) {" +
-                " if ($i ~ \"PBC2\") c=i } getline; print $c }' " + bamqc_log)
-
-        nrf = pm.checkprint(cmd1)
-        pbc1 = pm.checkprint(cmd2)
-        pbc2 = pm.checkprint(cmd3)
+        if os.path.isfile(bamqc_log):
+            cmd1 = ("awk '{ for (i=1; i<=NF; ++i) {" +
+                    " if ($i ~ \"NRF\") c=i } getline; print $c }' " +
+                    bamqc_log)
+            cmd2 = ("awk '{ for (i=1; i<=NF; ++i) {" +
+                    " if ($i ~ \"PBC1\") c=i } getline; print $c }' " +
+                    bamqc_log)
+            cmd3 = ("awk '{ for (i=1; i<=NF; ++i) {" +
+                    " if ($i ~ \"PBC2\") c=i } getline; print $c }' " +
+                    bamqc_log)
+            nrf = pm.checkprint(cmd1)
+            pbc1 = pm.checkprint(cmd2)
+            pbc2 = pm.checkprint(cmd3)
+        else:
+            # there were no successful chromosomes yielding results
+            nrf = 0
+            pbc1 = 0
+            pbc2 = 0
 
         pm.report_result("NRF", nrf)
         pm.report_result("PBC1", pbc1)
