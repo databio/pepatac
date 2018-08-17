@@ -170,6 +170,13 @@ class bamQC(pararead.ParaReadProcessor):
         """
         if not good_chromosomes:
             _LOGGER.warn("No successful chromosomes, so no combining.")
+            header = ["Total_read_pairs", "Distinct_read_pairs",
+                      "One_read_pair", "Two_read_pairs", "Duplicate_rate",
+                      "Mitochondria_reads", "Mitochondria_rate", "NRF",
+                      "PBC1", "PBC2"]
+            np.savetxt(self.outfile, np.c_[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                       header='\t'.join(header), fmt='%s', delimiter='\t',
+                       comments='')
             return
         else:
             _LOGGER.info("Merging {} files into output file: '{}'".
