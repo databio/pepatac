@@ -650,9 +650,9 @@ def main():
             pbc1 = 0
             pbc2 = 0
 
-        pm.report_result("NRF", nrf)
-        pm.report_result("PBC1", pbc1)
-        pm.report_result("PBC2", pbc2)
+        pm.report_result("NRF", round(float(nrf),2))
+        pm.report_result("PBC1", round(float(pbc1),2))
+        pm.report_result("PBC2", round(float(pbc2), 2))
 
     pm.run(cmd, bamQC, follow=lambda: report_bam_qc(bamQC),
            container=pm.container)
