@@ -1,0 +1,19 @@
+name: tutorial
+
+metadata:
+  sample_annotation: tutorial.csv
+  output_dir: "$PROCESSED/tutorial/"
+  pipeline_interfaces: "$CODEBASE/pepatac/pipeline_interface.yaml"
+        
+derived_columns: [read1, read2]
+
+data_sources:
+  tutorial_r1: "$CODEBASE/pepatac/examples/data/tutorial_r1.fastq.gz"
+  tutorial_r2: "$CODEBASE/pepatac/examples/data/tutorial_r2.fastq.gz"
+
+implied_columns:
+  organism:
+    human:
+      genome: hg38
+      macs_genome_size: hs
+      prealignments: rCRSd human_repeats
