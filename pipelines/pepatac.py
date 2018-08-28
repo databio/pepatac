@@ -589,6 +589,8 @@ def main():
     cmd += " -T " + tempdir
     cmd += " -o " + mapping_genome_bam_temp
 
+    pm.run(cmd, mapping_genome_bam_temp, container=pm.container)
+    
     # Split genome mapping result bamfile into two: high-quality aligned
     # reads (keepers) and unmapped reads (in case we want to analyze the
     # altogether unmapped reads)
@@ -610,7 +612,7 @@ def main():
         pm.report_result("Total_efficiency", round(float(ar) * 100 /
                          float(rr), 2))
 
-    pm.run([cmd, cmd2], mapping_genome_bam, follow=check_alignment_genome,
+    pm.run(cmd2, mapping_genome_bam, follow=check_alignment_genome,
            container=pm.container)
 
     # Calculate quality control metrics for the alignment file  
