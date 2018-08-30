@@ -1033,8 +1033,8 @@ def main():
 
         # Annotation peaks
         pm.timestamp("### # Annotate peaks")
-        anno_file  = anno_path(res.bt2_genome + "_annotations.bed.gz")
-        anno_unzip = anno_path(res.bt2_genome + "_annotations.bed")          
+        anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
+        anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")          
         if os.path.isfile(anno_file):
             cmd1 = pm.ziptool + "-d -c " + anno_file + " > " + anno_unzip
             pm.run(cmd1, anno_unzip, nofail=True, container=pm.container)
@@ -1058,7 +1058,7 @@ def main():
                      anno_unzip,
                      peak_output_file,
                      args.sample_name,
-                     res.bt2_genome,
+                     args.genome_assembly,
                      QC_folder])
             cmd3 = pm.ziptool + "-c " + anno_unzip + " > " + anno_file
 
