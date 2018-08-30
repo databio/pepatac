@@ -17,6 +17,7 @@ import pypiper
 from pypiper import build_command
 
 TOOLS_FOLDER = "tools"
+ANNO_FOLDER  = "anno"
 PEAK_CALLERS = ["fseq", "macs2"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 
@@ -332,6 +333,19 @@ def tool_path(tool_name):
 
     return os.path.join(os.path.dirname(os.path.dirname(__file__)),
                         TOOLS_FOLDER, tool_name)
+
+
+def anno_path(anno_name):
+    """
+    Return the path to an annotation file used by this pipeline.
+
+    :param str anno_name: name of the annotation file 
+                          (e.g., a specific genome's annotations)
+    :return str: real, absolute path to tool (expansion and symlink resolution)
+    """
+
+    return os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                        ANNO_FOLDER, anno_name)
 
 
 def main():
@@ -888,134 +902,179 @@ def main():
                                     "_peaks.narrowPeak")
     peak_input_file = shift_bed
     
-    if os.path.isfile(peak_input_file):
-        if os.stat(peak_input_file).st_size == 0:
-            print("Cannot call peaks, {} is empty".format(peak_input_file))
-            print("Check your reads and alignment to primary genome.")
-            pm.stop_pipeline()
-
-    if args.peak_caller == "fseq":
-        fseq_cmd_chunks = [tools.fseq, ("-o", peak_folder)]
-
-        # Parse only a subset of fseq options.
-        for fseq_opt in ["of", "l", "t", "s"]:
-            fseq_value = param.fseq[fseq_opt]
-            # TODO: use more natural try/except once PipelineManager parameters
-            #       AD is strict.
-            if fseq_value == fseq_opt:
-                # Non-strict pipeline parameters AttributeDict returns key
-                # itself if missing.
-                continue
-            # We're building a command, so even non-text values need no special
-            # handling.
-            fseq_optval = ("-{}".format(fseq_opt), fseq_value)
-            fseq_cmd_chunks.append(fseq_optval)
-
-        # Create the peak calling command
-        fseq_cmd_chunks.append(peak_input_file)
-        fseq_cmd = build_command(fseq_cmd_chunks)
-
-        # Create the file merge/delete commands.
-        chrom_peak_files = os.path.join(peak_folder, "*.npf")
-        merge_chrom_peaks_files = (
-            "cat {peakfiles} > {combined_peak_file}"
-            .format(peakfiles=chrom_peak_files,
-                    combined_peak_file=peak_output_file))
-        #delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
-        pm.clean_add(chrom_peak_files)
-
-        # Pypiper serially executes the commands.
-        cmd = [fseq_cmd, merge_chrom_peaks_files]
-
+    if os.path.isfile(peak_input_file) and os.stat(peak_input_file).st_size == 0:
+        print("Cannot call peaks, {} is empty".format(peak_input_file))
+        print("Check your reads and alignment to primary genome.")
+        pm.stop_pipeline()
     else:
-        # MACS2
-        macs_cmd_chunks = [
-            "{} callpeak".format(tools.macs2),
-            ("-t", peak_input_file),
-            "-f BED",
-            ("-g", args.genome_size),
-            ("--outdir", peak_folder),
-            ("-n", args.sample_name),
-            ("-q", param.macs2.q),
-            ("--shift", param.macs2.shift),
-            "--nomodel"
-        ]
-        # Note: required input file is non-positional ("treatment" file -t)
-        cmd = build_command(macs_cmd_chunks)
+        if args.peak_caller == "fseq":
+            fseq_cmd_chunks = [tools.fseq, ("-o", peak_folder)]
 
-    # Call peaks and report peak count.
-    pm.run(cmd, peak_output_file, follow=report_peak_count,
-           container=pm.container)
+            # Parse only a subset of fseq options.
+            for fseq_opt in ["of", "l", "t", "s"]:
+                fseq_value = param.fseq[fseq_opt]
+                # TODO: use more natural try/except once PipelineManager parameters
+                #       AD is strict.
+                if fseq_value == fseq_opt:
+                    # Non-strict pipeline parameters AttributeDict returns key
+                    # itself if missing.
+                    continue
+                # We're building a command, so even non-text values need no special
+                # handling.
+                fseq_optval = ("-{}".format(fseq_opt), fseq_value)
+                fseq_cmd_chunks.append(fseq_optval)
 
-    # Filter peaks in blacklist.
-    if os.path.exists(res.blacklist):
-        filter_peak = os.path.join(peak_folder, args.sample_name +
-                                   "_peaks_rmBlacklist.narrowPeak")
-        cmd = (tools.bedtools + " intersect " + " -a " + peak_output_file +
-               " -b " + res.blacklist + " -v  >" + filter_peak)
+            # Create the peak calling command
+            fseq_cmd_chunks.append(peak_input_file)
+            fseq_cmd = build_command(fseq_cmd_chunks)
 
-        pm.run(cmd, filter_peak, container=pm.container)
+            # Create the file merge/delete commands.
+            chrom_peak_files = os.path.join(peak_folder, "*.npf")
+            merge_chrom_peaks_files = (
+                "cat {peakfiles} > {combined_peak_file}"
+                .format(peakfiles=chrom_peak_files,
+                        combined_peak_file=peak_output_file))
+            #delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
+            pm.clean_add(chrom_peak_files)
 
-    pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
+            # Pypiper serially executes the commands.
+            cmd = [fseq_cmd, merge_chrom_peaks_files]
 
-    frip = calc_frip(rmdup_bam, peak_output_file, frip_func=ngstk.simple_frip,
-                     pipeline_manager=pm)
-    pm.report_result("FRIP", frip)
+        else:
+            # MACS2
+            macs_cmd_chunks = [
+                "{} callpeak".format(tools.macs2),
+                ("-t", peak_input_file),
+                "-f BED",
+                ("-g", args.genome_size),
+                ("--outdir", peak_folder),
+                ("-n", args.sample_name),
+                ("-q", param.macs2.q),
+                ("--shift", param.macs2.shift),
+                "--nomodel"
+            ]
+            # Note: required input file is non-positional ("treatment" file -t)
+            cmd = build_command(macs_cmd_chunks)
 
-    if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks):
-        # Use an external reference set of peaks instead of the peaks called
-        # from this run
-        frip_ref = calc_frip(rmdup_bam, args.frip_ref_peaks,
-                             frip_func=ngstk.simple_frip, pipeline_manager=pm)
-        pm.report_result("FRIP_ref", frip_ref)
+        # Call peaks and report peak count.
+        pm.run(cmd, peak_output_file, follow=report_peak_count,
+               container=pm.container)
 
-    # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
-    pm.timestamp("### # Produce bigBed formatted narrowPeak file")
-    bigNarrowPeak = os.path.join(peak_folder, args.sample_name +
-                                 "_peaks.bigBed")
-    cmd = build_command(
-            [tools.Rscript, tool_path("narrowPeakToBigBed.R"),
-             peak_output_file, res.chrom_sizes, tools.bedToBigBed,
-             bigNarrowPeak])
-    pm.run(cmd, bigNarrowPeak, nofail=False, container=pm.container)
-    
-    # Calculate peak coverage
-    pm.timestamp("### # Calculate peak coverage")
-    peakBed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
-    chrOrder = os.path.join(peak_folder, "chr_order.txt")
-    cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peakBed)
-    cmd2 = (tools.samtools + " view -H " + rmdup_bam +
-            " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
-            "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chrOrder)
-    sortPeakBed = os.path.join(peak_folder, args.sample_name +
-                               "_peaks_sort.bed")
-    cmd3 = (tools.bedtools + " sort -i " + peakBed + " -faidx " + chrOrder +
-            " > " + sortPeakBed)
-    pm.run([cmd1, cmd2, cmd3], sortPeakBed, nofail=True, container=pm.container)
-    
-    peakCoverage = os.path.join(peak_folder, args.sample_name +
-                                "_peaks_coverage.bed")
-    cmd = (tools.bedtools + " coverage -sorted -counts -a " + sortPeakBed +
-           " -b " + rmdup_bam + " -g " + chrOrder + " > " + peakCoverage)
-    pm.run(cmd, peakCoverage, nofail=True, container=pm.container)
-    
-    pm.clean_add(peakBed)
-    pm.clean_add(chrOrder)
-    pm.clean_add(sortPeakBed)
+        # Filter peaks in blacklist.
+        if os.path.exists(res.blacklist):
+            filter_peak = os.path.join(peak_folder, args.sample_name +
+                                       "_peaks_rmBlacklist.narrowPeak")
+            cmd = (tools.bedtools + " intersect " + " -a " + peak_output_file +
+                   " -b " + res.blacklist + " -v  >" + filter_peak)
 
-    # Plot FRiP
-    pm.timestamp("### # Plot FRiP by peak number")
-    cmd = (tools.samtools + " view -@ " + str(pm.cores) + " -q 15 -c -F4 " +
-           rmdup_bam)
-    totalReads = pm.checkprint(cmd)
-    fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
-    fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
-    cmd = build_command([tools.Rscript, tool_path("PEPATAC_frip.R"),
-                         peakCoverage, totalReads, fripPDF])
-    pm.run(cmd, fripPDF, nofail=False, container=pm.container)           
-    pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
+            pm.run(cmd, filter_peak, container=pm.container)
+
+        pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
+
+        frip = calc_frip(rmdup_bam, peak_output_file,
+                         frip_func=ngstk.simple_frip,
+                         pipeline_manager=pm)
+        pm.report_result("FRIP", frip)
+
+        if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks):
+            # Use an external reference set of peaks instead of the peaks
+            # called from this run
+            frip_ref = calc_frip(rmdup_bam, args.frip_ref_peaks,
+                                 frip_func=ngstk.simple_frip,
+                                 pipeline_manager=pm)
+            pm.report_result("FRIP_ref", frip_ref)
+
+        # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
+        pm.timestamp("### # Produce bigBed formatted narrowPeak file")
+        bigNarrowPeak = os.path.join(peak_folder, args.sample_name +
+                                     "_peaks.bigBed")
+        cmd = build_command(
+                [tools.Rscript, tool_path("narrowPeakToBigBed.R"),
+                 peak_output_file, res.chrom_sizes, tools.bedToBigBed,
+                 bigNarrowPeak])
+        pm.run(cmd, bigNarrowPeak, nofail=False, container=pm.container)
+        
+        # Calculate peak coverage
+        pm.timestamp("### # Calculate peak coverage")
+        peakBed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
+        chrOrder = os.path.join(peak_folder, "chr_order.txt")
+        cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peakBed)
+        cmd2 = (tools.samtools + " view -H " + rmdup_bam +
+                " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+                "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chrOrder)
+        sortPeakBed = os.path.join(peak_folder, args.sample_name +
+                                   "_peaks_sort.bed")
+        cmd3 = (tools.bedtools + " sort -i " + peakBed + " -faidx " +
+                chrOrder + " > " + sortPeakBed)
+        pm.run([cmd1, cmd2, cmd3], sortPeakBed, nofail=True,
+               container=pm.container)
+        
+        peakCoverage = os.path.join(peak_folder, args.sample_name +
+                                    "_peaks_coverage.bed")
+        cmd = (tools.bedtools + " coverage -sorted -counts -a " + sortPeakBed +
+               " -b " + rmdup_bam + " -g " + chrOrder + " > " + peakCoverage)
+        pm.run(cmd, peakCoverage, nofail=True, container=pm.container)
+        
+        pm.clean_add(peakBed)
+        pm.clean_add(chrOrder)
+        pm.clean_add(sortPeakBed)
+        
+        # Plot FRiP
+        pm.timestamp("### # Plot FRiP by peak number")
+        cmd = (tools.samtools + " view -@ " + str(pm.cores) +
+               " -q 15 -c -F4 " + rmdup_bam)
+        totalReads = pm.checkprint(cmd)
+        fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
+        fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
+        cmd = build_command([tools.Rscript, tool_path("PEPATAC_frip.R"),
+                             peakCoverage, totalReads, fripPDF])
+        pm.run(cmd, fripPDF, nofail=False, container=pm.container)           
+        pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
+
+        # Annotation peaks
+        pm.timestamp("### # Annotate peaks")
+        anno_file  = anno_path(res.bt2_genome + "_annotations.bed.gz")
+        anno_unzip = anno_path(res.bt2_genome + "_annotations.bed")          
+        if os.path.isfile(anno_file):
+            cmd1 = pm.ziptool + "-d -c " + anno_file + " > " + anno_unzip
+            pm.run(cmd1, anno_unzip, nofail=True, container=pm.container)
+
+            gaPDF  = os.path.join(QC_folder,
+                                  args.sample_name + "_chr_distribution.pdf")
+            gaPNG  = os.path.join(QC_folder,
+                                  args.sample_name + "_chr_distribution.png")
+            tssPDF = os.path.join(QC_folder,
+                                  args.sample_name + "_distance_TSS.pdf")
+            tssPNG = os.path.join(QC_folder,
+                                  args.sample_name + "_distance_TSS.png")
+            gpPDF  = os.path.join(QC_folder,
+                                  args.sample_name +
+                                  "_partition_distribution.pdf")
+            gpPNG  = os.path.join(QC_folder,
+                                  args.sample_name +
+                                  "_partition_distribution.png")
+            cmd2 = build_command(
+                    [tools.Rscript, tool_path("PEPATAC_annotation.R"),
+                     anno_unzip,
+                     peak_output_file,
+                     args.sample_name,
+                     res.bt2_genome,
+                     QC_folder])
+            cmd3 = pm.ziptool + "-c " + anno_unzip + " > " + anno_file
+
+            pm.run([cmd2, cmd3], gpPDF, nofail=False, container=pm.container) 
             
-    pm.stop_pipeline()
+            pm.report_object("Peak chromosome distribution", gaPDF,
+                             anchor_image=gaPNG)
+            pm.report_object("TSS distance distribution", tssPDF,
+                             anchor_image=tssPNG)
+            pm.report_object("Peak partition distribution", gpPDF,
+                             anchor_image=gpPNG)
+        else:
+            print("Could not find {}".format(anno_file))
+
+        # COMPLETE!
+        pm.stop_pipeline()
 
 
 if __name__ == '__main__':
