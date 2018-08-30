@@ -146,8 +146,8 @@ invisible(dev.off())
 knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
 
 annoFile <- fread(file.path(argv$anno))
-priority <- sapply(unique(annoFile$feature), list)
-dtList   <- splitDataTable(annoFile, "feature")
+priority <- sapply(unique(annoFile$name), list)
+dtList   <- splitDataTable(annoFile, "name")
 dtList   <- dtList[names(priority)]
 gl       <- GRangesList(lapply(dtList, makeGRangesFromDataFrame))
 

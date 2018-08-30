@@ -1060,9 +1060,10 @@ def main():
                      args.sample_name,
                      args.genome_assembly,
                      QC_folder])
-            cmd3 = pm.ziptool + "-c " + anno_unzip + " > " + anno_file
+                     
+            pm.clean_add(anno_unzip, conditional=True)
 
-            pm.run([cmd2, cmd3], gpPDF, nofail=False, container=pm.container) 
+            pm.run(cmd2, gpPDF, nofail=False, container=pm.container) 
             
             pm.report_object("Peak chromosome distribution", gaPDF,
                              anchor_image=gaPNG)
