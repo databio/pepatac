@@ -1031,7 +1031,7 @@ def main():
         pm.run(cmd, fripPDF, nofail=False, container=pm.container)           
         pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
 
-        # Annotation peaks
+        # Annotate peaks
         pm.timestamp("### # Annotate peaks")
         anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
         anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
@@ -1050,30 +1050,22 @@ def main():
 
         cmd2 = build_command(
                     [tools.Rscript, tool_path("PEPATAC_annotation.R"),
-                     anno_unzip,
+                     anno_file,
                      peak_output_file,
                      args.sample_name,
                      args.genome_assembly,
-                     QC_folder])  
+                     QC_folder])
 
-        if hasattr(pm, "cores") and pm.cores > 1 and ngstk.check_command("pigz"):
-            ziptool = "pigz -p {} ".format(str(pm.cores))
-        else:
-            ziptool = "gzip"
-
-        if (os.path.isfile(anno_file) or
-               (os.path.isfile(anno_unzip) and
-               os.stat(anno_unzip).st_size == 0)):
-            cmd1 = ziptool + "-d -c " + anno_file + " > " + anno_unzip
-            pm.run(cmd1, anno_unzip, nofail=True, container=pm.container)
+        if os.path.isfile(anno_file):
             pm.run(cmd2, gpPDF, container=pm.container)            
             pm.report_object("Peak chromosome distribution", gaPDF,
                              anchor_image=gaPNG)
             pm.report_object("TSS distance distribution", tssPDF,
                              anchor_image=tssPNG)
             pm.report_object("Peak partition distribution", gpPDF,
-                             anchor_image=gpPNG)
+                             anchor_image=gpPNG)            
         elif os.path.isfile(anno_unzip) and os.stat(anno_unzip).st_size > 0:
+            anno_file = anno_unzip
             pm.run(cmd2, gpPDF, container=pm.container)            
             pm.report_object("Peak chromosome distribution", gaPDF,
                              anchor_image=gaPNG)
