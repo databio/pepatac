@@ -1,15 +1,17 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #8/29/18
+#Last updated: 8/31/18
 #Author: Jason Smith
 #PEPATAC_annotation.R
 #
-#This program is meant to annotate called peaks by known or predicted regions
+#This program is meant to annotate called peaks or aligned reads by known or
+#predicted genomic regions
 #
 #NOTES:
 #usage: Rscript /path/to/Rscript/PEPATAC_annotation.R
 #               /path/to/<genome>_annotations.bed
-#               /path/to/<sample_name>_peaks.narrowPeak
+#               /path/to/*.narrowPeak OR *.bed (requires --reads flag)
 #               "sample_name"
 #               "genome_name"
 #               /path/to/output_dir
@@ -43,11 +45,12 @@ if (length(loadLibrary)!=0) {
 p <- arg_parser("Produce peak annotation plots")
 
 # Add command line arguments
-p <- add_argument(p, "anno",   help="Annotation file")
-p <- add_argument(p, "peaks",  help="Called peaks file")
-p <- add_argument(p, "sample", help="Sample name")
-p <- add_argument(p, "genome", help="Genome name")
-p <- add_argument(p, "output", help="Output directory")
+p <- add_argument(p, "anno",    help="Annotation file")
+p <- add_argument(p, "input",   help="Input file to be annotated")
+p <- add_argument(p, "sample",  help="Sample name")
+p <- add_argument(p, "genome",  help="Genome name")
+p <- add_argument(p, "output",  help="Output directory")
+p <- add_argument(p, "--reads", help="Annotate aligned reads", flag=TRUE)
 
 # Parse the command line arguments
 argv <- parse_args(p)
@@ -102,27 +105,33 @@ splitDataTable = function(DT, splitFactor) {
 
 ###############################################################################
 
-#### Load peaks file and convert to BED6 format
-peaks            <- read.table(argv$peaks)
-pepBed           <- peaks[,c(1,2,3,4,5,6)]
-colnames(pepBed) <- c("chromosome", "start", "end", "name", "score", "strand")
+#### Load input file and convert to/ensure it is in BED6 format
+inFile          <- fread(file.path(argv$input))
+if (ncol(inFile) > 6) {
+    inBed       <- inFile[,c(1,2,3,4,5,6)]
+} else {inBed   <- inFile}
+colnames(inBed) <- c("chromosome", "start", "end", "name", "score", "strand")
 
-#peak_counts <- data.frame(table(peaks$chromosome))
+#counts <- data.frame(table(inBed$chromosome))
 
 #### Convert to GRanges Object
-query  <- makeGRangesFromDataFrame(pepBed, keep.extra.columns=TRUE)
+query  <- makeGRangesFromDataFrame(inBed, keep.extra.columns=TRUE)
 
 #### Chromosome distribution plot
 x      <- aggregateOverGenomeBins(query, argv$genome)
 gaPlot <- plotGenomeAggregate(x)
 
+if (argv$reads) {
+    outName <- "_reads_chr_dist"
+} else {outName <- "_peaks_chr_dist"}
+
 pdf(file = file.path(argv$output,
-    paste(argv$sample, "_chr_distribution.pdf", sep="")),
+    paste(argv$sample, outName, ".pdf", sep="")),
     width= 7, height = 7, useDingbats=F)
 gaPlot
 invisible(dev.off())
 png(file.path(argv$output,
-    paste(argv$sample, "_chr_distribution.png", sep="")),
+    paste(argv$sample, outName, ".png", sep="")),
     width = 480, height = 480)
 gaPlot
 invisible(dev.off())
@@ -131,13 +140,17 @@ invisible(dev.off())
 TSSDist <- TSSDistance(query, argv$genome)
 tssPlot <- plotFeatureDist(TSSDist, featureName="TSS")
 
+if (argv$reads) {
+    outName <- "_reads_TSS_dist"
+} else {outName <- "_peaks_TSS_dist"}
+
 pdf(file = file.path(argv$output,
-    paste(argv$sample, "_distance_TSS.pdf", sep="")),
+    paste(argv$sample, outName, ".pdf", sep="")),
     width= 7, height = 7, useDingbats=F)
 tssPlot
 invisible(dev.off())
 png(file.path(argv$output,
-    paste(argv$sample, "_distance_TSS.png", sep="")),
+    paste(argv$sample, outName, ".png", sep="")),
     width = 480, height = 480)
 tssPlot
 invisible(dev.off())
@@ -165,13 +178,17 @@ if (argv$genome %in% knownGenomes) {
 }
 gpPlot   <- plotPartitions(gp)
 
+if (argv$reads) {
+    outName <- "_reads_partition_dist"
+} else {outName <- "_peaks_partition_dist"}
+
 pdf(file = file.path(argv$output,
-    paste(argv$sample, "_partition_distribution.pdf", sep="")),
+    paste(argv$sample, outName, ".pdf", sep="")),
     width= 7, height = 7, useDingbats=F)
 gpPlot
 invisible(dev.off())
 png(file.path(argv$output,
-    paste(argv$sample, "_partition_distribution.png", sep="")),
+    paste(argv$sample, outName, ".png", sep="")),
     width = 480, height = 480)
 gpPlot
 invisible(dev.off())
