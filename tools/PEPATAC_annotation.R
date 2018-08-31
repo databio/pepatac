@@ -193,5 +193,9 @@ png(file.path(argv$output,
 gpPlot
 invisible(dev.off())
 
-write("Peak annotation complete!\n", stdout())
+if (argv$reads) {
+    write("Read annotation complete!\n", stdout())
+} else {
+    write("Peak annotation complete!\n", stdout())
+}
 ###############################################################################
