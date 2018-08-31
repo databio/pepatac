@@ -908,7 +908,7 @@ def main():
     cmd = build_command(
             [tools.Rscript, tool_path("PEPATAC_annotation.R"),
              anno_file,
-             peak_output_file,
+             shift_bed,
              args.sample_name,
              args.genome_assembly,
              QC_folder,
