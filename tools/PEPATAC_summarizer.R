@@ -248,11 +248,15 @@ if (is.null(alignRaw)) {
 }
 
 # Split counts based on genome name
-genomeNames   <- unique(stats$Genome)
+genomeNames    <- unique(stats$Genome)
 for (i in 1:length(genomeNames)) {
-    rowPos    <- grep(genomeNames[i], stats$Genome)
-    readCount <- rep(0,nrow(stats))
-    reads     <- stats$Aligned_reads[stats$Genome==genomeNames[i]]
+    rowPos     <- grep(genomeNames[i], stats$Genome)
+    readCount  <- rep(0,nrow(stats))
+    reads      <- stats$Aligned_reads[stats$Genome==genomeNames[i]]
+    readsDedup <- stats$Dedup_aligned_reads[stats$Genome==genomeNames[i]]
+    if (length(readsDedup) == length(reads)) {
+        reads  <- readsDedup
+    }
     for (j in 1:length(reads)) {
         readCount[rowPos[j]] <- reads[j]
     }
