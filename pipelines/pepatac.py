@@ -603,7 +603,7 @@ def main():
     cmd += " -T " + tempdir
     cmd += " -o " + mapping_genome_bam_temp
 
-    pm.run(cmd, mapping_genome_bam_temp, container=pm.container)
+    #pm.run(cmd, mapping_genome_bam_temp, container=pm.container)
     
     # Split genome mapping result bamfile into two: high-quality aligned
     # reads (keepers) and unmapped reads (in case we want to analyze the
@@ -626,7 +626,7 @@ def main():
         pm.report_result("Total_efficiency", round(float(ar) * 100 /
                          float(rr), 2))
 
-    pm.run(cmd2, mapping_genome_bam, follow=check_alignment_genome,
+    pm.run([cmd, cmd2], mapping_genome_bam, follow=check_alignment_genome,
            container=pm.container)
 
     # Calculate quality control metrics for the alignment file  
@@ -1034,37 +1034,47 @@ def main():
         # Annotation peaks
         pm.timestamp("### # Annotate peaks")
         anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
-        anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")          
-        if os.path.isfile(anno_file):
-            cmd1 = pm.ziptool + "-d -c " + anno_file + " > " + anno_unzip
-            pm.run(cmd1, anno_unzip, nofail=True, container=pm.container)
+        anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
+        gaPDF  = os.path.join(QC_folder,
+                              args.sample_name + "_chr_distribution.pdf")
+        gaPNG  = os.path.join(QC_folder,
+                              args.sample_name + "_chr_distribution.png")
+        tssPDF = os.path.join(QC_folder,
+                              args.sample_name + "_distance_TSS.pdf")
+        tssPNG = os.path.join(QC_folder,
+                              args.sample_name + "_distance_TSS.png")
+        gpPDF  = os.path.join(QC_folder,
+                              args.sample_name + "_partition_distribution.pdf")
+        gpPNG  = os.path.join(QC_folder,
+                              args.sample_name + "_partition_distribution.png")
 
-            gaPDF  = os.path.join(QC_folder,
-                                  args.sample_name + "_chr_distribution.pdf")
-            gaPNG  = os.path.join(QC_folder,
-                                  args.sample_name + "_chr_distribution.png")
-            tssPDF = os.path.join(QC_folder,
-                                  args.sample_name + "_distance_TSS.pdf")
-            tssPNG = os.path.join(QC_folder,
-                                  args.sample_name + "_distance_TSS.png")
-            gpPDF  = os.path.join(QC_folder,
-                                  args.sample_name +
-                                  "_partition_distribution.pdf")
-            gpPNG  = os.path.join(QC_folder,
-                                  args.sample_name +
-                                  "_partition_distribution.png")
-            cmd2 = build_command(
+        cmd2 = build_command(
                     [tools.Rscript, tool_path("PEPATAC_annotation.R"),
                      anno_unzip,
                      peak_output_file,
                      args.sample_name,
                      args.genome_assembly,
-                     QC_folder])
-                     
-            pm.clean_add(anno_unzip, conditional=True)
+                     QC_folder])  
 
-            pm.run(cmd2, gpPDF, nofail=False, container=pm.container) 
-            
+        if hasattr(pm, "cores") and pm.cores > 1 and ngstk.check_command("pigz"):
+            ziptool = "pigz -p {} ".format(str(pm.cores))
+        else:
+            ziptool = "gzip"
+
+        if (os.path.isfile(anno_file) or
+               (os.path.isfile(anno_unzip) and
+               os.stat(anno_unzip).st_size == 0)):
+            cmd1 = ziptool + "-d -c " + anno_file + " > " + anno_unzip
+            pm.run(cmd1, anno_unzip, nofail=True, container=pm.container)
+            pm.run(cmd2, gpPDF, container=pm.container)            
+            pm.report_object("Peak chromosome distribution", gaPDF,
+                             anchor_image=gaPNG)
+            pm.report_object("TSS distance distribution", tssPDF,
+                             anchor_image=tssPNG)
+            pm.report_object("Peak partition distribution", gpPDF,
+                             anchor_image=gpPNG)
+        elif os.path.isfile(anno_unzip) and os.stat(anno_unzip).st_size > 0:
+            pm.run(cmd2, gpPDF, container=pm.container)            
             pm.report_object("Peak chromosome distribution", gaPDF,
                              anchor_image=gaPNG)
             pm.report_object("TSS distance distribution", tssPDF,
