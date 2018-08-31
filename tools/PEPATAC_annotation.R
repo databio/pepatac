@@ -164,6 +164,8 @@ if (fileType == "gzfile") {
 } else {
     annoFile <- fread(file.path(argv$anno))
 }
+colnames(annoFile) <- c("chromosome", "start", "end",
+                        "name", "scores", "strand")
 priority <- sapply(unique(annoFile$name), list)
 dtList   <- splitDataTable(annoFile, "name")
 dtList   <- dtList[names(priority)]
