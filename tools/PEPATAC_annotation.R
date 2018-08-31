@@ -145,7 +145,12 @@ invisible(dev.off())
 #### Partition distribution plots
 knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
 
-annoFile <- fread(file.path(argv$anno))
+fileType <- summary(file(paste0(argv$anno)))$class
+if (fileType == "gzfile") {
+    annoFile <- fread(sprintf('zcat %s', shQuote(file.path(argv$anno))))
+} else {
+    annoFile <- fread(file.path(argv$anno))
+}
 priority <- sapply(unique(annoFile$name), list)
 dtList   <- splitDataTable(annoFile, "name")
 dtList   <- dtList[names(priority)]
