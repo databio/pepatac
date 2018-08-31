@@ -886,6 +886,54 @@ def main():
         except:
             pass
 
+    # Annotate reads
+
+    pm.timestamp("### # Annotate reads")
+
+    anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
+    anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
+    gaPDF  = os.path.join(QC_folder,
+                          args.sample_name + "_reads_chr_dist.pdf")
+    gaPNG  = os.path.join(QC_folder,
+                          args.sample_name + "_reads_chr_dist.png")
+    tssPDF = os.path.join(QC_folder,
+                          args.sample_name + "_reads_TSS_dist.pdf")
+    tssPNG = os.path.join(QC_folder,
+                          args.sample_name + "_reads_TSS_dist.png")
+    gpPDF  = os.path.join(QC_folder,
+                          args.sample_name + "_reads_partition_dist.pdf")
+    gpPNG  = os.path.join(QC_folder,
+                          args.sample_name + "_reads_partition_dist.png")
+
+    cmd = build_command(
+            [tools.Rscript, tool_path("PEPATAC_annotation.R"),
+             anno_file,
+             peak_output_file,
+             args.sample_name,
+             args.genome_assembly,
+             QC_folder,
+             "--reads"])
+
+    if os.path.isfile(anno_file):
+        pm.run(cmd, gpPDF, container=pm.container)            
+        pm.report_object("Read chromosome distribution", gaPDF,
+                         anchor_image=gaPNG)
+        pm.report_object("Read TSS distance distribution", tssPDF,
+                         anchor_image=tssPNG)
+        pm.report_object("Read partition distribution", gpPDF,
+                         anchor_image=gpPNG)            
+    elif os.path.isfile(anno_unzip) and os.stat(anno_unzip).st_size > 0:
+        anno_file = anno_unzip
+        pm.run(cmd, gpPDF, container=pm.container)            
+        pm.report_object("Read chromosome distribution", gaPDF,
+                         anchor_image=gaPNG)
+        pm.report_object("Read TSS distance distribution", tssPDF,
+                         anchor_image=tssPNG)
+        pm.report_object("Read partition distribution", gpPDF,
+                         anchor_image=gpPNG)
+    else:
+        print("Could not find {}".format(anno_file))
+
     # Peak calling
 
     pm.timestamp("### Call peaks")
@@ -1032,32 +1080,34 @@ def main():
         pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
 
         # Annotate peaks
+
         pm.timestamp("### # Annotate peaks")
+
         anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
         anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
         gaPDF  = os.path.join(QC_folder,
-                              args.sample_name + "_chr_distribution.pdf")
+                              args.sample_name + "_peaks_chr_dist.pdf")
         gaPNG  = os.path.join(QC_folder,
-                              args.sample_name + "_chr_distribution.png")
+                              args.sample_name + "_peaks_chr_dist.png")
         tssPDF = os.path.join(QC_folder,
-                              args.sample_name + "_distance_TSS.pdf")
+                              args.sample_name + "_peaks_TSS_dist.pdf")
         tssPNG = os.path.join(QC_folder,
-                              args.sample_name + "_distance_TSS.png")
+                              args.sample_name + "_peaks_TSS_dist.png")
         gpPDF  = os.path.join(QC_folder,
-                              args.sample_name + "_partition_distribution.pdf")
+                              args.sample_name + "_peaks_partition_dist.pdf")
         gpPNG  = os.path.join(QC_folder,
-                              args.sample_name + "_partition_distribution.png")
+                              args.sample_name + "_peaks_partition_dist.png")
 
-        cmd2 = build_command(
-                    [tools.Rscript, tool_path("PEPATAC_annotation.R"),
-                     anno_file,
-                     peak_output_file,
-                     args.sample_name,
-                     args.genome_assembly,
-                     QC_folder])
+        cmd = build_command(
+                [tools.Rscript, tool_path("PEPATAC_annotation.R"),
+                 anno_file,
+                 peak_output_file,
+                 args.sample_name,
+                 args.genome_assembly,
+                 QC_folder])
 
         if os.path.isfile(anno_file):
-            pm.run(cmd2, gpPDF, container=pm.container)            
+            pm.run(cmd, gpPDF, container=pm.container)            
             pm.report_object("Peak chromosome distribution", gaPDF,
                              anchor_image=gaPNG)
             pm.report_object("TSS distance distribution", tssPDF,
@@ -1066,7 +1116,7 @@ def main():
                              anchor_image=gpPNG)            
         elif os.path.isfile(anno_unzip) and os.stat(anno_unzip).st_size > 0:
             anno_file = anno_unzip
-            pm.run(cmd2, gpPDF, container=pm.container)            
+            pm.run(cmd, gpPDF, container=pm.container)            
             pm.report_object("Peak chromosome distribution", gaPDF,
                              anchor_image=gaPNG)
             pm.report_object("TSS distance distribution", tssPDF,
