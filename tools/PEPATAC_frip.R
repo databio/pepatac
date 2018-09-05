@@ -1,7 +1,7 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #8/13/18
-#Last updated: 8/31/18
+#Last updated: 9/05/18
 #Author: Jason Smith
 #PEPATAC_frip.R
 #
@@ -40,7 +40,7 @@ if (length(loadLibrary)!=0) {
 }
 
 # Create a parser
-p <- arg_parser("Produce FRiP plot")
+p <- arg_parser("Produce Fraction of Reads in Features (FRiF) plot(s)")
 
 # Add command line arguments
 p <- add_argument(p, "peaks", 
@@ -100,20 +100,21 @@ calcFRiP <- function(bedFile) {
 
 info <- file.info(file.path(argv$peaks))
 if (file.exists(file.path(argv$peaks)) && info$size != 0) {
-    peaks <- read.table(file.path(argv$peaks))
+    peaks   <- read.table(file.path(argv$peaks))
 } else {
 	outFile <- file.path(argv$output)
 	system2(paste("touch"), outFile)
 	quit()
 }
 
-peakCov <- calcFRiP(peaks)
+peakCov    <- calcFRiP(peaks)
 
 plotColors <- colorpanel(length(argv$bed),
                          low="#4876FF", mid="#94D9CE", high="#7648FF")
 
 p <- ggplot() +
-        geom_line(aes(x=log10(cumSize), y=frip), peakCov, size=0.25, color='red') +
+        geom_line(aes(x=log10(cumSize), y=frip), peakCov,
+                  size=0.25, color='red') +
         labs(x="log(number of bases)", y="FRiF") +
         scale_x_continuous(labels = scales::comma) +
         theme_classic()
@@ -128,7 +129,7 @@ for (i in 1:length(argv$bed)) {
     name <- gsub("_coverage", "", name)
     info <- file.info(file.path(argv$bed[i]))
     if (file.exists(file.path(argv$bed[i])) && info$size != 0) {
-        bed <- read.table(file.path(argv$bed[i]))
+        bed     <- read.table(file.path(argv$bed[i]))
     } else {
         outFile <- file.path(argv$output)
         system2(paste("touch"), outFile)
@@ -143,8 +144,26 @@ for (i in 1:length(argv$bed)) {
                        size=0.25, color=plotColors[i])
 }
 
-p <- p + geom_label_repel(aes(x=as.numeric(xPos), y=as.numeric(yPos)),
-                          data=labels, label=labels$name, color=labels$color)
+# Add labels
+if (length(argv$bed) == 0) {
+    # Only peaks, plot traditionally
+    p <- ggplot() +
+            geom_line(aes(x=numfeats, y=frip), peakCov,
+                      size=0.25, color='red') +
+            labs(x="number of peaks", y="FRiP") +
+            scale_x_continuous(labels = scales::comma) +
+            theme_classic()
+    p <- p + geom_label_repel(aes(x=0.95*max(peakCov$cumSize),
+                                  y=max(peakCov$frip)+0.001,
+                              label=paste0("Peaks: ",
+                                           round(max(peakCov$frip),2)),
+                              color="red")
+    
+} else {
+    p <- p + geom_label_repel(aes(x=as.numeric(xPos), y=as.numeric(yPos)),
+                              data=labels, label=labels$name,
+                              color=labels$color)
+}
 
 pdf(file = paste(tools::file_path_sans_ext(argv$output), ".pdf", sep=""),
     width= 7, height = 7, useDingbats=F)
@@ -154,6 +173,10 @@ png(filename = paste(tools::file_path_sans_ext(argv$output), ".png", sep=""),
 p
 invisible(dev.off())
 
-write("Cumulative FRiP plot completed!\n", stdout())
+if (length(argv$bed) == 0) {
+    write("Cumulative FRiP plot completed!\n", stdout())
+} else {
+    write("Cumulative FRiF plots completed!\n", stdout())
+}
 
 ###############################################################################
