@@ -5,12 +5,13 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "xujin937@gmail.com"
-__version__ = "0.7.2"
+__version__ = "0.7.3"
 
 
 from argparse import ArgumentParser
 import os
 import sys
+import re
 import tempfile
 import tarfile
 import pypiper
@@ -886,54 +887,6 @@ def main():
         except:
             pass
 
-    # Annotate reads
-
-    pm.timestamp("### # Annotate reads")
-
-    anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
-    anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
-    gaPDF  = os.path.join(QC_folder,
-                          args.sample_name + "_reads_chr_dist.pdf")
-    gaPNG  = os.path.join(QC_folder,
-                          args.sample_name + "_reads_chr_dist.png")
-    tssPDF = os.path.join(QC_folder,
-                          args.sample_name + "_reads_TSS_dist.pdf")
-    tssPNG = os.path.join(QC_folder,
-                          args.sample_name + "_reads_TSS_dist.png")
-    gpPDF  = os.path.join(QC_folder,
-                          args.sample_name + "_reads_partition_dist.pdf")
-    gpPNG  = os.path.join(QC_folder,
-                          args.sample_name + "_reads_partition_dist.png")
-
-    cmd = build_command(
-            [tools.Rscript, tool_path("PEPATAC_annotation.R"),
-             anno_file,
-             shift_bed,
-             args.sample_name,
-             args.genome_assembly,
-             QC_folder,
-             "--reads"])
-
-    if os.path.isfile(anno_file):
-        pm.run(cmd, gpPDF, container=pm.container)            
-        pm.report_object("Read chromosome distribution", gaPDF,
-                         anchor_image=gaPNG)
-        pm.report_object("Read TSS distance distribution", tssPDF,
-                         anchor_image=tssPNG)
-        pm.report_object("Read partition distribution", gpPDF,
-                         anchor_image=gpPNG)            
-    elif os.path.isfile(anno_unzip) and os.stat(anno_unzip).st_size > 0:
-        anno_file = anno_unzip
-        pm.run(cmd, gpPDF, container=pm.container)            
-        pm.report_object("Read chromosome distribution", gaPDF,
-                         anchor_image=gaPNG)
-        pm.report_object("Read TSS distance distribution", tssPDF,
-                         anchor_image=tssPNG)
-        pm.report_object("Read partition distribution", gpPDF,
-                         anchor_image=gpPNG)
-    else:
-        print("Could not find {}".format(anno_file))
-
     # Peak calling
 
     pm.timestamp("### Call peaks")
@@ -1043,7 +996,9 @@ def main():
         pm.run(cmd, bigNarrowPeak, nofail=False, container=pm.container)
         
         # Calculate peak coverage
+
         pm.timestamp("### # Calculate peak coverage")
+
         peakBed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
         chrOrder = os.path.join(peak_folder, "chr_order.txt")
         cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peakBed)
@@ -1067,6 +1022,50 @@ def main():
         pm.clean_add(chrOrder)
         pm.clean_add(sortPeakBed)
         
+        # Calculate annotation coverage
+
+        pm.timestamp("### # Calculate read annotation coverage")
+
+        anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
+        anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
+        
+        if os.path.isfile(anno_file):
+            # Get list of features
+            cmd1 = ("zcat " + anno_file + " | cut -f 4 | sort -u")
+            ftList = pm.checkprint(cmd1)
+            ftList = str.splitlines(ftList)
+            #ftValid = list()
+            annoList = list()
+            # Split annotation file on features
+            cmd2 = ("zcat " + anno_file + " | awk -F'\t' '{print>\"" +
+                    QC_folder + "\"/$4}'")
+            if len(ftList) >= 1:
+                for pos, anno in enumerate(ftList):
+                    annoFile = os.path.join(QC_folder, anno)
+                    pm.run(cmd2, annoFile, container=pm.container)
+                    # Rename files to valid filenames
+                    validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')                  
+                    #print("annoFile: ", annoFile)
+                    fileName = os.path.join(QC_folder, validName)
+                    #print("fileName: ", fileName)
+                    #ftValid.append(validName)
+                    pm.run(os.rename(annoFile, fileName), fileName,
+                           container=pm.container)
+                    annoSort = os.path.join(QC_folder, validName + "_sort.bed")
+                    cmd3 = ("cut -f 1-3 " + fileName +
+                            " | bedtools sort -i stdin -faidx " +
+                            chrOrder + " > " + annoSort)
+                    pm.run(cmd3, annoSort, container=pm.container)
+                    annoCov = os.path.join(QC_folder, args.sample_name + "_" +
+                                           validName + "_coverage.bed")
+                    annoList.append(annoCov)
+                    cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
+                            annoSort + " -b " + rmdup_bam + " -g " + chrOrder +
+                            " > " + annoCov)
+                    pm.run(cmd4, annoCov, container=pm.container)
+                    pm.clean_add(fileName)
+                    pm.clean_add(annoSort)
+            
         # Plot FRiP
         pm.timestamp("### # Plot FRiP by peak number")
         cmd = (tools.samtools + " view -@ " + str(pm.cores) +
@@ -1076,6 +1075,10 @@ def main():
         fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
         cmd = build_command([tools.Rscript, tool_path("PEPATAC_frip.R"),
                              peakCoverage, totalReads, fripPDF])
+        if len(annoList) >= 1:
+            cmd += " --bed"
+            for cov in annoList:
+                cmd += " " + cov
         pm.run(cmd, fripPDF, nofail=False, container=pm.container)           
         pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
 
@@ -1083,8 +1086,6 @@ def main():
 
         pm.timestamp("### # Annotate peaks")
 
-        anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
-        anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
         gaPDF  = os.path.join(QC_folder,
                               args.sample_name + "_peaks_chr_dist.pdf")
         gaPNG  = os.path.join(QC_folder,
