@@ -111,7 +111,7 @@ if (file.exists(file.path(argv$input)) && info$size != 0) {
     inFile  <- fread(file.path(argv$input))
 } else {
 	outFile <- file.path(argv$output,
-                         paste0(argv$sample, "_peaks_partition_dist.pdf")
+                         paste0(argv$sample, "_peaks_partition_dist.pdf"))
 	system2(paste("touch"), outFile)
 	quit()
 }
