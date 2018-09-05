@@ -39,7 +39,15 @@ def parse_arguments():
 
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
-                        help="Reference peak set for calculating FRIP")
+                        help="Reference peak set for calculating FRiP")
+
+    parser.add_argument("--TSS-name", default=None,
+                        dest="TSS_name", type=str,
+                        help="Name of TSS annotation file")
+
+    parser.add_argument("--anno-name", default=None,
+                        dest="anno_name", type=str,
+                        help="Name of reference bed file for calculating FRiF")
 
     parser.add_argument("--peak-caller", dest="peak_caller",
                         default="macs2", choices=PEAK_CALLERS,
@@ -51,7 +59,7 @@ def parse_arguments():
 
     parser.add_argument("--prealignments", default=[], type=str, nargs="+",
                         help="Space-delimited list of reference genomes to "
-                        "align to before primary alignment.")
+                             "align to before primary alignment.")
 
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {v}".format(v=__version__))
@@ -377,9 +385,9 @@ def main():
     gfolder = os.path.join(res.genomes, args.genome_assembly)
     res.chrom_sizes = os.path.join(
         gfolder, args.genome_assembly + ".chromSizes")
-    # res.TSS_file = os.path.join(gfolder, args.genome_assembly +
-    #                             ".refseq.TSS.txt")
-    res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
+
+    #res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
+    res.TSS_file = os.path.join(gfolder, args.TSS_name)
     res.blacklist = os.path.join(
         gfolder, args.genome_assembly + ".blacklist.bed")
 
@@ -446,7 +454,7 @@ def main():
 
     # Create trimming command(s).
     if args.trimmer == "pyadapt":
-        if not args.paried_end:
+        if not args.paired_end:
             raise NotImplementedError(
                 "pyadapt trimming requires paired-end reads.")
         # TODO: make pyadapt give options for output file name.
@@ -821,8 +829,6 @@ def main():
               .format(res.TSS_file))
     else:
         pm.timestamp("### Calculate TSS enrichment")
-        #QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
-        #ngstk.make_dir(QC_folder)
 
         Tss_enrich = os.path.join(QC_folder, args.sample_name +
                                   "_TssEnrichment.txt")
@@ -863,7 +869,10 @@ def main():
         except:
             pass
 
-        # fragment distribution
+        # Fragment distribution
+
+        pm.timestamp("### Plot fragment distribution")
+
         fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
         frag_dist_tool = tool_path("fragment_length_dist.pl")
         cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
@@ -902,7 +911,7 @@ def main():
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
     peak_input_file = shift_bed
-    
+
     if os.path.isfile(peak_input_file) and os.stat(peak_input_file).st_size == 0:
         print("Cannot call peaks, {} is empty".format(peak_input_file))
         print("Check your reads and alignment to primary genome.")
@@ -970,12 +979,12 @@ def main():
 
             pm.run(cmd, filter_peak, container=pm.container)
 
-        pm.timestamp("### # Calculate fraction of reads in peaks (FRIP)")
+        pm.timestamp("### # Calculate fraction of reads in peaks (FRiP)")
 
         frip = calc_frip(rmdup_bam, peak_output_file,
                          frip_func=ngstk.simple_frip,
                          pipeline_manager=pm)
-        pm.report_result("FRIP", frip)
+        pm.report_result("FRiP", frip)
 
         if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks):
             # Use an external reference set of peaks instead of the peaks
@@ -983,10 +992,12 @@ def main():
             frip_ref = calc_frip(rmdup_bam, args.frip_ref_peaks,
                                  frip_func=ngstk.simple_frip,
                                  pipeline_manager=pm)
-            pm.report_result("FRIP_ref", frip_ref)
+            pm.report_result("FRiP_ref", frip_ref)
 
         # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
+
         pm.timestamp("### # Produce bigBed formatted narrowPeak file")
+
         bigNarrowPeak = os.path.join(peak_folder, args.sample_name +
                                      "_peaks.bigBed")
         cmd = build_command(
@@ -1001,10 +1012,12 @@ def main():
 
         peakBed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
         chrOrder = os.path.join(peak_folder, "chr_order.txt")
+
         cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peakBed)
         cmd2 = (tools.samtools + " view -H " + rmdup_bam +
                 " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
                 "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chrOrder)
+
         sortPeakBed = os.path.join(peak_folder, args.sample_name +
                                    "_peaks_sort.bed")
         cmd3 = (tools.bedtools + " sort -i " + peakBed + " -faidx " +
@@ -1014,41 +1027,38 @@ def main():
         
         peakCoverage = os.path.join(peak_folder, args.sample_name +
                                     "_peaks_coverage.bed")
-        cmd = (tools.bedtools + " coverage -sorted -counts -a " + sortPeakBed +
-               " -b " + rmdup_bam + " -g " + chrOrder + " > " + peakCoverage)
-        pm.run(cmd, peakCoverage, nofail=True, container=pm.container)
+        cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
+                sortPeakBed + " -b " + rmdup_bam + " -g " + chrOrder +
+                " > " + peakCoverage)
+        pm.run(cmd4, peakCoverage, nofail=True, container=pm.container)
         
         pm.clean_add(peakBed)
         pm.clean_add(chrOrder)
         pm.clean_add(sortPeakBed)
         
-        # Calculate annotation coverage
+        # Calculate read coverage
 
-        pm.timestamp("### # Calculate read annotation coverage")
+        pm.timestamp("### # Calculate read coverage")
 
-        anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
-        anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
-        
+        anno_file  = anno_path(args.anno_name)
+        anno_unzip = os.path.splitext(anno_file)[0]
+
         if os.path.isfile(anno_file):
             # Get list of features
             cmd1 = ("zcat " + anno_file + " | cut -f 4 | sort -u")
             ftList = pm.checkprint(cmd1)
             ftList = str.splitlines(ftList)
-            #ftValid = list()
             annoList = list()
             # Split annotation file on features
             cmd2 = ("zcat " + anno_file + " | awk -F'\t' '{print>\"" +
-                    QC_folder + "\"/$4}'")
+                    QC_folder + "/\"$4}'")
             if len(ftList) >= 1:
                 for pos, anno in enumerate(ftList):
                     annoFile = os.path.join(QC_folder, anno)
                     pm.run(cmd2, annoFile, container=pm.container)
                     # Rename files to valid filenames
-                    validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')                  
-                    #print("annoFile: ", annoFile)
+                    validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
                     fileName = os.path.join(QC_folder, validName)
-                    #print("fileName: ", fileName)
-                    #ftValid.append(validName)
                     pm.run(os.rename(annoFile, fileName), fileName,
                            container=pm.container)
                     annoSort = os.path.join(QC_folder, validName + "_sort.bed")
@@ -1065,22 +1075,36 @@ def main():
                     pm.run(cmd4, annoCov, container=pm.container)
                     pm.clean_add(fileName)
                     pm.clean_add(annoSort)
-            
-        # Plot FRiP
-        pm.timestamp("### # Plot FRiP by peak number")
+
+        # Plot FRiF or FRiP
+
+        pm.timestamp("### # Plot FRiP/F")
+
         cmd = (tools.samtools + " view -@ " + str(pm.cores) +
                " -q 15 -c -F4 " + rmdup_bam)
         totalReads = pm.checkprint(cmd)
+
         fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
         fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
         cmd = build_command([tools.Rscript, tool_path("PEPATAC_frip.R"),
-                             peakCoverage, totalReads, fripPDF])
+                             peakCoverage, totalReads])
+
         if len(annoList) >= 1:
+            fripPDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
+            fripPNG = os.path.join(QC_folder, args.sample_name + "_frif.png")
+            cmd += " " + fripPDF
             cmd += " --bed"
             for cov in annoList:
                 cmd += " " + cov
-        pm.run(cmd, fripPDF, nofail=False, container=pm.container)           
-        pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
+        else:
+            cmd += " " + fripPDF
+
+        pm.run(cmd, fripPDF, nofail=False, container=pm.container)
+
+        if len(annoList) >= 1:        
+            pm.report_object("Cumulative FRiF", fripPDF, anchor_image=fripPNG)
+        else:
+            pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
 
         # Annotate peaks
 
