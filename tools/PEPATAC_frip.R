@@ -90,6 +90,7 @@ calcFRiP <- function(bedFile) {
     bedFile <- cbind(bedFile, size=(bedFile$end-bedFile$start))
     bedFile <- bedFile[order(-bedFile$count),]
     bedFile <- cbind(bedFile, cumsum=cumsum(bedFile$count))
+    bedFile <- cbind(bedFile, cumSize=cumsum(bedFile$size))
     bedFile <- cbind(bedFile, frip=bedFile$cumsum/as.numeric(argv$reads))
     bedFile <- cbind(bedFile, numfeats=as.numeric(1:nrow(bedFile)))
     return(bedFile)
@@ -112,18 +113,18 @@ plotColors <- colorpanel(length(argv$bed),
                          low="#4876FF", mid="#94D9CE", high="#7648FF")
 
 p <- ggplot() +
-        geom_line(aes(x=numfeats, y=frip), peakCov, size=0.25, color='red') +
-        labs(x="number of features", y="FRiP") +
+        geom_line(aes(x=log10(cumSize), y=frip), peakCov, size=0.25, color='red') +
+        labs(x="log(number of bases)", y="FRiF") +
         scale_x_continuous(labels = scales::comma) +
         theme_classic()
 
 labels     <- data.frame(xPos=numeric(), yPos=numeric(), name=character(),
                          color=character(), stringsAsFactors=FALSE)
-labels[1,] <- c(0.95*max(peakCov$numfeats), max(peakCov$frip)+0.001,
+labels[1,] <- c(0.95*max(log10(peakCov$cumSize)), max(peakCov$frip)+0.001,
                 paste0("Peaks: ", round(max(peakCov$frip),2)), "red")
                 
 for (i in 1:length(argv$bed)) {
-    name <- tools::file_path_sans_ext(argv$bed[i])
+    name <- basename(tools::file_path_sans_ext(argv$bed[i]))
     name <- gsub("_coverage", "", name)
     info <- file.info(file.path(argv$bed[i]))
     if (file.exists(file.path(argv$bed[i])) && info$size != 0) {
@@ -134,11 +135,11 @@ for (i in 1:length(argv$bed)) {
         quit()
     }
     covFile <- calcFRiP(bed)
-    labels  <- rbind(labels, c(0.95*max(covFile$numfeats),
+    labels  <- rbind(labels, c(0.95*max(log10(covFile$cumSize)),
                                max(covFile$frip)+0.001,
                                paste0(name, ": ", round(max(covFile$frip),2)),
                                plotColors[i]))
-    p <- p + geom_line(aes(x=numfeats, y=frip), covFile,
+    p <- p + geom_line(aes(x=log10(cumSize), y=frip), covFile,
                        size=0.25, color=plotColors[i])
 }
 
