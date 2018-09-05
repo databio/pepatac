@@ -106,7 +106,16 @@ splitDataTable = function(DT, splitFactor) {
 ###############################################################################
 
 #### Load input file and convert to/ensure it is in BED6 format
-inFile          <- fread(file.path(argv$input))
+info <- file.info(file.path(argv$input))
+if (file.exists(file.path(argv$input)) && info$size != 0) {
+    inFile  <- fread(file.path(argv$input))
+} else {
+	outFile <- file.path(argv$output,
+                         paste0(argv$sample, "_peaks_partition_dist.pdf")
+	system2(paste("touch"), outFile)
+	quit()
+}
+
 if (ncol(inFile) > 6) {
     inBed       <- inFile[,c(1,2,3,4,5,6)]
 } else {inBed   <- inFile}
