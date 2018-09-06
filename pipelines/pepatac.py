@@ -386,8 +386,10 @@ def main():
     res.chrom_sizes = os.path.join(
         gfolder, args.genome_assembly + ".chromSizes")
 
-    #res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
-    res.TSS_file = os.path.join(gfolder, args.TSS_name)
+    if args.TSS_name:
+        res.TSS_file = os.path.join(gfolder, args.TSS_name)
+    else:
+        res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
     res.blacklist = os.path.join(
         gfolder, args.genome_assembly + ".blacklist.bed")
 
@@ -1040,8 +1042,12 @@ def main():
 
         pm.timestamp("### # Calculate read coverage")
 
-        anno_file  = anno_path(args.anno_name)
-        anno_unzip = os.path.splitext(anno_file)[0]
+        if args.anno_name:
+            anno_file  = anno_path(args.anno_name)
+            anno_unzip = os.path.splitext(anno_file)[0]
+        else:
+            anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
+            anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
 
         if os.path.isfile(anno_file):
             # Get list of features
@@ -1083,22 +1089,25 @@ def main():
         cmd = (tools.samtools + " view -@ " + str(pm.cores) +
                " -q 15 -c -F4 " + rmdup_bam)
         totalReads = pm.checkprint(cmd)
+        totalReads = str(totalReads).rstrip()
 
         fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
         fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
-        cmd = build_command([tools.Rscript, tool_path("PEPATAC_frip.R"),
-                             peakCoverage, totalReads])
+        fripCmd = [tools.Rscript, tool_path("PEPATAC_frip.R"),
+                   peakCoverage, totalReads]
 
         if len(annoList) >= 1:
             fripPDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
             fripPNG = os.path.join(QC_folder, args.sample_name + "_frif.png")
-            cmd += " " + fripPDF
-            cmd += " --bed"
+            fripCmd.append(fripPDF)
+            fripCmd.append("--bed")
             for cov in annoList:
-                cmd += " " + cov
+                fripCmd.append(cov)
         else:
-            cmd += " " + fripPDF
+            fripCmd.append(fripPDF)
+        print(fripCmd)
 
+        cmd = build_command(fripCmd)
         pm.run(cmd, fripPDF, nofail=False, container=pm.container)
 
         if len(annoList) >= 1:        
