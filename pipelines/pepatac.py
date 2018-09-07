@@ -49,6 +49,10 @@ def parse_arguments():
                         dest="anno_name", type=str,
                         help="Name of reference bed file for calculating FRiF")
 
+    parser.add_argument("--keep", default=False,
+                        dest="keep", type=str,
+                        help="Keep prealignment BAM files")
+
     parser.add_argument("--peak-caller", dest="peak_caller",
                         default="macs2", choices=PEAK_CALLERS,
                         help="Name of peak caller")
@@ -103,8 +107,9 @@ def calc_frip(bamfile, peakfile, frip_func, pipeline_manager,
     return float(num_peak_reads) / float(num_aligned_reads)
 
 
-def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
-                    assembly_bt2, outfolder, aligndir=None, bt2_opts_txt=None):
+def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
+                    assembly_identifier, assembly_bt2, outfolder,
+                    aligndir=None, bt2_opts_txt=None):
     """
     A helper function to run alignments in series, so you can run one alignment
     followed by another; this is useful for successive decoy alignments.
@@ -113,6 +118,7 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         e.g. from parsing command-line options
     :param looper.models.AttributeDict tools: binding between tool name and
         value, e.g. for tools/resources used by the pipeline
+    :param bool paired: if True, use paired-end alignment
     :param str unmap_fq1: path to unmapped read1 FASTQ file
     :param str unmap_fq2: path to unmapped read2 FASTQ file
     :param str assembly_identifier: text identifying a genome assembly for the
@@ -141,7 +147,7 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
         out_fastq_pre = os.path.join(
             sub_outdir, args.sample_name + "_" + assembly_identifier)
         # bowtie2 unmapped filename format
-        if args.paired_end:
+        if paired:
             out_fastq_bt2 = out_fastq_pre + '_unmap_R%.fq.gz'
         else:
             out_fastq_bt2 = out_fastq_pre + '_unmap_R1.fq.gz'
@@ -150,47 +156,81 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
             # Default options
             bt2_opts_txt = " -k 1"  # Return only 1 alignment
             bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-            bt2_opts_txt += " -X 2000"
+            if paired and args.keep:
+                bt2_opts_txt += " -X 2000"
 
         # samtools sort needs a temporary directory
         tempdir = tempfile.mkdtemp(dir=sub_outdir)
         pm.clean_add(tempdir)
-
+   
         # Build bowtie2 command
-        cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
-        cmd += bt2_opts_txt
-        cmd += " -x " + assembly_bt2
-        cmd += " --rg-id " + args.sample_name
-        if args.paired_end:
-            cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
-            cmd += " --un-conc-gz " + out_fastq_bt2
+        if args.keep:
+            cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
+            cmd += bt2_opts_txt
+            cmd += " -x " + assembly_bt2
+            cmd += " --rg-id " + args.sample_name
+            if paired:
+                cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+                cmd += " --un-conc-gz " + out_fastq_bt2
+            else:
+                cmd += " -U " + unmap_fq1
+                cmd += " --un-gz " + out_fastq_bt2
+            cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
+            cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
+            cmd += " -T " + tempdir
+            cmd += " -o " + mapped_bam
+            cmd += ") 2>" + summary_file
         else:
-            cmd += " -U " + unmap_fq1
-            cmd += " --un-gz " + out_fastq_bt2
-        cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
-        cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
-        cmd += " -T " + tempdir
-        cmd += " -o " + mapped_bam
-        cmd += ") 2>" + summary_file
+            # TODO: handle actual single-end data too
+            # Create pipe
+            bt2_pipe = os.path.join(sub_outdir, "bt2")
+
+            out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
+            out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
+
+            cmd1 = "mkfifo " + bt2_pipe
+            cmd2 = ("perl " + tool_path("repair.pl") + " " + bt2_pipe + " " +
+                    unmap_fq2 + " > " + out_fastq_r2)
+            cmd3 = "cat " + bt2_pipe + "> " + out_fastq_r1
+            
+            cmd4 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
+            cmd4 += bt2_opts_txt
+            cmd4 += " -x " + assembly_bt2
+            cmd4 += " --rg-id " + args.sample_name
+            cmd4 += " -U " + unmap_fq1
+            cmd4 += " --un " + bt2_pipe
+            cmd4 += " > /dev/null"
+            cmd4 += ") 2>" + summary_file
 
         # In this samtools sort command we print to stdout and then use > to
         # redirect instead of  `+ " -o " + mapped_bam` because then samtools
         # uses a random temp file, so it won't choke if the job gets
         # interrupted and restarted at this step.
 
-        #pm.run(cmd, mapped_bam, follow=lambda: _count_alignment(
-        #       assembly_identifier, mapped_bam, args.paired_end),
-        #       container=pm.container)
+        if args.keep:
+            pm.run(cmd, mapped_bam, container=pm.container)
+        else:
+            pm.run(cmd1, bt2_pipe, container=pm.container)
+            pm.wait = False
+            pm.run(cmd2, out_fastq_r2, container=pm.container)
+            pm.run(cmd3, out_fastq_r1, container=pm.container)
+            pm.wait = True
+            pm.run(cmd4, summary_file, container=pm.container)
+            pm.clean_add(bt2_pipe)
         
-        pm.run(cmd, mapped_bam, container=pm.container)
         # get concordant aligned read pairs
-        cmd = ("grep 'aligned concordantly exactly 1 time' " + summary_file +
-               " | awk '{print $1}'")
+        if args.keep:
+            cmd = ("grep 'aligned concordantly exactly 1 time' " +
+                   summary_file + " | awk '{print $1}'")
+        else:
+            cmd = ("grep 'aligned exactly 1 time' " +
+                   summary_file + " | awk '{print $1}'")
         concordant = pm.checkprint(cmd)
         if concordant:
             ar = float(concordant)*2
         else:
             ar = 0
+
         # report concordant aligned reads
         pm.report_result("Aligned_reads_" + assembly_identifier, ar)
         try:
@@ -204,8 +244,13 @@ def _align_with_bt2(args, tools, unmap_fq1, unmap_fq2, assembly_identifier,
             pm.report_result(res_key, round(float(ar) * 100 / float(tr), 2))
         
         # filter genome reads not mapped
-        unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
-        unmap_fq2 = out_fastq_pre + "_unmap_R2.fq.gz"
+        if args.keep:
+            unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
+            unmap_fq2 = out_fastq_pre + "_unmap_R2.fq.gz"
+        else:
+            unmap_fq1 = out_fastq_r1
+            unmap_fq2 = out_fastq_r2
+
         return unmap_fq1, unmap_fq2
     else:
         msg = "No {} index found in {}; skipping.".format(
@@ -577,7 +622,7 @@ def main():
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
             unmap_fq1, unmap_fq2 = _align_with_bt2(
-                args, tools, unmap_fq1, unmap_fq2, reference,
+                args, tools, args.paired_end, unmap_fq1, unmap_fq2, reference,
                 assembly_bt2=_get_bowtie2_index(res.genomes, reference),
                 outfolder=param.outfolder, aligndir="prealignments")
 
