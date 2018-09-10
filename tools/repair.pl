@@ -1,3 +1,4 @@
+#!/bin/env perl 
 # By Nathan Sheffield, University of Virginia, 2018
 
 # This is an incredibly fast Perl utility that re-pairs fastq files that have been 
@@ -14,7 +15,7 @@
 # program will take 10-100 fold longer to do the same thing.
 
 # Setup
-$file1 = shift;  # Size of chromosome is the first argument
+$file1 = shift;  
 $file2 = shift;
 open(my $fh, "<", $file1);
 open(my $fh2, "<", $file2);
@@ -22,11 +23,11 @@ open(my $fh2, "<", $file2);
 # Loop through reads
 my $skipped = 0;
 while($readname = <$fh>) {
-	$readname =~ s/\/1//;
+	$readname =~ s/[\s\/].*$//;
 	chomp($readname);
 	<$fh>;<$fh>;<$fh>;
 	while($readname2 = <$fh2>) {
-		$readname2 =~ s/\/2//;
+		$readname2 =~ s/[\s\/].*$//;
 		chomp($readname2);
 	 	if ("$readname" eq "$readname2") {
 	 		print $readname2."/2\n";
