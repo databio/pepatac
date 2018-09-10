@@ -49,8 +49,8 @@ def parse_arguments():
                         dest="anno_name", type=str,
                         help="Name of reference bed file for calculating FRiF")
 
-    parser.add_argument("--keep", default=False,
-                        dest="keep", type=str,
+    parser.add_argument("--keep", action='store_true',
+                        dest="keep",
                         help="Keep prealignment BAM files")
 
     parser.add_argument("--peak-caller", dest="peak_caller",
