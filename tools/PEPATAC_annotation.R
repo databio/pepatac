@@ -127,7 +127,11 @@ colnames(inBed) <- c("chromosome", "start", "end", "name", "score", "strand")
 query  <- makeGRangesFromDataFrame(inBed, keep.extra.columns=TRUE)
 
 #### Chromosome distribution plot
+minCt  <- 10 
 x      <- aggregateOverGenomeBins(query, argv$genome)
+#tbl    <- data.frame(table(x$chr))
+#x      <- x[x$N > quantile(x$N, 0.1)]
+x      <- x[x$N > minCt]
 gaPlot <- plotGenomeAggregate(x)
 
 if (argv$reads) {
