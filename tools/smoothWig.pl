@@ -32,12 +32,28 @@ $countIndex = 1;
 $currentCount = 0;
 $header =  <>; # Discard the first line (fixedstep)
 print $header;
+
+
+# The strategy here is to make a smoothed signal track (bigwig file) given the
+# exact base-pair locations of the signals. We want to extend those signals out
+# +/- some number. The problem is, this messes up sorting, so you can't simply
+# split every value into a range surrounding it, because then you have to
+# re-sort. This script uses an alternative algorithm that avoids that resorting
+# step, resulting in better performance.
+
+# We conceptualize a nucleotide signal (or 'cut site') as a start and an end. We
+# loop through each value and handle it as a start, while pushing the
+# corresponding end onto a deque. We will then pull out the oldest 'end' items
+# from the deque as we process through the values. Each new value increments the
+# emitted value, while each 'closing' value decrements it.
+
+# We initiate an array of 'closers', which are positions that will decrement the
+# signal output (end points of a smoothed cut)
 my @closers;
 
 $cutSite = <>; # Grab the first cut
 $cutSite -= $smoothSize;
 $endSite = $cutSite + $smoothSize*2;
-
 
 # Print out 0s until the first cut
 while ($countIndex < $cutSite) {
