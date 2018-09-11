@@ -37,13 +37,13 @@ for ($r = 1; $r < 10000; $r++) {
 # print "$_\n" for keys %bhash;
 # print "BLAH\n\n";
 while($readname2 = <$fh2>) {
+	$readname2_copy = $readname2;
 	$readname2 =~ s/[\s\/].*$//;
 	# if ($skipped < 50) { print STDERR ($readname2)};
 	chomp($readname2);
-	print ($bhash{$readname2});
 	# if ("$readname" eq "$readname2") {
 	if (exists $bhash{$readname2}) {
- 		print $readname2."/2\n";
+ 		print $readname2_copy;
  		print $line = <$fh2>;
  		print $line = <$fh2>;
  		print $line = <$fh2>;

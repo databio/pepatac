@@ -36,8 +36,8 @@ class CutTracer(pararead.ParaReadProcessor):
         self.chrom_sizes_file = chrom_sizes_file
         self.shift_factor = shift_factor
 
-        # Saving a smooth bigwig doubles the processor use, so we need to run
-        # half as many chroms at a time
+        # Saving a smooth bigwig doubles the processor use for each chrom, so we
+        # need to run half as many chroms at a time
         if smoothbw:
             _LOGGER.info("Cutting parallel chroms in half to accommodate smooth track.")
             nProc = max(int(nProc / 2), 1)
