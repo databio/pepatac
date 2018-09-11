@@ -49,8 +49,8 @@ def parse_arguments():
                         dest="anno_name", type=str,
                         help="Name of reference bed file for calculating FRiF")
 
-    parser.add_argument("--keep", default=False,
-                        dest="keep", type=str,
+    parser.add_argument("--keep", action='store_true',
+                        dest="keep",
                         help="Keep prealignment BAM files")
 
     parser.add_argument("--peak-caller", dest="peak_caller",
@@ -182,25 +182,21 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
             cmd += ") 2>" + summary_file
         else:
             # TODO: handle actual single-end data too
-            # Create pipe
-            bt2_pipe = os.path.join(sub_outdir, "bt2")
 
             out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
             out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
 
-            cmd1 = "mkfifo " + bt2_pipe
-            cmd2 = ("perl " + tool_path("repair.pl") + " " + bt2_pipe + " " +
-                    unmap_fq2 + " > " + out_fastq_r2)
-            cmd3 = "cat " + bt2_pipe + "> " + out_fastq_r1
-            
-            cmd4 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
-            cmd4 += bt2_opts_txt
-            cmd4 += " -x " + assembly_bt2
-            cmd4 += " --rg-id " + args.sample_name
-            cmd4 += " -U " + unmap_fq1
-            cmd4 += " --un " + bt2_pipe
-            cmd4 += " > /dev/null"
-            cmd4 += ") 2>" + summary_file
+            cmd1 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
+            cmd1 += bt2_opts_txt
+            cmd1 += " -x " + assembly_bt2
+            cmd1 += " --rg-id " + args.sample_name
+            cmd1 += " -U " + unmap_fq1
+            cmd1 += " --un " + out_fastq_r1
+            cmd1 += " > /dev/null"
+            cmd1 += ") 2>" + summary_file
+
+            cmd2 = ("perl " + tool_path("filter_paired_fq.pl") + " " +
+                    out_fastq_r1 + " " + unmap_fq2 + " > " + out_fastq_r2)
 
         # In this samtools sort command we print to stdout and then use > to
         # redirect instead of  `+ " -o " + mapped_bam` because then samtools
@@ -210,13 +206,8 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
         if args.keep:
             pm.run(cmd, mapped_bam, container=pm.container)
         else:
-            pm.run(cmd1, bt2_pipe, container=pm.container)
-            pm.wait = False
+            pm.run(cmd1, out_fastq_r1, container=pm.container)
             pm.run(cmd2, out_fastq_r2, container=pm.container)
-            pm.run(cmd3, out_fastq_r1, container=pm.container)
-            pm.wait = True
-            pm.run(cmd4, summary_file, container=pm.container)
-            pm.clean_add(bt2_pipe)
         
         # get concordant aligned read pairs
         if args.keep:
