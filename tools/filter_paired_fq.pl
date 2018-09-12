@@ -25,7 +25,7 @@ my $skipped = 0;
 my %bhash; 
 
 # load 10000 read names into buffer
-for ($r = 1; $r < 10000; $r++) {
+for ($r = 1; $r < 100000; $r++) {
 	$readname = <$fh>;
 	$readname =~ s/[\s\/].*$//;
 	<$fh>;<$fh>;<$fh>;
