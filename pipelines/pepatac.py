@@ -180,9 +180,13 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
             cmd += " -T " + tempdir
             cmd += " -o " + mapped_bam
             cmd += ") 2>" + summary_file
+            
+            # In this samtools sort command we print to stdout and then use > to
+            # redirect instead of  `+ " -o " + mapped_bam` because then samtools
+            # uses a random temp file, so it won't choke if the job gets
+            # interrupted and restarted at this step.            
         else:
-            # TODO: handle actual single-end data too
-
+            out_fastq_tmp = out_fastq_pre + '_unmap.fq'
             out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
             out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
 
@@ -191,23 +195,28 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
             cmd1 += " -x " + assembly_bt2
             cmd1 += " --rg-id " + args.sample_name
             cmd1 += " -U " + unmap_fq1
-            cmd1 += " --un " + out_fastq_r1
+            cmd1 += " --un " + out_fastq_tmp
             cmd1 += " > /dev/null"
             cmd1 += ") 2>" + summary_file
 
-            cmd2 = ("perl " + tool_path("filter_paired_fq.pl") + " " +
-                    out_fastq_r1 + " " + unmap_fq2 + " > " + out_fastq_r2)
+            if paired:
+                cmd2 = ("perl " + tool_path("filter_paired_fq.pl") + " " +
+                        out_fastq_tmp + " " + unmap_fq2 + " > " + out_fastq_r2)
+                cmd3 = ("perl " + tool_path("filter_paired_fq.pl") + " " +
+                        out_fastq_tmp + " " + unmap_fq1 + " > " + out_fastq_r1)
+            else:
+                cmd2 = ("")
+                cmd3 = ("perl " + tool_path("filter_paired_fq.pl") + " " +
+                        out_fastq_tmp + " " + unmap_fq1 + " > " + out_fastq_r1)
 
-        # In this samtools sort command we print to stdout and then use > to
-        # redirect instead of  `+ " -o " + mapped_bam` because then samtools
-        # uses a random temp file, so it won't choke if the job gets
-        # interrupted and restarted at this step.
+
 
         if args.keep:
             pm.run(cmd, mapped_bam, container=pm.container)
         else:
-            pm.run(cmd1, out_fastq_r1, container=pm.container)
-            pm.run(cmd2, out_fastq_r2, container=pm.container)
+            pm.run(cmd1, out_fastq_tmp, container=pm.container)
+            pm.run([cmd2, cmd3], out_fastq_r1, container=pm.container)
+            pm.clean_add(out_fastq_tmp)
         
         # get concordant aligned read pairs
         if args.keep:
@@ -791,36 +800,36 @@ def main():
 
     # shift bam file and make bigwig file
     # this script is only compatible with paired-end at the moment
-    if args.paired_end:
-        shift_bed = os.path.join(
-            map_genome_folder, args.sample_name + "_sort_dedup.bed")
-        cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
-        pm.run(cmd, shift_bed, container=pm.container)
-        bedGraph = os.path.join(map_genome_folder, args.sample_name +
-                                ".bedGraph")
-        cmd = tools.bedtools + " genomecov -bg -split"
-        cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
-        norm_bedGraph = os.path.join(
-            map_genome_folder, args.sample_name +
-            "_norm.bedGraph")
-        sort_bedGraph = os.path.join(
-            map_genome_folder, args.sample_name +
-            "_norm_sort.bedGraph")
-        cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"),
-                                 bedGraph, norm_bedGraph)
-        bw_file = os.path.join(
-            map_genome_folder, args.sample_name + "_smooth.bw")
+    # if args.paired_end:
+        # shift_bed = os.path.join(
+            # map_genome_folder, args.sample_name + "_sort_dedup.bed")
+        # cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
+        # pm.run(cmd, shift_bed, container=pm.container)
+        # bedGraph = os.path.join(map_genome_folder, args.sample_name +
+                                # ".bedGraph")
+        # cmd = tools.bedtools + " genomecov -bg -split"
+        # cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
+        # norm_bedGraph = os.path.join(
+            # map_genome_folder, args.sample_name +
+            # "_norm.bedGraph")
+        # sort_bedGraph = os.path.join(
+            # map_genome_folder, args.sample_name +
+            # "_norm_sort.bedGraph")
+        # cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"),
+                                 # bedGraph, norm_bedGraph)
+        # bw_file = os.path.join(
+            # map_genome_folder, args.sample_name + "_smooth.bw")
 
-        # bedGraphToBigWig requires lexicographical sort, which puts chr10
-        # before chr2, for example
-        # NOTE: original cmd3 is NOT container friendly...use bedSort instead
-        #cmd3 = ("LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " +
-        #        sort_bedGraph)
-        cmd3 = tools.bedSort + " " + norm_bedGraph + " " + sort_bedGraph
-        cmd4 = (tools.bedGraphToBigWig + " " + sort_bedGraph + " " +
-                res.chrom_sizes + " " + bw_file)
-        pm.run([cmd, cmd2, cmd3, cmd4], bw_file, nofail=True,
-               container=pm.container)
+        # # bedGraphToBigWig requires lexicographical sort, which puts chr10
+        # # before chr2, for example
+        # # NOTE: original cmd3 is NOT container friendly...use bedSort instead
+        # #cmd3 = ("LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " +
+        # #        sort_bedGraph)
+        # cmd3 = tools.bedSort + " " + norm_bedGraph + " " + sort_bedGraph
+        # cmd4 = (tools.bedGraphToBigWig + " " + sort_bedGraph + " " +
+                # res.chrom_sizes + " " + bw_file)
+        # pm.run([cmd, cmd2, cmd3, cmd4], bw_file, nofail=True,
+               # container=pm.container)
 
     # "Exact cuts" are what I call nucleotide-resolution tracks of exact bases
     # where the transposition (or DNAse cut) happened;
@@ -828,13 +837,16 @@ def main():
     # using a boatload of memory (more than 32GB); in contrast, running the
     # wig -> bw conversion on each chrom and then combining them with bigWigCat
     # requires much less memory. This was a memory bottleneck in the pipeline.
-    pm.timestamp("### Computing exact sites")
+    pm.timestamp("### Produce smoothed and nucleotide-resolution tracks")
     exact_folder = os.path.join(map_genome_folder + "_exact")
     temp_exact_folder = os.path.join(exact_folder, "temp")
     ngstk.make_dir(exact_folder)
     ngstk.make_dir(temp_exact_folder)
     temp_target = os.path.join(temp_exact_folder, "flag_completed")
     exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
+    smooth_target = os.path.join(
+                        map_genome_folder, args.sample_name + "_smooth.bw")
+    shift_bed = os.path.join(exact_folder, args.sample_name + "_shift.bed")
 
     # # Aside: since this bigWigCat command uses shell expansion, pypiper
     # # cannot profile memory. We could use glob.glob if we want to preserve
@@ -847,19 +859,16 @@ def main():
     # pm.clean_add(os.path.join(temp_exact_folder, "*.bw"))
 
     cmd = tool_path("bamSitesToWig.py")
-    cmd += " -b"  # request bed output
     cmd += " -i " + rmdup_bam
     cmd += " -c " + res.chrom_sizes
+    cmd += " -b " + shift_bed # request bed output
     cmd += " -o " + exact_target
+    cmd += " -w " + smooth_target
     cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
     cmd2 = "touch " + temp_target
     pm.run([cmd, cmd2], temp_target, container=pm.container)
     pm.clean_add(temp_target)
-    pm.clean_add(temp_exact_folder)
-
-    if not args.paired_end:
-        # TODO, make this always (not just single-end)
-        shift_bed = os.path.join(exact_folder, args.sample_name + "_exact.bed")
+    pm.clean_add(temp_exact_folder)        
 
     # TSS enrichment
     if not os.path.exists(res.TSS_file):
