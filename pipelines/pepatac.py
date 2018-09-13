@@ -200,11 +200,11 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
             if paired:
                 cmd1 = build_command([tools.perl,
                         tool_path("filter_paired_fq.pl"), out_fastq_tmp,
-                        unmap_fq1, unmap_fq2, out_fastq_r1, out_fastq_r2)
+                        unmap_fq1, unmap_fq2, out_fastq_r1, out_fastq_r2])
             else:
                 cmd1 = build_command([tools.perl,
                         tool_path("filter_paired_fq.pl"), out_fastq_tmp,
-                        unmap_fq1, out_fastq_r1)
+                        unmap_fq1, out_fastq_r1])
 
             cmd2 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
             cmd2 += bt2_opts_txt
@@ -222,9 +222,9 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
                 pm.wait = False
                 pm.run(cmd1, out_fastq_r2, container=pm.container)
                 pm.wait = True
-                pm.run(cmd2, out_fastq_tmp, container=pm.container)
+                pm.run(cmd2, summary_file, container=pm.container)
             else:
-                pm.run(cmd2, out_fastq_tmp, container=pm.container)
+                pm.run(cmd2, summary_file, container=pm.container)
                 pm.run(cmd1, out_fastq_r1, container=pm.container)
 
             pm.clean_add(out_fastq_tmp)
