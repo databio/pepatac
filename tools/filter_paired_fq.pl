@@ -43,7 +43,7 @@ for ($r = 1; $r < 10000; $r++) {
 # print "$_\n" for keys %bhash;
 # print "BLAH\n\n";
 while($readname2 = <$fh_fq2>) {
-	$readname1 = <$fh_fq1>
+	$readname1 = <$fh_fq1>;
 	$readname2_copy = $readname2;
 	$readname2 =~ s/[\s\/].*$//;
 	# if ($skipped < 50) { print STDERR ($readname2)};
