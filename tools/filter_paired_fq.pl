@@ -31,7 +31,7 @@ my $skipped = 0;
 my %bhash; 
 
 # load 10000 read names into buffer
-for ($r = 1; $r < 10000; $r++) {
+for ($r = 1; $r < 100000; $r++) {
 	$readnamef = <$fh_filter>;
 	$readnamef =~ s/[\s\/].*$//;
 	<$fh_filter>;<$fh_filter>;<$fh_filter>;
@@ -77,3 +77,6 @@ while($readname2 = <$fh_fq2>) {
 $lost_reads_count = keys %bhash;
 print STDERR $skipped." reads skipped\n";
 print STDERR $lost_reads_count." reads lost\n";
+if ($lost_reads_count < 200) {
+	print STDERR "$_\n" for keys %hash;
+}
