@@ -15,10 +15,16 @@
 # program will take 10-100 fold longer to do the same thing.
 
 # Setup
-$file1 = shift;  
-$file2 = shift;
-open(my $fh, "<", $file1);
-open(my $fh2, "<", $file2);
+$file_filter = shift;
+$file_fq1 = shift;
+$file_fq2 = shift;
+$file_fq1_filtered = shift;
+$file_fq2_filtered = shift;
+open(my $fh_filter, "<", $file_filter);
+open(my $fh_fq1, "<", $file_fq1);
+open(my $fh_fq2, "<", $file_fq2);
+open(FH_FQ1_FILT, ">", $file_fq1_filtered);
+open(FH_FQ2_FILT, ">", $file_fq2_filtered);
 
 # Loop through reads
 my $skipped = 0;
@@ -26,40 +32,48 @@ my %bhash;
 
 # load 10000 read names into buffer
 for ($r = 1; $r < 10000; $r++) {
-	$readname = <$fh>;
-	$readname =~ s/[\s\/].*$//;
-	<$fh>;<$fh>;<$fh>;
-	chomp($readname);
-	$bhash{$readname} = 1;
+	$readnamef = <$fh_filter>;
+	$readnamef =~ s/[\s\/].*$//;
+	<$fh_filter>;<$fh_filter>;<$fh_filter>;
+	chomp($readnamef);
+	$bhash{$readnamef} = 1;
 	# print $readname;
 }
 
 # print "$_\n" for keys %bhash;
 # print "BLAH\n\n";
-while($readname2 = <$fh2>) {
+while($readname2 = <$fh_fq2>) {
+	$readname1 = <$fh_fq1>
 	$readname2_copy = $readname2;
 	$readname2 =~ s/[\s\/].*$//;
 	# if ($skipped < 50) { print STDERR ($readname2)};
 	chomp($readname2);
 	# if ("$readname" eq "$readname2") {
 	if (exists $bhash{$readname2}) {
- 		print $readname2_copy;
- 		print $line = <$fh2>;
- 		print $line = <$fh2>;
- 		print $line = <$fh2>;
+ 		print FH_FQ2_FILT $readname2_copy;
+ 		print FH_FQ2_FILT $line = <$fh_fq2>;
+ 		print FH_FQ2_FILT $line = <$fh_fq2>;
+ 		print FH_FQ2_FILT $line = <$fh_fq2>;
+ 		print FH_FQ1_FILT $readname1;
+ 		print FH_FQ1_FILT $line = <$fh_fq1>;
+ 		print FH_FQ1_FILT $line = <$fh_fq1>;
+ 		print FH_FQ1_FILT $line = <$fh_fq1>;
+ 		
  		delete $bhash{$readname2};
- 		# Read in a new one:
- 		$readname = <$fh>;
-		$readname =~ s/[\s\/].*$//;
-		<$fh>;<$fh>;<$fh>;
-		chomp($readname);
-		$bhash{$readname} = 1;
+ 		# Parse in a new read from the filter:
+ 		$readnamef = <$fh_filter>;
+		$readnamef =~ s/[\s\/].*$//;
+		<$fh_filter>;<$fh_filter>;<$fh_filter>;
+		chomp($readnamef);
+		$bhash{$readnamef} = 1;
 	} else {
 		# advance to next r2 read
  		$skipped++;
-		<$fh2>.<$fh2>.<$fh2>;
+		<$fh_fq2>.<$fh_fq2>.<$fh_fq2>;
+		<$fh_fq1>.<$fh_fq1>.<$fh_fq1>;
 	}
 }
 
-
-print STDERR $skipped." skipped";
+$lost_reads_count = keys %bhash;
+print STDERR $skipped." reads skipped\n";
+print STDERR $lost_reads_count." reads lost\n";
