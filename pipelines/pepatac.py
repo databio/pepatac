@@ -109,7 +109,7 @@ def calc_frip(bamfile, peakfile, frip_func, pipeline_manager,
 
 def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
                     assembly_identifier, assembly_bt2, outfolder,
-                    aligndir=None, bt2_opts_txt=None):
+                    aligndir=None, bt2_opts_txt=None, useFIFO=True):
     """
     A helper function to run alignments in series, so you can run one alignment
     followed by another; this is useful for successive decoy alignments.
@@ -127,6 +127,7 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
     :param str outfolder: path to output directory for the pipeline
     :param str aligndir: name of folder for temporary output
     :param str bt2_opts_txt: command-line text for bowtie2 options
+    :param bool useFIFO: if True, use named pipe instead of file creation
     :return (str, str): pair (R1, R2) of paths to FASTQ files
     """
     if os.path.exists(os.path.dirname(assembly_bt2)):
@@ -186,36 +187,46 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
             # uses a random temp file, so it won't choke if the job gets
             # interrupted and restarted at this step.            
         else:
-            out_fastq_tmp = out_fastq_pre + '_unmap.fq'
+            if useFIFO:
+                out_fastq_tmp = os.path.join(sub_outdir, "bt2")
+                cmd = "mkfifo " + out_fastq_tmp
+                pm.run(cmd, out_fastq_tmp, container=pm.container)
+            else:
+                out_fastq_tmp = out_fastq_pre + '_unmap.fq'
+
             out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
             out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
 
-            cmd1 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
-            cmd1 += bt2_opts_txt
-            cmd1 += " -x " + assembly_bt2
-            cmd1 += " --rg-id " + args.sample_name
-            cmd1 += " -U " + unmap_fq1
-            cmd1 += " --un " + out_fastq_tmp
-            cmd1 += " > /dev/null"
-            cmd1 += ") 2>" + summary_file
-
             if paired:
-                cmd2 = ("perl " + tool_path("filter_paired_fq.pl") + " " +
-                        out_fastq_tmp + " " + unmap_fq2 + " > " + out_fastq_r2)
-                cmd3 = ("perl " + tool_path("filter_paired_fq.pl") + " " +
-                        out_fastq_tmp + " " + unmap_fq1 + " > " + out_fastq_r1)
+                cmd1 = build_command([tools.perl,
+                        tool_path("filter_paired_fq.pl"), out_fastq_tmp,
+                        unmap_fq1, unmap_fq2, out_fastq_r1, out_fastq_r2)
             else:
-                cmd2 = ("")
-                cmd3 = ("perl " + tool_path("filter_paired_fq.pl") + " " +
-                        out_fastq_tmp + " " + unmap_fq1 + " > " + out_fastq_r1)
+                cmd1 = build_command([tools.perl,
+                        tool_path("filter_paired_fq.pl"), out_fastq_tmp,
+                        unmap_fq1, out_fastq_r1)
 
-
+            cmd2 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
+            cmd2 += bt2_opts_txt
+            cmd2 += " -x " + assembly_bt2
+            cmd2 += " --rg-id " + args.sample_name
+            cmd2 += " -U " + unmap_fq1
+            cmd2 += " --un " + out_fastq_tmp
+            cmd2 += " > /dev/null"
+            cmd2 += ") 2>" + summary_file
 
         if args.keep:
             pm.run(cmd, mapped_bam, container=pm.container)
         else:
-            pm.run(cmd1, out_fastq_tmp, container=pm.container)
-            pm.run([cmd2, cmd3], out_fastq_r1, container=pm.container)
+            if useFIFO:
+                pm.wait = False
+                pm.run(cmd1, out_fastq_r2, container=pm.container)
+                pm.wait = True
+                pm.run(cmd2, out_fastq_tmp, container=pm.container)
+            else:
+                pm.run(cmd2, out_fastq_tmp, container=pm.container)
+                pm.run(cmd1, out_fastq_r1, container=pm.container)
+
             pm.clean_add(out_fastq_tmp)
         
         # get concordant aligned read pairs
@@ -740,6 +751,7 @@ def main():
 
     unmap_cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
     pm.run(unmap_cmd, unmap_genome_bam, container=pm.container)
+
     # Remove temporary bam file from unmapped file production
     pm.clean_add(mapping_genome_bam_temp)
 
@@ -798,39 +810,6 @@ def main():
            follow=lambda: post_dup_aligned_reads(metrics_file),
            container=pm.container)
 
-    # shift bam file and make bigwig file
-    # this script is only compatible with paired-end at the moment
-    # if args.paired_end:
-        # shift_bed = os.path.join(
-            # map_genome_folder, args.sample_name + "_sort_dedup.bed")
-        # cmd = tool_path("bam2bed_shift.pl") + " " + rmdup_bam
-        # pm.run(cmd, shift_bed, container=pm.container)
-        # bedGraph = os.path.join(map_genome_folder, args.sample_name +
-                                # ".bedGraph")
-        # cmd = tools.bedtools + " genomecov -bg -split"
-        # cmd += " -i " + shift_bed + " -g " + res.chrom_sizes + " > " + bedGraph
-        # norm_bedGraph = os.path.join(
-            # map_genome_folder, args.sample_name +
-            # "_norm.bedGraph")
-        # sort_bedGraph = os.path.join(
-            # map_genome_folder, args.sample_name +
-            # "_norm_sort.bedGraph")
-        # cmd2 = "{} {} {}".format(tool_path("norm_bedGraph.pl"),
-                                 # bedGraph, norm_bedGraph)
-        # bw_file = os.path.join(
-            # map_genome_folder, args.sample_name + "_smooth.bw")
-
-        # # bedGraphToBigWig requires lexicographical sort, which puts chr10
-        # # before chr2, for example
-        # # NOTE: original cmd3 is NOT container friendly...use bedSort instead
-        # #cmd3 = ("LC_COLLATE=C sort -k1,1 -k2,2n " + norm_bedGraph + " > " +
-        # #        sort_bedGraph)
-        # cmd3 = tools.bedSort + " " + norm_bedGraph + " " + sort_bedGraph
-        # cmd4 = (tools.bedGraphToBigWig + " " + sort_bedGraph + " " +
-                # res.chrom_sizes + " " + bw_file)
-        # pm.run([cmd, cmd2, cmd3, cmd4], bw_file, nofail=True,
-               # container=pm.container)
-
     # "Exact cuts" are what I call nucleotide-resolution tracks of exact bases
     # where the transposition (or DNAse cut) happened;
     # In the past I used wigToBigWig on a combined wig file, but this ends up
@@ -838,6 +817,7 @@ def main():
     # wig -> bw conversion on each chrom and then combining them with bigWigCat
     # requires much less memory. This was a memory bottleneck in the pipeline.
     pm.timestamp("### Produce smoothed and nucleotide-resolution tracks")
+
     exact_folder = os.path.join(map_genome_folder + "_exact")
     temp_exact_folder = os.path.join(exact_folder, "temp")
     ngstk.make_dir(exact_folder)
