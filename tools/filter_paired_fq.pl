@@ -30,7 +30,7 @@ open(FH_FQ2_FILT, ">", $file_fq2_filtered);
 my $skipped = 0;
 my %bhash; 
 
-# load 10000 read names into buffer
+# load some read names into buffer
 for ($r = 1; $r < 1000000; $r++) {
 	$readnamef = <$fh_filter>;
 	$readnamef =~ s/[\s\/].*$//;
@@ -78,5 +78,5 @@ $lost_reads_count = keys %bhash;
 print STDERR $skipped." reads skipped\n";
 print STDERR $lost_reads_count." reads lost\n";
 if ($lost_reads_count < 200) {
-	print STDERR "$_\n" for keys %hash;
+	print STDERR "$_\n" for keys %bhash;
 }
