@@ -41,3 +41,4 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     l: 600     # feature length
     t: 4.0     # "threshold" (standard deviations)
     s: 1       # wiggle track step
+    
