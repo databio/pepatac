@@ -32,7 +32,7 @@ my %bhash;
 
 # load some read names into buffer
 for ($r = 1; $r < 1000000; $r++) {
-	$readnamef = <$fh_filter>;
+	$readnamef = <$fh_filter> or last;
 	$readnamef =~ s/[\s\/].*$//;
 	<$fh_filter>;<$fh_filter>;<$fh_filter>;
 	chomp($readnamef);
@@ -61,11 +61,12 @@ while($readname2 = <$fh_fq2>) {
  		
  		delete $bhash{$readname2};
  		# Parse in a new read from the filter:
- 		$readnamef = <$fh_filter>;
-		$readnamef =~ s/[\s\/].*$//;
-		<$fh_filter>;<$fh_filter>;<$fh_filter>;
-		chomp($readnamef);
-		$bhash{$readnamef} = 1;
+ 		if ($readnamef = <$fh_filter>) {
+			$readnamef =~ s/[\s\/].*$//;
+			<$fh_filter>;<$fh_filter>;<$fh_filter>;
+			chomp($readnamef);
+			$bhash{$readnamef} = 1;
+		}
 	} else {
 		# advance to next r2 read
  		$skipped++;
