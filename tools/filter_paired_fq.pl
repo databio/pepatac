@@ -74,6 +74,9 @@ while($readname2 = <$fh_fq2>) {
 	}
 }
 
+close(FH_FQ1_FILT);
+close(FH_FQ2_FILT);
+
 $lost_reads_count = keys %bhash;
 print STDERR $skipped." reads skipped\n";
 print STDERR $lost_reads_count." reads lost\n";
