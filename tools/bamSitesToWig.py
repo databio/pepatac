@@ -17,7 +17,9 @@ import sys
 import pararead
 import pysam
 
-from pararead.processor import _LOGGER
+
+from pararead import add_logging_options, ParaReadProcessor
+from pararead import logger_via_cli
 
 # A function object like this will be pickled by the parallel call to map,
 # So it cannot contain huge files or the pickling will limit everything.
@@ -269,19 +271,17 @@ def parse_args(cmdl):
         help="Limit to these chromosomes", nargs = "+", default=None)
     parser.add_argument('-p', '--cores', dest='cores',
         help="Number of cores to use", default=2, type=int)
-    parser.add_argument('-v', '--verbosity', dest='verbosity', default=1,
-        help="Set verbosity level. 0 for silent; 1 for warnings; 2 for details",
-        type=int)
-    parser.add_argument("--loglevel", default="INFO",
-                        help="Level at which to listen for logging messages")
     parser.add_argument('--retain-temp', action='store_true', default=False,
         help="Retain temporary files? Default: False")
+
+    parser = add_logging_options(parser)
     return parser.parse_args(cmdl)
 
 
 if __name__ == "__main__":
 
     args = parse_args(sys.argv[1:])
+    _LOGGER = logger_via_cli(args)
 
     if args.dnase:
         shift_factor = {"+":1, "-":0}  # DNase
@@ -306,7 +306,7 @@ if __name__ == "__main__":
     ct.register_files()
     good_chromosomes = ct.run()
     
-    print("Reduce step (merge files)...")
+    _LOGGER.info("Reduce step (merge files)...")
     ct.combine(good_chromosomes)
 
 
