@@ -132,22 +132,27 @@ x      <- aggregateOverGenomeBins(query, argv$genome)
 #tbl    <- data.frame(table(x$chr))
 #x      <- x[x$N > quantile(x$N, 0.1)]
 x      <- x[x$N > minCt]
-gaPlot <- plotGenomeAggregate(x)
+if (nrow(x) > 0) {
+    gaPlot <- plotGenomeAggregate(x)
+    
+    if (argv$reads) {
+        outName <- "_reads_chr_dist"
+    } else {outName <- "_peaks_chr_dist"}
 
-if (argv$reads) {
-    outName <- "_reads_chr_dist"
-} else {outName <- "_peaks_chr_dist"}
+    pdf(file = file.path(argv$output,
+        paste(argv$sample, outName, ".pdf", sep="")),
+        width= 7, height = 7, useDingbats=F)
+    gaPlot
+    invisible(dev.off())
 
-pdf(file = file.path(argv$output,
-    paste(argv$sample, outName, ".pdf", sep="")),
-    width= 7, height = 7, useDingbats=F)
-gaPlot
-invisible(dev.off())
-png(file.path(argv$output,
-    paste(argv$sample, outName, ".png", sep="")),
-    width = 480, height = 480)
-gaPlot
-invisible(dev.off())
+    png(file.path(argv$output,
+        paste(argv$sample, outName, ".png", sep="")),
+        width = 480, height = 480)
+    gaPlot
+    invisible(dev.off())
+} else {
+    message("Too few peaks to plot.  Check the primary genome alignment rate.")
+}
 
 #### Feature distance distribution plots
 TSSDist <- TSSDistance(query, argv$genome)

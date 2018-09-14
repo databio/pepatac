@@ -143,27 +143,31 @@ for (i in 1:length(argv$bed)) {
         system2(paste("touch"), outFile)
         quit()
     }
-    covFile <- calcFRiP(bed)
-    
-    if (exists("p")) {
-        p <- p + geom_line(aes(x=log10(cumSize), y=frip), covFile,
-                           size=0.25, color=plotColors[i])
-        labels  <- rbind(labels, c(0.95*max(log10(covFile$cumSize)),
-                                   max(covFile$frip)+0.001,
-                                   paste0(name, ": ",
-                                          round(max(covFile$frip),2)),
-                                   plotColors[i]))
+    if (max(bed[,4] > 0)) {
+        covFile <- calcFRiP(bed)
+        
+        if (exists("p")) {
+            p <- p + geom_line(aes(x=log10(cumSize), y=frip), covFile,
+                               size=0.25, color=plotColors[i])
+            labels  <- rbind(labels,
+                             c(0.95*max(log10(covFile$cumSize)),
+                               max(covFile$frip)+0.001,
+                               paste0(name, ": ", round(max(covFile$frip),2)),
+                               plotColors[i]))
+        } else {
+            p <- ggplot() +
+                    geom_line(aes(x=log10(cumSize), y=frip), covFile,
+                              size=0.25, color=plotColors[i]) +
+                    labs(x="log(number of bases)", y="FRiF") +
+                    scale_x_continuous(labels = scales::comma) +
+                    theme_classic()
+            labels[1,]  <- c(0.95*max(log10(covFile$cumSize)),
+                             max(covFile$frip)+0.001,
+                             paste0(name, ": ", round(max(covFile$frip),2)),
+                             plotColors[i])
+        }
     } else {
-        p <- ggplot() +
-                geom_line(aes(x=log10(cumSize), y=frip), covFile,
-                          size=0.25, color=plotColors[i]) +
-                labs(x="log(number of bases)", y="FRiF") +
-                scale_x_continuous(labels = scales::comma) +
-                theme_classic()
-        labels[1,]  <- c(0.95*max(log10(covFile$cumSize)),
-                         max(covFile$frip)+0.001,
-                         paste0(name, ": ", round(max(covFile$frip),2)),
-                         plotColors[i])        
+        message("No reads found within ", gsub("^.*?_", "", name))
     }
 }
 
