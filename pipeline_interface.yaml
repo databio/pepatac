@@ -21,6 +21,10 @@ pipelines:
       "--frip-ref-peaks": FRIP_ref
       "--prealignments": prealignments
       "--genome-size": macs_genome_size
+      "--anno-name": anno_name
+      "--TSS-name": TSS_name
+      "--keep": keep
+      "--noFIFO": no_fifo
     compute:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
@@ -45,33 +49,8 @@ pipelines:
     resources:
       default:
         file_size: "0"
-        cores: "2"
-        mem: "4000"
-        time: "0-04:00:00"
-      femto:
-        file_size: "0.001"
-        cores: "1"
-        mem: "4000"
-        time: "00:40:00"
-      pico:
-        file_size: "0.05"
-        cores: "1"
-        mem: "4000"
-        time: "02:00:00"
-      nano:
-        file_size: "0.5"
-        cores: "4"
-        mem: "16000"
-        time: "00-04:00:00"
-      micro:
-        file_size: "1"
         cores: "8"
-        mem: "32000"
-        time: "02-00:00:00"
-      milli:
-        file_size: "10"
-        cores: "16"
-        mem: "64000"
-        time: "03-00:00:00"
+        mem: "16000"
+        time: "0-04:00:00"
 
 
