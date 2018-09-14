@@ -52,6 +52,10 @@ def parse_arguments():
     parser.add_argument("--keep", action='store_true',
                         dest="keep",
                         help="Keep prealignment BAM files")
+                    
+    parser.add_argument("--noFIFO", action='store_true',
+                        dest="no_fifo",
+                        help="Do NOT use named pipes during prealignments")
 
     parser.add_argument("--peak-caller", dest="peak_caller",
                         default="macs2", choices=PEAK_CALLERS,
@@ -107,9 +111,9 @@ def calc_frip(bamfile, peakfile, frip_func, pipeline_manager,
     return float(num_peak_reads) / float(num_aligned_reads)
 
 
-def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
+def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                     assembly_identifier, assembly_bt2, outfolder,
-                    aligndir=None, bt2_opts_txt=None, useFIFO=True):
+                    aligndir=None, bt2_opts_txt=None):
     """
     A helper function to run alignments in series, so you can run one alignment
     followed by another; this is useful for successive decoy alignments.
@@ -119,6 +123,7 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
     :param looper.models.AttributeDict tools: binding between tool name and
         value, e.g. for tools/resources used by the pipeline
     :param bool paired: if True, use paired-end alignment
+    :param bool useFIFO: if True, use named pipe instead of file creation
     :param str unmap_fq1: path to unmapped read1 FASTQ file
     :param str unmap_fq2: path to unmapped read2 FASTQ file
     :param str assembly_identifier: text identifying a genome assembly for the
@@ -127,7 +132,6 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
     :param str outfolder: path to output directory for the pipeline
     :param str aligndir: name of folder for temporary output
     :param str bt2_opts_txt: command-line text for bowtie2 options
-    :param bool useFIFO: if True, use named pipe instead of file creation
     :return (str, str): pair (R1, R2) of paths to FASTQ files
     """
     if os.path.exists(os.path.dirname(assembly_bt2)):
@@ -218,7 +222,7 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
         if args.keep:
             pm.run(cmd, mapped_bam, container=pm.container)
         else:
-            if useFIFO:
+            if useFIFO and paired:
                 pm.wait = False
                 pm.run(cmd1, out_fastq_r2, container=pm.container)
                 pm.wait = True
@@ -230,7 +234,7 @@ def _align_with_bt2(args, tools, paired, unmap_fq1, unmap_fq2,
             pm.clean_add(out_fastq_tmp)
         
         # get concordant aligned read pairs
-        if args.keep:
+        if args.keep and paired:
             cmd = ("grep 'aligned concordantly exactly 1 time' " +
                    summary_file + " | awk '{print $1}'")
         else:
@@ -632,10 +636,16 @@ def main():
         print("Prealignment assemblies: " + str(args.prealignments))
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
-            unmap_fq1, unmap_fq2 = _align_with_bt2(
-                args, tools, args.paired_end, unmap_fq1, unmap_fq2, reference,
+            if args.no_fifo:
+                unmap_fq1, unmap_fq2 = _align_with_bt2(
+                args, tools, args.paired_end, False, unmap_fq1, unmap_fq2, reference,
                 assembly_bt2=_get_bowtie2_index(res.genomes, reference),
                 outfolder=param.outfolder, aligndir="prealignments")
+            else:
+                unmap_fq1, unmap_fq2 = _align_with_bt2(
+                args, tools, args.paired_end, True, unmap_fq1, unmap_fq2, reference,
+                assembly_bt2=_get_bowtie2_index(res.genomes, reference),
+                outfolder=param.outfolder, aligndir="prealignments")            
 
     pm.timestamp("### Map to genome")
     map_genome_folder = os.path.join(
@@ -939,7 +949,11 @@ def main():
                                     "_peaks.narrowPeak")
     peak_input_file = shift_bed
 
-    if os.path.isfile(peak_input_file) and os.stat(peak_input_file).st_size == 0:
+    if not os.path.isfile(peak_input_file):
+        print("Cannot call peaks, {} does not exist.".format(peak_input_file))
+        print("Check your reads and alignment to primary genome.")
+        pm.stop_pipeline()
+    elif os.path.isfile(peak_input_file) and os.stat(peak_input_file).st_size == 0:
         print("Cannot call peaks, {} is empty".format(peak_input_file))
         print("Check your reads and alignment to primary genome.")
         pm.stop_pipeline()
