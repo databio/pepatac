@@ -136,19 +136,19 @@ if (nrow(x) > 0) {
     gaPlot <- plotGenomeAggregate(x)
     
     if (argv$reads) {
-        outName <- "_reads_chr_dist"
+        outName     <- "_reads_chr_dist"
     } else {outName <- "_peaks_chr_dist"}
 
     pdf(file = file.path(argv$output,
         paste(argv$sample, outName, ".pdf", sep="")),
         width= 7, height = 7, useDingbats=F)
-    gaPlot
+    print(gaPlot)
     invisible(dev.off())
 
     png(file.path(argv$output,
         paste(argv$sample, outName, ".png", sep="")),
         width = 480, height = 480)
-    gaPlot
+    print(gaPlot)
     invisible(dev.off())
 } else {
     message("Too few peaks to plot.  Check the primary genome alignment rate.")
@@ -159,7 +159,7 @@ TSSDist <- TSSDistance(query, argv$genome)
 tssPlot <- plotFeatureDist(TSSDist, featureName="TSS")
 
 if (argv$reads) {
-    outName <- "_reads_TSS_dist"
+    outName     <- "_reads_TSS_dist"
 } else {outName <- "_peaks_TSS_dist"}
 
 pdf(file = file.path(argv$output,
@@ -175,10 +175,10 @@ invisible(dev.off())
 
 #### Partition distribution plots
 knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
-
-fileType <- summary(file(paste0(argv$anno)))$class
+fileType     <- summary(file(paste0(argv$anno)))$class
 if (fileType == "gzfile") {
     annoFile <- fread(sprintf('zcat %s', shQuote(file.path(argv$anno))))
+    suppressWarnings(closeAllConnections())
 } else {
     annoFile <- fread(file.path(argv$anno))
 }
@@ -199,7 +199,7 @@ if (argv$genome %in% knownGenomes) {
 gpPlot   <- plotPartitions(gp)
 
 if (argv$reads) {
-    outName <- "_reads_partition_dist"
+    outName     <- "_reads_partition_dist"
 } else {outName <- "_peaks_partition_dist"}
 
 pdf(file = file.path(argv$output,
