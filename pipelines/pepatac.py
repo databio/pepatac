@@ -1084,18 +1084,26 @@ def main():
         if args.anno_name:
             anno_file  = anno_path(args.anno_name)
             anno_unzip = os.path.splitext(anno_file)[0]
+            anno_local = os.path.join(raw_folder, args.anno_name)
+            cmd = ("ln -sf " + anno_file + " " + anno_local)
+            pm.run(cmd, anno_local, container=pm.container)
         else:
             anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
             anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
+            anno_local = os.path.join(raw_folder,
+                                      args.genome_assembly +
+                                      "_annotations.bed.gz")
+            cmd = ("ln -sf " + anno_file + " " + anno_local)
+            pm.run(cmd, anno_local, container=pm.container)
 
-        if os.path.isfile(anno_file):
+        if os.path.isfile(anno_local):
             # Get list of features
-            cmd1 = ("zcat " + anno_file + " | cut -f 4 | sort -u")
+            cmd1 = ("zcat " + anno_local + " | cut -f 4 | sort -u")
             ftList = pm.checkprint(cmd1)
             ftList = str.splitlines(ftList)
             annoList = list()
             # Split annotation file on features
-            cmd2 = ("zcat " + anno_file + " | awk -F'\t' '{print>\"" +
+            cmd2 = ("zcat " + anno_local + " | awk -F'\t' '{print>\"" +
                     QC_folder + "/\"$4}'")
             if len(ftList) >= 1:
                 for pos, anno in enumerate(ftList):
