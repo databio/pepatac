@@ -18,6 +18,7 @@ tools:  # absolute paths to required tools
   wigToBigWig: wigToBigWig
   bigWigCat: bigWigCat
   bedSort: bedSort
+  bedToBigBed: bedToBigBed
   # optional tools
   fseq: fseq  
   trimmo: ${TRIMMOMATIC}
@@ -40,3 +41,4 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     l: 600     # feature length
     t: 4.0     # "threshold" (standard deviations)
     s: 1       # wiggle track step
+    

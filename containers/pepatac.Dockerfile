@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.1
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.8.1
+LABEL version 0.8.2
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -45,16 +45,20 @@ RUN pip install virtualenv && \
 
 # Install R
 RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-dev && \
-    echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile && \
-    Rscript -e "install.packages('devtools')" && \
-    Rscript -e "devtools::install_github('pepkit/pepr')" && \
-    Rscript -e "install.packages('gtable')" && \
+    echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile && \    
     Rscript -e "install.packages('argparser')" && \
+    Rscript -e "install.packages('devtools')" && \
+    Rscript -e "devtools::install_github('pepkit/pepr')" && \    
+    Rscript -e "install.packages('data.table')" && \
+    Rscript -e "source('https://bioconductor.org/biocLite.R')" && \
+    Rscript -e "source('https://bioconductor.org/biocLite.R'); biocLite('GenomicRanges')" && \
+    Rscript -e "devtools::install_github('databio/GenomicDistributions')" && \
+    Rscript -e "install.packages('ggrepel')" && \
     Rscript -e "install.packages('ggplot2')" && \  
     Rscript -e "install.packages('gplots')" && \
-    Rscript -e "install.packages('grid')" && \
+    Rscript -e "install.packages('grid')" && \    
+    Rscript -e "install.packages('gtable')" && \
     Rscript -e "install.packages('scales')" && \
-    Rscript -e "install.packages('data.table')" && \
     Rscript -e "install.packages('stringr')"
 
 
