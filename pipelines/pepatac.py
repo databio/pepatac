@@ -192,7 +192,11 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             # interrupted and restarted at this step.            
         else:
             if useFIFO:
-                out_fastq_tmp = os.path.join(sub_outdir, "bt2")
+                out_fastq_tmp = os.path.join(sub_outdir,
+                    assembly_identifier + "_bt2")
+                if os.path.isfile(out_fastq_tmp):
+                    out_fastq_tmp = os.path.join(sub_outdir,
+                        assembly_identifier + "_bt2_2")
                 cmd = "mkfifo " + out_fastq_tmp
                 pm.run(cmd, out_fastq_tmp, container=pm.container)
             else:
