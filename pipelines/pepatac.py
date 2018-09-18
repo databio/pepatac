@@ -1181,13 +1181,13 @@ def main():
 
         cmd = build_command(
                 [tools.Rscript, tool_path("PEPATAC_annotation.R"),
-                 anno_file,
+                 anno_local,
                  peak_output_file,
                  args.sample_name,
                  args.genome_assembly,
                  QC_folder])
 
-        if os.path.isfile(anno_file):
+        if os.path.isfile(anno_local):
             pm.run(cmd, gpPDF, container=pm.container)            
             pm.report_object("Peak chromosome distribution", gaPDF,
                              anchor_image=gaPNG)
@@ -1196,7 +1196,7 @@ def main():
             pm.report_object("Peak partition distribution", gpPDF,
                              anchor_image=gpPNG)            
         elif os.path.isfile(anno_unzip) and os.stat(anno_unzip).st_size > 0:
-            anno_file = anno_unzip
+            anno_local = anno_unzip
             pm.run(cmd, gpPDF, container=pm.container)            
             pm.report_object("Peak chromosome distribution", gaPDF,
                              anchor_image=gaPNG)
@@ -1205,7 +1205,7 @@ def main():
             pm.report_object("Peak partition distribution", gpPDF,
                              anchor_image=gpPNG)
         else:
-            print("Could not find {}".format(anno_file))
+            print("Could not find {}".format(anno_local))
 
         # COMPLETE!
         pm.stop_pipeline()
