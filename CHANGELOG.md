@@ -1,6 +1,22 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] -- 2018-09-18
+
+### Added
+- Report NRF, PBC1, and PBC2
+- Produce bigBed formatted narrowPeak file
+- Add plotting of fractions of reads in *any* annotated feature
+- Add peak annotation plotting
+- Add buffered fastq repair tool
+
+### Changed
+- Fixed a bug with alignment rate reporting to prealignments
+- Speed up prealignments by leveraging SE alignment
+- Fix plotting of unaligned reads
+- Fix SE incompatibility
+- Rename output files for improved readability
+
 ## [0.7.0] -- 2018-06-25
 
 ### Added
