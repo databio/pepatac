@@ -1,3 +1,5 @@
+#! /usr/bin/env perl
+
 # By Nathan Sheffield, University of Virginia, 2017
 
 # This is an incredibly fast Perl utility that converts cut sites
