@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] -- 2018-09-19
+
+### Changed
+- Fixed a bug with prealignments' named pipe conflict
+
 ## [0.8.0] -- 2018-09-18
 
 ### Added
