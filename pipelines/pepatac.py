@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "xujin937@gmail.com"
-__version__ = "0.8.0"
+__version__ = "0.8.2"
 
 
 from argparse import ArgumentParser
@@ -31,7 +31,8 @@ def parse_arguments():
     ###########################################################################
     parser = ArgumentParser(description='PEPATAC version ' + __version__)
     parser = pypiper.add_pypiper_args(parser, groups=
-        ['pypiper', 'looper', 'ngs'], required=["input", "genome", "sample-name"])
+        ['pypiper', 'looper', 'ngs'],
+        required=["input", "genome", "sample-name", "output-parent"])
 
     # Pipeline-specific arguments
     parser.add_argument("-gs", "--genome-size", default="hs", type=str,
