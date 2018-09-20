@@ -114,14 +114,17 @@ RUN wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig 
     wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig && \
     wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigWigCat && \
     wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedSort && \
+    wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed && \
     chmod +x /home/tools/bedGraphToBigWig && \
     chmod +x /home/tools/wigToBigWig && \
     chmod +x /home/tools/bigWigCat && \
     chmod +x /home/tools/bedSort && \
+    chmod +x /home/tools/bedToBigBed && \
     ln -s /home/tools/bedGraphToBigWig /usr/bin/ && \
     ln -s /home/tools/wigToBigWig /usr/bin/ && \
     ln -s /home/tools/bigWigCat /usr/bin/ && \
-    ln -s /home/tools/bedSort /usr/bin/
+    ln -s /home/tools/bedSort /usr/bin/ && \
+    ln -s /home/tools/bedToBigBed /usr/bin/
 
 # Install Skewer
 WORKDIR /home/src/
