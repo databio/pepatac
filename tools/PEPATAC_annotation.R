@@ -1,7 +1,7 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #8/29/18
-#Last updated: 8/31/18
+#Last updated: 9/19/18
 #Author: Jason Smith
 #PEPATAC_annotation.R
 #
@@ -127,11 +127,12 @@ colnames(inBed) <- c("chromosome", "start", "end", "name", "score", "strand")
 query  <- makeGRangesFromDataFrame(inBed, keep.extra.columns=TRUE)
 
 #### Chromosome distribution plot
-minCt  <- 10 
-x      <- aggregateOverGenomeBins(query, argv$genome)
-#tbl    <- data.frame(table(x$chr))
-#x      <- x[x$N > quantile(x$N, 0.1)]
-x      <- x[x$N > minCt]
+x      <- suppressMessages(aggregateOverGenomeBins(query, argv$genome))
+# Don't plot lowest 10% represented chromosomes
+tbl    <- data.frame(table(x$chr))
+cutoff <- quantile(tbl$Freq, 0.1)
+keep   <- tbl[tbl$Freq > cutoff, 1]
+x      <- x[x$chr %in% keep,]
 if (nrow(x) > 0) {
     gaPlot <- plotGenomeAggregate(x)
     
@@ -156,22 +157,25 @@ if (nrow(x) > 0) {
 
 #### Feature distance distribution plots
 TSSDist <- TSSDistance(query, argv$genome)
-tssPlot <- plotFeatureDist(TSSDist, featureName="TSS")
+if (!is.na(TSSDist[1])) {
+    tssPlot <- plotFeatureDist(TSSDist, featureName="TSS")
+    if (argv$reads) {
+        outName     <- "_reads_TSS_dist"
+    } else {outName <- "_peaks_TSS_dist"}
 
-if (argv$reads) {
-    outName     <- "_reads_TSS_dist"
-} else {outName <- "_peaks_TSS_dist"}
-
-pdf(file = file.path(argv$output,
-    paste(argv$sample, outName, ".pdf", sep="")),
-    width= 7, height = 7, useDingbats=F)
-tssPlot
-invisible(dev.off())
-png(file.path(argv$output,
-    paste(argv$sample, outName, ".png", sep="")),
-    width = 480, height = 480)
-tssPlot
-invisible(dev.off())
+    pdf(file = file.path(argv$output,
+        paste(argv$sample, outName, ".pdf", sep="")),
+        width= 7, height = 7, useDingbats=F)
+    print(tssPlot)
+    invisible(dev.off())
+    png(file.path(argv$output,
+        paste(argv$sample, outName, ".png", sep="")),
+        width = 480, height = 480)
+    print(tssPlot)
+    invisible(dev.off())
+} else {
+	quit()
+}
 
 #### Partition distribution plots
 knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
@@ -196,6 +200,7 @@ if (argv$genome %in% knownGenomes) {
     gp   <- suppressWarnings(
                 assignPartitions(query, gl, remainder = "Other"))
 }
+
 gpPlot   <- plotPartitions(gp)
 
 if (argv$reads) {
