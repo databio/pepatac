@@ -31,7 +31,8 @@ def parse_arguments():
     ###########################################################################
     parser = ArgumentParser(description='PEPATAC version ' + __version__)
     parser = pypiper.add_pypiper_args(parser, groups=
-        ['pypiper', 'looper', 'ngs'], required=["input", "genome", "sample-name"])
+        ['pypiper', 'looper', 'ngs'],
+        required=["input", "genome", "sample-name", "output-parent"])
 
     # Pipeline-specific arguments
     parser.add_argument("-gs", "--genome-size", default="hs", type=str,
