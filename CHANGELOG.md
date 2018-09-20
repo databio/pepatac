@@ -1,6 +1,13 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] -- 2018-09-20
+
+### Changed
+- Fixed a bug with bamQC.py not employing updated pararead logger use
+- Fixed a bug with container not having all required components
+- Fixed a bug where output parent directory was not required
+
 ## [0.8.1] -- 2018-09-19
 
 ### Changed
