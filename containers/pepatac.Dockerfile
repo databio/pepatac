@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.1
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.8.3
+LABEL version 0.8.4
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -40,6 +40,7 @@ RUN pip install --upgrade pip
 RUN pip install virtualenv && \
     pip install numpy && \
     pip install MACS2 && \
+    pip install pandas && \
     pip install pararead && \
     pip install piper
 
