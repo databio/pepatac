@@ -1,15 +1,15 @@
-usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE]
-                  [-O PARENT_OUTPUT_FOLDER] [-M MEMORY_LIMIT]
-                  [-P NUMBER_OF_CORES] -S SAMPLE_NAME -I INPUT_FILES
-                  [INPUT_FILES ...] [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G
-                  GENOME_ASSEMBLY [-Q SINGLE_OR_PAIRED] [-gs GENOME_SIZE]
+usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
+                  PARENT_OUTPUT_FOLDER [-M MEMORY_LIMIT] [-P NUMBER_OF_CORES]
+                  -S SAMPLE_NAME -I INPUT_FILES [INPUT_FILES ...]
+                  [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G GENOME_ASSEMBLY
+                  [-Q SINGLE_OR_PAIRED] [-gs GENOME_SIZE]
                   [--frip-ref-peaks FRIP_REF_PEAKS] [--TSS-name TSS_NAME]
                   [--anno-name ANNO_NAME] [--keep] [--noFIFO]
                   [--peak-caller {fseq,macs2}]
                   [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
 
-PEPATAC version 0.8.1
+PEPATAC version 0.8.2
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -20,8 +20,6 @@ optional arguments:
   -C CONFIG_FILE, --config CONFIG_FILE
                         Pipeline configuration file (YAML). Relative paths are
                         with respect to the pipeline script.
-  -O PARENT_OUTPUT_FOLDER, --output-parent PARENT_OUTPUT_FOLDER
-                        Parent output directory of project
   -M MEMORY_LIMIT, --mem MEMORY_LIMIT
                         Memory limit (in Mb) for processes accepting such
   -P NUMBER_OF_CORES, --cores NUMBER_OF_CORES
@@ -49,6 +47,8 @@ optional arguments:
   -V, --version         show program's version number and exit
 
 required named arguments:
+  -O PARENT_OUTPUT_FOLDER, --output-parent PARENT_OUTPUT_FOLDER
+                        Parent output directory of project
   -S SAMPLE_NAME, --sample-name SAMPLE_NAME
                         Name for sample to run
   -I INPUT_FILES [INPUT_FILES ...], --input INPUT_FILES [INPUT_FILES ...]
