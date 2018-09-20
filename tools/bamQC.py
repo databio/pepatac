@@ -13,13 +13,15 @@ import os
 import sys
 
 import pararead
-from pararead.processor import _LOGGER
+#from pararead.processor import _LOGGER
+from pararead import add_logging_options, ParaReadProcessor
+from pararead import logger_via_cli
 
 import pandas as _pd
 import numpy as np
 
 class bamQC(pararead.ParaReadProcessor):
-    def __init__(self, reads_filename, n_proc, out_filename):
+    def __init__(self, reads_filename, n_proc, out_filename, verbosity):
         """
         Derive from ParaReadProcessor to build the bamQC caller instance.
 
@@ -32,8 +34,9 @@ class bamQC(pararead.ParaReadProcessor):
         out_filename : str
             Name of output bamQC file
         """
-        self.reads_filename = reads_filename
         super(bamQC, self).__init__(reads_filename, n_proc, out_filename)
+        self.reads_filename = reads_filename
+        self.verbosity = verbosity
 
     def register_files(self):
         """
@@ -216,6 +219,7 @@ class bamQC(pararead.ParaReadProcessor):
                        header='\t'.join(header), fmt='%s', delimiter='\t',
                        comments='')
 
+
 # read options from command line
 def parse_args(cmdl):
     parser = ArgumentParser(description='--Produce bamQC File--')
@@ -226,18 +230,24 @@ def parse_args(cmdl):
                         help="Output file name.")
     parser.add_argument('-c', '--cores', dest='cores', default=20, type=int,
                         help="Number of processors to use. Default=20")
+
+    parser = add_logging_options(parser)
     return parser.parse_args(cmdl)
-            
+
+
 # parallel processed computation of matrix for each chromosome
 if __name__ == "__main__":
+
     args = parse_args(sys.argv[1:])
+    _LOGGER = logger_via_cli(args)
 
     qc = bamQC(reads_filename=args.infile,
                out_filename=args.outfile,
-               n_proc=args.cores)
+               n_proc=args.cores,
+               verbosity=args.verbosity)
 
     qc.register_files()
     good_chromosomes = qc.run()
 
-    print("Reduce step (merge files)...")
+    _LOGGER.info("Reduce step (merge files)...")
     qc.combine(good_chromosomes)
