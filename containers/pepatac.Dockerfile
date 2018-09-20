@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.1
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.8.2
+LABEL version 0.8.5
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -40,6 +40,7 @@ RUN pip install --upgrade pip
 RUN pip install virtualenv && \
     pip install numpy && \
     pip install MACS2 && \
+    pip install pandas && \
     pip install pararead && \
     pip install piper
 
@@ -114,14 +115,17 @@ RUN wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig 
     wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig && \
     wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigWigCat && \
     wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedSort && \
+    wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed && \
     chmod +x /home/tools/bedGraphToBigWig && \
     chmod +x /home/tools/wigToBigWig && \
     chmod +x /home/tools/bigWigCat && \
     chmod +x /home/tools/bedSort && \
+    chmod +x /home/tools/bedToBigBed && \
     ln -s /home/tools/bedGraphToBigWig /usr/bin/ && \
     ln -s /home/tools/wigToBigWig /usr/bin/ && \
     ln -s /home/tools/bigWigCat /usr/bin/ && \
-    ln -s /home/tools/bedSort /usr/bin/
+    ln -s /home/tools/bedSort /usr/bin/ && \
+    ln -s /home/tools/bedToBigBed /usr/bin/
 
 # Install Skewer
 WORKDIR /home/src/
