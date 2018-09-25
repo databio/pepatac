@@ -1,6 +1,12 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.3] -- 2018-09-25
+
+### Changed
+- Fixed a bug the provided annotation file not passing the full path when called
+- Fixed a bug with a call to a non-initialized variable when missing an annotation file
+
 ## [0.8.2] -- 2018-09-20
 
 ### Changed
