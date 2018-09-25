@@ -418,7 +418,7 @@ def anno_path(anno_name):
     :return str: real, absolute path to tool (expansion and symlink resolution)
     """
 
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)),
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)),
                         ANNO_FOLDER, anno_name)
 
 
@@ -1100,13 +1100,15 @@ def main():
                                       "_annotations.bed.gz")
             cmd = ("ln -sf " + anno_file + " " + anno_local)
             pm.run(cmd, anno_local, container=pm.container)
-
+        
+        annoList = list()
+        
         if os.path.isfile(anno_local):
             # Get list of features
             cmd1 = ("zcat " + anno_local + " | cut -f 4 | sort -u")
             ftList = pm.checkprint(cmd1)
             ftList = str.splitlines(ftList)
-            annoList = list()
+            
             # Split annotation file on features
             cmd2 = ("zcat " + anno_local + " | awk -F'\t' '{print>\"" +
                     QC_folder + "/\"$4}'")
