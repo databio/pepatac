@@ -1148,7 +1148,7 @@ def main():
         fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
         fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
         fripCmd = [tools.Rscript, tool_path("PEPATAC_frip.R"),
-                   peakCoverage, totalReads]
+                   args.sample_name, peakCoverage, totalReads]
 
         if len(annoList) >= 1:
             fripPDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
