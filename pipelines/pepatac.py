@@ -418,7 +418,7 @@ def anno_path(anno_name):
     :return str: real, absolute path to tool (expansion and symlink resolution)
     """
 
-    return os.path.join(os.path.dirname(os.path.realpath(__file__)),
+    return os.path.join(os.path.dirname(os.path.dirname(__file__)),
                         ANNO_FOLDER, anno_name)
 
 
@@ -1087,14 +1087,14 @@ def main():
         pm.timestamp("### # Calculate read coverage")
 
         if args.anno_name:
-            anno_file  = anno_path(args.anno_name)
+            anno_file  = os.path.abspath(anno_path(args.anno_name))
             anno_unzip = os.path.splitext(anno_file)[0]
             anno_local = os.path.join(raw_folder, args.anno_name)
             cmd = ("ln -sf " + anno_file + " " + anno_local)
             pm.run(cmd, anno_local, container=pm.container)
         else:
-            anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
-            anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
+            anno_file  = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed.gz"))
+            anno_unzip = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed"))
             anno_local = os.path.join(raw_folder,
                                       args.genome_assembly +
                                       "_annotations.bed.gz")
@@ -1148,7 +1148,7 @@ def main():
         fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
         fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
         fripCmd = [tools.Rscript, tool_path("PEPATAC_frip.R"),
-                   peakCoverage, totalReads]
+                   args.sample_name, peakCoverage, totalReads]
 
         if len(annoList) >= 1:
             fripPDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
