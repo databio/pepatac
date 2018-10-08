@@ -20,6 +20,7 @@ from pypiper import build_command
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER  = "anno"
 PEAK_CALLERS = ["fseq", "macs2"]
+DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 
 
@@ -65,6 +66,10 @@ def parse_arguments():
     parser.add_argument("--trimmer", dest="trimmer",
                         default="skewer", choices=TRIMMERS,
                         help="Name of read trimming program")
+
+    parser.add_argument("--deduplicator", dest="deduplicator",
+                        default="picard", choices=DEDUPLICATORS,
+                        help="Name of deduplicator program")
 
     parser.add_argument("--prealignments", default=[], type=str, nargs="+",
                         help="Space-delimited list of reference genomes to "
@@ -686,6 +691,7 @@ def main():
     cmd += " -o " + mapping_genome_bam_temp
 
     #pm.run(cmd, mapping_genome_bam_temp, container=pm.container)
+    # TODO: Report total mapped reads and QC filtered reads here
     
     # Split genome mapping result bamfile into two: high-quality aligned
     # reads (keepers) and unmapped reads (in case we want to analyze the
@@ -760,6 +766,7 @@ def main():
     if args.paired_end:
         # require both read and mate unmapped
         unmap_cmd += " -f 12 "
+        # TODO: Report total number of unmapped reads (-f 4) here
     else:
         # require only read unmapped
         unmap_cmd += " -f 4 "
@@ -772,20 +779,20 @@ def main():
 
     pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
 
-    def estimate_lib_size(picard_log):
+    def estimate_lib_size(dedup_log):
         # In millions of reads; contributed by Ryan
         # NOTE: from Picard manual: without optical duplicate counts,
         #       library size estimation will be inaccurate.
         cmd = ("awk -F'\t' -f " + tool_path("extract_picard_lib.awk") +
-               " " + picard_log)
+               " " + dedup_log)
         picard_est_lib_size = pm.checkprint(cmd)
         pm.report_result("Picard_est_lib_size", picard_est_lib_size)
 
-    def post_dup_aligned_reads(picard_log):
+    def post_dup_aligned_reads(dedup_log):
         # Number of aligned reads post tools.picard REMOVE_DUPLICATES
         cmd = ("awk -F'\t' -f " +
                tool_path("extract_post_dup_aligned_reads.awk") + " " +
-               picard_log)
+               dedup_log)
         pdar = pm.checkprint(cmd)
         ar = float(pm.get_stat("Aligned_reads"))
         rr = float(pm.get_stat("Raw_reads"))
@@ -804,24 +811,55 @@ def main():
     rmdup_bam = os.path.join(
         map_genome_folder, args.sample_name + "_sort_dedup.bam")
     metrics_file = os.path.join(
-        map_genome_folder, args.sample_name + "_picard_metrics_bam.txt")
-    picard_log = os.path.join(
-        map_genome_folder, args.sample_name + "_picard_metrics_log.txt")
+        map_genome_folder, args.sample_name + "_dedup_metrics_bam.txt")
+    dedup_log = os.path.join(
+        map_genome_folder, args.sample_name + "_dedup_metrics_log.txt")
 
-    if pm.container is not None:
-        cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
-                "/home/tools/bin/picard.jar" + " MarkDuplicates")
-    else:    
-        cmd3 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
-                tools.picard + " MarkDuplicates")
-    cmd3 += " INPUT=" + mapping_genome_bam
-    cmd3 += " OUTPUT=" + rmdup_bam
-    cmd3 += " METRICS_FILE=" + metrics_file
-    cmd3 += " VALIDATION_STRINGENCY=LENIENT"
-    cmd3 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " + picard_log
-    cmd4 = tools.samtools + " index " + rmdup_bam
+    if args.deduplicator == "picard":
+        if pm.container is not None:
+            cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+                    "/home/tools/bin/picard.jar" + " MarkDuplicates")
+        else:    
+            cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+                    tools.picard + " MarkDuplicates")
+        cmd1 += " INPUT=" + mapping_genome_bam
+        cmd1 += " OUTPUT=" + rmdup_bam
+        cmd1 += " METRICS_FILE=" + metrics_file
+        cmd1 += " VALIDATION_STRINGENCY=LENIENT"
+        cmd1 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " + dedup_log
+        cmd2 = tools.samtools + " index " + rmdup_bam
+    elif args.deduplicator == "samblaster":
+        samblaster_cmd_chunks = [
+            "(",
+            "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
+            mapping_genome_bam,
+            "|",
+            "{} view -h -@ {}".format(tools.samtools, str(pm.cores)),
+            "|",
+            "{} -r".format(tools.samblaster),
+            "|",
+            "{} view -b -@ {}".format(tools.samtools, str(pm.cores)),
+            (">", rmdup_bam),
+            (") 2>", dedup_log)
+            ]
+        cmd1 = build_command(samblaster_cmd_chunks)
+        cmd2 = tools.samtools + " index " + rmdup_bam
+    else:
+        # default to picard
+        if pm.container is not None:
+            cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+                    "/home/tools/bin/picard.jar" + " MarkDuplicates")
+        else:    
+            cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+                    tools.picard + " MarkDuplicates")
+        cmd1 += " INPUT=" + mapping_genome_bam
+        cmd1 += " OUTPUT=" + rmdup_bam
+        cmd1 += " METRICS_FILE=" + metrics_file
+        cmd1 += " VALIDATION_STRINGENCY=LENIENT"
+        cmd1 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " + dedup_log
+        cmd2 = tools.samtools + " index " + rmdup_bam
 
-    pm.run([cmd3, cmd4], rmdup_bam,
+    pm.run([cmd1, cmd2], rmdup_bam,
            follow=lambda: post_dup_aligned_reads(metrics_file),
            container=pm.container)
 
