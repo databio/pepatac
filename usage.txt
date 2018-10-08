@@ -9,7 +9,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
                   [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
 
-PEPATAC version 0.8.2
+PEPATAC version 0.8.3
 
 optional arguments:
   -h, --help            show this help message and exit

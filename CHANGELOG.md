@@ -1,6 +1,14 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.3] -- 2018-10-04
+
+### Changed
+- Fixed a bug the provided annotation file not passing the full path when called
+- Fixed a bug with a call to a non-initialized variable when missing an annotation file
+- Fixed a bug with mm9/mm10 annotation files not matching refgenie naming conventions
+- Changed how FRiF is plotted and displayed
+
 ## [0.8.2] -- 2018-09-20
 
 ### Changed
