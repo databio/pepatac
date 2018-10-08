@@ -789,20 +789,32 @@ def main():
         pm.report_result("Picard_est_lib_size", picard_est_lib_size)
 
     def post_dup_aligned_reads(dedup_log):
-        # Number of aligned reads post tools.picard REMOVE_DUPLICATES
-        cmd = ("awk -F'\t' -f " +
-               tool_path("extract_post_dup_aligned_reads.awk") + " " +
-               dedup_log)
-        pdar = pm.checkprint(cmd)
+        if args.deduplicator == "picard":
+            # Number of aligned reads post tools.picard REMOVE_DUPLICATES
+            cmd = ("awk -F'\t' -f " +
+                   tool_path("extract_post_dup_aligned_reads.awk") + " " +
+                   dedup_log)
+            pdar = pm.checkprint(cmd)
+        elif args.deduplicator == "samblaster":
+            cmd = ("tail -n 1 " + dedup_log + " | cut -f 3 -d ' '")
+            pdar = pm.checkprint(cmd)
+        else:
+            cmd = ("awk -F'\t' -f " +
+                   tool_path("extract_post_dup_aligned_reads.awk") + " " +
+                   dedup_log)
+            pdar = pm.checkprint(cmd)
+
         ar = float(pm.get_stat("Aligned_reads"))
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
-        if pdar == "":
+
+        if not pdar and not pdar.strip():
             pdar = ar
 
         dr = float(ar) - float(pdar)
         dar = round(float(pdar) * 100 / float(tr), 2)
         dte = round(float(pdar) * 100 / float(rr), 2)
+
         pm.report_result("Duplicate_reads", dr)
         pm.report_result("Dedup_aligned_reads", pdar)
         pm.report_result("Dedup_alignment_rate", dar)
