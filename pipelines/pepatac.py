@@ -793,17 +793,15 @@ def main():
             # Number of aligned reads post tools.picard REMOVE_DUPLICATES
             cmd = ("awk -F'\t' -f " +
                    tool_path("extract_post_dup_aligned_reads.awk") + " " +
-                   dedup_log)
-            pdar = pm.checkprint(cmd)
+                   dedup_log)            
         elif args.deduplicator == "samblaster":
             cmd = ("tail -n 1 " + dedup_log + " | cut -f 3 -d ' '")
-            pdar = pm.checkprint(cmd)
         else:
             cmd = ("awk -F'\t' -f " +
                    tool_path("extract_post_dup_aligned_reads.awk") + " " +
                    dedup_log)
-            pdar = pm.checkprint(cmd)
 
+        pdar = pm.checkprint(cmd)
         ar = float(pm.get_stat("Aligned_reads"))
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
