@@ -22,6 +22,7 @@ tools:  # absolute paths to required tools
   # optional tools
   fseq: fseq  
   trimmo: ${TRIMMOMATIC}
+  samblaster: samblaster
   Rscript: Rscript 
 
 # user configure 
