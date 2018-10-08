@@ -712,8 +712,8 @@ def main():
         ar = ngstk.count_mapped_reads(mapping_genome_bam, args.paired_end)
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
-        pm.report_result("Total_mapped_reads", mr)
-        pm.report_result("Reads_not_passing_QC",
+        pm.report_result("Mapped_reads", mr)
+        pm.report_result("QC_filtered_reads",
                          round(float(mr)) - round(float(ar)))
         pm.report_result("Aligned_reads", ar)
         pm.report_result("Alignment_rate", round(float(ar) * 100 /
