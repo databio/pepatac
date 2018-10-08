@@ -666,6 +666,8 @@ def main():
         map_genome_folder, args.sample_name + "_sort.bam")
     mapping_genome_bam_temp = os.path.join(
         map_genome_folder, args.sample_name + "_temp.bam")
+    failQC_genome_bam = os.path.join(
+        map_genome_folder, args.sample_name + "_fail_qc.bam")
     unmap_genome_bam = os.path.join(
         map_genome_folder, args.sample_name + "_unmap.bam")
 
@@ -696,15 +698,13 @@ def main():
     # reads (keepers) and unmapped reads (in case we want to analyze the
     # altogether unmapped reads)
     # -q 10: skip alignments with MAPQ less than 10
-    cmd2 = "samtools view -q 10 -b -@ " + str(pm.cores) + " "
+    cmd2 = (tools.samtools + " view -q 10 -b -@ " + str(pm.cores) +
+            "-U " + failQC_genome_bam + " ")
     if args.paired_end:
         # add a step to accept only reads mapped in proper pair
         cmd2 += "-f 2 "
 
     cmd2 += mapping_genome_bam_temp + " > " + mapping_genome_bam
-
-    # TODO: Put filtered reads into a file?
-    
     
     def check_alignment_genome():
         # TODO: Report mito mapped reads? / Remove mito mapped reads?
@@ -721,8 +721,8 @@ def main():
         pm.report_result("Total_efficiency", round(float(ar) * 100 /
                          float(rr), 2))
 
-    pm.run([cmd, cmd2], mapping_genome_bam, follow=check_alignment_genome,
-           container=pm.container)
+    pm.run([cmd, cmd2], mapping_genome_bam,
+           follow=check_alignment_genome, container=pm.container)
 
     # Calculate quality control metrics for the alignment file  
     pm.timestamp("### Calculate NRF, PBC1, and PBC2")
