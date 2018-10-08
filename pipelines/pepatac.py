@@ -691,7 +691,6 @@ def main():
     cmd += " -o " + mapping_genome_bam_temp
 
     #pm.run(cmd, mapping_genome_bam_temp, container=pm.container)
-    # TODO: Report total mapped reads and QC filtered reads here
     
     # Split genome mapping result bamfile into two: high-quality aligned
     # reads (keepers) and unmapped reads (in case we want to analyze the
@@ -704,11 +703,19 @@ def main():
 
     cmd2 += mapping_genome_bam_temp + " > " + mapping_genome_bam
 
+    # TODO: Put filtered reads into a file?
+    
+    
     def check_alignment_genome():
+        # TODO: Report mito mapped reads? / Remove mito mapped reads?
+        mr = ngstk.count_mapped_reads(mapping_genome_bam_temp, args.paired_end)   
         ar = ngstk.count_mapped_reads(mapping_genome_bam, args.paired_end)
-        pm.report_result("Aligned_reads", ar)
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
+        pm.report_result("Total_mapped_reads", mr)
+        pm.report_result("Reads_not_passing_QC",
+                         round(float(mr)) - round(float(ar)))
+        pm.report_result("Aligned_reads", ar)
         pm.report_result("Alignment_rate", round(float(ar) * 100 /
                          float(tr), 2))
         pm.report_result("Total_efficiency", round(float(ar) * 100 /
@@ -762,17 +769,24 @@ def main():
            container=pm.container)
 
     # Now produce the unmapped file
-    unmap_cmd = "samtools view -b -@ " + str(pm.cores)
+    def count_unmapped_reads():
+        # Report total number of unmapped reads (-f 4)
+        cmd = (tools.samtools + " view -c -f 4 -@ " + str(pm.cores) +
+               mapping_genome_bam_temp)
+        ur = pm.checkprint(cmd)
+        pm.report_result("Unmapped_reads", round(float(ur)))
+
+    unmap_cmd = tools.samtools + " view -b -@ " + str(pm.cores)
     if args.paired_end:
         # require both read and mate unmapped
         unmap_cmd += " -f 12 "
-        # TODO: Report total number of unmapped reads (-f 4) here
     else:
         # require only read unmapped
         unmap_cmd += " -f 4 "
 
     unmap_cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
-    pm.run(unmap_cmd, unmap_genome_bam, container=pm.container)
+    pm.run(unmap_cmd, unmap_genome_bam, follow=count_unmapped_reads,
+           container=pm.container)
 
     # Remove temporary bam file from unmapped file production
     pm.clean_add(mapping_genome_bam_temp)
