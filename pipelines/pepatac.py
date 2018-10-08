@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "xujin937@gmail.com"
-__version__ = "0.8.2"
+__version__ = "0.8.3"
 
 
 from argparse import ArgumentParser
@@ -1087,26 +1087,28 @@ def main():
         pm.timestamp("### # Calculate read coverage")
 
         if args.anno_name:
-            anno_file  = anno_path(args.anno_name)
+            anno_file  = os.path.abspath(anno_path(args.anno_name))
             anno_unzip = os.path.splitext(anno_file)[0]
             anno_local = os.path.join(raw_folder, args.anno_name)
             cmd = ("ln -sf " + anno_file + " " + anno_local)
             pm.run(cmd, anno_local, container=pm.container)
         else:
-            anno_file  = anno_path(args.genome_assembly + "_annotations.bed.gz")
-            anno_unzip = anno_path(args.genome_assembly + "_annotations.bed")
+            anno_file  = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed.gz"))
+            anno_unzip = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed"))
             anno_local = os.path.join(raw_folder,
                                       args.genome_assembly +
                                       "_annotations.bed.gz")
             cmd = ("ln -sf " + anno_file + " " + anno_local)
             pm.run(cmd, anno_local, container=pm.container)
-
+        
+        annoList = list()
+        
         if os.path.isfile(anno_local):
             # Get list of features
             cmd1 = ("zcat " + anno_local + " | cut -f 4 | sort -u")
             ftList = pm.checkprint(cmd1)
             ftList = str.splitlines(ftList)
-            annoList = list()
+            
             # Split annotation file on features
             cmd2 = ("zcat " + anno_local + " | awk -F'\t' '{print>\"" +
                     QC_folder + "/\"$4}'")
@@ -1146,7 +1148,7 @@ def main():
         fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
         fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
         fripCmd = [tools.Rscript, tool_path("PEPATAC_frip.R"),
-                   peakCoverage, totalReads]
+                   args.sample_name, peakCoverage, totalReads]
 
         if len(annoList) >= 1:
             fripPDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
