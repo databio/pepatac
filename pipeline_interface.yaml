@@ -51,6 +51,6 @@ pipelines:
         file_size: "0"
         cores: "8"
         mem: "16000"
-        time: "0-04:00:00"
+        time: "0-08:00:00"
 
 
