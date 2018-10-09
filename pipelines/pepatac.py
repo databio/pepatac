@@ -692,23 +692,20 @@ def main():
     cmd += " -T " + tempdir
     cmd += " -o " + mapping_genome_bam_temp
 
-    #pm.run(cmd, mapping_genome_bam_temp, container=pm.container)
-    
     # Split genome mapping result bamfile into two: high-quality aligned
     # reads (keepers) and unmapped reads (in case we want to analyze the
     # altogether unmapped reads)
     # -q 10: skip alignments with MAPQ less than 10
     cmd2 = (tools.samtools + " view -q 10 -b -@ " + str(pm.cores) +
-            "-U " + failQC_genome_bam + " ")
+            " -U " + failQC_genome_bam + " ")
     if args.paired_end:
         # add a step to accept only reads mapped in proper pair
         cmd2 += "-f 2 "
 
     cmd2 += mapping_genome_bam_temp + " > " + mapping_genome_bam
-    
+
     def check_alignment_genome():
-        # TODO: Report mito mapped reads? / Remove mito mapped reads?
-        mr = ngstk.count_mapped_reads(mapping_genome_bam_temp, args.paired_end)   
+        mr = ngstk.count_mapped_reads(mapping_genome_bam_temp, args.paired_end)
         ar = ngstk.count_mapped_reads(mapping_genome_bam, args.paired_end)
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
@@ -724,7 +721,40 @@ def main():
     pm.run([cmd, cmd2], mapping_genome_bam,
            follow=check_alignment_genome, container=pm.container)
 
-    # Calculate quality control metrics for the alignment file  
+    if not args.prealignments:
+        # Index the temporary bam file
+        temp_mapping_index = os.path.join(mapping_genome_bam_temp + ".bai")
+        cmd = tools.samtools + " index " + mapping_genome_bam_temp
+        pm.run(cmd, temp_mapping_index, container=pm.container)
+        pm.clean_add(temp_mapping_index)
+
+        # Determine mitochondrial read counts
+        mito_name = ["chrM", "chrMT", "M", "MT"]
+        cmd1 = (tools.samtools + " idxstats " + mapping_genome_bam_temp +
+                " | grep")
+        for name in mito_name:
+            cmd1 += " -we '" + name + "'"
+        cmd1 += "| cut -f 3"
+        mr = pm.checkprint(cmd1)
+
+        # If there are mitochondrial reads, report and remove them
+        if mr and mr.strip():
+            pm.report_result("Mitochondrial_reads", round(float(mr)))
+            noMT_mapping_genome_bam = os.path.join(
+                map_genome_folder, args.sample_name + "_noMT.bam")
+            cmd2 = (tools.samtools + " idxstats " + mapping_genome_bam +
+                    " | cut -f 1 | grep")
+            for name in mito_name:
+                cmd2 += " -vwe '" + name + "'"
+            cmd2 += ("| xargs " + tools.samtools + " view -b -@ " +
+                     str(pm.cores) + " " + mapping_genome_bam + " > " +
+                     noMT_mapping_genome_bam)
+            cmd3 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
+            cmd4 = tools.samtools + " index " + mapping_genome_bam
+            pm.run([cmd2, cmd3, cmd4], noMT_mapping_genome_bam,
+                   container=pm.container)
+
+    # Calculate quality control metrics for the alignment file
     pm.timestamp("### Calculate NRF, PBC1, and PBC2")
     QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
     ngstk.make_dir(QC_folder)
@@ -733,7 +763,7 @@ def main():
     mapping_genome_index = os.path.join(mapping_genome_bam + ".bai")
     cmd = tools.samtools + " index " + mapping_genome_bam
     pm.run(cmd, mapping_genome_index, container=pm.container)
-    
+
     bamQC = os.path.join(QC_folder, args.sample_name + "_bamQC.tsv")
     cmd = tool_path("bamQC.py")
     cmd += " -i " + mapping_genome_bam
@@ -772,7 +802,7 @@ def main():
     def count_unmapped_reads():
         # Report total number of unmapped reads (-f 4)
         cmd = (tools.samtools + " view -c -f 4 -@ " + str(pm.cores) +
-               mapping_genome_bam_temp)
+               " " + mapping_genome_bam_temp)
         ur = pm.checkprint(cmd)
         pm.report_result("Unmapped_reads", round(float(ur)))
 
@@ -809,7 +839,7 @@ def main():
                    tool_path("extract_post_dup_aligned_reads.awk") + " " +
                    dedup_log)            
         elif args.deduplicator == "samblaster":
-            cmd = ("tail -n 1 " + dedup_log + " | cut -f 3 -d ' '")
+            cmd = ("grep 'Removed' " + dedup_log + " | cut -f 3 -d ' '")
         else:
             cmd = ("awk -F'\t' -f " +
                    tool_path("extract_post_dup_aligned_reads.awk") + " " +
@@ -823,9 +853,15 @@ def main():
         if not pdar and not pdar.strip():
             pdar = ar
 
-        dr = float(ar) - float(pdar)
-        dar = round(float(pdar) * 100 / float(tr), 2)
-        dte = round(float(pdar) * 100 / float(rr), 2)
+        if args.deduplicator == "samblaster":
+            dr = pdar
+            pdar = float(ar) - float(dr)
+            dar = round(float(dr) * 100 / float(tr), 2)
+            dte = round(float(dr) * 100 / float(rr), 2)
+        else:
+            dr = float(ar) - float(pdar)
+            dar = round(float(pdar) * 100 / float(tr), 2)
+            dte = round(float(pdar) * 100 / float(rr), 2)
 
         pm.report_result("Duplicate_reads", dr)
         pm.report_result("Dedup_aligned_reads", pdar)
@@ -863,11 +899,15 @@ def main():
             "{} -r".format(tools.samblaster),
             "|",
             "{} view -b -@ {}".format(tools.samtools, str(pm.cores)),
+            "|",
+            "{} sort -@ {}".format(tools.samtools, str(pm.cores)),
             (">", rmdup_bam),
             (") 2>", dedup_log)
-            ]
+        ]
         cmd1 = build_command(samblaster_cmd_chunks)
         cmd2 = tools.samtools + " index " + rmdup_bam
+        # no separate metrics file with samblaster
+        metrics_file = dedup_log
     else:
         # default to picard
         if pm.container is not None:
