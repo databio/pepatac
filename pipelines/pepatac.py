@@ -856,8 +856,8 @@ def main():
         if args.deduplicator == "samblaster":
             dr = pdar
             pdar = float(ar) - float(dr)
-            dar = round(float(dr) * 100 / float(tr), 2)
-            dte = round(float(dr) * 100 / float(rr), 2)
+            dar = round(float(pdar) * 100 / float(tr), 2)
+            dte = round(float(pdar) * 100 / float(rr), 2)
         else:
             dr = float(ar) - float(pdar)
             dar = round(float(pdar) * 100 / float(tr), 2)
