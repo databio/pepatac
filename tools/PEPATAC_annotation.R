@@ -181,7 +181,7 @@ if (!is.na(TSSDist[1])) {
 knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
 fileType     <- summary(file(paste0(argv$anno)))$class
 if (fileType == "gzfile") {
-    annoFile <- fread(cmd=(sprintf('zcat %s', shQuote(file.path(argv$anno)))))
+    annoFile <- fread(cmd=(sprintf('gunzip -c %s', shQuote(file.path(argv$anno)))))
     suppressWarnings(closeAllConnections())
 } else {
     annoFile <- fread(file.path(argv$anno))
