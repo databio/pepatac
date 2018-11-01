@@ -93,6 +93,8 @@ class CutTracer(pararead.ParaReadProcessor):
         #     "; i <= $1+" + str(self.smooth_length) + "; ++i) print i }' | sort -n | perl " + \
         #     cutsToWig + " " + str(chrom_size) 
         cmd2 = "wigToBigWig -clip -fixedSummaries -keepAllChromosomes stdin " + self.chrom_sizes_file + " " + chromOutFileBw
+        _LOGGER.debug("  cutsToWigProcess: " + cmd)
+        _LOGGER.debug("  wigToBigWigProcess: " + cmd2)
         cutsToWigProcess = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         wigToBigWigProcess = subprocess.Popen(['wigToBigWig', '-clip', '-fixedSummaries', '-keepAllChromosomes', 
                                                 'stdin', self.chrom_sizes_file, chromOutFileBw],
