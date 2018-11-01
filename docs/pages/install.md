@@ -16,7 +16,7 @@ tags: nav
       <div class="container">
         <div id="intro">
           <p></p>
-          <h2>Getting started with <img src="../assets/images/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"></h2>
+          <h2>Getting started with <img src="{{ "/assets/images/logo_pepatac_black.png" | prepend: site.baseurl }}" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"></h2>
           <p>This guide is designed to quickly get you up and running with <code class="language-python">PEPATAC</code>. An <a href="tutorial.html">extended tutorial is available</a> should you find yourself stuck or would prefer more information along the way.</p>
         </div><!-- /.intro -->
       </div>
@@ -162,7 +162,7 @@ zcat hg38_TSS_full.txt.gz | \
                 <pre><code class="language-bash">docker run --rm -it databio/pepatac pipelines/pepatac.py --help</code></pre>
                 Be sure to mount the volumes you need with `--volume`.
                 </p>
-              <p>To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use...<a href="https://github.com/pepkit/looper"><code>looper</code>!</a>  Learn more about using <code>looper</code> with <code class="language-python">PEPATAC</code> in the <a href="/howto/index.html">how-to guides</a> or in the <a href="{{ "/tutorial/" | prepend: site.baseurl }}">extended tutorial</a>.</p>
+              <p>To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use...<a href="https://github.com/pepkit/looper"><code>looper</code>!</a>  Learn more about using <code>looper</code> with <code class="language-python">PEPATAC</code> in the <a href="{{ "/howto/" | prepend: site.baseurl }}" >how-to guides</a> or in the <a href="{{ "/tutorial/" | prepend: site.baseurl }}">extended tutorial</a>.</p>
               <p>Any questions? Feel free to <a href="{{ "/contact/" | prepend: site.baseurl }}">reach out to us</a>. Otherwise, go analyze some ATAC-seq!</p>
           </div>	
         </div>
