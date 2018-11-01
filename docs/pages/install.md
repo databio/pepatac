@@ -156,7 +156,7 @@ zcat hg38_TSS_full.txt.gz | \
               <hr>
               <h5><strong>2.3.2: Running the pipeline directly in a container</strong></h5>
                 <p>A full tutorial on using containers is outside the scope of this guide, but here are the basics. Individual jobs can be run in a container by simply running the <code class="language-python">pepatac.py</code> command through <code>docker run</code> or <code>singularity exec</code>. You can run containers either on your local computer, or in an HPC environment, as long as you have <code>docker</code> or <code>singularity</code> installed. For example, run it locally in singularity like this:
-                <pre><code class="language-bash">singularity exec --bind $GENOMES $SIMAGES pipelines/pepatac.py --help</code></pre>
+                <pre><code class="language-bash">singularity exec --bind $GENOMES $SIMAGES/pepatac pipelines/pepatac.py --help</code></pre>
                 </p>
                 <p>With <code>docker</code>, you can use:
                 <pre><code class="language-bash">docker run --rm -it databio/pepatac pipelines/pepatac.py --help</code></pre>
