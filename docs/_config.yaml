@@ -1,0 +1,5 @@
+name: PEPATAC
+title: PEPATAC
+url: "http://code.databio.org/PEPATAC"
+baseurl: "http://code.databio.org/PEPATAC"
+include: ['pages', "howto"]

@@ -1,0 +1,57 @@
+# Pipeline started at 09-17 15:47:24
+
+ln	 None	0:00:00.010000	 -1
+ln	 None	0:00:00.010000	 -1
+pigz	 None	0:00:49.370000	 -1
+pigz	 None	0:00:41.780000	 -1
+skewer	 None	0:07:24.160000	 0.020396
+mv	 None	0:00:00.030000	 -1
+mv	 None	0:00:00.010000	 -1
+fastqc	 None	0:03:48.420000	 0.233892
+fastqc	 None	0:03:38.300000	 0.176676
+mkfifo	 None	0:00:00.010000	 -1
+(bowtie2	 None	0:12:30.410000	 -1
+perl	 None	3:40:13.330000	 0.0
+perl	 None	3:40:13.350000	 0.0
+bowtie2	 None	3:27:47.130000	 0.001572
+# Pipeline started at 09-17 20:26:25
+
+bowtie2	 None	3:13:39.680000	 -1
+samtools	 None	0:03:48.160000	 -1
+samtools	 None	0:02:04.090000	 0.017188
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/bamQC.py	 None	0:02:19.600000	 0.058824
+samtools	 None	0:00:29.140000	 -1
+java	 None	0:19:55.730000	 -1
+samtools	 None	0:02:03.330000	 0.01718
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/bamSitesToWig.py	 None	0:14:03.910000	 0.028148
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/bamSitesToWig.py	 None	0:14:08.720000	 0.0
+# Pipeline started at 09-18 08:14:36
+
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/bamSitesToWig.py	 None	0:22:38.760000	 0.028168
+touch	 None	0:00:00.010000	 -1
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/pyTssEnrichment.py	 None	0:00:25.620000	 0.187776
+Rscript	 None	0:00:04.180000	 0.027896
+perl	 None	0:05:41.380000	 0.002356
+sort	 None	0:02:12.590000	 -1
+Rscript	 None	0:00:14.500000	 0.422604
+macs2	 None	0:07:31.890000	 1.458152
+Rscript	 None	0:00:04.380000	 0.027896
+cut	 None	0:00:00.050000	 -1
+samtools	 None	0:00:00.040000	 -1
+bedtools	 None	0:00:00.190000	 -1
+bedtools	 None	0:02:41.270000	 -1
+zcat	 None	0:00:00.710000	 -1
+cut	 None	0:00:00.170000	 -1
+bedtools	 None	0:02:29.080000	 -1
+cut	 None	0:00:00.280000	 -1
+bedtools	 None	0:02:32.340000	 -1
+cut	 None	0:00:00.650000	 -1
+bedtools	 None	0:02:31.150000	 -1
+cut	 None	0:00:00.720000	 -1
+bedtools	 None	0:03:54.740000	 -1
+cut	 None	0:00:00.180000	 -1
+bedtools	 None	0:02:34.590000	 -1
+cut	 None	0:00:00.210000	 -1
+bedtools	 None	0:02:31.480000	 -1
+Rscript	 None	0:00:33.960000	 0.481664
+Rscript	 None	0:00:18.790000	 0.352124
