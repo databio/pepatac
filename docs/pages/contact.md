@@ -45,16 +45,6 @@ tags: nav
           <textarea class="form-control" name="message" id="message" placeholder="Enter a question or comment" required="required" rows="3"></textarea>
           <div class="help-block with-errors"></div>
         </div>
-        <!-- </div> -->
-        <!-- <div class="form-row align-items-center">
-          <div class="form-group">
-            <div class="custom-file">
-              <input type="file" name="customFile" class="custom-file-input" id="customFile">
-              <label class="custom-file-label" for="customFile">Choose file</label>
-              <div class="help-block with-errors"></div>
-            </div>
-          </div>
-        </div> -->
         <div class="form-row align-items-center">	
           <div class="form-group">
             <button type="submit" class="btn btn-secondary btn-send">Send message</button>

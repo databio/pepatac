@@ -16,7 +16,7 @@ tags: nav
       <div class="container">
         <div id="intro">
           <p></p>
-          <h2><img src="../assets/images/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"> pipeline step-by-step guide</h2>
+          <h2><img src="{{ "/assets/images/logo_pepatac_black.png" | prepend: site.baseurl }}" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"> pipeline step-by-step guide</h2>
           <p>Welcome to the <code class="language-python">PEPATAC</code> pipeline tutorial! Use this project to learn the ropes. We'll use a provided ATAC-seq dataset and run through the step-by-step process of getting <code class="language-python">PEPATAC</code> up and running including: installing <code class="language-python">PEPATAC</code> and its requirements, setting up the configuration files, running the pipeline, and looking over the results together.</p>
           <p>To use this tutorial, you should have a basic familiarity with working in a command line driven environment. If you need or would like a quick refresher, check out this <a href="http://matt.might.net/articles/basic-unix/">guide</a>.</p>
         </div><!-- /.intro -->
@@ -293,31 +293,31 @@ echo 'Start time:' `date +'%Y-%m-%d %T'`
                               <span><i class="fas fa-minus-circle"></i> reports/</span> <a href="">HTML report pages</a>
                                 <ul>
                                   <li>
-                                      <span><i class="fas fa-file"></i> cumulative_frif.html</span> <a href="../assets/examples/tutorial/reports/cumulative_frif.html">Cumulative FRiF plots</a>
+                                      <span><i class="fas fa-file"></i> cumulative_frif.html</span> <a href="{{ "/assets/examples/tutorial/reports/cumulative_frif.html" | prepend: site.baseurl }}">Cumulative FRiF plots</a>
                                   </li>
                                   <li>
-                                      <span><i class="fas fa-file"></i> fastq_report_r1.html</span> <a href="../assets/examples/tutorial/reports/fastqc_report_r1.html">FastQC reports for read 1's</a>
+                                      <span><i class="fas fa-file"></i> fastq_report_r1.html</span> <a href="{{ "/assets/examples/tutorial/reports/fastqc_report_r1.html" | prepend: site.baseurl }}">FastQC reports for read 1's</a>
                                   </li>
                                   <li>
-                                      <span><i class="fas fa-file"></i> fastq_report_r2.html</span> <a href="../assets/examples/tutorial/reports/fastqc_report_r2.html">FastQC reports for read 2's</a>
+                                      <span><i class="fas fa-file"></i> fastq_report_r2.html</span> <a href="{{ "/assets/examples/tutorial/reports/fastqc_report_r2.html" | prepend: site.baseurl }}">FastQC reports for read 2's</a>
                                   </li>
                                   <li>
-                                      <span><i class="fas fa-file"></i> fragment_distribution.html</span> <a href="../assets/examples/tutorial/reports/fragment_distribution.html">Fragment distribution plots</a>
+                                      <span><i class="fas fa-file"></i> fragment_distribution.html</span> <a href="{{ "/assets/examples/tutorial/reports/fragment_distribution.html" | prepend: site.baseurl }}">Fragment distribution plots</a>
                                   </li>
                                   <li>
-                                      <span><i class="fas fa-file"></i> objects.html</span> <a href="../assets/examples/tutorial/reports/objects.html">Object page index</a>
+                                      <span><i class="fas fa-file"></i> objects.html</span> <a href="{{ "/assets/examples/tutorial/reports/objects.html" | prepend: site.baseurl }}">Object page index</a>
                                   </li>
                                   <li>
-                                      <span><i class="fas fa-file"></i> samples.html</span> <a href="../assets/examples/tutorial/reports/samples.html">Sample page index</a>
+                                      <span><i class="fas fa-file"></i> samples.html</span> <a href="{{ "/assets/examples/tutorial/reports/samples.html" | prepend: site.baseurl }}">Sample page index</a>
                                   </li>
                                   <li>
-                                      <span><i class="fas fa-file"></i> status.html</span> <a href="../assets/examples/tutorial/reports/status.html">Sample status page</a>
+                                      <span><i class="fas fa-file"></i> status.html</span> <a href="{{ "/assets/examples/tutorial/reports/status.html" | prepend: site.baseurl }}">Sample status page</a>
                                   </li>
                                   <li>
-                                      <span><i class="fas fa-file"></i> tss_enrichment.html</span> <a href="../assets/examples/tutorial/reports/tss_enrichment.html">TSS enrichment plots</a>
+                                      <span><i class="fas fa-file"></i> tss_enrichment.html</span> <a href="{{ "/assets/examples/tutorial/reports/tss_enrichment.html" | prepend: site.baseurl }}">TSS enrichment plots</a>
                                   </li>
                                   <li>
-                                      <span><i class="fas fa-file"></i> tutorial.html</span> <a href="../assets/examples/tutorial/reports/tutorial.html">Tutorial sample page</a>
+                                      <span><i class="fas fa-file"></i> tutorial.html</span> <a href="{{ "/assets/examples/tutorial/reports/tutorial.html" | prepend: site.baseurl }}">Tutorial sample page</a>
                                   </li>
                                 </ul>
                             </li>
@@ -352,25 +352,25 @@ echo 'Start time:' `date +'%Y-%m-%d %T'`
                                         <span><i class="fas fa-minus-circle"></i> raw/</span> <a href="">Contains symlinks to fastq files</a>
                                       </li>
                                       <li>
-                                      <span><i class="fas fa-file"></i> objects.tsv</span> <a href="../assets/examples/tutorial/results_pipeline/tutorial/objects.tsv">File containing table of sample objects</a>
+                                      <span><i class="fas fa-file"></i> objects.tsv</span> <a href="{{ "/assets/examples/tutorial/results_pipeline/tutorial/objects.tsv" | prepend: site.baseurl }}">File containing table of sample objects</a>
                                       </li>
                                       <li>
-                                      <span><i class="fas fa-file"></i> PEPATAC_cleanup.sh</span> <a href="../assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_cleanup.sh">Shell script to remove temporary files generated during the pipeline run</a>
+                                      <span><i class="fas fa-file"></i> PEPATAC_cleanup.sh</span> <a href="{{ "/assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_cleanup.sh" | prepend: site.baseurl }}">Shell script to remove temporary files generated during the pipeline run</a>
                                       </li>
                                       <li>
-                                      <span><i class="fas fa-file"></i> PEPATAC_commands.sh</span> <a href="../assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_commands.sh">Shell script that contains list of the executed pipeline commands</a>
+                                      <span><i class="fas fa-file"></i> PEPATAC_commands.sh</span> <a href="{{ "/assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_commands.sh" | prepend: site.baseurl }}">Shell script that contains list of the executed pipeline commands</a>
                                       </li>
                                       <li>
-                                      <span><i class="fas fa-file"></i> PEPATAC_completed.flag</span> <a href="../assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_completed.flag">Empty flag indicated pipeline completion</a>
+                                      <span><i class="fas fa-file"></i> PEPATAC_completed.flag</span> <a href="{{ "/assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_completed.flag" | prepend: site.baseurl }}">Empty flag indicated pipeline completion</a>
                                       </li>
                                       <li>
-                                      <span><i class="fas fa-file"></i> PEPATAC_log.md</span> <a href="../assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_log.md">Sample log file from the pipeline run</a>
+                                      <span><i class="fas fa-file"></i> PEPATAC_log.md</span> <a href="{{ "/assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_log.md" | prepend: site.baseurl }}">Sample log file from the pipeline run</a>
                                       </li>
                                       <li>
-                                      <span><i class="fas fa-file"></i> PEPATAC_profile.tsv</span> <a href="../assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_profile.tsv">File containing runtime of pipeline commands</a>
+                                      <span><i class="fas fa-file"></i> PEPATAC_profile.tsv</span> <a href="{{ "/assets/examples/tutorial/results_pipeline/tutorial/PEPATAC_profile.tsv" | prepend: site.baseurl }}">File containing runtime of pipeline commands</a>
                                       </li>
                                       <li>
-                                      <span><i class="fas fa-file"></i> stats.tsv</span> <a href="../assets/examples/tutorial/results_pipeline/tutorial/stats.tsv">Sample level summary statistics file</a>
+                                      <span><i class="fas fa-file"></i> stats.tsv</span> <a href="{{ "/assets/examples/tutorial/results_pipeline/tutorial/stats.tsv" | prepend: site.baseurl }}">Sample level summary statistics file</a>
                                       </li>
                                     </ul>
                                   </li>
@@ -394,30 +394,30 @@ echo 'Start time:' `date +'%Y-%m-%d %T'`
                               <span><i class="fas fa-minus-circle"></i> summary/</span> <a href="">Pipeline level summary objects</a>
                               <ul>
                                 <li>
-                                    <span><i class="fas fa-file"></i> tutorial_alignmentPercent.pdf</span> <a href="../assets/examples/tutorial/summary/tutorial_alignmentPercent.pdf">Tutorial sample alignment percent plot</a>
+                                    <span><i class="fas fa-file"></i> tutorial_alignmentPercent.pdf</span> <a href="{{ "/assets/examples/tutorial/summary/tutorial_alignmentPercent.pdf" | prepend: site.baseurl }}">Tutorial sample alignment percent plot</a>
                                 </li>
                                 <li>
-                                    <span><i class="fas fa-file"></i> tutorial_alignmentPercent.png</span> <a href="../assets/files/examples/tutorial/summary/tutorial_alignmentPercent.png">Tutorial sample alignment percent plot thumbnail</a>
+                                    <span><i class="fas fa-file"></i> tutorial_alignmentPercent.png</span> <a href="{{ "/assets/files/examples/tutorial/summary/tutorial_alignmentPercent.png" | prepend: site.baseurl }}">Tutorial sample alignment percent plot thumbnail</a>
                                 </li>
                                 <li>
-                                    <span><i class="fas fa-file"></i> tutorial_rawPercent.pdf</span> <a href="../assets/examples/tutorial/summary/tutorial_rawPercent.pdf">Tutorial sample raw alignment plot</a>
+                                    <span><i class="fas fa-file"></i> tutorial_rawPercent.pdf</span> <a href="{{ "/assets/examples/tutorial/summary/tutorial_rawPercent.pdf" | prepend: site.baseurl }}">Tutorial sample raw alignment plot</a>
                                 </li>
                                 <li>
-                                    <span><i class="fas fa-file"></i> tutorial_rawPercent.png</span> <a href="../assets/examples/tutorial/summary/tutorial_rawPercent.png">Tutorial sample raw alignment plot thumbnail</a>
+                                    <span><i class="fas fa-file"></i> tutorial_rawPercent.png</span> <a href="{{ "/assets/examples/tutorial/summary/tutorial_rawPercent.png" | prepend: site.baseurl }}">Tutorial sample raw alignment plot thumbnail</a>
                                 </li>
                                 <li>
-                                    <span><i class="fas fa-file"></i> tutorial_TSSEnrichment.pdf</span> <a href="../assets/examples/tutorial/summary/tutorial_TSSEnrichment.pdf">Tutorial sample TSS enrichment plot</a>
+                                    <span><i class="fas fa-file"></i> tutorial_TSSEnrichment.pdf</span> <a href="{{ "/assets/examples/tutorial/summary/tutorial_TSSEnrichment.pdf" | prepend: site.baseurl }}">Tutorial sample TSS enrichment plot</a>
                                 </li>
                                 <li>
-                                    <span><i class="fas fa-file"></i> tutorial_TSSEnrichment.png</span> <a href="../assets/examples/tutorial/summary/tutorial_TSSEnrichment.png">Tutorial sample TSS enrichment plot</a>
+                                    <span><i class="fas fa-file"></i> tutorial_TSSEnrichment.png</span> <a href="{{ "/assets/examples/tutorial/summary/tutorial_TSSEnrichment.png" | prepend: site.baseurl }}">Tutorial sample TSS enrichment plot</a>
                                 </li>
                               </ul>
                             </li>
                             <li>
-                              <span><i class="fas fa-file"></i> tutorial_stats_summary.tsv</span> <a href="../assets/examples/tutorial/tutorial_stats_summary.tsv">Project level summary statistics file</a>
+                              <span><i class="fas fa-file"></i> tutorial_stats_summary.tsv</span> <a href="{{ "/assets/examples/tutorial/tutorial_stats_summary.tsv" | prepend: site.baseurl }}">Project level summary statistics file</a>
                             </li>
                             <li>
-                              <span><i class="fas fa-file"></i> tutorial_summary.html</span> <a href="../assets/examples/tutorial/tutorial_summary.html">Project HTML report</a>
+                              <span><i class="fas fa-file"></i> tutorial_summary.html</span> <a href="{{ "/assets/examples/tutorial/tutorial_summary.html" | prepend: site.baseurl }}">Project HTML report</a>
                             </li>
                         </ul>
                     </li>
@@ -425,7 +425,7 @@ echo 'Start time:' `date +'%Y-%m-%d %T'`
               </div>
           <hr>
           <h4 style="padding-top: 80px; margin-top: -80px;" id="list-results-2"><strong>3.2: Generate an <code class="language-html">HTML</code> report using <code>looper</code></strong></h4>
-            <p>Let's take full advantage of <code>looper</code> and generate a pipeline <code class="language-html">HTML</code> report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, <a href="../assets/files/examples/tutorial/tutorial_summary.html" rel="noopener noreferrer" target="_blank">check out the tutorial results</a>.  Otherwise, let's generate a report ourselves.</p>
+            <p>Let's take full advantage of <code>looper</code> and generate a pipeline <code class="language-html">HTML</code> report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, <a href="{{ "/assets/files/examples/tutorial/tutorial_summary.html"  | prepend: site.baseurl }}" rel="noopener noreferrer" target="_blank">check out the tutorial results</a>.  Otherwise, let's generate a report ourselves.</p>
             <p>Using our same configuration file we used to run the samples through the pipeline, we'll now employ the <code>summarize</code> function of <code>looper</code>.</p>
             <pre><code class="language-python">looper summarize tutorial.yaml --compute local</code></pre>              
             <p>That's it! Easy, right? <code>Looper</code> conveniently provides you with the location where the HTML report is produced.  You may either open the report with your preferred internet browser using the PATH provided, or we can change directories to the report's location and open it there.  Let's go ahead and change into the directory that contains the report.</p>

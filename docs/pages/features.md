@@ -8,7 +8,7 @@ tags: nav
 <div class="container">
   <div id="features">
     <p></p>
-    <h2><img src="../assets/images/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"> features at-a-glance</h2>
+    <h2><img src="{{ "/assets/images/logo_pepatac_black.png" | prepend: site.baseurl }}" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"> features at-a-glance</h2>
       <p>Here are a few of the highlights that make <code class="language-python">PEPATAC</code> valuable.</p>
       <ul>
         <li><b>Scalability.</b> Run the pipeline easily on a project with a single sample or a thousand. This pipeline is compatible with <a href="https://github.com/pepkit/looper"><code>looper</code></a>, so it can run locally, in a cloud container engine, or with any cluster resource manager (e.g. SLURM, SGE, or LFS).</li>
