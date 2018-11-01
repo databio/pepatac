@@ -351,8 +351,13 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
     
     if os.path.isdir(bt2_path):
         if not os.listdir(bt2_path):
-            err_msg = "{} does not contain any files."
-            pm.fail_pipeline(IOError(err_msg.format(bt2_path)))
+            err_msg = "'{}' does not contain any files.\n{}\n{}"
+            loc_msg = ("Try updating/confirming the 'genomes' variable in "
+                   "'pipelines/pepatac.yaml'.")
+            typ_msg = ("Confirm that '{}' "
+                       "is the correct genome, and that you have successfully "
+                       "built a refgenie genome.".format(genome_assembly))
+            pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
         else:
             path, dirs, files = next(os.walk(bt2_path))
     elif os.path.isfile(os.path.join(genomes_folder, (genome_assembly + ".tar.gz"))):
@@ -361,8 +366,13 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
         err_msg = "Extract {} before proceeding."
         pm.fail_pipeline(IOError(err_msg.format(genome_assembly + ".tar.gz")))
     else:
-        err_msg = "Could not find the {} index located at: {}"
-        pm.fail_pipeline(IOError(err_msg.format(genome_assembly, bt2_path)))
+        err_msg = "Could not find the '{}' index at: {}\n{}\n{}"
+        loc_msg = ("Try updating/confirming the 'genomes' variable in "
+                   "'pipelines/pepatac.yaml'.")
+        typ_msg = ("Confirm that '{}' "
+                   "is the correct genome.".format(genome_assembly))
+        pm.fail_pipeline(IOError(err_msg.format(genome_assembly, bt2_path,
+                                                loc_msg, typ_msg)))
     # check for bowtie small index
     if [bt for bt in files if bt.endswith('bt2')]:
         bt = ['.1.bt2', '.2.bt2', '.3.bt2', '.4.bt2',
@@ -373,8 +383,13 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
               '.rev.1.bt2l', '.rev.2.bt2l']
     # if neither file type present, fail
     else:
-        err_msg = "{} does not contain any bowtie2 index files."
-        pm.fail_pipeline(IOError(err_msg.format(bt2_path)))
+        err_msg = "'{}' does not contain any bowtie2 index files. \n{}\n{}"
+        loc_msg = ("Try updating/confirming the 'genomes' variable in "
+                   "'pipelines/pepatac.yaml'.")
+        typ_msg = ("Confirm that '{}' "
+                   "is the correct genome, and that you have successfully "
+                   "built a refgenie genome.".format(genome_assembly))
+        pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
 
     bt_expected = [genome_assembly + s for s in bt]
     bt_present  = [bt for bt in files if any(s in bt for s in bt_expected)]
