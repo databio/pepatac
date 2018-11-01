@@ -4,7 +4,7 @@ PEPATAC - ATACseq pipeline
 """
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
-__email__ = "xujin937@gmail.com"
+__email__ = "jasonsmith@virginia.edu"
 __version__ = "0.8.3"
 
 
@@ -197,7 +197,15 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             # uses a random temp file, so it won't choke if the job gets
             # interrupted and restarted at this step.            
         else:
-            if useFIFO:
+            if useFIFO and paired:
+                out_fastq_tmp = os.path.join(sub_outdir,
+                    assembly_identifier + "_bt2")
+                if os.path.isfile(out_fastq_tmp):
+                    out_fastq_tmp = os.path.join(sub_outdir,
+                        assembly_identifier + "_bt2_2")
+                cmd = "mkfifo " + out_fastq_tmp
+                pm.run(cmd, out_fastq_tmp, container=pm.container)
+            elif useFIFO and not paired:
                 out_fastq_tmp = os.path.join(sub_outdir,
                     assembly_identifier + "_bt2")
                 if os.path.isfile(out_fastq_tmp):
@@ -215,19 +223,32 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 cmd1 = build_command([tools.perl,
                         tool_path("filter_paired_fq.pl"), out_fastq_tmp,
                         unmap_fq1, unmap_fq2, out_fastq_r1, out_fastq_r2])
-            else:
-                cmd1 = build_command([tools.perl,
-                        tool_path("filter_paired_fq.pl"), out_fastq_tmp,
-                        unmap_fq1, out_fastq_r1])
-
-            cmd2 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
-            cmd2 += bt2_opts_txt
-            cmd2 += " -x " + assembly_bt2
-            cmd2 += " --rg-id " + args.sample_name
-            cmd2 += " -U " + unmap_fq1
-            cmd2 += " --un " + out_fastq_tmp
-            cmd2 += " > /dev/null"
-            cmd2 += ") 2>" + summary_file
+                cmd2 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
+                cmd2 += bt2_opts_txt
+                cmd2 += " -x " + assembly_bt2
+                cmd2 += " --rg-id " + args.sample_name
+                cmd2 += " -U " + unmap_fq1
+                cmd2 += " --un " + out_fastq_tmp
+                cmd2 += " > /dev/null"
+                cmd2 += ") 2>" + summary_file
+            else: 
+                # TODO: make filter_paired_fq work with SE data
+                # cmd1 = build_command([tools.perl,
+                        # tool_path("filter_paired_fq.pl"), out_fastq_tmp,
+                        # unmap_fq1, out_fastq_r1])
+                # For now, revert to old method
+                cmd1 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
+                cmd1 += bt2_opts_txt
+                cmd1 += " -x " + assembly_bt2
+                cmd1 += " --rg-id " + args.sample_name
+                cmd1 += " -U " + unmap_fq1
+                cmd1 += " --un-gz " + out_fastq_bt2
+                cmd1 += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
+                cmd1 += " | " + tools.samtools + " sort - -@ 1"  # sort output
+                cmd1 += " -T " + tempdir
+                cmd1 += " -o " + mapped_bam
+                cmd1 += ") 2>" + summary_file
+                cmd2 = ""
 
         if args.keep:
             pm.run(cmd, mapped_bam, container=pm.container)
@@ -238,8 +259,10 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 pm.wait = True
                 pm.run(cmd2, summary_file, container=pm.container)
             else:
-                pm.run(cmd2, summary_file, container=pm.container)
-                pm.run(cmd1, out_fastq_r1, container=pm.container)
+                # TODO: switch to this once filter_paired_fq works with SE
+                #pm.run(cmd2, summary_file, container=pm.container)
+                #pm.run(cmd1, out_fastq_r1, container=pm.container)
+                pm.run(cmd1, out_fastq_bt2, container=pm.container)
 
             pm.clean_add(out_fastq_tmp)
         
@@ -269,12 +292,20 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             pm.report_result(res_key, round(float(ar) * 100 / float(tr), 2))
         
         # filter genome reads not mapped
-        if args.keep:
+        if args.keep and paired:
             unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
             unmap_fq2 = out_fastq_pre + "_unmap_R2.fq.gz"
-        else:
+        elif not args.keep and paired:
             unmap_fq1 = out_fastq_r1
             unmap_fq2 = out_fastq_r2
+        elif args.keep and not paired:
+            unmap_fq1 = out_fastq_bt2
+            unmap_fq2 = ""
+        else:
+            # Use alternate once filter_paired_fq is working with SE
+            #unmap_fq1 = out_fastq_r1
+            unmap_fq1 = out_fastq_bt2
+            unmap_fq2 = ""
 
         return unmap_fq1, unmap_fq2
     else:
@@ -282,36 +313,6 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             assembly_identifier, os.path.dirname(assembly_bt2))
         print(msg)
         return unmap_fq1, unmap_fq2
-
-
-def _count_alignment(assembly_identifier, aligned_bam, paired_end):
-    """
-    This function counts the aligned reads and alignment rate and reports
-    statistics. You must have previously reported a "Trimmed_reads" result to
-    get alignment rates. It is useful as a follow function after any alignment
-    step to quantify and report the number of reads aligning, and the alignment
-    rate to that reference.
-
-    :param str  aligned_bam: Path to the aligned bam file.
-    :param str assembly_identifier: String identifying the reference to which
-                                    you aligned (can be anything)
-    :param bool paired_end: Whether the sequencing employed a paired-end
-                            strategy.
-    """
-	# count concordantly aligned reads ONLY
-    ar = ngstk.count_concordant(aligned_bam)
-	# Count all aligned reads
-    #ar = ngstk.count_mapped_reads(aligned_bam, paired_end)
-    pm.report_result("Aligned_reads_" + assembly_identifier, ar)
-    try:
-        # wrapped in try block in case Trimmed_reads is not reported in this
-        # pipeline.
-        tr = float(pm.get_stat("Trimmed_reads"))
-    except:
-        print("Trimmed reads is not reported.")
-    else:
-        res_key = "Alignment_rate_" + assembly_identifier
-        pm.report_result(res_key, round(float(ar) * 100 / float(tr), 2))
 
 
 def _get_bowtie2_index(genomes_folder, genome_assembly):
@@ -945,27 +946,23 @@ def main():
                         map_genome_folder, args.sample_name + "_smooth.bw")
     shift_bed = os.path.join(exact_folder, args.sample_name + "_shift.bed")
 
-    # # Aside: since this bigWigCat command uses shell expansion, pypiper
-    # # cannot profile memory. We could use glob.glob if we want to preserve
-    # # memory; like so: glob.glob(os.path.join(...)). But I don't because
-    # # bigWigCat uses little memory (<10GB).
-    # # This also sets us up nicely to process chromosomes in parallel.
-    # cmd = (tools.bigWigCat + " " + exact_target + " " +
-    #        os.path.join(temp_exact_folder, "*.bw"))
-    # pm.run(cmd, exact_target, container=pm.container)
-    # pm.clean_add(os.path.join(temp_exact_folder, "*.bw"))
+    wig_cmd_callable = ngstk.check_command("wigToBigWig")
 
-    cmd = tool_path("bamSitesToWig.py")
-    cmd += " -i " + rmdup_bam
-    cmd += " -c " + res.chrom_sizes
-    cmd += " -b " + shift_bed # request bed output
-    cmd += " -o " + exact_target
-    cmd += " -w " + smooth_target
-    cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
-    cmd2 = "touch " + temp_target
-    pm.run([cmd, cmd2], temp_target, container=pm.container)
-    pm.clean_add(temp_target)
-    pm.clean_add(temp_exact_folder)        
+    if wig_cmd_callable:
+        cmd = tool_path("bamSitesToWig.py")
+        cmd += " -i " + rmdup_bam
+        cmd += " -c " + res.chrom_sizes
+        cmd += " -b " + shift_bed # request bed output
+        cmd += " -o " + exact_target
+        cmd += " -w " + smooth_target
+        cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
+        cmd2 = "touch " + temp_target
+        pm.run([cmd, cmd2], temp_target, container=pm.container)
+        pm.clean_add(temp_target)
+        pm.clean_add(temp_exact_folder)
+    else:
+        print("Skipping signal track production -- Could not call \'wigToBigWig\'.")
+        print("Check that you have the required UCSC tools in your PATH.")
 
     # TSS enrichment
     if not os.path.exists(res.TSS_file):
@@ -983,12 +980,11 @@ def main():
         pm.run(cmd, Tss_enrich, nofail=True, container=pm.container)
 
         # Call Rscript to plot TSS Enrichment
-        Tss_plot = os.path.join(QC_folder,  args.sample_name +
+        Tss_pdf = os.path.join(QC_folder,  args.sample_name +
                                 "_TssEnrichment.pdf")
-        cmd = ("Rscript " +
-               tool_path("PEPATAC_TSSenrichmentPlot.R"))
+        cmd = ("Rscript " + tool_path("PEPATAC_TSSenrichmentPlot.R"))
         cmd += " " + Tss_enrich + " pdf"
-        pm.run(cmd, Tss_plot, nofail=True, container=pm.container)
+        pm.run(cmd, Tss_pdf, nofail=True, container=pm.container)
 
         # Always plot strand specific TSS enrichment.
         # added by Ryan 2/10/17 to calculate TSS score as numeric and to
@@ -1003,15 +999,11 @@ def main():
             pm.report_result("TSS_Score", Tss_score)
         except ZeroDivisionError:
             #print("ZeroDivisionError: {0}".format(err))
-            pass        
-        try:
-            # Just wrapping this in a try temporarily so that old versions of
-            # pypiper will work. v0.6 release of pypiper adds this function           
-            Tss_png = os.path.join(QC_folder,  args.sample_name +
-                                   "_TssEnrichment.png")
-            pm.report_object("TSS enrichment", Tss_plot, anchor_image=Tss_png)
-        except:
             pass
+
+        Tss_png = os.path.join(QC_folder,  args.sample_name +
+                               "_TssEnrichment.png")
+        pm.report_object("TSS enrichment", Tss_pdf, anchor_image=Tss_png)
 
         # Fragment distribution
 
@@ -1020,9 +1012,11 @@ def main():
         fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
         frag_dist_tool = tool_path("fragment_length_dist.pl")
         cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
+
         frag_length_counts_file = args.sample_name + "_fragCount.txt"
         fragL_count = os.path.join(QC_folder, frag_length_counts_file)
         cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
+
         fragL_dis1 = os.path.join(QC_folder, args.sample_name +
                                   "_fragLenDistribution.pdf")
         fragL_dis2 = os.path.join(QC_folder, args.sample_name +
@@ -1030,15 +1024,14 @@ def main():
         cmd2 = build_command(
             [tools.Rscript, tool_path("fragment_length_dist.R"),
              fragL, fragL_count, fragL_dis1, fragL_dis2])
+
         pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True,
                container=pm.container)
-        try:
-            fragL_png = os.path.join(QC_folder, args.sample_name +
-                                  "_fragLenDistribution.png")
-            
-            pm.report_object("Fragment distribution", fragL_dis1, anchor_image=fragL_png)
-        except:
-            pass
+
+        fragL_png = os.path.join(QC_folder, args.sample_name +
+                                 "_fragLenDistribution.png")
+        pm.report_object("Fragment distribution", fragL_dis1,
+                         anchor_image=fragL_png)
 
     # Peak calling
 
@@ -1092,7 +1085,6 @@ def main():
                 "cat {peakfiles} > {combined_peak_file}"
                 .format(peakfiles=chrom_peak_files,
                         combined_peak_file=peak_output_file))
-            #delete_chrom_peaks_files = "rm {}".format(chrom_peak_files)
             pm.clean_add(chrom_peak_files)
 
             # Pypiper serially executes the commands.
@@ -1202,35 +1194,39 @@ def main():
                                       "_annotations.bed.gz")
             cmd = ("ln -sf " + anno_file + " " + anno_local)
             pm.run(cmd, anno_local, container=pm.container)
-        
+
         annoList = list()
-        
+
         if os.path.isfile(anno_local):
             # Get list of features
-            cmd1 = ("zcat " + anno_local + " | cut -f 4 | sort -u")
+            cmd1 = ("gunzip -c " + anno_local + " | cut -f 4 | sort -u")
             ftList = pm.checkprint(cmd1)
             ftList = str.splitlines(ftList)
-            
+
             # Split annotation file on features
-            cmd2 = ("zcat " + anno_local + " | awk -F'\t' '{print>\"" +
+            cmd2 = ("gunzip -c " + anno_local + " | awk -F'\t' '{print>\"" +
                     QC_folder + "/\"$4}'")
             if len(ftList) >= 1:
                 for pos, anno in enumerate(ftList):
                     annoFile = os.path.join(QC_folder, anno)
                     pm.run(cmd2, annoFile, container=pm.container)
+
                     # Rename files to valid filenames
                     validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
                     fileName = os.path.join(QC_folder, validName)
                     pm.run(os.rename(annoFile, fileName), fileName,
                            container=pm.container)
+
                     annoSort = os.path.join(QC_folder, validName + "_sort.bed")
                     cmd3 = ("cut -f 1-3 " + fileName +
                             " | bedtools sort -i stdin -faidx " +
                             chrOrder + " > " + annoSort)
                     pm.run(cmd3, annoSort, container=pm.container)
+
                     annoCov = os.path.join(QC_folder, args.sample_name + "_" +
                                            validName + "_coverage.bed")
                     annoList.append(annoCov)
+
                     cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
                             annoSort + " -b " + rmdup_bam + " -g " + chrOrder +
                             " > " + annoCov)
@@ -1261,6 +1257,7 @@ def main():
                 fripCmd.append(cov)
         else:
             fripCmd.append(fripPDF)
+
         print(fripCmd)
 
         cmd = build_command(fripCmd)

@@ -1,0 +1,76 @@
+# Pipeline started at 09-17 15:47:24
+
+ln	 None	0:00:00.010000	 -1
+ln	 None	0:00:00.010000	 -1
+pigz	 None	0:01:02.380000	 -1
+pigz	 None	0:01:02.850000	 -1
+skewer	 None	0:10:45.900000	 0.019712
+mv	 None	0:00:00.030000	 -1
+mv	 None	0:00:00.010000	 -1
+fastqc	 None	0:04:49.340000	 0.195052
+fastqc	 None	0:05:07.430000	 0.193472
+mkfifo	 None	0:00:00.010000	 -1
+(bowtie2	 None	0:09:30.380000	 -1
+bowtie2	 None	3:11:14.680000	 -1
+samtools	 None	0:04:37.270000	 -1
+samtools	 None	0:02:22.780000	 0.020436
+perl	 None	3:32:28.660000	 0.0
+perl	 None	3:32:28.660000	 0.0
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/bamQC.py	 None	0:02:27.850000	 0.05892
+# Pipeline started at 09-17 20:26:58
+
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/bamQC.py	 None	0:02:28.570000	 0.05892
+samtools	 None	0:00:37.440000	 -1
+java	 None	0:22:52.530000	 -1
+samtools	 None	0:02:27.160000	 0.019784
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/bamSitesToWig.py	 None	0:21:05.220000	 0.03024
+touch	 None	0:00:00.010000	 -1
+/sfs/lustre/scratch/jps3dp/DATA/pepatac/tutorial/tools/pepatac/tools/pyTssEnrichment.py	 None	0:00:31.720000	 0.375316
+Rscript	 None	0:00:03.960000	 0.03246
+perl	 None	0:06:24.440000	 0.002356
+sort	 None	0:01:00.980000	 -1
+Rscript	 None	0:00:13.310000	 0.422592
+macs2	 None	0:06:25.520000	 1.377716
+Rscript	 None	0:00:04.450000	 0.02904
+cut	 None	0:00:00.090000	 -1
+samtools	 None	0:00:00.050000	 -1
+bedtools	 None	0:00:00.170000	 -1
+bedtools	 None	0:02:50.370000	 -1
+zcat	 None	0:00:00.750000	 -1
+cut	 None	0:00:00.210000	 -1
+bedtools	 None	0:02:29.430000	 -1
+cut	 None	0:00:00.270000	 -1
+bedtools	 None	0:02:30.920000	 -1
+cut	 None	0:00:00.750000	 -1
+bedtools	 None	0:02:33.420000	 -1
+cut	 None	0:00:00.600000	 -1
+bedtools	 None	0:03:45.210000	 -1
+cut	 None	0:00:00.660000	 -1
+bedtools	 None	0:02:36.640000	 -1
+cut	 None	0:00:00.670000	 -1
+bedtools	 None	0:02:33.490000	 -1
+Rscript	 None	0:00:38.610000	 0.4684
+Rscript	 None	0:00:17.690000	 0.265744
+# Pipeline started at 09-18 08:14:05
+
+zcat	 None	0:00:00.840000	 -1
+Rscript	 None	0:00:16.010000	 0.291816
+# Pipeline started at 09-18 08:44:36
+
+ln	 None	0:00:00	 -1
+# Pipeline started at 09-18 08:46:57
+
+ln	 None	0:00:00.010000	 -1
+zcat	 None	0:00:00.750000	 -1
+Rscript	 None	0:00:14.290000	 0.256024
+# Pipeline started at 09-18 09:02:43
+
+zcat	 None	0:00:00.790000	 -1
+Rscript	 None	0:00:15.720000	 0.256052
+# Pipeline started at 09-18 09:10:41
+
+zcat	 None	0:00:00.750000	 -1
+Rscript	 None	0:00:15.270000	 0.256068
+# Pipeline started at 09-18 09:13:42
+
+zcat	 None	0:00:00.790000	 -1

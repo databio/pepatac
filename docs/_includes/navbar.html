@@ -1,0 +1,39 @@
+<nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-dark" style="z-index: 100000">        
+  <a class="navbar-left" href="#top"><img src="{{ "/assets/images/logo_pepatac_white.png" | prepend: site.baseurl }}" class="d-inline-block align-middle img-responsive" alt="PEPATAC" style="max-height:20px; margin-top:-10px; margin-bottom:-10px"></a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarPrimary" aria-controls="navbarPrimary" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarPrimary">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="{{ "/" | prepend: site.baseurl }}">Home<span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="get-started-Dropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="fas fa-play-circle"></span> Getting started</a>
+        <div class="dropdown-menu" aria-labelledby="get-started-Dropdown">
+          <a class="dropdown-item" href="{{ "/intro/" | prepend: site.baseurl }}">Introduction</a>
+          <a class="dropdown-item" href="{{ "/features/" | prepend: site.baseurl }}">Features and benefits</a>
+          <a class="dropdown-item" href="{{ "/install/" | prepend: site.baseurl }}">Install and run test example</a>
+          <a class="dropdown-item" href="{{ "/tutorial/" | prepend: site.baseurl }}">Extended tutorial</a>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ "/howto/" | prepend: site.baseurl }}"><span class="fas fa-chalkboard-teacher"></span> How-to guides</a>
+      </li>              
+      <li class="nav-item">
+        <a class="nav-link" href="{{ "/assets/files/examples/gold/summary.html" | prepend: site.baseurl }}" rel="noopener noreferrer" target="_blank"><span class="fas fa-desktop"></span> Example output</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://github.com/databio/pepatac"><span class="fab fa-github fa-lg"></span> GitHub</a>
+      </li>
+    </ul>
+    <ul class="navbar-nav navbar-right">
+      <li class="nav-item">
+        <a class="nav-link" href="http://databio.org/">Databio.org</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="http://databio.org/software/">Software & Data</a>
+      </li>
+    </ul>
+  </div>
+</nav>
