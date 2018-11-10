@@ -12,5 +12,5 @@ Pull requests welcome. Active development should occur in a development or featu
 * Nathan Sheffield, nathan@code.databio.org
 * Jason Smith, jasonsmith@virginia.edu
 * Ryan Corces, rcorces@stanford.edu
-* Vince Reuter, vince.reuter@gmail.com
+* Vince Reuter, vreuter@protonmail.com
 * Others... (add your name)
