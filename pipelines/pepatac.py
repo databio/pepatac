@@ -914,19 +914,17 @@ def main():
         cmd2 = tools.samtools + " index " + rmdup_bam
     elif args.deduplicator == "samblaster":
         samblaster_cmd_chunks = [
-            "(",
             "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
             mapping_genome_bam,
             "|",
             "{} view -h -@ {}".format(tools.samtools, str(pm.cores)),
             "|",
-            "{} -r".format(tools.samblaster),
+            "{} -r 2> {}".format(tools.samblaster, dedup_log),
             "|",
             "{} view -b -@ {}".format(tools.samtools, str(pm.cores)),
             "|",
             "{} sort -@ {}".format(tools.samtools, str(pm.cores)),
-            (">", rmdup_bam),
-            (") 2>", dedup_log)
+            (">", rmdup_bam)
         ]
         cmd1 = build_command(samblaster_cmd_chunks)
         cmd2 = tools.samtools + " index " + rmdup_bam
