@@ -7,6 +7,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
                   [--anno-name ANNO_NAME] [--keep] [--noFIFO]
                   [--peak-caller {fseq,macs2}]
                   [--trimmer {trimmomatic,pyadapt,skewer}]
+                  [--deduplicator {picard,samblaster}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
 
 PEPATAC version 0.8.3
@@ -41,6 +42,8 @@ optional arguments:
                         Name of peak caller
   --trimmer {trimmomatic,pyadapt,skewer}
                         Name of read trimming program
+  --deduplicator {picard,samblaster}
+                        Name of deduplicator program
   --prealignments PREALIGNMENTS [PREALIGNMENTS ...]
                         Space-delimited list of reference genomes to align to
                         before primary alignment.
