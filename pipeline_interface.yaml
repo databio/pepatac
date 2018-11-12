@@ -20,6 +20,8 @@ pipelines:
       "--peak-caller": peak_caller
       "--frip-ref-peaks": FRIP_ref
       "--prealignments": prealignments
+      "--deduplicator": deduplicator
+      "--trimmer": trimmer
       "--genome-size": macs_genome_size
       "--anno-name": anno_name
       "--TSS-name": TSS_name
@@ -70,11 +72,11 @@ pipelines:
       micro:
         file_size: "1"
         cores: "8"
-        mem: "32000"
-        time: "02-00:00:00"
+        mem: "16000"
+        time: "00-24:00:00"
       milli:
         file_size: "10"
         cores: "16"
-        mem: "64000"
-        time: "03-00:00:00"
+        mem: "32000"
+        time: "02-00:00:00"
 
