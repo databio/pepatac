@@ -8,7 +8,8 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
                   [--peak-caller {fseq,macs2}]
                   [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--deduplicator {picard,samblaster}]
-                  [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
+                  [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [--lite]
+                  [-V]
 
 PEPATAC version 0.8.3
 
@@ -47,6 +48,8 @@ optional arguments:
   --prealignments PREALIGNMENTS [PREALIGNMENTS ...]
                         Space-delimited list of reference genomes to align to
                         before primary alignment.
+  --lite                Only keep minimal, essential output to conserve disk
+                        space.
   -V, --version         show program's version number and exit
 
 required named arguments:

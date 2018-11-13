@@ -27,6 +27,7 @@ pipelines:
       "--TSS-name": TSS_name
       "--keep": keep
       "--noFIFO": no_fifo
+      "--lite": lite
     compute:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
