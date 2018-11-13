@@ -68,12 +68,16 @@ def parse_arguments():
                         help="Name of read trimming program")
 
     parser.add_argument("--deduplicator", dest="deduplicator",
-                        default="picard", choices=DEDUPLICATORS,
+                        default="samblaster", choices=DEDUPLICATORS,
                         help="Name of deduplicator program")
 
     parser.add_argument("--prealignments", default=[], type=str, nargs="+",
                         help="Space-delimited list of reference genomes to "
                              "align to before primary alignment.")
+
+    parser.add_argument("--lite", dest="lite", action='store_true',
+                        help="Only keep minimal, essential output to conserve "
+                             "disk space.")
 
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {v}".format(v=__version__))
@@ -745,48 +749,45 @@ def main():
     pm.run([cmd, cmd2], mapping_genome_bam,
            follow=check_alignment_genome, container=pm.container)
 
-    if not args.prealignments:
-        # Index the temporary bam file
-        temp_mapping_index = os.path.join(mapping_genome_bam_temp + ".bai")
-        cmd = tools.samtools + " index " + mapping_genome_bam_temp
-        pm.run(cmd, temp_mapping_index, container=pm.container)
-        pm.clean_add(temp_mapping_index)
+    # Index the temporary bam file and the sorted bam file
+    temp_mapping_index = os.path.join(mapping_genome_bam_temp + ".bai")
+    mapping_genome_index = os.path.join(mapping_genome_bam + ".bai")
+    cmd1 = tools.samtools + " index " + mapping_genome_bam_temp
+    cmd2 = tools.samtools + " index " + mapping_genome_bam
+    pm.run([cmd1, cmd2], mapping_genome_index, container=pm.container)
+    pm.clean_add(temp_mapping_index)
+    
+    # Determine mitochondrial read counts
+    mito_name = ["chrM", "chrMT", "M", "MT"]
+    cmd = (tools.samtools + " idxstats " + mapping_genome_bam_temp +
+            " | grep")
+    for name in mito_name:
+        cmd += " -we '" + name + "'"
+    cmd += "| cut -f 3"
+    mr = pm.checkprint(cmd)
 
-        # Determine mitochondrial read counts
-        mito_name = ["chrM", "chrMT", "M", "MT"]
-        cmd1 = (tools.samtools + " idxstats " + mapping_genome_bam_temp +
-                " | grep")
+    # If there are mitochondrial reads, report and remove them
+    if float(mr.strip()) != 0:
+        pm.report_result("Mitochondrial_reads", round(float(mr)))
+        noMT_mapping_genome_bam = os.path.join(
+            map_genome_folder, args.sample_name + "_noMT.bam")
+        cmd1 = (tools.samtools + " idxstats " + mapping_genome_bam +
+                " | cut -f 1 | grep")
         for name in mito_name:
-            cmd1 += " -we '" + name + "'"
-        cmd1 += "| cut -f 3"
-        mr = pm.checkprint(cmd1)
-
-        # If there are mitochondrial reads, report and remove them
-        if mr and mr.strip():
-            pm.report_result("Mitochondrial_reads", round(float(mr)))
-            noMT_mapping_genome_bam = os.path.join(
-                map_genome_folder, args.sample_name + "_noMT.bam")
-            cmd2 = (tools.samtools + " idxstats " + mapping_genome_bam +
-                    " | cut -f 1 | grep")
-            for name in mito_name:
-                cmd2 += " -vwe '" + name + "'"
-            cmd2 += ("| xargs " + tools.samtools + " view -b -@ " +
-                     str(pm.cores) + " " + mapping_genome_bam + " > " +
-                     noMT_mapping_genome_bam)
-            cmd3 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
-            cmd4 = tools.samtools + " index " + mapping_genome_bam
-            pm.run([cmd2, cmd3, cmd4], noMT_mapping_genome_bam,
-                   container=pm.container)
+            cmd1 += " -vwe '" + name + "'"
+        cmd1 += ("| xargs " + tools.samtools + " view -b -@ " +
+                 str(pm.cores) + " " + mapping_genome_bam + " > " +
+                 noMT_mapping_genome_bam)
+        cmd2 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
+        # Reindex the sorted bam file now that mito reads are removed
+        cmd3 = tools.samtools + " index " + mapping_genome_bam
+        pm.run([cmd1, cmd2, cmd3], noMT_mapping_genome_bam,
+               container=pm.container)
 
     # Calculate quality control metrics for the alignment file
     pm.timestamp("### Calculate NRF, PBC1, and PBC2")
     QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
     ngstk.make_dir(QC_folder)
-
-    # Need index for mapping_genome_bam before calculating bamQC metrics
-    mapping_genome_index = os.path.join(mapping_genome_bam + ".bai")
-    cmd = tools.samtools + " index " + mapping_genome_bam
-    pm.run(cmd, mapping_genome_index, container=pm.container)
 
     bamQC = os.path.join(QC_folder, args.sample_name + "_bamQC.tsv")
     cmd = tool_path("bamQC.py")
@@ -865,9 +866,7 @@ def main():
         elif args.deduplicator == "samblaster":
             cmd = ("grep 'Removed' " + dedup_log + " | cut -f 3 -d ' '")
         else:
-            cmd = ("awk -F'\t' -f " +
-                   tool_path("extract_post_dup_aligned_reads.awk") + " " +
-                   dedup_log)
+            cmd = ("grep 'Removed' " + dedup_log + " | cut -f 3 -d ' '")
 
         pdar = pm.checkprint(cmd)
         ar = float(pm.get_stat("Aligned_reads"))
@@ -882,8 +881,13 @@ def main():
             pdar = float(ar) - float(dr)
             dar = round(float(pdar) * 100 / float(tr), 2)
             dte = round(float(pdar) * 100 / float(rr), 2)
-        else:
+        elif args.deduplicator == "picard":
             dr = float(ar) - float(pdar)
+            dar = round(float(pdar) * 100 / float(tr), 2)
+            dte = round(float(pdar) * 100 / float(rr), 2)
+        else:
+            dr = pdar
+            pdar = float(ar) - float(dr)
             dar = round(float(pdar) * 100 / float(tr), 2)
             dte = round(float(pdar) * 100 / float(rr), 2)
 
@@ -931,19 +935,24 @@ def main():
         # no separate metrics file with samblaster
         metrics_file = dedup_log
     else:
-        # default to picard
-        if pm.container is not None:
-            cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
-                    "/home/tools/bin/picard.jar" + " MarkDuplicates")
-        else:    
-            cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
-                    tools.picard + " MarkDuplicates")
-        cmd1 += " INPUT=" + mapping_genome_bam
-        cmd1 += " OUTPUT=" + rmdup_bam
-        cmd1 += " METRICS_FILE=" + metrics_file
-        cmd1 += " VALIDATION_STRINGENCY=LENIENT"
-        cmd1 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " + dedup_log
+        # default to samblaster
+        samblaster_cmd_chunks = [
+            "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
+            mapping_genome_bam,
+            "|",
+            "{} view -h -@ {}".format(tools.samtools, str(pm.cores)),
+            "|",
+            "{} -r 2> {}".format(tools.samblaster, dedup_log),
+            "|",
+            "{} view -b -@ {}".format(tools.samtools, str(pm.cores)),
+            "|",
+            "{} sort -@ {}".format(tools.samtools, str(pm.cores)),
+            (">", rmdup_bam)
+        ]
+        cmd1 = build_command(samblaster_cmd_chunks)
         cmd2 = tools.samtools + " index " + rmdup_bam
+        # no separate metrics file with samblaster
+        metrics_file = dedup_log
 
     pm.run([cmd1, cmd2], rmdup_bam,
            follow=lambda: post_dup_aligned_reads(metrics_file),
@@ -1254,6 +1263,8 @@ def main():
                     pm.run(cmd4, annoCov, container=pm.container)
                     pm.clean_add(fileName)
                     pm.clean_add(annoSort)
+                    if args.lite:
+                        pm.clean_add(annoCov)
 
         # Plot FRiF or FRiP
 
@@ -1333,6 +1344,21 @@ def main():
                              anchor_image=gpPNG)
         else:
             print("Could not find {}".format(anno_local))
+
+        if args.lite:
+            # Remove everything but ultimate outputs
+            pm.clean_add(fragL)
+            pm.clean_add(fragL_dis2)
+            pm.clean_add(fragL_count)
+            pm.clean_add(peakCoverage)
+            pm.clean_add(shift_bed)
+            pm.clean_add(Tss_enrich)
+            pm.clean_add(mapping_genome_bam)
+            pm.clean_add(mapping_genome_index)
+            pm.clean_add(failQC_genome_bam)
+            pm.clean_add(unmap_genome_bam)
+            pm.clean_add(unmap_fq1)
+            pm.clean_add(unmap_fq2)
 
         # COMPLETE!
         pm.stop_pipeline()
