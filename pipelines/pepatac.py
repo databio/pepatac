@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.3"
+__version__ = "0.8.4"
 
 
 from argparse import ArgumentParser
@@ -1149,7 +1149,7 @@ def main():
 
             pm.run(cmd, filter_peak, container=pm.container)
 
-        pm.timestamp("### # Calculate fraction of reads in peaks (FRiP)")
+        pm.timestamp("### Calculate fraction of reads in peaks (FRiP)")
 
         frip = calc_frip(rmdup_bam, peak_output_file,
                          frip_func=ngstk.simple_frip,
@@ -1178,7 +1178,7 @@ def main():
         
         # Calculate peak coverage
 
-        pm.timestamp("### # Calculate peak coverage")
+        pm.timestamp("### Calculate peak coverage")
 
         peakBed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
         chrOrder = os.path.join(peak_folder, "chr_order.txt")
@@ -1208,7 +1208,7 @@ def main():
         
         # Calculate read coverage
 
-        pm.timestamp("### # Calculate read coverage")
+        pm.timestamp("### Calculate read coverage")
 
         if args.anno_name:
             anno_file  = os.path.abspath(anno_path(args.anno_name))
@@ -1268,7 +1268,7 @@ def main():
 
         # Plot FRiF or FRiP
 
-        pm.timestamp("### # Plot FRiP/F")
+        pm.timestamp("### Plot FRiP/F")
 
         cmd = (tools.samtools + " view -@ " + str(pm.cores) +
                " -q 15 -c -F4 " + rmdup_bam)
@@ -1302,7 +1302,7 @@ def main():
 
         # Annotate peaks
 
-        pm.timestamp("### # Annotate peaks")
+        pm.timestamp("### Annotate peaks")
 
         gaPDF  = os.path.join(QC_folder,
                               args.sample_name + "_peaks_chr_dist.pdf")
