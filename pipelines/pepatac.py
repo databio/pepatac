@@ -644,16 +644,6 @@ def main():
            container=pm.container)
 
     
-    # Create names for FastQC results
-    fastqc_r1 = os.path.join(param.outfolder, "fastqc",
-                             args.sample_name + "_R1.trim_fastqc.html")
-    fastqc_r2 = os.path.join(param.outfolder, "fastqc",
-                             args.sample_name + "_R2.trim_fastqc.html")
-
-    # Report FastQC results
-    pm.report_object("FastQC report r1", fastqc_r1, anchor_image=fastqc_r1)
-    pm.report_object("FastQC report r2", fastqc_r2, anchor_image=fastqc_r2)
-
     pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
     pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
     #########################
