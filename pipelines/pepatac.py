@@ -749,6 +749,14 @@ def main():
     
     # Determine mitochondrial read counts
     mito_name = ["chrM", "chrMT", "M", "MT"]
+    
+    # If first run, use the temp bam file
+    if os.path.isfile(bam_file) and os.stat(bam_file).st_size > 0:
+        bam_file = mapping_genome_bam_temp
+    # Otherwise, use the final bam file previously generated
+    else:
+        bam_file = mapping_genome_bam
+
     cmd = (tools.samtools + " idxstats " + mapping_genome_bam_temp +
             " | grep")
     for name in mito_name:
@@ -757,7 +765,7 @@ def main():
     mr = pm.checkprint(cmd)
 
     # If there are mitochondrial reads, report and remove them
-    if float(mr.strip()) != 0:
+    if mr and float(mr.strip()) != 0:
         pm.report_result("Mitochondrial_reads", round(float(mr)))
         noMT_mapping_genome_bam = os.path.join(
             map_genome_folder, args.sample_name + "_noMT.bam")
@@ -893,6 +901,10 @@ def main():
     dedup_log = os.path.join(
         map_genome_folder, args.sample_name + "_dedup_metrics_log.txt")
 
+    # samtools sort needs a temporary directory
+    tempdir = tempfile.mkdtemp(dir=map_genome_folder)
+    pm.clean_add(tempdir)
+
     if args.deduplicator == "picard":
         if pm.container is not None:
             cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
@@ -909,16 +921,18 @@ def main():
     elif args.deduplicator == "samblaster":
         samblaster_cmd_chunks = [
             "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
+            ("-T", tempdir),
             mapping_genome_bam,
             "|",
-            "{} view -h -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} view -h - -@ {}".format(tools.samtools, str(pm.cores)),
             "|",
             "{} -r 2> {}".format(tools.samblaster, dedup_log),
             "|",
-            "{} view -b -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} view -b - -@ {}".format(tools.samtools, str(pm.cores)),
             "|",
-            "{} sort -@ {}".format(tools.samtools, str(pm.cores)),
-            (">", rmdup_bam)
+            "{} sort - -@ {}".format(tools.samtools, str(pm.cores)),
+            ("-T", tempdir),
+            ("-o", rmdup_bam)
         ]
         cmd1 = build_command(samblaster_cmd_chunks)
         cmd2 = tools.samtools + " index " + rmdup_bam
@@ -928,16 +942,18 @@ def main():
         # default to samblaster
         samblaster_cmd_chunks = [
             "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
+            ("-T", tempdir),
             mapping_genome_bam,
             "|",
-            "{} view -h -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} view -h - -@ {}".format(tools.samtools, str(pm.cores)),
             "|",
             "{} -r 2> {}".format(tools.samblaster, dedup_log),
             "|",
-            "{} view -b -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} view -b - -@ {}".format(tools.samtools, str(pm.cores)),
             "|",
-            "{} sort -@ {}".format(tools.samtools, str(pm.cores)),
-            (">", rmdup_bam)
+            "{} sort - -@ {}".format(tools.samtools, str(pm.cores)),
+            ("-T", tempdir),
+            ("-o", rmdup_bam)
         ]
         cmd1 = build_command(samblaster_cmd_chunks)
         cmd2 = tools.samtools + " index " + rmdup_bam
