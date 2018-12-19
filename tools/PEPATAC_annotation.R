@@ -103,6 +103,16 @@ splitDataTable = function(DT, splitFactor) {
 	lapply( split(1:nrow(DT), DT[, get(splitFactor)]), function(x) DT[x])
 }
 
+# Assign the filetype to a variable and make sure we close the connection
+#
+# @param path A path to a file for which you wish to determine its class
+filetype <- function(path){
+    f = file(path)
+    ext = summary(f)$class
+    close.connection(f)
+    ext
+}
+
 ###############################################################################
 
 #### Load input file and convert to/ensure it is in BED6 format
@@ -179,8 +189,7 @@ if (!is.na(TSSDist[1])) {
 
 #### Partition distribution plots
 knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
-fileType     <- summary(file(paste0(argv$anno)))$class
-if (fileType == "gzfile") {
+if (filetype(paste0(argv$anno)) == "gzfile") {
     annoFile <- fread(cmd=(sprintf('gunzip -c %s', shQuote(file.path(argv$anno)))))
     suppressWarnings(closeAllConnections())
 } else {
