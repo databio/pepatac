@@ -357,7 +357,7 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
         if not os.listdir(bt2_path):
             err_msg = "'{}' does not contain any files.\n{}\n{}"
             loc_msg = ("Try updating/confirming the 'genomes' variable in "
-                   "'pipelines/pepatac.yaml'.")
+                       "'pipelines/pepatac.yaml'.")
             typ_msg = ("Confirm that '{}' "
                        "is the correct genome, and that you have successfully "
                        "built a refgenie genome "
@@ -502,9 +502,33 @@ def main():
 
     param.outfolder = outfolder
 
-    print("Local input file: " + args.input[0])
+    # Check that the input file(s) exist before continuing
+    if os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size > 0:
+        print("Local input file: " + args.input[0])
+    else:
+        if os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size == 0:
+            # The read1 file exists but is empty
+            err_msg = "File exists but is empty: {}"
+            pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
+        else:
+            # The read1 file does not exist
+            err_msg = "Could not find: {}"
+            pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
+
     if args.input2:
-        print("Local input file: " + args.input2[0])
+        if os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size > 0:
+            # The read1 file exists but is empty
+            err_msg = "File exists but is empty: {}"
+            pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
+        else:
+            if os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size == 0:
+                # The read1 file exists but is empty
+                err_msg = "File exists but is empty: {}"
+                pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
+            else:
+                # The read1 file does not exist
+                err_msg = "Could not find: {}"
+                pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
 
     container = None
 
