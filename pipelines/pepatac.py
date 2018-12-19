@@ -751,7 +751,7 @@ def main():
     mito_name = ["chrM", "chrMT", "M", "MT"]
     
     # If first run, use the temp bam file
-    if os.path.isfile(bam_file) and os.stat(bam_file).st_size > 0:
+    if os.path.isfile(mapping_genome_bam_temp) and os.stat(mapping_genome_bam_temp).st_size > 0:
         bam_file = mapping_genome_bam_temp
     # Otherwise, use the final bam file previously generated
     else:
