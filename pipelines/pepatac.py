@@ -505,30 +505,26 @@ def main():
     # Check that the input file(s) exist before continuing
     if os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size > 0:
         print("Local input file: " + args.input[0])
+    elif os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size == 0:
+        # The read1 file exists but is empty
+        err_msg = "File exists but is empty: {}"
+        pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
     else:
-        if os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size == 0:
-            # The read1 file exists but is empty
-            err_msg = "File exists but is empty: {}"
-            pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
-        else:
-            # The read1 file does not exist
-            err_msg = "Could not find: {}"
-            pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
+        # The read1 file does not exist
+        err_msg = "Could not find: {}"
+        pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
 
     if args.input2:
         if os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size > 0:
+            print("Local input file: " + args.input2[0])
+        elif os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size == 0:
             # The read1 file exists but is empty
             err_msg = "File exists but is empty: {}"
-            pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
+            pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
         else:
-            if os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size == 0:
-                # The read1 file exists but is empty
-                err_msg = "File exists but is empty: {}"
-                pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
-            else:
-                # The read1 file does not exist
-                err_msg = "Could not find: {}"
-                pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
+            # The read1 file does not exist
+            err_msg = "Could not find: {}"
+            pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
 
     container = None
 
