@@ -19,49 +19,29 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-Before you start see the [Getting started with `BiocProject` vignette](http://code.databio.org/pepr/articles/gettingStarted.html) for the basic `BiocProejct`information and installation instructions and [`PEPATAC` website](http://code.databio.org/PEPATAC/) for information regarding this ATAC-seq pipeline.
+Before you start see the [Getting started with `BiocProject` vignette](http://code.databio.org/pepr/articles/gettingStarted.html) for the basic `BiocProejct` information and installation instructions and [`PEPATAC` website](http://code.databio.org/PEPATAC/) for information regarding this ATAC-seq pipeline.
 
 # Read the results of `PEPATAC` 
 
 The function shown below reads in the [`BED` files](https://genome.ucsc.edu/FAQ/FAQformat.html) from the `output_dir` specified in the [PEP](https://pepkit.github.io/docs/simple_example/) (precisely: YAML config file). 
 
-The `readPepataPeakBeds.R` function requires 2 arguments: 
-
-* `prefix`: a string with the folder consisting the sample results 
-* `suffix`: a string with the folder consisting peak calling results
-
 ```{r include=FALSE, eval=TRUE}
-processFunction =  system.file(./readPepatacPeakBeds.R)
+processFunction =  "readPepatacPeakBeds.R"
 source(processFunction)
 ```
 ```{r echo=FALSE, comment=""}
-readBedFiles_resize
+readPepatacPeakBeds
 ```
 
 Get the project config
 ```{r echo=T,message=FALSE}
 library(BiocProject)
-ProjectConfig = system.file(./gold_hg19.yaml)
+ProjectConfig = "gold_hg19.yaml"
 ```
 ## Create the `BiocProject` object 
 
-### Option 1: using `argList`
 ```{r}
-bp =  BiocProject(file=ProjectConfigArgs,funcArgs=list(prefix="results_pipeline",suffix="peak_calling_hg19"))
-```
-The `funcArgs` argument gets a two element list and passes the `prefix` and `suffix` arguments to our data reading/processing function.
-
-### Option 2: using anonymous function
-
-You can use a [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) (that is implemented in the `BiocProject` function call) to provide additional arguments to your function of interest. For example:
-
-```{r}
-bpAnonymous = BiocProject(file=ProjectConfig, func=function(x){
-      readBedFiles_resize(project=x, prefix="results_pipeline",suffix="peak_calling_hg19")
-    }
-  )
-#Inspect it
-bpAnonymous
+bp =  BiocProject(file=ProjectConfig)
 ```
 
 ## Get the read data
