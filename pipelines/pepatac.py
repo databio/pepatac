@@ -682,6 +682,9 @@ def main():
               "the genome alignment step. See docs.")
     else:
         print("Prealignment assemblies: " + str(args.prealignments))
+        # Keep track of the unmapped files in order to compress them after final
+        # alignment.
+        to_compress = []
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
             if args.no_fifo:
@@ -689,11 +692,13 @@ def main():
                 args, tools, args.paired_end, False, unmap_fq1, unmap_fq2, reference,
                 assembly_bt2=_get_bowtie2_index(res.genomes, reference),
                 outfolder=param.outfolder, aligndir="prealignments")
+                to_compress.extend((unmap_fq1, unmap_fq2))
             else:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                 args, tools, args.paired_end, True, unmap_fq1, unmap_fq2, reference,
                 assembly_bt2=_get_bowtie2_index(res.genomes, reference),
-                outfolder=param.outfolder, aligndir="prealignments")            
+                outfolder=param.outfolder, aligndir="prealignments")
+                to_compress.extend((unmap_fq1, unmap_fq2))
 
     pm.timestamp("### Map to genome")
     map_genome_folder = os.path.join(
@@ -758,6 +763,14 @@ def main():
 
     pm.run([cmd, cmd2], mapping_genome_bam,
            follow=check_alignment_genome, container=pm.container)
+
+    # Compress all unmapped read files
+    for unmapped_fq in to_compress:
+        # Compress unmapped fastq reads
+        if not pypiper.is_gzipped_fastq(unmapped_fq):
+            cmd = ("gzip " + unmapped_fq)
+            unmapped_fq = unmapped_fq + ".gz"
+            pm.run(cmd, unmapped_fq, container=pm.container)
 
     # Index the temporary bam file and the sorted bam file
     temp_mapping_index = os.path.join(mapping_genome_bam_temp + ".bai")
@@ -1383,8 +1396,8 @@ def main():
             pm.clean_add(mapping_genome_index)
             pm.clean_add(failQC_genome_bam)
             pm.clean_add(unmap_genome_bam)
-            pm.clean_add(unmap_fq1)
-            pm.clean_add(unmap_fq2)
+            for unmapped_fq in to_compress:
+                pm.clean_add(unmapped_fq + ".gz")
 
         # COMPLETE!
         pm.stop_pipeline()
