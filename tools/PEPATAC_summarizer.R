@@ -313,11 +313,14 @@ alignRawPlot <- (
         alignTheme)
 
 # Produce full-size PDF
-set_panel_size(
-    alignRawPlot,
-    file=buildFilePath("_alignmentRaw.pdf", prj),
-    width=unit(8,"inches"),
-    height=unit(chartHeight,"inches"))
+suppressWarnings(
+    set_panel_size(
+        alignRawPlot,
+        file=buildFilePath("_alignmentRaw.pdf", prj),
+        width=unit(8,"inches"),
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 # Produce snap-shot thumbnail PNG for HTML display
 # Limit to 25 samples max
@@ -342,11 +345,14 @@ thumbRawPlot <- (
         coord_flip() +
         alignTheme)
 
-set_panel_size(
-    thumbRawPlot,
-    file=buildFilePath("_alignmentRaw.png", prj),
-    width=unit(8,"inches"),
-    height=unit(chartHeight,"inches"))
+suppressWarnings(
+    set_panel_size(
+        thumbRawPlot,
+        file=buildFilePath("_alignmentRaw.png", prj),
+        width=unit(8,"inches"),
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 ###############################################################################
 ##### ALIGN PERCENT PLOT #####
@@ -464,12 +470,15 @@ alignPercentPlot <- (
         coord_flip() + 
         alignTheme)
 
-# Produce full-size PDF     
-set_panel_size(
-    alignPercentPlot, 
-    file=buildFilePath("_alignmentPercent.pdf", prj), 
-    width=unit(8,"inches"), 
-    height=unit(chartHeight,"inches"))
+# Produce full-size PDF
+suppressWarnings(
+    set_panel_size(
+        alignPercentPlot, 
+        file=buildFilePath("_alignmentPercent.pdf", prj), 
+        width=unit(8,"inches"), 
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 # Produce snap-shot thumbnail PNG for HTML display
 # Limit to 25 samples max
@@ -496,11 +505,14 @@ thumbPercentPlot <- (
         coord_flip() +
         alignTheme)
 
-set_panel_size(
-    thumbPercentPlot, 
-    file=buildFilePath("_alignmentPercent.png", prj), 
-    width=unit(8,"inches"), 
-    height=unit(chartHeight,"inches"))
+suppressWarnings(
+    set_panel_size(
+        thumbPercentPlot, 
+        file=buildFilePath("_alignmentPercent.png", prj), 
+        width=unit(8,"inches"), 
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 ###############################################################################
 ##### TSS PLOT #####
@@ -559,11 +571,14 @@ TSSPlot <- ggplot(
     coord_flip() +
     alignTheme
 
-# Produce both PDF and PNG   
-set_panel_size(
-    TSSPlot, file=buildFilePath("_TSSEnrichment.pdf", prj),
-    width=unit(8,"inches"), 
-    height=unit(chartHeight,"inches"))
+# Produce both PDF and PNG
+suppressWarnings(
+    set_panel_size(
+        TSSPlot, file=buildFilePath("_TSSEnrichment.pdf", prj),
+        width=unit(8,"inches"), 
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 # Produce snap-shot thumbnail PNG for HTML display
 # Limit to 25 samples max
@@ -586,10 +601,13 @@ TSSPlot <- ggplot(
     coord_flip() +
     alignTheme
 
-set_panel_size(
-    TSSPlot, file=buildFilePath("_TSSEnrichment.png", prj),
-    width=unit(8,"inches"), 
-    height=unit(chartHeight,"inches"))
+suppressWarnings(
+    set_panel_size(
+        TSSPlot, file=buildFilePath("_TSSEnrichment.png", prj),
+        width=unit(8,"inches"),
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 ###############################################################################
 
@@ -616,14 +634,20 @@ if (any(!is.na(stats$Picard_est_lib_size))) {
         alignTheme
     
     # Produce both PDF and PNG
-    set_panel_size(LibSizePlot, 
-                   file=buildFilePath("_LibSize.pdf", prj), 
-                   width=unit(8,"inches"), 
-                   height=unit(chartHeight,"inches"))
-    set_panel_size(LibSizePlot, 
-                   file=buildFilePath("_LibSize.png", prj), 
-                   width=unit(8,"inches"), 
-                   height=unit(chartHeight,"inches"))
+    suppressWarnings(
+        set_panel_size(LibSizePlot,
+                       file=buildFilePath("_LibSize.pdf", prj),
+                       width=unit(8,"inches"),
+                       height=unit(chartHeight,"inches")
+                       )
+        )
+    suppressWarnings(
+        set_panel_size(LibSizePlot,
+                       file=buildFilePath("_LibSize.png", prj),
+                       width=unit(8,"inches"),
+                       height=unit(chartHeight,"inches")
+                       )
+        )
 } else {
     quit()
 }
