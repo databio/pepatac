@@ -1,7 +1,7 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #5/18/17
-#Last Updated 06/27/2018
+#Last Updated 12/31/2018
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
 #PEPATAC_summarizer.R
@@ -410,18 +410,26 @@ if (!is.null(prealignments)) {
 alignPercent$sample <- factor(alignPercent$sample, levels=alignPercent$sample)
 
 # Warn user if sample has aberrant values
+aberrantSamples <- data.frame(Sample=character(),
+                              Target=character(),
+                              Alignment_rate=numeric())
+aberrant <- FALSE
 for (i in 1:nrow(alignPercent)) {
     for (j in 2:ncol(alignPercent)) {
-        aberrant <- FALSE
         if (alignPercent[i][[j]] < 0 || alignPercent[i][[j]] > 100) {
+            aberrantSamples <- rbind(
+                aberrantSamples,
+                data.frame(Sample=alignPercent$sample[i],
+                           Target=colnames(alignPercent[, ..j]),
+                           Alignment_rate=alignPercent[i][[j]]))
             alignPercent[i, j] <- 0
             aberrant <- TRUE
         }
     }
-    if (aberrant) {
-        message(alignPercent$sample[i], " has aberrant alignment rates.")
-        message("Rates have been set to 0.  Check the sample log file.")
-    }
+}
+if (aberrant) {
+    message("Warning: Aberrant alignment rates detected and set to 0.")
+    print(aberrantSamples, row.names=FALSE)
 }
 
 meltAlignPercent <- melt(alignPercent, id.vars="sample")
