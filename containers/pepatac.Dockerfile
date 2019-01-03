@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.2
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.9.0
+LABEL version 0.9.1
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -104,10 +104,12 @@ RUN wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.4.1/bo
     make install && \
     ln -s /home/src/bowtie2-2.3.4.1/bowtie2 /usr/bin/
 
-# Install picard
-WORKDIR /home/tools/bin
-RUN wget https://github.com/broadinstitute/picard/releases/download/2.18.0/picard.jar && \
-    chmod +x picard.jar
+# Install samblaster
+WORKDIR /home/tools/
+RUN git clone git://github.com/GregoryFaust/samblaster.git && \
+    cd /home/tools/samblaster && \
+    make && \
+    ln -s /home/tools/samblaster/samblaster /usr/bin/
 
 # Install UCSC tools
 WORKDIR /home/tools/
@@ -135,6 +137,11 @@ RUN git clone git://github.com/relipmoc/skewer.git && \
     make install
     
 # OPTIONAL REQUIREMENTS
+# Install picard
+WORKDIR /home/tools/bin
+RUN wget https://github.com/broadinstitute/picard/releases/download/2.18.0/picard.jar && \
+    chmod +x picard.jar
+
 # Install F-seq
 WORKDIR /home/src/
 RUN wget https://github.com/aboyle/F-seq/archive/master.zip && \
