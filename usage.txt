@@ -7,9 +7,11 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
                   [--anno-name ANNO_NAME] [--keep] [--noFIFO]
                   [--peak-caller {fseq,macs2}]
                   [--trimmer {trimmomatic,pyadapt,skewer}]
-                  [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [-V]
+                  [--deduplicator {picard,samblaster}]
+                  [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [--lite]
+                  [-V]
 
-PEPATAC version 0.8.3
+PEPATAC version 0.8.4
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -41,9 +43,13 @@ optional arguments:
                         Name of peak caller
   --trimmer {trimmomatic,pyadapt,skewer}
                         Name of read trimming program
+  --deduplicator {picard,samblaster}
+                        Name of deduplicator program
   --prealignments PREALIGNMENTS [PREALIGNMENTS ...]
                         Space-delimited list of reference genomes to align to
                         before primary alignment.
+  --lite                Only keep minimal, essential output to conserve disk
+                        space.
   -V, --version         show program's version number and exit
 
 required named arguments:

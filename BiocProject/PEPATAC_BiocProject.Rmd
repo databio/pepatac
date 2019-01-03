@@ -1,0 +1,55 @@
+---
+title: "PEPATAC BiocProject"
+author: "Michal Stolarczyk"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+Before you start see the [Getting started with `BiocProject` vignette](http://code.databio.org/pepr/articles/gettingStarted.html) for the basic `BiocProejct` information and installation instructions and [`PEPATAC` website](http://code.databio.org/PEPATAC/) for information regarding this ATAC-seq pipeline.
+
+# Read the results of `PEPATAC` 
+
+The function shown below reads in the [`BED` files](https://genome.ucsc.edu/FAQ/FAQformat.html) from the `output_dir` specified in the [PEP](https://pepkit.github.io/docs/simple_example/) (precisely: YAML config file). 
+
+```{r include=FALSE, eval=TRUE}
+processFunction =  "readPepatacPeakBeds.R"
+source(processFunction)
+```
+```{r echo=FALSE, comment=""}
+readPepatacPeakBeds
+```
+
+Get the project config
+```{r echo=T,message=FALSE}
+library(BiocProject)
+ProjectConfig = "gold_hg19.yaml"
+```
+## Create the `BiocProject` object 
+
+```{r}
+bp =  BiocProject(file=ProjectConfig)
+```
+
+## Get the read data
+
+```{r}
+data = getData(bp)
+```
+It is packed into a nested list, so to access the specific elements run, e.g.:
+```{r}
+data[[1]]$gold1
+```

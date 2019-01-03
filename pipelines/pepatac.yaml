@@ -10,7 +10,7 @@ tools:  # absolute paths to required tools
   bowtie2: bowtie2
   fastqc: fastqc
   macs2: macs2
-  picard: ${PICARD}
+  samblaster: samblaster
   skewer: skewer
   perl: perl
   # ucsc tools
@@ -22,6 +22,7 @@ tools:  # absolute paths to required tools
   # optional tools
   fseq: fseq  
   trimmo: ${TRIMMOMATIC}
+  picard: ${PICARD}
   Rscript: Rscript 
 
 # user configure 
