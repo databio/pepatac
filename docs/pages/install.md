@@ -65,7 +65,7 @@ make singularity</code></pre>
                     <li><a href="http://bedtools.readthedocs.io/en/latest/">bedtools (v2.25.0+)</a></li>
                     <li><a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">bowtie2 (v2.2.9+)</a></li>
                     <li><a href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">fastqc (v0.11.5+)</a></li>
-                    <li><a href="https://broadinstitute.github.io/picard/">picard (v2.17.4+)</a></li>
+                    <li><a href="https://github.com/GregoryFaust/samblaster">samblaster (v0.1.24+)</a></li>
                     <li><a href="http://www.htslib.org/">samtools (v1.7+)</a></li>
                     <li><a href="https://github.com/relipmoc/skewer">skewer (v0.1.126+)</a></li>
                     <li><A href="http://hgdownload.soe.ucsc.edu/admin/exe/">UCSC tools</a></li>
@@ -77,9 +77,6 @@ make singularity</code></pre>
                       </ul>
                   </ul>
                 </p>      
-                <p>Don't forget to add the tools to your <code class="language-bash">$PATH</code>.  The pipeline also makes use of a specific environment variable for <code>picard.jar</code>, named <code class="language-bash">$PICARD</code>.  Alternatively you can update the <a href="https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml">pipeline config file</a> to include the path to <code class="language-java">picard.jar</code>.
-                <pre><code class="language-bash">export PICARD="/path/to/picard.jar"</code></pre>
-                </p>	  
                 <p>That should do it for required packages!  To obtain the full benefit of PEPATAC's QC and annotation features, install the following R packages as well.</p>
               <hr>
             <h4 style="padding-top: 80px; margin-top: -80px;" id="list-install-3"><strong>1.3: Install optional software</strong></h4>
