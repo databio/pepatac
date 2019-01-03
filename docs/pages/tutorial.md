@@ -76,7 +76,7 @@ make singularity</code></pre>
                 <li><a href="http://bedtools.readthedocs.io/en/latest/">bedtools (v2.25.0+)</a></li>
                 <li><a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">bowtie2 (v2.2.9+)</a></li>
                 <li><a href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">fastqc (v0.11.5+)</a></li>
-                <li><a href="https://broadinstitute.github.io/picard/">picard (v2.17.4+)</a></li>
+                <li><a href="https://github.com/GregoryFaust/samblaster">samblaster (v0.1.24+)</a></li>
                 <li><a href="http://www.htslib.org/">samtools (v1.7)</a></li>
                 <li><a href="https://github.com/relipmoc/skewer">skewer (v0.1.126+)</a></li>
                 <li><a href="">UCSC tools (v3.5.1)</a></li>
@@ -117,12 +117,11 @@ rm fastqc_v0.11.7.zip</code></pre>
               <pre><code class="language-bash">chmod 755 FastQC/fastqc</code></pre>
               <p>Add <code class="language-bash">FastQC</code> to our <code class="language-bash">PATH</code> environment variable:</p>
               <pre><code class="language-bash">export PATH="$PATH:/path/to/pepatac_tutorial/tools/FastQC/"</code></pre>
-              <p>Now we'll get <code class="language-java">Picard</code>.  You will also need to have <code class="language-java">java</code> installed to use <code class="language-java">Picard</code>.  For additional detail, check out the <a href="https://broadinstitute.github.io/picard/"><code class="language-java">Picard</code> installation instructions</a>.</p>
-              <pre><code class="language-bash">wget https://github.com/broadinstitute/picard/releases/download/2.18.11/picard.jar</code></pre>
-              <p>You can confirm picard.jar is working with the following command, where you should see the Picard help screen in response.</p>
-              <pre><code class="language-java">java -jar picard.jar -h</code></pre>     
-              <p>Let's create a unique <code class="language-java">Picard</code> environment variable.</p>
-              <pre><code class="language-bash">export PICARD="/path/to/pepatac_tutorial/tools/picard.jar"</code></pre>
+              <p>Now we'll get <code class="language-cpp">samblaster</code>.  For a full guide, check out the <a href="https://github.com/GregoryFaust/samblaster/"><code class="language-cpp">samblaster</code> installation instructions</a>.</p>
+              <pre><code class="language-git">git clone git://github.com/GregoryFaust/samblaster.git</code></pre>
+              <pre><code class="language-bash">cd samblaster/</code></pre>
+              <pre><code class="language-bash">make</code></pre>
+              <pre><code class="language-bash">export PATH="$PATH:/path/to/pepatac_tutorial/tools/samblaster/"</code></pre>
               <p>Next up, <code class="language-bash">samtools</code>.</p>
               <pre><code class="language-bash">wget https://sourceforge.net/projects/samtools/files/samtools/1.9/samtools-1.9.tar.bz2
 tar xvfj samtools-1.9.tar.bz2
