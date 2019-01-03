@@ -2,4 +2,4 @@ name: PEPATAC
 title: PEPATAC
 url: "http://code.databio.org/PEPATAC"
 baseurl: ""
-include: ['pages', "howto"]
+include: ['pages', "howto", "assets"]
