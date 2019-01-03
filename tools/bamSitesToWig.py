@@ -21,6 +21,7 @@ import pysam
 from pararead import add_logging_options, ParaReadProcessor
 from pararead import logger_via_cli
 
+
 # A function object like this will be pickled by the parallel call to map,
 # So it cannot contain huge files or the pickling will limit everything.
 # For this reason I must rely on global vars for the big stuff.
@@ -54,6 +55,16 @@ class CutTracer(pararead.ParaReadProcessor):
         self.smooth_length = smooth_length
         self.step_size = step_size
 
+        # Confirm that all the commands we will need are callable
+
+        try:
+            self.check_command("wigToBigWig")
+            self.check_command("perl")
+        except AttributeError:
+            # backwards compatibility with earlier versions of pararead that did
+            # not have a check_command function
+            pass
+
     def register_files(self):
         super(CutTracer, self).register_files()
 
@@ -86,6 +97,7 @@ class CutTracer(pararead.ParaReadProcessor):
         chromOutFileBw = chromOutFile + ".bw"
         
         cutsToWig = os.path.join(os.path.dirname(__file__), "cutsToWig.pl")
+       
 
         cmd = "sort -n | perl " + cutsToWig + " " + str(chrom_size) 
 
@@ -93,6 +105,8 @@ class CutTracer(pararead.ParaReadProcessor):
         #     "; i <= $1+" + str(self.smooth_length) + "; ++i) print i }' | sort -n | perl " + \
         #     cutsToWig + " " + str(chrom_size) 
         cmd2 = "wigToBigWig -clip -fixedSummaries -keepAllChromosomes stdin " + self.chrom_sizes_file + " " + chromOutFileBw
+        _LOGGER.debug("  cutsToWigProcess: " + cmd)
+        _LOGGER.debug("  wigToBigWigProcess: " + cmd2)
         cutsToWigProcess = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         wigToBigWigProcess = subprocess.Popen(['wigToBigWig', '-clip', '-fixedSummaries', '-keepAllChromosomes', 
                                                 'stdin', self.chrom_sizes_file, chromOutFileBw],
@@ -282,6 +296,7 @@ if __name__ == "__main__":
 
     args = parse_args(sys.argv[1:])
     _LOGGER = logger_via_cli(args)
+
 
     if args.dnase:
         shift_factor = {"+":1, "-":0}  # DNase

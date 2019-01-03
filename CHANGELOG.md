@@ -1,6 +1,21 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.4] -- 2019-01-03
+
+### Changed
+- Switched to samblaster for default deduplication
+- Improved readability of reported results
+- Improved help messages
+- Fix mitochdonrial counting and remainding removal
+- Use gunzip instead of zcat for MacOS compatibility
+
+### Added
+- Report total mapped and unmapped reads
+- Add website docs
+- Zip unmapped files
+- Add `--lite` option to minimize size of output directory
+
 ## [0.8.3] -- 2018-10-04
 
 ### Changed

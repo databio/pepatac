@@ -1,11 +1,11 @@
 # Pull base image
-FROM phusion/baseimage:0.10.1
+FROM phusion/baseimage:0.10.2
 
 # Who maintains this image
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.8.5
+LABEL version 0.9.1
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -48,6 +48,7 @@ RUN pip install virtualenv && \
 RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-dev && \
     echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile && \    
     Rscript -e "install.packages('argparser')" && \
+    Rscript -e "install.packages('data.table')" && \
     Rscript -e "install.packages('devtools')" && \
     Rscript -e "devtools::install_github('pepkit/pepr')" && \    
     Rscript -e "install.packages('data.table')" && \
@@ -61,7 +62,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-de
     Rscript -e "install.packages('gtable')" && \
     Rscript -e "install.packages('scales')" && \
     Rscript -e "install.packages('stringr')"
-
 
 # Install bedtools
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
@@ -104,10 +104,12 @@ RUN wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.4.1/bo
     make install && \
     ln -s /home/src/bowtie2-2.3.4.1/bowtie2 /usr/bin/
 
-# Install picard
-WORKDIR /home/tools/bin
-RUN wget https://github.com/broadinstitute/picard/releases/download/2.18.0/picard.jar && \
-    chmod +x picard.jar
+# Install samblaster
+WORKDIR /home/tools/
+RUN git clone git://github.com/GregoryFaust/samblaster.git && \
+    cd /home/tools/samblaster && \
+    make && \
+    ln -s /home/tools/samblaster/samblaster /usr/bin/
 
 # Install UCSC tools
 WORKDIR /home/tools/
@@ -135,6 +137,11 @@ RUN git clone git://github.com/relipmoc/skewer.git && \
     make install
     
 # OPTIONAL REQUIREMENTS
+# Install picard
+WORKDIR /home/tools/bin
+RUN wget https://github.com/broadinstitute/picard/releases/download/2.18.0/picard.jar && \
+    chmod +x picard.jar
+
 # Install F-seq
 WORKDIR /home/src/
 RUN wget https://github.com/aboyle/F-seq/archive/master.zip && \

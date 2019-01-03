@@ -1,4 +1,4 @@
-#!/bin/env perl 
+#! /usr/bin/env perl
 # By Nathan Sheffield, University of Virginia, 2018
 
 # This is an incredibly fast Perl utility that re-pairs fastq files that have been 

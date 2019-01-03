@@ -2,9 +2,16 @@
 *.pyc
 .~lock*
 
-# JetBrains
-.idea/
-
 # Tests
 .cache/
 
+# Jekyll files
+_site
+.DS_store
+.jekyll
+.bundle
+.sass-cache
+_site/
+/_site/
+.sass-cache/
+.jekyll-metadata

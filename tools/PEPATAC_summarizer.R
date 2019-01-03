@@ -1,7 +1,7 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #5/18/17
-#Last Updated 06/27/2018
+#Last Updated 12/31/2018
 #Original Author: Ryan Corces
 #Updated by: Jason Smith
 #PEPATAC_summarizer.R
@@ -313,11 +313,14 @@ alignRawPlot <- (
         alignTheme)
 
 # Produce full-size PDF
-set_panel_size(
-    alignRawPlot,
-    file=buildFilePath("_alignmentRaw.pdf", prj),
-    width=unit(8,"inches"),
-    height=unit(chartHeight,"inches"))
+suppressWarnings(
+    set_panel_size(
+        alignRawPlot,
+        file=buildFilePath("_alignmentRaw.pdf", prj),
+        width=unit(8,"inches"),
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 # Produce snap-shot thumbnail PNG for HTML display
 # Limit to 25 samples max
@@ -342,11 +345,14 @@ thumbRawPlot <- (
         coord_flip() +
         alignTheme)
 
-set_panel_size(
-    thumbRawPlot,
-    file=buildFilePath("_alignmentRaw.png", prj),
-    width=unit(8,"inches"),
-    height=unit(chartHeight,"inches"))
+suppressWarnings(
+    set_panel_size(
+        thumbRawPlot,
+        file=buildFilePath("_alignmentRaw.png", prj),
+        width=unit(8,"inches"),
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 ###############################################################################
 ##### ALIGN PERCENT PLOT #####
@@ -410,18 +416,26 @@ if (!is.null(prealignments)) {
 alignPercent$sample <- factor(alignPercent$sample, levels=alignPercent$sample)
 
 # Warn user if sample has aberrant values
+aberrantSamples <- data.frame(Sample=character(),
+                              Target=character(),
+                              Alignment_rate=numeric())
+aberrant <- FALSE
 for (i in 1:nrow(alignPercent)) {
     for (j in 2:ncol(alignPercent)) {
-        aberrant <- FALSE
         if (alignPercent[i][[j]] < 0 || alignPercent[i][[j]] > 100) {
+            aberrantSamples <- rbind(
+                aberrantSamples,
+                data.frame(Sample=alignPercent$sample[i],
+                           Target=colnames(alignPercent[, ..j]),
+                           Alignment_rate=alignPercent[i][[j]]))
             alignPercent[i, j] <- 0
             aberrant <- TRUE
         }
     }
-    if (aberrant) {
-        message(alignPercent$sample[i], " has aberrant alignment rates.")
-        message("Rates have been set to 0.  Check the sample log file.")
-    }
+}
+if (aberrant) {
+    message("Warning: Aberrant alignment rates detected and set to 0.")
+    print(aberrantSamples, row.names=FALSE)
 }
 
 meltAlignPercent <- melt(alignPercent, id.vars="sample")
@@ -456,12 +470,15 @@ alignPercentPlot <- (
         coord_flip() + 
         alignTheme)
 
-# Produce full-size PDF     
-set_panel_size(
-    alignPercentPlot, 
-    file=buildFilePath("_alignmentPercent.pdf", prj), 
-    width=unit(8,"inches"), 
-    height=unit(chartHeight,"inches"))
+# Produce full-size PDF
+suppressWarnings(
+    set_panel_size(
+        alignPercentPlot, 
+        file=buildFilePath("_alignmentPercent.pdf", prj), 
+        width=unit(8,"inches"), 
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 # Produce snap-shot thumbnail PNG for HTML display
 # Limit to 25 samples max
@@ -488,11 +505,14 @@ thumbPercentPlot <- (
         coord_flip() +
         alignTheme)
 
-set_panel_size(
-    thumbPercentPlot, 
-    file=buildFilePath("_alignmentPercent.png", prj), 
-    width=unit(8,"inches"), 
-    height=unit(chartHeight,"inches"))
+suppressWarnings(
+    set_panel_size(
+        thumbPercentPlot, 
+        file=buildFilePath("_alignmentPercent.png", prj), 
+        width=unit(8,"inches"), 
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 ###############################################################################
 ##### TSS PLOT #####
@@ -551,11 +571,14 @@ TSSPlot <- ggplot(
     coord_flip() +
     alignTheme
 
-# Produce both PDF and PNG   
-set_panel_size(
-    TSSPlot, file=buildFilePath("_TSSEnrichment.pdf", prj),
-    width=unit(8,"inches"), 
-    height=unit(chartHeight,"inches"))
+# Produce both PDF and PNG
+suppressWarnings(
+    set_panel_size(
+        TSSPlot, file=buildFilePath("_TSSEnrichment.pdf", prj),
+        width=unit(8,"inches"), 
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 # Produce snap-shot thumbnail PNG for HTML display
 # Limit to 25 samples max
@@ -578,10 +601,13 @@ TSSPlot <- ggplot(
     coord_flip() +
     alignTheme
 
-set_panel_size(
-    TSSPlot, file=buildFilePath("_TSSEnrichment.png", prj),
-    width=unit(8,"inches"), 
-    height=unit(chartHeight,"inches"))
+suppressWarnings(
+    set_panel_size(
+        TSSPlot, file=buildFilePath("_TSSEnrichment.png", prj),
+        width=unit(8,"inches"),
+        height=unit(chartHeight,"inches")
+        )
+    )
 
 ###############################################################################
 
@@ -608,14 +634,20 @@ if (any(!is.na(stats$Picard_est_lib_size))) {
         alignTheme
     
     # Produce both PDF and PNG
-    set_panel_size(LibSizePlot, 
-                   file=buildFilePath("_LibSize.pdf", prj), 
-                   width=unit(8,"inches"), 
-                   height=unit(chartHeight,"inches"))
-    set_panel_size(LibSizePlot, 
-                   file=buildFilePath("_LibSize.png", prj), 
-                   width=unit(8,"inches"), 
-                   height=unit(chartHeight,"inches"))
+    suppressWarnings(
+        set_panel_size(LibSizePlot,
+                       file=buildFilePath("_LibSize.pdf", prj),
+                       width=unit(8,"inches"),
+                       height=unit(chartHeight,"inches")
+                       )
+        )
+    suppressWarnings(
+        set_panel_size(LibSizePlot,
+                       file=buildFilePath("_LibSize.png", prj),
+                       width=unit(8,"inches"),
+                       height=unit(chartHeight,"inches")
+                       )
+        )
 } else {
     quit()
 }
