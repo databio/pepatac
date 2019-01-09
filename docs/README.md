@@ -2,20 +2,21 @@
 
 This repository is viewable at [code.databio.org/PEPATAC](http://code.databio.org/PEPATAC). It holds HTML documentation for the PEPATAC pipeline.
 
-## Building PEPATAC documentation with jekyll:
+## Building PEPATAC documentation with MkDocs:
 
-`jekyll build pepatac`
+Install MkDocs: 
+```
+pip install --user mkdocs
+```
 
-## Do it with `docker` or `singularity`!
+Install MkDocs extensions:
+```
+pip install --user fontawesome-markdown
+pip install --user pymdown-extensions
+```
 
-1. Grab the container
+## Start a local MkDocs server
 
-   `docker pull nsheff/jim`   
-   *or*  
-   `singularity build jim docker://nsheff/jim`
-
-2. Build the website
-
-   `docker run jim jekyll build pepatac`  
-   *or*  
-   `singularity exec jim jekyll build pepatac`
+```
+mkdocs serve -f docs/mkdocs.yml
+```
