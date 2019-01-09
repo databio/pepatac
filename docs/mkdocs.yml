@@ -3,7 +3,8 @@ repo_url: https://github.com/databio/pepatac/
 site_author: Jason Smith
 google_analytics: ['UA-127092878-1', 'code.databio.org/PEPATAC']
 markdown_extensions:
-  - fontawesome_markdown
+  - fontawesome_markdown  # pip install --user fontawesome-markdown
+  - pymdownx.details  # pip install --user pymdown-extensions
 nav:
   - Home: 'index.md'
   - Getting started:
