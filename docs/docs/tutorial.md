@@ -372,7 +372,7 @@ Congratulations! Your first sample should be running through the pipeline now.
 
 Now that our sample has finished running through the pipeline, we can look through the output directory together.  We've provided a breakdown of that directory below.
 
-* :fa-folder-open-o: reports/
+* ??? danger ":fa-folder-open-o: reports/"
     * :fa-file-code-o: [cumulative_frif.html](../files/examples/tutorial/reports/cumulative_frif.html)
     * :fa-file-code-o: [fastqc_report_r2.html](../files/examples/tutorial/reports/fastqc_report_r2.html)
     * :fa-file-code-o: [fastqc_report_r1.html](../files/examples/tutorial/reports/fastqc_report_r1.html)
@@ -382,18 +382,18 @@ Now that our sample has finished running through the pipeline, we can look throu
     * :fa-file-code-o: [status.html](../files/examples/tutorial/reports/status.html)
     * :fa-file-code-o: [tss_enrichment.html](../files/examples/tutorial/reports/tss_enrichment.html)
     * :fa-file-code-o: [tutorial.html](../files/examples/tutorial/reports/tutorial.html)
-* :fa-folder-open-o: results_pipeline/
-    * :fa-folder-open-o: tutorial/ 
-        * :fa-folder-open-o: fastqc/
+* ??? danger ":fa-folder-open-o: results_pipeline/"
+    * ??? danger ":fa-folder-open-o: tutorial/"
+        * ??? danger ":fa-folder-open-o: fastqc/"
             * [:fa-file-code-o: tutorial_R1.trim_fastqc.html](../files/examples/tutorial/results_pipeline/tutorial/fastqc/tutorial_R1.trim_fastqc.html)
             * :fa-file-archive-o: tutorial_R1.trim_fastqc.zip
             * [:fa-file-code-o: tutorial_R2.trim_fastqc.html](../files/examples/tutorial/results_pipeline/tutorial/fastqc/tutorial_R2.trim_fastqc.html)
             * :fa-file-archive-o: tutorial_R2.trim_fastqc.zip
-        * :fa-folder-open-o: raw/
+        * ??? danger ":fa-folder-open-o: raw/"
             * :fa-file-archive-o: tutorial_r1.fastq.gz
             * :fa-file-archive-o: tutorial_r2.fastq.gz
             * :fa-file-archive-o: hg38_annotations.bed.gz 
-        * :fa-folder-open-o: aligned_hg38/
+        * ??? danger ":fa-folder-open-o: aligned_hg38/"
             * :fa-file-o: tutorial_fail_qc.bam
             * :fa-file-o: tutorial_sort.bam
             * :fa-file-o: tutorial_sort.bam.bai
@@ -402,24 +402,24 @@ Now that our sample has finished running through the pipeline, we can look throu
             * :fa-file-o: tutorial_sort_dedup.bam
             * :fa-file-o: tutorial_sort_dedup.bam.bai
             * :fa-file-o: tutorial_smooth.bw
-        * :fa-folder-open-o: aligned_hg38_exact/
+        * ??? danger ":fa-folder-open-o: aligned_hg38_exact/"
             * :fa-file-o: tutorial_exact.bw
             * :fa-file-o: tutorial_shift.bed
-        * :fa-folder-open-o: fastq/
-        * :fa-folder-open-o: peak_calling_hg38/
+        * ???+ danger ":fa-folder-open-o: fastq/"
+        * ??? danger ":fa-folder-open-o: peak_calling_hg38/"
             * :fa-file-o: tutorial_peaks.narrowPeak]
             * :fa-file-excel-o: tutorial_peaks.xls]
             * :fa-file-o: tutorial_summits.bed
             * :fa-file-o: tutorial_peaks.bigBed
             * :fa-file-o: tutorial_peaks_coverage.bed
-        * :fa-folder-open-o: prealignments/
+        * ??? danger ":fa-folder-open-o: prealignments/"
             * :fa-file-text-o: tutorial_rCRSd_bt_aln_summary.log
             * :fa-file-archive-o: tutorial_rCRSd_unmap_R1.fq.gz
             * :fa-file-archive-o: tutorial_rCRSd_unmap_R2.fq.gz
             * :fa-file-text-o: tutorial_human_repeats_bt_aln_summary.log
             * :fa-file-archive-o: tutorial_human_repeats_unmap_R1.fq.gz
             * :fa-file-archive-o: tutorial_human_repeats_unmap_R2.fq.gz
-        * :fa-folder-open-o: QC_hg38/
+        * ??? danger ":fa-folder-open-o: QC_hg38/"
             * :fa-file-o: tutorial_bamQC.tsv
             * :fa-file-text-o: tutorial_TssEnrichment.txt
             * [:fa-file-pdf-o: tutorial_TssEnrichment.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.pdf)
@@ -450,11 +450,11 @@ Now that our sample has finished running through the pipeline, we can look throu
         * [:fa-file-o: PEPATAC_log.md](../files/examples/tutorial/results_pipeline/tutorial/PEPATAC_log.md)
         * [:fa-file-text-o: PEPATAC_profile.tsv](../files/examples/tutorial/results_pipeline/tutorial/PEPATAC_profile.tsv)
         * [:fa-file-text-o: stats.tsv](../files/examples/tutorial/results_pipeline/tutorial/stats.tsv)
-* :fa-folder-open-o: submission/
+* ??? danger ":fa-folder-open-o: submission/"
     * :fa-file-code-o: pepatac.py_tutorial.sub
     * :fa-file-code-o: tutorial.yaml
     * :fa-file-text-o: pepatac.py_tutorial.log
-* :fa-folder-open-o: summary/
+* ??? danger ":fa-folder-open-o: summary/"
     * :fa-file-pdf-o: [tutorial_alignmentPercent.pdf](../files/examples/tutorial/summary/tutorial_alignmentPercent.pdf)
     * :fa-file-image-o: [tutorial_alignmentPercent.png](../files/examples/tutorial/summary/tutorial_alignmentPercent.png)
     * :fa-file-pdf-o: [tutorial_alignmentRaw.pdf](../files/examples/tutorial/summary/tutorial_alignmentRaw.pdf)
