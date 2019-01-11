@@ -1,4 +1,4 @@
-### <p style="font-size:30px"><img src="../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> pipeline step-by-step guide</p>
+## <img src="../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> pipeline step-by-step guide
 
 Welcome to the `PEPATAC` pipeline tutorial! Use this project to learn the ropes. We'll use a provided ATAC-seq dataset and run through the step-by-step process of getting `PEPATAC` up and running including: installing `PEPATAC` and its requirements, setting up the configuration files, running the pipeline, and looking over the results together.
 To use this tutorial, you should have a basic familiarity with [working in a command line driven environment](http://matt.might.net/articles/basic-unix/).

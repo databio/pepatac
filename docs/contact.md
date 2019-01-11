@@ -1,4 +1,4 @@
-<p style="font-size:30px">Contact Us!</p>
+## Contact Us!
 
 Have a question? Just want to get in touch? Reach out to us here!
 <div>
