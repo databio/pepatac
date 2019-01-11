@@ -1,4 +1,4 @@
-<img src="docs/img/logo_pepatac_black.svg" alt="pepatac logo" height="70" align="left"/>
+<img src="docs/img/pepatac_logo_black.svg" alt="pepatac logo" height="70" align="left"/>
 
 # PEPATAC
 
