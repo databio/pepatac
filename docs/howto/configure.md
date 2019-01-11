@@ -1,12 +1,10 @@
-<p style="font-size:30px">Configure project files for <img src="../../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"<img src="../assets/images/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"></p>
+## Configure project files for <img src="../../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
 
 This guide is designed to walk you through the process of customizing configuration files for your own project.
 
 Running the pipeline on many samples is made simple by employing `looper`, our pipeline submission engine.  To set up `looper`, you can check out [how to run the pipeline through looper](run-looper.md) or [read the `looper` docs](https://looper.readthedocs.io/en/latest/)
 
 ---
-
-### Adapting the example config files for your own project
 
 The configuration files use a [project format called the standard Portable Encapsulated Project (PEP)](https://pepkit.github.io/) format, which is outlined in more detail in the pepkit documentation.
 

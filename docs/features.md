@@ -1,7 +1,4 @@
-# FEATURES 
-
-<p style="font-size:30px"><img src="../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> features at-a-glance</p>
-
+## <img src="../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> features at-a-glance
 
 Here are a few of the highlights that make `PEPATAC` valuable.
 

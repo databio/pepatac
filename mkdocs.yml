@@ -21,5 +21,11 @@ nav:
   - Example Output: 
     - Gold project: 'files/examples/gold/summary.html'
     - Tutorial project: 'files/examples/tutorial/tutorial_summary.html'
-
 theme: databio
+plugins:
+  - databio:
+      autodoc_modules: null
+      autodoc_build: "docs_build"
+      usage_template: "docs/usage_template.md"
+      usage_cmds:
+        -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help
