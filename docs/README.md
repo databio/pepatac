@@ -1,4 +1,4 @@
-# <img src="/img/pepatac_logo_black.png" alt="PEPATAC" class="img-fluid" style="max-height:70px; margin-top:10px; margin-bottom:-10px" align="left">  
+# <img src="/img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:70px; margin-top:10px; margin-bottom:-10px" align="left">  
 
 <br></br>
 <br></br>
