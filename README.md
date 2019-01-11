@@ -1,5 +1,7 @@
 <img src="docs/img/pepatac_logo_white.svg" alt="pepatac logo" height="70" align="left"/>
 
+<br></br>
+
 ---
 
 [![PEP compatible](http://pepkit.github.io/img/PEP-compatible-green.svg)](http://pepkit.github.io)
