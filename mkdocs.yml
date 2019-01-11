@@ -1,0 +1,25 @@
+site_name: PEPATAC
+repo_url: https://github.com/databio/pepatac/
+site_author: Jason Smith
+google_analytics: ['UA-127092878-1', 'code.databio.org/PEPATAC']
+markdown_extensions:
+  - fontawesome_markdown  # pip install --user fontawesome-markdown
+  - pymdownx.details  # pip install --user pymdown-extensions
+nav:
+  - Getting Started:
+    - Introduction: 'README.md'
+    - Features and benefits: 'features.md'
+    - Install and run test example: 'install.md'
+    - Extended tutorial: 'tutorial.md'
+    - Glossary: 'glossary.md'
+  - How-to Guides:
+    - How to configure project files: 'howto/configure.md'
+    - How to configure reference genome assemblies: 'howto/install-refgenie.md'
+    - How to download data from the Sequence Read Archive (SRA) for use with `PEPATAC`: 'howto/download.md'
+    - How to run the pipeline on a cluster: 'howto/run-cluster.md'
+    - How to run the pipeline with `looper`: 'howto/run-looper.md'
+  - Example Output: 
+    - Gold project: 'files/examples/gold/summary.html'
+    - Tutorial project: 'files/examples/tutorial/tutorial_summary.html'
+
+theme: databio
