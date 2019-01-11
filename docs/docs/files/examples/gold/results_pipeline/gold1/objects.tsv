@@ -1,8 +1,0 @@
-FastQC report r1	fastqc/gold1_R1.trim_fastqc.html	FastQC report r1		PEPATAC
-FastQC report r2	fastqc/gold1_R2.trim_fastqc.html	FastQC report r2		PEPATAC
-TSS enrichment	QC_hg19/gold1_TssEnrichment.pdf	TSS enrichment	QC_hg19/gold1_TssEnrichment.png	PEPATAC
-Fragment distribution	QC_hg19/gold1_fragLenDistribution.pdf	Fragment distribution	QC_hg19/gold1_fragLenDistribution.png	PEPATAC
-Cumulative FRiF	QC_hg19/gold1_frif.pdf	Cumulative FRiF	QC_hg19/gold1_frif.png	PEPATAC
-Peak chromosome distribution	QC_hg19/gold1_peaks_chr_dist.pdf	Peak chromosome distribution	QC_hg19/gold1_peaks_chr_dist.png	PEPATAC
-TSS distance distribution	QC_hg19/gold1_peaks_TSS_dist.pdf	TSS distance distribution	QC_hg19/gold1_peaks_TSS_dist.png	PEPATAC
-Peak partition distribution	QC_hg19/gold1_peaks_partition_dist.pdf	Peak partition distribution	QC_hg19/gold1_peaks_partition_dist.png	PEPATAC
