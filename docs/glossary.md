@@ -1,6 +1,6 @@
-<p style="font-size:30px"><img src="../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> glossary</p>
+## <img src="../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> glossary
 
-Information regarding universal ATAC-seq <a href="https://www.encodeproject.org/data-standards/terms/">terms and definitions</a> are available from the ENCODE consortium.
+Information regarding universal ATAC-seq [terms and definitions](https://www.encodeproject.org/data-standards/terms/) are available from the ENCODE consortium.
 
 Additional information relevant to `PEPATAC` output and interpretation includes:
 

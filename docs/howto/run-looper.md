@@ -1,4 +1,4 @@
-<p style="font-size:30px">Run <img src="../../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"<img src="../assets/images/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"> using <code>looper</code></p>
+## Run <img src="../../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> using `looper`
 
 The pipeline can be run directly from the command line for a single sample ([see Install and run](../install.md)). If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with `looper`, our sample handling engine. This section explains how to use `looper`.
 
@@ -13,7 +13,7 @@ Otherwise, install `looper` using `pip`:
 pip install --user https://github.com/pepkit/looper/zipball/master
 ```
 
-#### 2: Run the pipeline through `looper`
+#### **2: Run the pipeline through `looper`**
 
 Start by running the example project in the [`examples/test_project/`](https://github.com/databio/pepatac/tree/master/examples/test_project) folder. Let's use the `-d` argument to do a *dry run*, which will create job scripts for every sample in the project, but will not execute them:
 ```

@@ -1,4 +1,4 @@
-<p style="font-size:30px">Configure genome assemblies for use with <img src="../../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"<img src="../assets/images/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:30px; margin-top:-15px; margin-bottom:-5px"></p>
+## Configure genome assemblies for use with <img src="../../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
 
 This guide is designed to walk you through the process of obtaining `refgenie` assemblies.
 Whether using the container or native version, you will need to provide external reference genome assemblies. The pipeline requires genome assemblies produced by [`refgenie`](https://github.com/databio/refgenie).
