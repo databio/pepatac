@@ -1,4 +1,4 @@
-## Run <img src="../../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> on a cluster or in a container using `looper`
+## Run <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> on a cluster or in a container using `looper`
 
 The pipeline itself does not specify any container or cluster resources, so you could just roll your own and submit individual jobs to a cluster however you choose. The easier way is to use `looper's` built-in template system, which `looper` uses to build flexible shell scripts for job submission. These templates can be used to run jobs in a container, to submit to a cluster resource manager, or both.
 
