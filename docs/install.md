@@ -1,4 +1,4 @@
-## Getting started with <img src="../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
+## Getting started with <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
 
 This guide is designed to quickly get you up and running with `PEPATAC`. An [extended tutorial is available](tutorial.md) should you find yourself stuck or would prefer more detailed instructions.
 

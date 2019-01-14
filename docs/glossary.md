@@ -1,4 +1,4 @@
-## <img src="../img/logo_pepatac_black.png" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> glossary
+## <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> glossary
 
 Information regarding universal ATAC-seq [terms and definitions](https://www.encodeproject.org/data-standards/terms/) are available from the ENCODE consortium.
 
