@@ -9,6 +9,7 @@ nav:
   - Getting Started:
     - Introduction: 'README.md'
     - Features and benefits: 'features.md'
+    - Usage: 'usage.md'
     - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
     - Glossary: 'glossary.md'
