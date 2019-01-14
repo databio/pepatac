@@ -14,7 +14,7 @@ markdown_extensions:
 nav:
   - Getting Started:
     - Introduction: 'README.md'
-    - Features and benefits: 'features.md'
+    - Features: 'features.md'
     - Usage: 'usage.md'
     - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
@@ -30,6 +30,7 @@ nav:
     - Tutorial project: 'files/examples/tutorial/tutorial_summary.html'
 
 plugins:
+  - search
   - databio:
       autodoc_modules: null
       autodoc_build: "docs_build"
@@ -37,4 +38,13 @@ plugins:
       usage_cmds:
         -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help
 
-topnav:
+navbar:
+  left:
+  - text: GitHub
+    icon: fa-github fa-lg
+    href: https://github.com/databio/pepatac
+  right:
+  - text: Databio.org
+    href: http://databio.org
+  - text: Software & Data
+    href: http://databio.org/software/
