@@ -5,6 +5,9 @@
 # Tests
 .cache/
 
+# MkDocs files
+site/
+
 # Jekyll files
 jekyll/
 _site
