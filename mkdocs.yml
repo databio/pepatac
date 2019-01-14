@@ -39,12 +39,7 @@ plugins:
         -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help
 
 navbar:
-  left:
-  - text: GitHub
-    icon: fa-github fa-lg
-    href: https://github.com/databio/pepatac
   right:
-  - text: Databio.org
-    href: http://databio.org
   - text: Software & Data
+    icon: fa-code fa-lg
     href: http://databio.org/software/
