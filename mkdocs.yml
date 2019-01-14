@@ -1,10 +1,16 @@
+theme: databio
+
 site_name: PEPATAC
-repo_url: https://github.com/databio/pepatac/
 site_author: Jason Smith
+site_url: http://code.databio.org/PEPATAC/
+site_logo: img/pepatac_logo_white.svg
+repo_url: https://github.com/databio/pepatac/
 google_analytics: ['UA-127092878-1', 'code.databio.org/PEPATAC']
+
 markdown_extensions:
   - fontawesome_markdown  # pip install --user fontawesome-markdown
   - pymdownx.details  # pip install --user pymdown-extensions
+
 nav:
   - Getting Started:
     - Introduction: 'README.md'
@@ -22,7 +28,7 @@ nav:
   - Example Output: 
     - Gold project: 'files/examples/gold/summary.html'
     - Tutorial project: 'files/examples/tutorial/tutorial_summary.html'
-theme: databio
+
 plugins:
   - databio:
       autodoc_modules: null
@@ -30,3 +36,5 @@ plugins:
       usage_template: "docs/usage_template.md"
       usage_cmds:
         -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help
+
+topnav:
