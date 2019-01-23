@@ -150,7 +150,7 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/samblaster/"
 ```
 Next up, `samtools`.
 ```
-wget https://sourceforge.net/projects/samtools/files/samtools/1.9/samtools-1.9.tar.bz2
+wget https://sourceforge.net/projects/samtools../files/samtools/1.9/samtools-1.9.tar.bz2
 tar xvfj samtools-1.9.tar.bz2
 rm samtools-1.9.tar.bz2
 cd samtools-1.9
@@ -195,17 +195,16 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 
 `PEPATAC` uses `R` to generate quality control plots.  These are **optional** and the pipeline will run without them, but you would not get any QC plots.  If you need to don't have [R installed, you can follow these instructions](https://cran.r-project.org/doc/manuals/r-release/R-admin.html).  We'll use and install the necessary packages in this example.  Here is the list of required packages:
 
-* argparser (v0.4)
-* data.table (v1.11.2)
-* devtools (v1.13.6)
-* GenomicRanges (v1.30.3)
-* GenomicDistributions (v0.5)
-* ggplot2 (v2.2.1)
-* ggrepel (v0.8.0)
-* gplots (v3.0.1)
-* gtable (v0.2.0)
-* pepr (v0.0.2)
-* scales (v0.5.0)
+ - [argparser (v0.4)](https://cran.r-project.org/package=argparser)
+ - [data.table (v1.11.2)](https://cran.r-project.org/package=data.table)
+ - [devtools (v1.13.6)](https://cran.r-project.org/package=devtools)
+ - [GenomicRanges (v1.30.3)](https://bioconductor.org/packages/GenomicRanges/)
+ - [GenomicDistributions (v0.5)](http://code.databio.org/GenomicDistributions/index.html)
+ - [ggplot2 (v2.2.1)](https://cran.r-project.org/package=ggplot2)
+ - [gplots (v3.0.1)](https://cran.r-project.org/package=gplots)
+ - [gtable (v0.2.0)](https://cran.r-project.org/package=gtable)
+ - [pepr (v0.0.2)](http://code.databio.org/pepr/)
+ - [scales (v0.5.0)](https://cran.r-project.org/package=scales)
 
 To install the needed packages, enter the following command:
 ```
@@ -373,21 +372,21 @@ Congratulations! Your first sample should be running through the pipeline now.
 Now that our sample has finished running through the pipeline, we can look through the output directory together.  We've provided a breakdown of that directory below.
 
 * ??? danger ":fa-folder-open-o: reports/"
-    * :fa-file-code-o: [cumulative_frif.html](/files/examples/tutorial/reports/cumulative_frif.html)
-    * :fa-file-code-o: [fastqc_report_r2.html](/files/examples/tutorial/reports/fastqc_report_r2.html)
-    * :fa-file-code-o: [fastqc_report_r1.html](/files/examples/tutorial/reports/fastqc_report_r1.html)
-    * :fa-file-code-o: [fragment_distribution.html](/files/examples/tutorial/reports/fragment_distribution.html)
-    * :fa-file-code-o: [objects.html](/files/examples/tutorial/reports/objects.html)
-    * :fa-file-code-o: [samples.html](/files/examples/tutorial/reports/samples.html)
-    * :fa-file-code-o: [status.html](/files/examples/tutorial/reports/status.html)
-    * :fa-file-code-o: [tss_enrichment.html](/files/examples/tutorial/reports/tss_enrichment.html)
-    * :fa-file-code-o: [tutorial.html](/files/examples/tutorial/reports/tutorial.html)
+    * :fa-file-code-o: [cumulative_frif.html](../files/examples/tutorial/reports/cumulative_frif.html)
+    * :fa-file-code-o: [fastqc_report_r2.html](../files/examples/tutorial/reports/fastqc_report_r2.html)
+    * :fa-file-code-o: [fastqc_report_r1.html](../files/examples/tutorial/reports/fastqc_report_r1.html)
+    * :fa-file-code-o: [fragment_distribution.html](../files/examples/tutorial/reports/fragment_distribution.html)
+    * :fa-file-code-o: [objects.html](../files/examples/tutorial/reports/objects.html)
+    * :fa-file-code-o: [samples.html](../files/examples/tutorial/reports/samples.html)
+    * :fa-file-code-o: [status.html](../files/examples/tutorial/reports/status.html)
+    * :fa-file-code-o: [tss_enrichment.html](../files/examples/tutorial/reports/tss_enrichment.html)
+    * :fa-file-code-o: [tutorial.html](../files/examples/tutorial/reports/tutorial.html)
 * ??? danger ":fa-folder-open-o: results_pipeline/"
     * ??? danger ":fa-folder-open-o: tutorial/"
         * ??? danger ":fa-folder-open-o: fastqc/"
-            * [:fa-file-code-o: tutorial_R1.trim_fastqc.html](/files/examples/tutorial/results_pipeline/tutorial/fastqc/tutorial_R1.trim_fastqc.html)
+            * [:fa-file-code-o: tutorial_R1.trim_fastqc.html](../files/examples/tutorial/results_pipeline/tutorial/fastqc/tutorial_R1.trim_fastqc.html)
             * :fa-file-archive-o: tutorial_R1.trim_fastqc.zip
-            * [:fa-file-code-o: tutorial_R2.trim_fastqc.html](/files/examples/tutorial/results_pipeline/tutorial/fastqc/tutorial_R2.trim_fastqc.html)
+            * [:fa-file-code-o: tutorial_R2.trim_fastqc.html](../files/examples/tutorial/results_pipeline/tutorial/fastqc/tutorial_R2.trim_fastqc.html)
             * :fa-file-archive-o: tutorial_R2.trim_fastqc.zip
         * ??? danger ":fa-folder-open-o: raw/"
             * :fa-file-archive-o: tutorial_r1.fastq.gz
@@ -422,12 +421,12 @@ Now that our sample has finished running through the pipeline, we can look throu
         * ??? danger ":fa-folder-open-o: QC_hg38/"
             * :fa-file-o: tutorial_bamQC.tsv
             * :fa-file-text-o: tutorial_TssEnrichment.txt
-            * [:fa-file-pdf-o: tutorial_TssEnrichment.pdf](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.pdf)
-            * [:fa-file-image-o: tutorial_TssEnrichment.png](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.png)
+            * [:fa-file-pdf-o: tutorial_TssEnrichment.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.pdf)
+            * [:fa-file-image-o: tutorial_TssEnrichment.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.png)
             * :fa-file-text-o: tutorial_fragLen.txt
             * :fa-file-text-o: tutorial_fragCount.txt
-            * [:fa-file-image-o: tutorial_fragLenDistribution.png](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.png)
-            * [:fa-file-pdf-o: tutorial_fragLenDistribution.pdf](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.pdf)
+            * [:fa-file-image-o: tutorial_fragLenDistribution.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.png)
+            * [:fa-file-pdf-o: tutorial_fragLenDistribution.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.pdf)
             * :fa-file-text-o: tutorial_fragLenDistribution.txt
             * :fa-file-o: tutorial_3_UTR_coverage.bed
             * :fa-file-o: tutorial_5_UTR_coverage.bed
@@ -435,40 +434,40 @@ Now that our sample has finished running through the pipeline, we can look throu
             * :fa-file-o: tutorial_Intron_coverage.bed
             * :fa-file-o: tutorial_Promoter_coverage.bed
             * :fa-file-o: tutorial_Promoter_Flanking_Region_coverage.bed
-            * [:fa-file-pdf-o: tutorial_frif.pdf](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_frif.pdf)
-            * [:fa-file-image-o: tutorial_frif.png](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_frif.png)
-            * [:fa-file-pdf-o: tutorial_peaks_chr_dist.pdf](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_chr_dist.pdf)
-            * [:fa-file-image-o: tutorial_peaks_chr_dist.png](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_chr_dist.png)
-            * [:fa-file-pdf-o: tutorial_peaks_TSS_dist.pdf](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_TSS_dist.pdf)
-            * [:fa-file-image-o: tutorial_peaks_TSS_dist.png](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_TSS_dist.png)
-            * [:fa-file-pdf-o: tutorial_peaks_partition_dist.pdf](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_partition_dist.pdf)
-            * [:fa-file-image-o: tutorial_peaks_partition_dist.png](/files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_partition_dist.png)
-        * [:fa-file-text-o: objects.tsv](/files/examples/tutorial/results_pipeline/tutorial/objects.tsv) 
+            * [:fa-file-pdf-o: tutorial_frif.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_frif.pdf)
+            * [:fa-file-image-o: tutorial_frif.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_frif.png)
+            * [:fa-file-pdf-o: tutorial_peaks_chr_dist.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_chr_dist.pdf)
+            * [:fa-file-image-o: tutorial_peaks_chr_dist.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_chr_dist.png)
+            * [:fa-file-pdf-o: tutorial_peaks_TSS_dist.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_TSS_dist.pdf)
+            * [:fa-file-image-o: tutorial_peaks_TSS_dist.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_TSS_dist.png)
+            * [:fa-file-pdf-o: tutorial_peaks_partition_dist.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_partition_dist.pdf)
+            * [:fa-file-image-o: tutorial_peaks_partition_dist.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_partition_dist.png)
+        * [:fa-file-text-o: objects.tsv](../files/examples/tutorial/results_pipeline/tutorial/objects.tsv) 
         * :fa-file-code-o: PEPATAC_cleanup.sh
-        * [:fa-file-code-o: PEPATAC_commands.sh](/files/examples/tutorial/results_pipeline/tutorial/PEPATAC_commands.sh)
+        * [:fa-file-code-o: PEPATAC_commands.sh](../files/examples/tutorial/results_pipeline/tutorial/PEPATAC_commands.sh)
         * :fa-file-o: PEPATAC_completed.flag
-        * [:fa-file-o: PEPATAC_log.md](/files/examples/tutorial/results_pipeline/tutorial/PEPATAC_log.md)
-        * [:fa-file-text-o: PEPATAC_profile.tsv](/files/examples/tutorial/results_pipeline/tutorial/PEPATAC_profile.tsv)
-        * [:fa-file-text-o: stats.tsv](/files/examples/tutorial/results_pipeline/tutorial/stats.tsv)
+        * [:fa-file-o: PEPATAC_log.md](../files/examples/tutorial/results_pipeline/tutorial/PEPATAC_log.md)
+        * [:fa-file-text-o: PEPATAC_profile.tsv](../files/examples/tutorial/results_pipeline/tutorial/PEPATAC_profile.tsv)
+        * [:fa-file-text-o: stats.tsv](../files/examples/tutorial/results_pipeline/tutorial/stats.tsv)
 * ??? danger ":fa-folder-open-o: submission/"
     * :fa-file-code-o: pepatac.py_tutorial.sub
     * :fa-file-code-o: tutorial.yaml
     * :fa-file-text-o: pepatac.py_tutorial.log
 * ??? danger ":fa-folder-open-o: summary/"
-    * :fa-file-pdf-o: [tutorial_alignmentPercent.pdf](/files/examples/tutorial/summary/tutorial_alignmentPercent.pdf)
-    * :fa-file-image-o: [tutorial_alignmentPercent.png](/files/examples/tutorial/summary/tutorial_alignmentPercent.png)
-    * :fa-file-pdf-o: [tutorial_alignmentRaw.pdf](/files/examples/tutorial/summary/tutorial_alignmentRaw.pdf)
-    * :fa-file-image-o: [tutorial_alignmentRaw.png](/files/examples/tutorial/summary/tutorial_alignmentRaw.png)
-    * :fa-file-pdf-o: [tutorial_TSSEnrichment.pdf](/files/examples/tutorial/summary/tutorial_TSSEnrichment.pdf)
-    * :fa-file-image-o: [tutorial_TSSEnrichment.png](/files/examples/tutorial/summary/tutorial_TSSEnrichment.png)
-* :fa-file-text-o: [tutorial_stats_summary.tsv](/files/examples/tutorial/tutorial_stats_summary.tsv)
-* :fa-file-code-o: [tutorial_summary.html](/files/examples/tutorial/tutorial_summary.html)
+    * :fa-file-pdf-o: [tutorial_alignmentPercent.pdf](../files/examples/tutorial/summary/tutorial_alignmentPercent.pdf)
+    * :fa-file-image-o: [tutorial_alignmentPercent.png](../files/examples/tutorial/summary/tutorial_alignmentPercent.png)
+    * :fa-file-pdf-o: [tutorial_alignmentRaw.pdf](../files/examples/tutorial/summary/tutorial_alignmentRaw.pdf)
+    * :fa-file-image-o: [tutorial_alignmentRaw.png](../files/examples/tutorial/summary/tutorial_alignmentRaw.png)
+    * :fa-file-pdf-o: [tutorial_TSSEnrichment.pdf](../files/examples/tutorial/summary/tutorial_TSSEnrichment.pdf)
+    * :fa-file-image-o: [tutorial_TSSEnrichment.png](../files/examples/tutorial/summary/tutorial_TSSEnrichment.png)
+* :fa-file-text-o: [tutorial_stats_summary.tsv](../files/examples/tutorial/tutorial_stats_summary.tsv)
+* :fa-file-code-o: [tutorial_summary.html](../files/examples/tutorial/tutorial_summary.html)
 
 ---
 
 #### **3.2: Generate an `HTML` report using `looper`**
 
-Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](/files/examples/tutorial/tutorial_summary.html).  Otherwise, let's generate a report ourselves.
+Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](../files/examples/tutorial/tutorial_summary.html).  Otherwise, let's generate a report ourselves.
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `summarize` function of `looper`.
 ```
 looper summarize tutorial.yaml --compute local

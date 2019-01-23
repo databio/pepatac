@@ -9,18 +9,18 @@
 
 `PEPATAC` produces convenient quality control plots, summary statistics, and a variety of generally useful data formats to set the groundwork for subsequent project-specific data analysis. Example output includes the following:
 
-- [Easily parsable summary statistics file](/files/examples/gold/results_pipeline/gold5/stats.tsv)
+- [Easily parsable summary statistics file](files/examples/gold/results_pipeline/gold5/stats.tsv)
 - Called peaks (in both `narrowPeak` and `bigBed` format)
 - BigWig signal tracks:
     - nucleotide-resolution ("exact cut") signal
     - smoothed signal
 - Plots:               
-    - [TSS enrichment plot](/files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_TssEnrichment.pdf)
-    - [TSS distance distribution](/files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_TSS_dist.pdf)
-    - [Fragment length distribution](/files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_fragLenDistribution.pdf)
-    - [Peak chromosomal distribution](/files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_chr_dist.pdf)
-    - [Peak genomic partition distribution](/files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_partition_dist.pdf)
-    - [Fraction of reads *and/or* peaks in features (FRiF)](/files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_frif.pdf)
+    - [TSS enrichment plot](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_TssEnrichment.pdf)
+    - [TSS distance distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_TSS_dist.pdf)
+    - [Fragment length distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_fragLenDistribution.pdf)
+    - [Peak chromosomal distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_chr_dist.pdf)
+    - [Peak genomic partition distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_partition_dist.pdf)
+    - [Fraction of reads *and/or* peaks in features (FRiF)](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_frif.pdf)
 
 `PEPATAC` is built using a common project definition, the [Portable Encapsulated Projects (PEP) format](https://pepkit.github.io/). This means that projects that are using `PEPATAC` would also be easily compatible with any other PEP-compatible tool. The pipeline itself is also easily customizable, enabling a user to adjust individual command settings or even swap out specific software by editing a few lines of human readable configuration files. The pipeline is constructed with modular components that make it easy to analyze pipeline output using [metadata APIs in `R`](http://code.databio.org/pepr/) and [`Python`](https://peppy.readthedocs.io/en/latest/). `PEPATAC` is a useful first step in universal data analysis for any ATAC-seq project.
 
