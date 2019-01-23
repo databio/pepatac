@@ -19,7 +19,7 @@ git clone https://github.com/databio/pepatac.git
 
 #### 1.2: Install required software
 
-You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](install.md#1.2.2-install-software-requirements-natively).
+You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](install.md#122-install-software-requirements-natively).
 
 ---
 
@@ -40,7 +40,7 @@ make singularity
 ```
 
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the folder where your image is stored, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
-If using containers, jump to [obtaining `refgenie` assemblies](install.md#2.1-download-refgenie-assemblies)) prior to running.
+If using containers, jump to [obtaining `refgenie` assemblies](install.md#21-download-refgenie-assemblies)) prior to running.
 
 ---
 
@@ -58,7 +58,8 @@ pip install --user numpy \
 ```
 
 **Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the pipeline configuration file ([pipelines/pepatac.yaml](https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml)) tools section.
-The following tools are used by the pipeline:       
+The following tools are used by the pipeline:  
+
 - [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/)
 - [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 - [fastqc (v0.11.5+)](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
@@ -66,10 +67,10 @@ The following tools are used by the pipeline:
 - [samtools (v1.7+)](http://www.htslib.org/)
 - [skewer (v0.1.126+)](https://github.com/relipmoc/skewer)
 - [UCSC tools](http://hgdownload.soe.ucsc.edu/admin/exe/)
-  - bedGraphToBigWig
-  - wigToBigWig
-  - bigWigCat
-  - bedToBigBed
+    - bedGraphToBigWig
+    - wigToBigWig
+    - bigWigCat
+    - bedToBigBed
       
 That should do it for required packages!  To obtain the full benefit of `PEPATAC`'s QC and annotation features, install the following `R` packages as well.
 
@@ -77,14 +78,14 @@ That should do it for required packages!  To obtain the full benefit of `PEPATAC
 
 #### 1.3: Install optional software
 
-`PEPATAC` uses `R` to generate quality control and read/peak annotation plots.  These are *optional* and the pipeline will run without them, but you would not get any QC or annotation plots. The following packages are necessary:
+`PEPATAC` uses `R` to generate quality control and read/peak annotation plots.  These are *optional* and the pipeline will run without them, but you would not get any QC or annotation plots. The following packages are necessary:  
+
  - [argparser (v0.4)](https://cran.r-project.org/package=argparser)
  - [data.table (v1.11.2)](https://cran.r-project.org/package=data.table)
  - [devtools (v1.13.6)](https://cran.r-project.org/package=devtools)
  - [GenomicRanges (v1.30.3)](https://bioconductor.org/packages/GenomicRanges/)
  - [GenomicDistributions (v0.5)](http://code.databio.org/GenomicDistributions/index.html)
  - [ggplot2 (v2.2.1)](https://cran.r-project.org/package=ggplot2)
- - [ggrepel (v0.8.0)](https://cran.r-project.org/package=ggrepel)
  - [gplots (v3.0.1)](https://cran.r-project.org/package=gplots)
  - [gtable (v0.2.0)](https://cran.r-project.org/package=gtable)
  - [pepr (v0.0.2)](http://code.databio.org/pepr/)
@@ -143,7 +144,7 @@ Alternatively, you can skip the `GENOMES` variable and simply change the value o
 
 #### 2.3: Running the pipeline
 
-The pipeline can be run directly from the command line for a single sample. If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with [looper, our sample handling engine](http://looper.readthedocs.io). The extended tutorial includes a more [detailed explanation for how to use looper](tutorial.md#2.3-using-looper-to-run-the-pipeline) to analyze some provided example data.
+The pipeline can be run directly from the command line for a single sample. If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with [looper, our sample handling engine](http://looper.readthedocs.io). The extended tutorial includes a more [detailed explanation for how to use looper](tutorial.md#23-using-looper-to-run-the-pipeline) to analyze some provided example data.
 
 ---
 
