@@ -11,7 +11,3 @@ Would you like to learn more about how to do some specific steps? Check out the 
 - [How to run the pipeline on a cluster](howto/run-cluster.md)
 - [How to run the pipeline with `looper`](howto/run-looper.md)
 
----
-
-- [:fa-envelope: Contact Us](contact.md)
-- [Learn more about the Databio team!](http://databio.org/)

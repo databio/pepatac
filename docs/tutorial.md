@@ -382,8 +382,3 @@ cd /path/to/pepatac_tutorial/processed/tutorial/
 firefox tutorial_summary.html
 ```          
 The `HTML` report contains a summary page that integrates the project level summary table and any project level objects including: raw aligned reads, percent aligned reads, and TSS enrichment scores.  The status page lists all the samples in this project along with their current status, a link to their log files, the time it took to run the sample and the peak memory used during the run.  The objects page provides links to separate pages for each object type.  On each object page, all the individual samples' objects are provided.  Similarly, the samples page contains links to individual pages for each sample.  The sample pages list the individual summary statistics for that sample as well as links to log files, command logs, and summary files.  The sample pages also provide links and thumbnails for any individual objects generated for that sample.  Of course, all of these files are present in the sample directory, but the report provides easy access to them all.
-
----
-
-* [:fa-envelope: Contact Us](contact.md)
-* [Learn more about the Databio team!](http://databio.org/)
