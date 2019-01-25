@@ -129,8 +129,3 @@ looper run /path/to/metadata/PROJECT_NAME/PROJECT_NAME_config.yaml \
   --compute local
 ```
 Fantastic! Now we downloaded and converted a SRA file into `.bam`, which can go directly into `PEPATAC`.
-
----
-
-- [:fa-envelope: Contact Us](../contact.md)
-- [Learn more about the Databio team!](http://databio.org/)
