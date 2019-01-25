@@ -5,7 +5,8 @@ This guide is designed to quickly get you up and running with `PEPATAC`. An [ext
 ---
 
 #### 1.1: Clone the `PEPATAC` pipeline
-To begin, we need to [get the `PEPATAC` pipeline](https://github.com/databio/pepatac) itself. To obtain the pipeline, you can use one of the following methods:
+To begin, we need to get [the PEPATAC pipeline itself](https://github.com/databio/pepatac) itself. To clone the pipeline, you can use one of the following methods:
+
 - using SSH:
 ```
 git clone git@github.com:databio/pepatac.git
@@ -21,11 +22,10 @@ git clone https://github.com/databio/pepatac.git
 
 You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](install.md#122-install-software-requirements-natively).
 
----
 
 ##### 1.2.1: Use containers!
 If you have experience using containers, you may simply run `PEPATAC` directly in a provided container.  First, make sure your environment is set up to run either docker or singularity containers. Then, pull the container image:
-**Docker**: You can [pull the docker image](https://hub.docker.com/r/databio/pepatac/) from dockerhub like this: `docker pull databio/pepatac`
+**Docker**: You can pull the [docker image](https://hub.docker.com/r/databio/pepatac/) from dockerhub like this: `docker pull databio/pepatac`
 
 Or build the image using the included Dockerfile (you can use a recipe in the included Makefile):
 ```
@@ -40,15 +40,17 @@ make singularity
 ```
 
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the folder where your image is stored, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
-If using containers, jump to [obtaining `refgenie` assemblies](install.md#21-download-refgenie-assemblies)) prior to running.
 
----
+If your containers are set up correctly, then you can skip the next section about installing software. So, jump to [obtaining refgenie assemblies](install.md#21-download-refgenie-assemblies).
+
 
 ##### 1.2.2: Install software requirements natively
 
 To use `PEPATAC`, we need the following software:
+
 **Python packages**. The pipeline uses [pypiper](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [looper](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [MACS2](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install of these like this:
-```
+
+```{bash}
 pip install --user numpy \
   pandas \
   piper \
@@ -101,6 +103,7 @@ Rscript -e "install.packages(c('argparser','devtools', 'data.table', \
 ```
 
 To extract files quicker, `PEPATAC` can use `pigz` in place of `gzip` if you have it installed.  It's not required, but it can help speed everything up when you have many samples to process and the ability to leverage multiple processors.
+
 - [pigz (v2.3.4+)](https://zlib.net/pigz/)
 
 Don't forget to add this to your `PATH` too!
@@ -112,7 +115,9 @@ That's it! Everything we need to run `PEPATAC` to its full potential should be i
 
 Whether using the container or native version, you will need to provide external reference genome assemblies. The pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie).
 One feature of the pipeline is *prealignments*, which siphons off reads by aligning to small genomes before the main alignment to the primary reference genome. Any prealignments you want to use will also require [refgenie assemblies](https://github.com/databio/refgenie). Ideas for common prealignment references are provided by [ref_decoy](https://github.com/databio/ref_decoy). 
-You may [download pre-indexed references](http://big.databio.org/refgenomes) or you may index your own ([see refgenie instructions](https://github.com/databio/refgenie)). The pre-indexed references are compressed files, so you need to untar/unzip them after download.  For the purposes of this guide, we can download pre-built genomes.
+
+You may download [pre-indexed references](http://big.databio.org/refgenomes) or you may index your own ([see refgenie instructions](https://github.com/databio/refgenie)). The pre-indexed references are compressed files, so you need to untar/unzip them after download.  In this guide, we will download pre-built genomes.
+
 Grab the `hg38`, `human_repeats`, and `rCRSd` (Revised Cambridge Reference Sequence for human mtDNA) genomes.
 ```
 wget http://big.databio.org/refgenomes/hg38.tgz
@@ -142,15 +147,14 @@ Alternatively, you can skip the `GENOMES` variable and simply change the value o
 
 ---
 
-#### 2.3: Running the pipeline
+#### 2.3: Run the pipeline
 
 The pipeline can be run directly from the command line for a single sample. If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with [looper, our sample handling engine](http://looper.readthedocs.io). The extended tutorial includes a more [detailed explanation for how to use looper](tutorial.md#23-using-looper-to-run-the-pipeline) to analyze some provided example data.
 
----
 
 ##### 2.3.1: Running the pipeline script directly (without `looper`)
 
-The pipeline is at its core just a python script, and you can run it on the command line for a single sample. To see the command-line options for usage, see [usage.txt](https://github.com/databio/pepatac/blob/master/usage.txt), which you can get on the command line by running `pipelines/pepatac.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](https://github.com/databio/pepatac/blob/master/example_cmd.txt) that use test data.
+The pipeline is at its core just a python script, and you can run it on the command line for a single sample. To see the command-line options for usage, see [usage](/usage), which you can also get on the command line by running `pipelines/pepatac.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](https://github.com/databio/pepatac/blob/master/example_cmd.txt) that use test data.
 Here's the basic command to run a small test example through the pipeline:
 ```
 pipelines/pepatac.py --single-or-paired paired \
@@ -164,8 +168,6 @@ pipelines/pepatac.py --single-or-paired paired \
 ```
 
 This example should take about 15 minutes to complete.
-
----
 
 ##### 2.3.2: Running the pipeline directly in a container
 
@@ -183,7 +185,3 @@ Be sure to mount the volumes you need with `--volume`.
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use...[`looper`!](https://github.com/pepkit/looper)  Learn more about using `looper` with `PEPATAC` in the [how-to guides](howto.md) or in the [extended tutorial](tutorial.md)).
 Any questions? Feel free to [reach out to us](contact.md). Otherwise, go analyze some ATAC-seq!
 
----
-
-- [:fa-envelope: Contact Us](contact.md)
-- [Learn more about the Databio team!](http://databio.org/)
