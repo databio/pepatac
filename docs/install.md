@@ -5,7 +5,7 @@ This guide is designed to quickly get you up and running with `PEPATAC`. An [ext
 ---
 
 #### 1.1: Clone the `PEPATAC` pipeline
-To begin, we need to get [the PEPATAC pipeline itself](https://github.com/databio/pepatac) itself. To clone the pipeline, you can use one of the following methods:
+To begin, we need to get [the `PEPATAC` pipeline itself](https://github.com/databio/pepatac) itself. To clone the pipeline, you can use one of the following methods:
 
 - using SSH:
 ```
