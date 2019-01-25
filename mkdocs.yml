@@ -44,3 +44,6 @@ navbar:
   - text: Software & Data
     icon: fa-code fa-lg
     href: http://databio.org/software/
+  - text: Contact us
+    icon: fa-envelope
+    href: contact
