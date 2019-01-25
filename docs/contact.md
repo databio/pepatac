@@ -1,6 +1,8 @@
-## Contact Us!
+# Contact Us!
 
-Have a question? Just want to get in touch? Reach out to us here!
+Have a question? Just want to get in touch? Reach out to us here! Please use the [GitHub issue tracker](https://github.com/databio/pepatac/issues) to report bugs or ask questions. Or, if you'd prefer, you can reach us with this form:
+
+
 <div>
   <form id="contact-form" name="contact-form" method="POST" action="https://formspree.io/pepatac@gmail.com">
     <div class="messages"></div>
