@@ -6,26 +6,24 @@ One feature of the pipeline is prealignments, which siphons off reads by alignin
 
 ---
 
-## **1: Using `refgenie` assemblies**
+## 1: Using `refgenie` assemblies
 
 You have two options for using `refgenie` assemblies with `PEPATAC`. If you're using a common genome, there's a good chance there's [already a `refgenie` assembly](http://big.databio.org/refgenomes) for that.  Otherwise, you can [create your own](install-refgenie.md#12-build-custoim-refgenie-assemblies).
 
 ---
 
-### **1.1: Download pre-indexed `refgenie` assemblies**
+### 1.1: Download pre-indexed `refgenie` assemblies
 
 Pre-built genome indices exist for commonly utilized genomes including: `hg38`, `hg19`, `mm10`, and `mm9`. You may simply [download the corresponding pre-indexed references](http://big.databio.org/refgenomes) to get started immediately.
 
 ---
 
-### **1.2: Build custom `refgenie` assemblies**
+### 1.2: Build custom `refgenie` assemblies
 
 For complete and detailed information on indexing your own genomes, [see the `refgenie` instructions](https://github.com/databio/refgenie).
 For a quick introduciton, a simple example is presented here.
 
----
-
-#### **1.2.1: Install `refgenie`**
+#### 1.2.1: Install `refgenie`
 
 `Refgenie` uses `Pypiper` (which if you've installed `PEPATAC` you will have already installed it too), and, of course, you'll need `refgenie` itself.
 **Install `Pypiper`:**
@@ -38,9 +36,8 @@ git clone https://github.com/databio/refgenie.git
 ```
 `Refgenie` will produce indices for many alignment software tools should you have them installed.  `PEPATAC` requires `bowtie2`, so make sure you have that installed ([see bowtie2 documentation](http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#obtaining-bowtie-2)) and in your `PATH`.
 
----
 
-#### **1.2.2: Run `refgenie`**
+#### 1.2.2: Run `refgenie`
 Run `refgenie` with:
 ```
 src/refgenie.py -i INPUT_FILE.fa
