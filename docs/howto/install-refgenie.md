@@ -1,4 +1,4 @@
-## Configure genome assemblies for use with <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
+# Configure genome assemblies for use with <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
 
 This guide is designed to walk you through the process of obtaining `refgenie` assemblies.
 Whether using the container or native version, you will need to provide external reference genome assemblies. The pipeline requires genome assemblies produced by [`refgenie`](https://github.com/databio/refgenie).
@@ -6,26 +6,26 @@ One feature of the pipeline is prealignments, which siphons off reads by alignin
 
 ---
 
-### **1: Using `refgenie` assemblies**
+## **1: Using `refgenie` assemblies**
 
 You have two options for using `refgenie` assemblies with `PEPATAC`. If you're using a common genome, there's a good chance there's [already a `refgenie` assembly](http://big.databio.org/refgenomes) for that.  Otherwise, you can [create your own](install-refgenie.md#12-build-custoim-refgenie-assemblies).
 
 ---
 
-#### **1.1: Download pre-indexed `refgenie` assemblies**
+### **1.1: Download pre-indexed `refgenie` assemblies**
 
 Pre-built genome indices exist for commonly utilized genomes including: `hg38`, `hg19`, `mm10`, and `mm9`. You may simply [download the corresponding pre-indexed references](http://big.databio.org/refgenomes) to get started immediately.
 
 ---
 
-#### **1.2: Build custom `refgenie` assemblies**
+### **1.2: Build custom `refgenie` assemblies**
 
 For complete and detailed information on indexing your own genomes, [see the `refgenie` instructions](https://github.com/databio/refgenie).
 For a quick introduciton, a simple example is presented here.
 
 ---
 
-##### **1.2.1: Install `refgenie`**
+#### **1.2.1: Install `refgenie`**
 
 `Refgenie` uses `Pypiper` (which if you've installed `PEPATAC` you will have already installed it too), and, of course, you'll need `refgenie` itself.
 **Install `Pypiper`:**
@@ -40,7 +40,7 @@ git clone https://github.com/databio/refgenie.git
 
 ---
 
-##### **1.2.2: Run `refgenie`**
+#### **1.2.2: Run `refgenie`**
 Run `refgenie` with:
 ```
 src/refgenie.py -i INPUT_FILE.fa
@@ -49,7 +49,7 @@ src/refgenie.py -i INPUT_FILE.fa
 
 ---
 
-### **2: Configure the pipeline to use `refgenie` assemblies**
+## **2: Configure the pipeline to use `refgenie` assemblies**
 Once you've procured assemblies for all genomes you wish to use, you must point the pipeline to where you store these. You can do this in two ways, either: 1) with an environment variable, or 2) by adjusting a configuration option.
 The pipeline looks for genomes stored in a folder specified by the `resources.genomes` attribute in the [pipeline config file](https://github.com/databio/pepatac/blob/dev/pipelines/pepatac.yaml). By default, this points to the shell variable `GENOMES`, so all you have to do is set an environment variable to the location of your refgenie genomes:
 ```
