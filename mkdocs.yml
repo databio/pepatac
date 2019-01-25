@@ -15,20 +15,22 @@ nav:
   - Getting Started:
     - Introduction: 'README.md'
     - Features: 'features.md'
-    - Usage: 'usage.md'
     - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
-    - Glossary: 'glossary.md'
   - How-to Guides:
     - How to configure project files: 'howto/configure.md'
     - How to configure reference genome assemblies: 'howto/install-refgenie.md'
     - How to download SRA data: 'howto/download.md'
     - How to run the pipeline on a cluster: 'howto/run-cluster.md'
     - How to run using `looper`: 'howto/run-looper.md'
-  - Example Output: 
-    - Gold project: 'files/examples/gold/summary.html'
-    - Example output files: 'browse_output.md'
-    - Tutorial project: 'files/examples/tutorial/tutorial_summary.html'
+  - Reference: 
+    - Example output file structure: 'browse_output.md'
+    - "Example summary: gold project": 'files/examples/gold/summary.html'
+    - "Example summary: tutorial project": 'files/examples/tutorial/tutorial_summary.html'
+    - Usage: 'usage.md'
+    - FAQ: faq.md
+    - Glossary: 'glossary.md'
+    - Support: contact.md
 
 plugins:
   - search
@@ -44,6 +46,6 @@ navbar:
   - text: Software & Data
     icon: fa-code fa-lg
     href: http://databio.org/software/
-  - text: Contact us
-    icon: fa-envelope
-    href: contact
+  # - text: Contact us
+  #   icon: fa-envelope
+  #   href: contact
