@@ -22,11 +22,12 @@ nav:
   - How-to Guides:
     - How to configure project files: 'howto/configure.md'
     - How to configure reference genome assemblies: 'howto/install-refgenie.md'
-    - How to download data from the Sequence Read Archive (SRA) for use with `PEPATAC`: 'howto/download.md'
+    - How to download SRA data: 'howto/download.md'
     - How to run the pipeline on a cluster: 'howto/run-cluster.md'
-    - How to run the pipeline with `looper`: 'howto/run-looper.md'
+    - How to run using `looper`: 'howto/run-looper.md'
   - Example Output: 
     - Gold project: 'files/examples/gold/summary.html'
+    - Example output files: 'browse_output.md'
     - Tutorial project: 'files/examples/tutorial/tutorial_summary.html'
 
 plugins:
