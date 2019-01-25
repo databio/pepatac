@@ -46,6 +46,3 @@ Have a question? Just want to get in touch? Reach out to us here!
   </form>
 </div>
 
----
-
-- [Learn more about the Databio team!](http://databio.org/)
