@@ -5,7 +5,7 @@
 
 
 `python pipelines/pepatac.py --help`
-```
+```{console}
 usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
                   PARENT_OUTPUT_FOLDER [-M MEMORY_LIMIT] [-P NUMBER_OF_CORES]
                   -S SAMPLE_NAME -I INPUT_FILES [INPUT_FILES ...]
@@ -25,7 +25,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -R, --recover         Overwrite locks to recover from previous failed run
   -N, --new-start       Overwrite all results to start a fresh run
-  -D, --dirty           Don't auto-delete intermediate files
+  -D, --dirty           Do not auto-delete intermediate files
   -F, --force-follow    Always run 'follow' commands
   -C CONFIG_FILE, --config CONFIG_FILE
                         Pipeline configuration file (YAML). Relative paths are
