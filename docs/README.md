@@ -28,7 +28,7 @@
 
 ## User interface
 
-`PEPATAC` is a python script that runs on the command line (See [usage](usage))). It can also read projects in [PEP format](https://pepkit.github.io/). This means that `PEPATAC` projects are also compatible with other PEP tools, and output can be convenient read into `R` using [the `pepr` package](http://code.databio.org/pepr/) or into `Python` using the [`peppy` package](https://peppy.readthedocs.io/en/latest/). The pipeline itself is customizable, enabling a user to adjust individual command settings or even swap out specific software by editing a few lines of human readable configuration files.
+`PEPATAC` is a python script that runs on the command line (See [usage](usage)). It can also read projects in [PEP format](https://pepkit.github.io/). This means that `PEPATAC` projects are also compatible with other PEP tools, and output can be convenient read into `R` using [the `pepr` package](http://code.databio.org/pepr/) or into `Python` using the [`peppy` package](https://peppy.readthedocs.io/en/latest/). The pipeline itself is customizable, enabling a user to adjust individual command settings or even swap out specific software by editing a few lines of human readable configuration files.
 
 ## Availability
 
