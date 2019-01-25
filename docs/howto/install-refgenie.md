@@ -30,7 +30,9 @@ For a quick introduciton, a simple example is presented here.
 ```
 pip install --user piper
 ```
-**Clone the `refgenie` repository:**
+
+Clone the `refgenie` repository:
+
 ```
 git clone https://github.com/databio/refgenie.git
 ```
