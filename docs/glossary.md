@@ -59,8 +59,3 @@ The tool to produce these tracks, `bamSitesToWig.py`, is included in the `PEPATA
 
 - **nucleotide-resolution ("exact cut") signal**: The nucleotide-resolution (or "exact cut") signal is a signal track (bigWig) marking exact locations where the transposition event occurred. The Tn5 transpoase acts on and duplicates a 9-bp region, and the event location is defined as the center of this 9-bp window.  To produce this signal, read positions on positive strands are shifted +4 with minus strand positions shifted -5.
 - **smooth signal**: The smooth signal track is produced alongside the nucleotide-resolution track.  Instead of marking exact bases, the smooth track marks reads positioned +/- 25-bp around the "exact cut" location, to yield a 50-bp window centered on this position.
-
----
-
-- [:fa-envelope: Contact Us](contact.md)
-- [Learn more about the Databio team!](http://databio.org/)

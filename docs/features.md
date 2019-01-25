@@ -14,7 +14,3 @@ Here are a few of the highlights that make `PEPATAC` valuable.
 - **TSS enrichments, Fragment length distributions and more.** The pipeline produces various nice QC plots.
 - **Beautiful `HTML` reports.** Your results include an easy-to-navigate `HTML` report with a sample table, job status, summary statistics, and QC plots at your fingertips when run using our [pipeline submission engine, `Looper`]https://looper.readthedocs.io/en/latest/index.html).
 
----
-
-- [:fa-envelope: Contact Us](contact.md)
-- [Learn more about the Databio team!](http://databio.org/)

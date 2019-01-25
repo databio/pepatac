@@ -24,7 +24,3 @@
 
 `PEPATAC` is built using a common project definition, the [Portable Encapsulated Projects (PEP) format](https://pepkit.github.io/). This means that projects that are using `PEPATAC` would also be easily compatible with any other PEP-compatible tool. The pipeline itself is also easily customizable, enabling a user to adjust individual command settings or even swap out specific software by editing a few lines of human readable configuration files. The pipeline is constructed with modular components that make it easy to analyze pipeline output using [metadata APIs in `R`](http://code.databio.org/pepr/) and [`Python`](https://peppy.readthedocs.io/en/latest/). `PEPATAC` is a useful first step in universal data analysis for any ATAC-seq project.
 
----
-
-- [:fa-envelope: Contact Us](contact.md)
-- [Learn more about the Databio team!](http://databio.org/)
