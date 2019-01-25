@@ -7,7 +7,7 @@ To use this tutorial, you should have a basic familiarity with [working in a com
 
 ## **1.1: `PEPATAC` pipeline**
 
-To begin, we need to get the `PEPATAC` pipeline itself.  The pipeline is hosted on [github](https://github.com/databio/pepatac).  If you don't have [git installed, they have installation instructions located here](https://git-scm.com/download/linux), and here is a [brief introduction to git](https://guides.github.com/introduction/git-handbook/). To install the pipeline, you can use one of the following methods:
+To begin, we need to get the `PEPATAC` pipeline itself.  The pipeline is hosted on [github](https://github.com/databio/pepatac).  If you don't have git installed, follow the [git installation instructions](https://git-scm.com/download/linux), and here is a [brief introduction to git](https://guides.github.com/introduction/git-handbook/). To install PEPATAC, you can use one of the following methods:
 
 * using SSH:
 ```
