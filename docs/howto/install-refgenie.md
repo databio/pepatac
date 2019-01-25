@@ -58,7 +58,3 @@ export GENOMES="/path/to/genomes/folder/"
 (Add this to your `.bashrc` or `.profile` to ensure it persists).
 Alternatively, you can skip the `GENOMES` variable and simply change the value of that configuration option to point to the folder where you stored the assemblies. The advantage of using an environment variable is that it makes the configuration file portable, so the same pipeline can be run on any computing environment, as the location to reference assemblies is not hard-coded to a specific computing environment.
 
----
-
-- [:fa-envelope: Contact Us](../contact.md)
-- [Learn more about the Databio team!](http://databio.org/)

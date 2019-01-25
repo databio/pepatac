@@ -1,6 +1,6 @@
-# Getting started with <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
+# Install and run <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
 
-This guide is designed to quickly get you up and running with `PEPATAC`. An [extended tutorial is available](tutorial.md) should you find yourself stuck or would prefer more detailed instructions.
+This guide will get you running `PEPATAC` quickly. If you get stuck or prefer more detailed instructions, refer to the [extended tutorial](tutorial.md).
 
 ---
 
