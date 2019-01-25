@@ -1,11 +1,11 @@
-## <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> pipeline step-by-step guide
+# <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> pipeline step-by-step guide
 
 Welcome to the `PEPATAC` pipeline tutorial! Use this project to learn the ropes. We'll use a provided ATAC-seq dataset and run through the step-by-step process of getting `PEPATAC` up and running including: installing `PEPATAC` and its requirements, setting up the configuration files, running the pipeline, and looking over the results together.
 To use this tutorial, you should have a basic familiarity with [working in a command line driven environment](http://matt.might.net/articles/basic-unix/).
 
 ---
 
-#### **1.1: `PEPATAC` pipeline**
+## **1.1: `PEPATAC` pipeline**
 
 To begin, we need to get the `PEPATAC` pipeline itself.  The pipeline is hosted on [github](https://github.com/databio/pepatac).  If you don't have [git installed, they have installation instructions located here](https://git-scm.com/download/linux), and here is a [brief introduction to git](https://guides.github.com/introduction/git-handbook/). To install the pipeline, you can use one of the following methods:
 
@@ -42,16 +42,16 @@ Success! If you had any issues, feel free to [reach out to us with questions](co
 
 ---
 
-#### **1.2: Install required software**
+## 1.2: Install required software
 
 You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](tutorial.md#122-install-software-requirements-natively).
 
 ---
 
-##### **1.2.1 (ALT): Use containers!**
+### 1.2.1 (ALT): Use containers!
 First, make sure your environment is set up to run either docker or singularity containers. Then, pull the container image:
 
-###### **Docker**
+#### Docker
 
 You can pull the docker image from [dockerhub](https://hub.docker.com/r/databio/pepatac/) like this:
 ```
@@ -64,7 +64,7 @@ cd pepatac/
 make docker
 ```
 
-###### **Singularity**
+#### Singularity
 
 You can [download the pre-built singularity image](http://big.databio.org/simages/pepatac) or build it manually from the docker image following the recipe in the Makefile:
 ```
@@ -75,7 +75,7 @@ Now you'll need to tell the pipeline where you saved the singularity image. You 
 
 ---
 
-##### **1.2.2: Install software requirements natively** 
+### 1.2.2: Install software requirements natively
 
 To use `PEPATAC`, we need the following software:
 **Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install of these like this:  
@@ -191,7 +191,7 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 
 ---
 
-#### **1.3: Install optional software**
+## 1.3: Install optional software
 
 `PEPATAC` uses `R` to generate quality control plots.  These are **optional** and the pipeline will run without them, but you would not get any QC plots.  If you need to don't have [R installed, you can follow these instructions](https://cran.r-project.org/doc/manuals/r-release/R-admin.html).  We'll use and install the necessary packages in this example.  Here is the list of required packages:
 
@@ -232,7 +232,7 @@ That's it! Everything we need to run `PEPATAC` to its full potential should be i
 
 ---
 
-#### **1.4: Create environment variables**
+## 1.4: Create environment variables
 We also need to create some environment variables to help point `looper` to where we keep our data files and our tools.  You may either set the environment variables up, like we're going to do now, or you may simply hard code the necessary locations in our configuration files.
 First, let's create a `PROCESSED` variable that represents the location where we want to save output.
 ```
@@ -247,7 +247,7 @@ Fantastic! Now that we have the pipeline and its requirements installed, we're r
 
 ---
 
-#### **2.1: Download a reference genome**
+## 2.1: Download a reference genome
 
 Before we analyze anything, we also need a reference genome.  `PEPATAC` uses `refgenie` genomes.  For the purposes of this tutorial, we'll just download pre-built genomes.  Follow the `'refgenie` instructions if you'd like to [build your own reference genome](https://github.com/databio/refgenie). First, let's change into our `genomes/` folder.
 ```
@@ -276,7 +276,7 @@ zcat hg38_TSS_full.txt.gz | \
 ```            
 Alright! Time to setup the pipeline configuration files and run our sample.
 
-#### **2.2: Configure project files**
+## 2.2: Configure project files
 
 We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A configuration file has been provided for you in the pipeline itself, conveniently named `tutorial.yaml`.  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#23-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
@@ -315,7 +315,7 @@ That's it! Let's analyze that sample!
 
 ---
 
-#### **2.3: Using `looper` to run the pipeline**
+## 2.3: Using `looper` to run the pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. One of those is an environment variable called `PEPENV` that points to the Looper environment configuration file. For more detailed information regarding this file, [check out the `looper`docs](https://looper.readthedocs.io/en/latest/cluster-computing.html#pepenv-overview). Let's set it up.
 ```
 cd /path/to/pepatac_tutorial/
@@ -369,7 +369,7 @@ After the pipeline is finished, we can look through the output directory togethe
 
 ---
 
-#### **3.2: Generate an `HTML` report using `looper`**
+## 3.2: Generate an `HTML` report using `looper`
 
 Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](../files/examples/tutorial/tutorial_summary.html).  Otherwise, let's generate a report ourselves.
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `summarize` function of `looper`.
