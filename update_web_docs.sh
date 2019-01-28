@@ -39,7 +39,7 @@ then
   for cmd in "$USAGE_CMDS"; do
     echo $cmd
     echo -e "\n\`$cmd\`" >> usage_template.md
-    echo -e '```' >> usage_template.md
+    echo -e '```{console}' >> usage_template.md
     $cmd >> usage_template.md 2>&1
     echo -e '```' >> usage_template.md
   done
