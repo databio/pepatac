@@ -1,13 +1,13 @@
-## <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> pipeline step-by-step guide
+# <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> pipeline step-by-step guide
 
 Welcome to the `PEPATAC` pipeline tutorial! Use this project to learn the ropes. We'll use a provided ATAC-seq dataset and run through the step-by-step process of getting `PEPATAC` up and running including: installing `PEPATAC` and its requirements, setting up the configuration files, running the pipeline, and looking over the results together.
 To use this tutorial, you should have a basic familiarity with [working in a command line driven environment](http://matt.might.net/articles/basic-unix/).
 
 ---
 
-#### **1.1: `PEPATAC` pipeline**
+## 1.1: `PEPATAC` pipeline
 
-To begin, we need to get the `PEPATAC` pipeline itself.  The pipeline is hosted on [github](https://github.com/databio/pepatac).  If you don't have [git installed, they have installation instructions located here](https://git-scm.com/download/linux), and here is a [brief introduction to git](https://guides.github.com/introduction/git-handbook/). To install the pipeline, you can use one of the following methods:
+To begin, we need to get the `PEPATAC` pipeline itself.  The pipeline is hosted on [github](https://github.com/databio/pepatac).  If you don't have git installed, follow the [git installation instructions](https://git-scm.com/download/linux), and here is a [brief introduction to git](https://guides.github.com/introduction/git-handbook/). To install PEPATAC, you can use one of the following methods:
 
 * using SSH:
 ```
@@ -42,16 +42,16 @@ Success! If you had any issues, feel free to [reach out to us with questions](co
 
 ---
 
-#### **1.2: Install required software**
+## 1.2: Install required software
 
 You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](tutorial.md#122-install-software-requirements-natively).
 
 ---
 
-##### **1.2.1 (ALT): Use containers!**
+### 1.2.1 (ALT): Use containers!
 First, make sure your environment is set up to run either docker or singularity containers. Then, pull the container image:
 
-###### **Docker**
+#### Docker
 
 You can pull the docker image from [dockerhub](https://hub.docker.com/r/databio/pepatac/) like this:
 ```
@@ -64,7 +64,7 @@ cd pepatac/
 make docker
 ```
 
-###### **Singularity**
+#### Singularity
 
 You can [download the pre-built singularity image](http://big.databio.org/simages/pepatac) or build it manually from the docker image following the recipe in the Makefile:
 ```
@@ -75,7 +75,7 @@ Now you'll need to tell the pipeline where you saved the singularity image. You 
 
 ---
 
-##### **1.2.2: Install software requirements natively** 
+### 1.2.2: Install software requirements natively
 
 To use `PEPATAC`, we need the following software:
 **Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install of these like this:  
@@ -191,7 +191,7 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 
 ---
 
-#### **1.3: Install optional software**
+## 1.3: Install optional software
 
 `PEPATAC` uses `R` to generate quality control plots.  These are **optional** and the pipeline will run without them, but you would not get any QC plots.  If you need to don't have [R installed, you can follow these instructions](https://cran.r-project.org/doc/manuals/r-release/R-admin.html).  We'll use and install the necessary packages in this example.  Here is the list of required packages:
 
@@ -232,7 +232,7 @@ That's it! Everything we need to run `PEPATAC` to its full potential should be i
 
 ---
 
-#### **1.4: Create environment variables**
+## 1.4: Create environment variables
 We also need to create some environment variables to help point `looper` to where we keep our data files and our tools.  You may either set the environment variables up, like we're going to do now, or you may simply hard code the necessary locations in our configuration files.
 First, let's create a `PROCESSED` variable that represents the location where we want to save output.
 ```
@@ -247,7 +247,7 @@ Fantastic! Now that we have the pipeline and its requirements installed, we're r
 
 ---
 
-#### **2.1: Download a reference genome**
+## 2.1: Download a reference genome
 
 Before we analyze anything, we also need a reference genome.  `PEPATAC` uses `refgenie` genomes.  For the purposes of this tutorial, we'll just download pre-built genomes.  Follow the `'refgenie` instructions if you'd like to [build your own reference genome](https://github.com/databio/refgenie). First, let's change into our `genomes/` folder.
 ```
@@ -276,7 +276,7 @@ zcat hg38_TSS_full.txt.gz | \
 ```            
 Alright! Time to setup the pipeline configuration files and run our sample.
 
-#### **2.2: Configure project files**
+## 2.2: Configure project files
 
 We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A configuration file has been provided for you in the pipeline itself, conveniently named `tutorial.yaml`.  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#23-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
@@ -315,7 +315,7 @@ That's it! Let's analyze that sample!
 
 ---
 
-#### **2.3: Using `looper` to run the pipeline**
+## 2.3: Using `looper` to run the pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. One of those is an environment variable called `PEPENV` that points to the Looper environment configuration file. For more detailed information regarding this file, [check out the `looper`docs](https://looper.readthedocs.io/en/latest/cluster-computing.html#pepenv-overview). Let's set it up.
 ```
 cd /path/to/pepatac_tutorial/
@@ -365,107 +365,11 @@ looper run tutorial.yaml --compute local
 ```         
 Congratulations! Your first sample should be running through the pipeline now.
 
----
-
-#### **3.1: Browse the output directory**
-
-Now that our sample has finished running through the pipeline, we can look through the output directory together.  We've provided a breakdown of that directory below.
-
-* ??? danger ":fa-folder-open-o: reports/"
-    * :fa-file-code-o: [cumulative_frif.html](../files/examples/tutorial/reports/cumulative_frif.html)
-    * :fa-file-code-o: [fastqc_report_r2.html](../files/examples/tutorial/reports/fastqc_report_r2.html)
-    * :fa-file-code-o: [fastqc_report_r1.html](../files/examples/tutorial/reports/fastqc_report_r1.html)
-    * :fa-file-code-o: [fragment_distribution.html](../files/examples/tutorial/reports/fragment_distribution.html)
-    * :fa-file-code-o: [objects.html](../files/examples/tutorial/reports/objects.html)
-    * :fa-file-code-o: [samples.html](../files/examples/tutorial/reports/samples.html)
-    * :fa-file-code-o: [status.html](../files/examples/tutorial/reports/status.html)
-    * :fa-file-code-o: [tss_enrichment.html](../files/examples/tutorial/reports/tss_enrichment.html)
-    * :fa-file-code-o: [tutorial.html](../files/examples/tutorial/reports/tutorial.html)
-* ??? danger ":fa-folder-open-o: results_pipeline/"
-    * ??? danger ":fa-folder-open-o: tutorial/"
-        * ??? danger ":fa-folder-open-o: fastqc/"
-            * [:fa-file-code-o: tutorial_R1.trim_fastqc.html](../files/examples/tutorial/results_pipeline/tutorial/fastqc/tutorial_R1.trim_fastqc.html)
-            * :fa-file-archive-o: tutorial_R1.trim_fastqc.zip
-            * [:fa-file-code-o: tutorial_R2.trim_fastqc.html](../files/examples/tutorial/results_pipeline/tutorial/fastqc/tutorial_R2.trim_fastqc.html)
-            * :fa-file-archive-o: tutorial_R2.trim_fastqc.zip
-        * ??? danger ":fa-folder-open-o: raw/"
-            * :fa-file-archive-o: tutorial_r1.fastq.gz
-            * :fa-file-archive-o: tutorial_r2.fastq.gz
-            * :fa-file-archive-o: hg38_annotations.bed.gz 
-        * ??? danger ":fa-folder-open-o: aligned_hg38/"
-            * :fa-file-o: tutorial_fail_qc.bam
-            * :fa-file-o: tutorial_sort.bam
-            * :fa-file-o: tutorial_sort.bam.bai
-            * :fa-file-o: tutorial_unmap.bam
-            * :fa-file-text-o: tutorial_dedup_metrics_log.txt
-            * :fa-file-o: tutorial_sort_dedup.bam
-            * :fa-file-o: tutorial_sort_dedup.bam.bai
-            * :fa-file-o: tutorial_smooth.bw
-        * ??? danger ":fa-folder-open-o: aligned_hg38_exact/"
-            * :fa-file-o: tutorial_exact.bw
-            * :fa-file-o: tutorial_shift.bed
-        * ???+ danger ":fa-folder-open-o: fastq/"
-        * ??? danger ":fa-folder-open-o: peak_calling_hg38/"
-            * :fa-file-o: tutorial_peaks.narrowPeak]
-            * :fa-file-excel-o: tutorial_peaks.xls]
-            * :fa-file-o: tutorial_summits.bed
-            * :fa-file-o: tutorial_peaks.bigBed
-            * :fa-file-o: tutorial_peaks_coverage.bed
-        * ??? danger ":fa-folder-open-o: prealignments/"
-            * :fa-file-text-o: tutorial_rCRSd_bt_aln_summary.log
-            * :fa-file-archive-o: tutorial_rCRSd_unmap_R1.fq.gz
-            * :fa-file-archive-o: tutorial_rCRSd_unmap_R2.fq.gz
-            * :fa-file-text-o: tutorial_human_repeats_bt_aln_summary.log
-            * :fa-file-archive-o: tutorial_human_repeats_unmap_R1.fq.gz
-            * :fa-file-archive-o: tutorial_human_repeats_unmap_R2.fq.gz
-        * ??? danger ":fa-folder-open-o: QC_hg38/"
-            * :fa-file-o: tutorial_bamQC.tsv
-            * :fa-file-text-o: tutorial_TssEnrichment.txt
-            * [:fa-file-pdf-o: tutorial_TssEnrichment.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.pdf)
-            * [:fa-file-image-o: tutorial_TssEnrichment.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.png)
-            * :fa-file-text-o: tutorial_fragLen.txt
-            * :fa-file-text-o: tutorial_fragCount.txt
-            * [:fa-file-image-o: tutorial_fragLenDistribution.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.png)
-            * [:fa-file-pdf-o: tutorial_fragLenDistribution.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.pdf)
-            * :fa-file-text-o: tutorial_fragLenDistribution.txt
-            * :fa-file-o: tutorial_3_UTR_coverage.bed
-            * :fa-file-o: tutorial_5_UTR_coverage.bed
-            * :fa-file-o: tutorial_Exon_coverage.bed
-            * :fa-file-o: tutorial_Intron_coverage.bed
-            * :fa-file-o: tutorial_Promoter_coverage.bed
-            * :fa-file-o: tutorial_Promoter_Flanking_Region_coverage.bed
-            * [:fa-file-pdf-o: tutorial_frif.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_frif.pdf)
-            * [:fa-file-image-o: tutorial_frif.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_frif.png)
-            * [:fa-file-pdf-o: tutorial_peaks_chr_dist.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_chr_dist.pdf)
-            * [:fa-file-image-o: tutorial_peaks_chr_dist.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_chr_dist.png)
-            * [:fa-file-pdf-o: tutorial_peaks_TSS_dist.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_TSS_dist.pdf)
-            * [:fa-file-image-o: tutorial_peaks_TSS_dist.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_TSS_dist.png)
-            * [:fa-file-pdf-o: tutorial_peaks_partition_dist.pdf](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_partition_dist.pdf)
-            * [:fa-file-image-o: tutorial_peaks_partition_dist.png](../files/examples/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_peaks_partition_dist.png)
-        * [:fa-file-text-o: objects.tsv](../files/examples/tutorial/results_pipeline/tutorial/objects.tsv) 
-        * :fa-file-code-o: PEPATAC_cleanup.sh
-        * [:fa-file-code-o: PEPATAC_commands.sh](../files/examples/tutorial/results_pipeline/tutorial/PEPATAC_commands.sh)
-        * :fa-file-o: PEPATAC_completed.flag
-        * [:fa-file-o: PEPATAC_log.md](../files/examples/tutorial/results_pipeline/tutorial/PEPATAC_log.md)
-        * [:fa-file-text-o: PEPATAC_profile.tsv](../files/examples/tutorial/results_pipeline/tutorial/PEPATAC_profile.tsv)
-        * [:fa-file-text-o: stats.tsv](../files/examples/tutorial/results_pipeline/tutorial/stats.tsv)
-* ??? danger ":fa-folder-open-o: submission/"
-    * :fa-file-code-o: pepatac.py_tutorial.sub
-    * :fa-file-code-o: tutorial.yaml
-    * :fa-file-text-o: pepatac.py_tutorial.log
-* ??? danger ":fa-folder-open-o: summary/"
-    * :fa-file-pdf-o: [tutorial_alignmentPercent.pdf](../files/examples/tutorial/summary/tutorial_alignmentPercent.pdf)
-    * :fa-file-image-o: [tutorial_alignmentPercent.png](../files/examples/tutorial/summary/tutorial_alignmentPercent.png)
-    * :fa-file-pdf-o: [tutorial_alignmentRaw.pdf](../files/examples/tutorial/summary/tutorial_alignmentRaw.pdf)
-    * :fa-file-image-o: [tutorial_alignmentRaw.png](../files/examples/tutorial/summary/tutorial_alignmentRaw.png)
-    * :fa-file-pdf-o: [tutorial_TSSEnrichment.pdf](../files/examples/tutorial/summary/tutorial_TSSEnrichment.pdf)
-    * :fa-file-image-o: [tutorial_TSSEnrichment.png](../files/examples/tutorial/summary/tutorial_TSSEnrichment.png)
-* :fa-file-text-o: [tutorial_stats_summary.tsv](../files/examples/tutorial/tutorial_stats_summary.tsv)
-* :fa-file-code-o: [tutorial_summary.html](../files/examples/tutorial/tutorial_summary.html)
+After the pipeline is finished, we can look through the output directory together.  We've provided a breakdown of that directory in the [browse output page](/browse_output/).
 
 ---
 
-#### **3.2: Generate an `HTML` report using `looper`**
+## 3.2: Generate an `HTML` report using `looper`
 
 Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](../files/examples/tutorial/tutorial_summary.html).  Otherwise, let's generate a report ourselves.
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `summarize` function of `looper`.
@@ -478,8 +382,3 @@ cd /path/to/pepatac_tutorial/processed/tutorial/
 firefox tutorial_summary.html
 ```          
 The `HTML` report contains a summary page that integrates the project level summary table and any project level objects including: raw aligned reads, percent aligned reads, and TSS enrichment scores.  The status page lists all the samples in this project along with their current status, a link to their log files, the time it took to run the sample and the peak memory used during the run.  The objects page provides links to separate pages for each object type.  On each object page, all the individual samples' objects are provided.  Similarly, the samples page contains links to individual pages for each sample.  The sample pages list the individual summary statistics for that sample as well as links to log files, command logs, and summary files.  The sample pages also provide links and thumbnails for any individual objects generated for that sample.  Of course, all of these files are present in the sample directory, but the report provides easy access to them all.
-
----
-
-* [:fa-envelope: Contact Us](contact.md)
-* [Learn more about the Databio team!](http://databio.org/)

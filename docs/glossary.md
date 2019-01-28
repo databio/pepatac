@@ -1,4 +1,4 @@
-## <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> glossary
+# <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> glossary
 
 Information regarding universal ATAC-seq [terms and definitions](https://www.encodeproject.org/data-standards/terms/) are available from the ENCODE consortium.
 
@@ -6,7 +6,7 @@ Additional information relevant to `PEPATAC` output and interpretation includes:
 
 ---
 
-#### **Peak calling output**
+## **Peak calling output**
 
 The pipeline's default peak caller is `MACS2`.  More [detailed descriptions regarding `MACS2` output](https://github.com/taoliu/MACS) may be discovered in the `MACS2` repository.
 
@@ -25,7 +25,7 @@ The following files are included in default `PEPATAC` analyses:
 
 ---
 
-#### **QC output**
+## **QC output**
 
 - **&lt;sample_name&gt;_bamQC.tsv**: A tabular file containing alignment statistics and library complexity measures.  
   Includes:
@@ -53,14 +53,9 @@ The following files are included in default `PEPATAC` analyses:
 
 ---
 
-#### **Signal tracks**
+## **Signal tracks**
 
 The tool to produce these tracks, `bamSitesToWig.py`, is included in the `PEPATAC` repository and may be called indpendently with parameters like the `--smooth-length` further customized.
 
 - **nucleotide-resolution ("exact cut") signal**: The nucleotide-resolution (or "exact cut") signal is a signal track (bigWig) marking exact locations where the transposition event occurred. The Tn5 transpoase acts on and duplicates a 9-bp region, and the event location is defined as the center of this 9-bp window.  To produce this signal, read positions on positive strands are shifted +4 with minus strand positions shifted -5.
 - **smooth signal**: The smooth signal track is produced alongside the nucleotide-resolution track.  Instead of marking exact bases, the smooth track marks reads positioned +/- 25-bp around the "exact cut" location, to yield a 50-bp window centered on this position.
-
----
-
-- [:fa-envelope: Contact Us](contact.md)
-- [Learn more about the Databio team!](http://databio.org/)
