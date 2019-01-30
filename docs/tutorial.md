@@ -209,7 +209,7 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 To install the needed packages, enter the following command:
 ```
 Rscript -e "install.packages(c('argparser','devtools', 'data.table', \
-  'ggrepel', 'ggplot2', 'gplots', 'gtable', 'scales'), \
+  'ggplot2', 'gplots', 'gtable', 'scales'), \
   repos='http://cran.us.r-project.org/'); \
   source('https://bioconductor.org/biocLite.R'); \
   biocLite('GenomicRanges'); \

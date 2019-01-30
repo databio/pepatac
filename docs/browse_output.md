@@ -37,8 +37,8 @@ This is an interactive display of exactly what results you'll get as output from
             * :fa-file-o: tutorial_shift.bed
         * ???+ danger ":fa-folder-open-o: fastq/"
         * ??? danger ":fa-folder-open-o: peak_calling_hg38/"
-            * :fa-file-o: tutorial_peaks.narrowPeak]
-            * :fa-file-excel-o: tutorial_peaks.xls]
+            * :fa-file-o: tutorial_peaks.narrowPeak
+            * :fa-file-excel-o: tutorial_peaks.xls
             * :fa-file-o: tutorial_summits.bed
             * :fa-file-o: tutorial_peaks.bigBed
             * :fa-file-o: tutorial_peaks_coverage.bed

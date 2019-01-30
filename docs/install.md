@@ -96,7 +96,7 @@ That should do it for required packages!  To obtain the full benefit of `PEPATAC
 To install the needed packages, run the following at the command prompt:
 ```
 Rscript -e "install.packages(c('argparser','devtools', 'data.table', \
-  'ggrepel', 'ggplot2', 'gplots', 'gtable', 'scales'), \
+  'ggplot2', 'gplots', 'gtable', 'scales'), \
   repos='http://cran.us.r-project.org/'); \
   source('https://bioconductor.org/biocLite.R'); biocLite('GenomicRanges'); \
   devtools::install_github(c('pepkit/pepr', 'databio/GenomicDistributions'))"
