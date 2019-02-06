@@ -73,6 +73,8 @@ make singularity
 ```
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the folder where your image is stored, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
 
+If you're prepared to run everything using the container, then you can skip the next section about installing software. Instead, jump to [creating environment variables](tutorial.md#14-create-environment-variables) and continue from that point. You can also go straight to reading more detailed instructions on [running the pipeline in a container](howto/use-container.md).
+
 ---
 
 ### 1.2.2: Install software requirements natively
