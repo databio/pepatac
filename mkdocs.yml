@@ -21,6 +21,7 @@ nav:
     - How to configure reference genome assemblies: 'howto/install-refgenie.md'
     - How to run multiple samples: 'howto/run-looper.md'
     - How to run the pipeline on a cluster: 'howto/run-cluster.md'
+    - How to run the pipeline in a container: 'howto/use-container.md'
     - How to download SRA data: 'howto/download.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
