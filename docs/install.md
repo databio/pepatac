@@ -179,7 +179,7 @@ With `docker`, you can use:
 ```
 docker run --rm -it databio/pepatac pipelines/pepatac.py --help
 ```
-Be sure to mount the volumes you need with `--volume`.
+Be sure to mount the volumes you need with `--volume`. If you're utilizing any environment variables (e.g. `$GENOMES`), don't forget to include those in your docker command with the `-e` option. For a more detailed example, check out our guide to learn [how to run pepatac in a container](howto/use-container.md).
 
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use...[`looper`!](https://github.com/pepkit/looper)  Learn more about using `looper` with `PEPATAC` in the [how-to guides](howto.md) or in the [extended tutorial](tutorial.md)).
 Any questions? Feel free to [reach out to us](contact.md). Otherwise, go analyze some ATAC-seq!
