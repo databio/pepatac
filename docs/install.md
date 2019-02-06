@@ -25,6 +25,7 @@ You have two options for installing the software prerequisites: 1) use a contain
 
 ### 1.2.1: Use containers!
 If you have experience using containers, you may simply run `PEPATAC` directly in a provided container.  First, make sure your environment is set up to run either docker or singularity containers. Then, pull the container image:
+
 **Docker**: You can pull the [docker image](https://hub.docker.com/r/databio/pepatac/) from dockerhub like this: `docker pull databio/pepatac`
 
 Or build the image using the included Dockerfile (you can use a recipe in the included Makefile):
@@ -41,7 +42,7 @@ make singularity
 
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the folder where your image is stored, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
 
-If your containers are set up correctly, then you can skip the next section about installing software. So, jump to [obtaining refgenie assemblies](install.md#21-download-refgenie-assemblies).
+If your containers are set up correctly, then you can skip the next section about installing software. So, jump to [obtaining refgenie assemblies](install.md#21-download-refgenie-assemblies). You can also go straight to reading more detailed instructions on [running the pipeline in a container](howto/use-container.md).
 
 
 ### 1.2.2: Install software requirements natively
