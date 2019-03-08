@@ -1283,7 +1283,8 @@ def main():
                     # Rename files to valid filenames
                     validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
                     fileName = os.path.join(QC_folder, validName)
-                    pm.run(os.rename(annoFile, fileName), fileName,
+                    cmd = "mv {old} {new}".format(old=annoFile, new=fileName)
+                    pm.run(cmd, fileName,
                            container=pm.container)
 
                     annoSort = os.path.join(QC_folder, validName + "_sort.bed")
