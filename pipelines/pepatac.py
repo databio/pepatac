@@ -1024,6 +1024,7 @@ def main():
         cmd += " -b " + shift_bed # request bed output
         cmd += " -o " + exact_target
         cmd += " -w " + smooth_target
+        cmd += " -m " + "atac"
         cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
         cmd2 = "touch " + temp_target
         pm.run([cmd, cmd2], temp_target, container=pm.container)
