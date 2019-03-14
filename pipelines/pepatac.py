@@ -1284,7 +1284,7 @@ def main():
                     # Rename files to valid filenames
                     validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
                     fileName = os.path.join(QC_folder, validName)
-                    cmd = "mv {old} {new}".format(old=annoFile, new=fileName)
+                    cmd = 'mv "{old}" "{new}"'.format(old=annoFile, new=fileName)
                     pm.run(cmd, fileName,
                            container=pm.container)
 
