@@ -1250,20 +1250,32 @@ def main():
 
         pm.timestamp("### Calculate read coverage")
 
+        # Custom annotation file or direct path to annotation file is specified
+        anno_local = ''
+
         if args.anno_name:
-            anno_file  = os.path.abspath(anno_path(args.anno_name))
+            anno_file  = os.path.abspath(args.anno_name)
             anno_unzip = os.path.splitext(anno_file)[0]
             anno_local = os.path.join(raw_folder, args.anno_name)
             cmd = ("ln -sf " + anno_file + " " + anno_local)
             pm.run(cmd, anno_local, container=pm.container)
         else:
+            # Default annotation file
             anno_file  = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed.gz"))
             anno_unzip = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed"))
-            anno_local = os.path.join(raw_folder,
-                                      args.genome_assembly +
-                                      "_annotations.bed.gz")
-            cmd = ("ln -sf " + anno_file + " " + anno_local)
-            pm.run(cmd, anno_local, container=pm.container)
+
+            if not os.path.exists(anno_file) and not os.path.exists(anno_unzip):
+                print("Skipping read and peak annotation")
+                print("This requires a {} annotation file."
+                      .format(args.genome_assembly))
+                print("Confirm this file is present in {} or specify using --anno-name"
+                      .format(anno_path))
+            else:
+                anno_local = os.path.join(raw_folder,
+                                          args.genome_assembly +
+                                          "_annotations.bed.gz")
+                cmd = ("ln -sf " + anno_file + " " + anno_local)
+                pm.run(cmd, anno_local, container=pm.container)            
 
         annoList = list()
 
@@ -1383,8 +1395,8 @@ def main():
                              anchor_image=tssPNG)
             pm.report_object("Peak partition distribution", gpPDF,
                              anchor_image=gpPNG)
-        else:
-            print("Could not find {}".format(anno_local))
+        #else:
+        #    print("Could not find {}".format(anno_local))
 
         if args.lite:
             # Remove everything but ultimate outputs
