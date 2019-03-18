@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [0.8.5] -- 2019-03-19
+
+### Changed
 - Convert and update documentation
 - Fixed a bug with feature naming
 - Improve bamSitesToWig modularity
