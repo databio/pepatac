@@ -1261,15 +1261,17 @@ def main():
             pm.run(cmd, anno_local, container=pm.container)
         else:
             # Default annotation file
-            anno_file  = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed.gz"))
-            anno_unzip = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed"))
+            anno_file  = os.path.abspath(anno_path(args.genome_assembly +
+                                         "_annotations.bed.gz"))
+            anno_unzip = os.path.abspath(anno_path(args.genome_assembly +
+                                         "_annotations.bed"))
 
             if not os.path.exists(anno_file) and not os.path.exists(anno_unzip):
                 print("Skipping read and peak annotation")
                 print("This requires a {} annotation file."
                       .format(args.genome_assembly))
-                print("Confirm this file is present in {} or specify using --anno-name"
-                      .format(anno_path))
+                print("Confirm this file is present in {} or specify using `--anno-name`"
+                      .format(str(os.path.dirname(anno_file))))
             else:
                 anno_local = os.path.join(raw_folder,
                                           args.genome_assembly +
