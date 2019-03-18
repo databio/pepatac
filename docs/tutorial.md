@@ -270,6 +270,8 @@ export GENOMES="/path/to/pepatac_tutorial/genomes/
 ```
 (Don't forget to add this to your `.bashrc` or `.profile` to ensure it persists).
 
+---
+
 ## 2.2: Download or create annotation files
 
 To calculate TSS enrichments, you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
@@ -283,6 +285,8 @@ zcat hg38_TSS_full.txt.gz | \
 We also have [downloadable pre-built genome annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9` that you can use to annotate the reads and peaks.  These files annotate 3' and 5' UTR, Exonic, Intronic, Intergenic, Promoter, and Promoter Flanking Regions of the corresponding genome as indicated in Ensembl or UCSC.  Simply move the corresponding genome annotation file into the `pepatac/anno` folder.  Once present in the `pepatac/anno` folder you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to directly point to this file when running.  You can also [learn how to create a custom annotation file](howto/create-annotation-file.md) to calculate coverage using your own features of interest.
 
 Alright! Time to setup the pipeline configuration files and run our sample.
+
+---
 
 ## 2.3: Configure project files
 
