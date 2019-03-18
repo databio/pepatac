@@ -17,11 +17,11 @@ chr1	934200	934801	Promoter	.	*
 chr1	935200	936001	Promoter	.	*
 ```
 
-Just like a standard `BED` file, the first three fields are:
-1. *chrom* - the name of the chromosome
-2. *chromStart* - the starting position of the feature
-3. *chromEnd* - the ending position of the feature
+Just like a standard `BED` file, the first three fields are:  
+1. **chrom** - the name of the chromosome  
+2. **chromStart** - the starting position of the feature  
+3. **chromEnd** - the ending position of the feature
 
-Column four is the *name* column, in our case the name of our feature of interest. The fifth column is the *score*, which would determine how darkly an item would be displayed in a genome browser if you chose to set that or if the information in your file of interest has ascribed a score to the features. The final, sixth, column is the *strand* column.
+Column four is the **name** column, in our case the name of our feature of interest. The fifth column is the **score**, which would determine how darkly an item would be displayed in a genome browser if you chose to set that or if the information in your file of interest has ascribed a score to the features. The final, sixth, column is the **strand** column.
 
 After creating your `BED` file, you can point the pipeline to it using the `--anno-name` option and providing the path to your file.  The pipeline will then use that file to determine the fractions of reads that cover those features.
