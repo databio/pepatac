@@ -13,13 +13,13 @@ PEPATAC is a pipeline designed to process ATAC-seq data. For more information se
 Develop docs with:
 
 ```
-mkdocs serve -f docs/mkdocs.yml
+mkdocs serve -f mkdocs.yml
 ```
 
 Build and deploy with:
 
 ```
-mkdocs build -f docs/mkdocs.yml -d $CODEBASE/code.databio.org/caravel/
+mkdocs build -f mkdocs.yml -d $CODEBASE/code.databio.org/caravel/
 ```
 
 ## Contributing
