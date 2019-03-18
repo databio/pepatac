@@ -46,4 +46,4 @@ A default annotation file that annotates the 5' UTR, 3' UTR, exons, introns, pro
 
 Simply place the downloaded annotation file in the the `pepatac/anno` folder and you're all set. You can also point the pipeline directly to your annotation file with the `--anno-name` option.
 
-You can [learn how to create a custom annotation file](how-to/create-annotation-file.md) to investigate your own favorite features too!
+You can [learn how to create a custom annotation file](howto/create-annotation-file.md) to investigate your own favorite features too!
