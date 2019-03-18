@@ -288,7 +288,23 @@ Alright! Time to setup the pipeline configuration files and run our sample.
 
 ---
 
-## 2.3: Configure project files
+## 2.3: Download tutorial read files
+
+We're going to work with some files a little larger than those already included in the pipeline so we can see all the features included in a full run of the pipeline.  Go ahead and [download the tutorial_r1.fastq.gz](http://big.databio.org/pepatac/tutorial_r1.fastq.gz) and [tutorial_r2.fastq.gz](http://big.databio.org/pepatac/tutorial_r2.fastq.gz) files. 
+```
+wget http://big.databio.org/pepatac/tutorial_r1.fastq.gz
+wget http://big.databio.org/pepatac/tutorial_r2.fastq.gz
+```
+
+To simplify the rest of this tutorial, let's put those files in a standard location we'll use for the rest of this guide. 
+```
+mv tutorial_r1.fastq.gz pepatac/examples/data/
+mv tutorial_r2.fastq.gz pepatac/examples/data/
+```
+
+---
+
+## 2.4: Configure project files
 
 We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A configuration file has been provided for you in the pipeline itself, conveniently named `tutorial.yaml`.  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#23-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
@@ -327,7 +343,7 @@ That's it! Let's analyze that sample!
 
 ---
 
-## 2.4: Using `looper` to run the pipeline
+## 2.5: Using `looper` to run the pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. One of those is an environment variable called `PEPENV` that points to the Looper environment configuration file. For more detailed information regarding this file, [check out the `looper`docs](https://looper.readthedocs.io/en/latest/cluster-computing.html#pepenv-overview). Let's set it up.
 ```
 cd /path/to/pepatac_tutorial/
