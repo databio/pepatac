@@ -126,6 +126,8 @@ wget http://big.databio.org/refgenomes/human_repeats_170502.tgz
 wget http://big.databio.org/refgenomes/rCRSd_170502.tgz
 ```
 
+---
+
 ## 2.2: Download or create annotation files
 
 To calculate TSS enrichments, you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
