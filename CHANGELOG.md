@@ -1,6 +1,14 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.5] -- 2019-03-19
+
+### Changed
+- Convert and update documentation
+- Fixed a bug with feature naming
+- Improve bamSitesToWig modularity
+- Move large files to separate host site
+
 ## [0.8.4] -- 2019-01-03
 
 ### Changed
@@ -143,3 +151,4 @@ All notable changes to this project will be documented in this file.
 ## [0.1.0]
 ### Added
 - First release of ATAC-seq pypiper pipeline
+

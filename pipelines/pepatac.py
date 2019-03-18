@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.4"
+__version__ = "0.8.5"
 
 
 from argparse import ArgumentParser
@@ -1024,6 +1024,7 @@ def main():
         cmd += " -b " + shift_bed # request bed output
         cmd += " -o " + exact_target
         cmd += " -w " + smooth_target
+        cmd += " -m " + "atac"
         cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
         cmd2 = "touch " + temp_target
         pm.run([cmd, cmd2], temp_target, container=pm.container)
@@ -1249,20 +1250,34 @@ def main():
 
         pm.timestamp("### Calculate read coverage")
 
+        # Custom annotation file or direct path to annotation file is specified
+        anno_local = ''
+
         if args.anno_name:
-            anno_file  = os.path.abspath(anno_path(args.anno_name))
+            anno_file  = os.path.abspath(args.anno_name)
             anno_unzip = os.path.splitext(anno_file)[0]
             anno_local = os.path.join(raw_folder, args.anno_name)
             cmd = ("ln -sf " + anno_file + " " + anno_local)
             pm.run(cmd, anno_local, container=pm.container)
         else:
-            anno_file  = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed.gz"))
-            anno_unzip = os.path.abspath(anno_path(args.genome_assembly + "_annotations.bed"))
-            anno_local = os.path.join(raw_folder,
-                                      args.genome_assembly +
-                                      "_annotations.bed.gz")
-            cmd = ("ln -sf " + anno_file + " " + anno_local)
-            pm.run(cmd, anno_local, container=pm.container)
+            # Default annotation file
+            anno_file  = os.path.abspath(anno_path(args.genome_assembly +
+                                         "_annotations.bed.gz"))
+            anno_unzip = os.path.abspath(anno_path(args.genome_assembly +
+                                         "_annotations.bed"))
+
+            if not os.path.exists(anno_file) and not os.path.exists(anno_unzip):
+                print("Skipping read and peak annotation")
+                print("This requires a {} annotation file."
+                      .format(args.genome_assembly))
+                print("Confirm this file is present in {} or specify using `--anno-name`"
+                      .format(str(os.path.dirname(anno_file))))
+            else:
+                anno_local = os.path.join(raw_folder,
+                                          args.genome_assembly +
+                                          "_annotations.bed.gz")
+                cmd = ("ln -sf " + anno_file + " " + anno_local)
+                pm.run(cmd, anno_local, container=pm.container)            
 
         annoList = list()
 
@@ -1283,7 +1298,8 @@ def main():
                     # Rename files to valid filenames
                     validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
                     fileName = os.path.join(QC_folder, validName)
-                    pm.run(os.rename(annoFile, fileName), fileName,
+                    cmd = 'mv "{old}" "{new}"'.format(old=annoFile, new=fileName)
+                    pm.run(cmd, fileName,
                            container=pm.container)
 
                     annoSort = os.path.join(QC_folder, validName + "_sort.bed")
@@ -1381,8 +1397,8 @@ def main():
                              anchor_image=tssPNG)
             pm.report_object("Peak partition distribution", gpPDF,
                              anchor_image=gpPNG)
-        else:
-            print("Could not find {}".format(anno_local))
+        #else:
+        #    print("Could not find {}".format(anno_local))
 
         if args.lite:
             # Remove everything but ultimate outputs
