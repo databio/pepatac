@@ -1,6 +1,7 @@
 #! /usr/bin/env perl
 
 # By Nathan Sheffield, University of Virginia, 2017
+# Update 03.04.19 - Jason Smith - Add option to use variable or fixedStep
 
 # This is an incredibly fast Perl utility that converts cut sites
 # (coordinates) into a wiggle-like output.
@@ -16,53 +17,89 @@
 
 # Run it like this.
 # 1. Pipe your cuts into cutsToWig via stdin:
-# cat cuts.txt | cutsToWig.pl CHROMSIZE > out.wig
+# cat cuts.txt | cutsToWig.pl CHROMSIZE FALSE > out.wig
 # or you can pass your cuts file on the command line:
-# cutsToWig.pl CHROMSIZE cuts.txt > out.wig
+# cutsToWig.pl CHROMSIZE FALSE cuts.txt > out.wig
 
 # It's also useful to pipe this to the ucsc tool for bigwig compression:
-# cat cuts.txt | cutsToWig.pl CHROMSIZE | wigToBigWig -clip stdin chrom_sizes.txt out.bw
+# cat cuts.txt | cutsToWig.pl CHROMSIZE FALSE | wigToBigWig -clip stdin chrom_sizes.txt out.bw
 
 # Setup
-$chrSize = shift;  # Size of chromosome is the first argument
+$chrSize = shift;       # Size of chromosome is the first argument
+$variableStep = shift;  # Second argument is whether to use variable or fixed
 $countIndex = 1;
 $currentCount = 1;
 $header =  <>; # Discard the first line (fixedstep)
 print $header;
 $cutSite = <>;  # Grab the first cut
 
-# Print out 0s until the first cut
-while ($countIndex < $cutSite) {
-	print "0\n";
-	$countIndex++;	
-}
-$previousCut = $cutSite;
-
-# Loop through cuts, converting to wiggle format
-while($cutSite = <>) {
-	chomp($cutSite);
-	# if it's a duplicate read...
-	if ($cutSite == $previousCut) { # sum up all reads for this spot.
-		$currentCount++;
-		next;						# skip to next read
+if ($variableStep) {  # Use variableStep wiggle format
+	# Increment until the first cut
+	while ($countIndex < $cutSite) {
+		$countIndex++;	
 	}
+	$previousCut = $cutSite;
 
-	# otherwise, it makes it past this loop;
-	# output the sum of counts for the previous spot
-	print $currentCount."\n"; 
-	$countIndex++;
-	# reset for the current spot
-	$currentCount = 1;
-	# and print out all 0s between them
+	# Loop through cuts, converting to wiggle format
+	while($cutSite = <>) {
+		chomp($cutSite);
+		# if it's a duplicate read...
+		if ($cutSite == $previousCut) { # sum up all reads for this spot.
+			$currentCount++;
+			next;						# skip to next read
+		}
+
+		# otherwise, it makes it past this loop;
+		# output the sum of counts for the previous spot
+		print $previousCut."\t".$currentCount."\n"; 
+		$countIndex++;
+		# reset for the current spot
+		$currentCount = 1;
+		# increment until cutSite
+		while ($countIndex < $cutSite) {
+			$countIndex++;	
+		}
+		$previousCut = $cutSite;
+	} # end while
+
+	# Increment until we each the end.
+	while($countIndex <= $chrSize) {
+		$countIndex++;
+	}
+} else {  # Use fixedStep wiggle format
+	# Print out 0s until the first cut
 	while ($countIndex < $cutSite) {
 		print "0\n";
 		$countIndex++;	
 	}
 	$previousCut = $cutSite;
-} # end while
 
-# Finish chromosome by printing 0s until we each the end.
-while($countIndex <= $chrSize) {
-	print "0\n";
-	$countIndex++;
+	# Loop through cuts, converting to wiggle format
+	while($cutSite = <>) {
+		chomp($cutSite);
+		# if it's a duplicate read...
+		if ($cutSite == $previousCut) { # sum up all reads for this spot.
+			$currentCount++;
+			next;						# skip to next read
+		}
+
+		# otherwise, it makes it past this loop;
+		# output the sum of counts for the previous spot
+		print $currentCount."\n"; 
+		$countIndex++;
+		# reset for the current spot
+		$currentCount = 1;
+		# and print out all 0s between them
+		while ($countIndex < $cutSite) {
+			print "0\n";
+			$countIndex++;	
+		}
+		$previousCut = $cutSite;
+	} # end while
+
+	# Finish chromosome by printing 0s until we each the end.
+	while($countIndex <= $chrSize) {
+		print "0\n";
+		$countIndex++;
+	}
 }

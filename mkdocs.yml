@@ -1,0 +1,53 @@
+theme: databio
+
+site_name: PEPATAC
+site_author: Jason Smith
+site_url: http://code.databio.org/PEPATAC/
+site_logo: img/pepatac_logo_white.svg
+repo_url: https://github.com/databio/pepatac/
+google_analytics: ['UA-127092878-1', 'code.databio.org/PEPATAC']
+
+markdown_extensions:
+  - fontawesome_markdown  # pip install --user fontawesome-markdown
+  - pymdownx.details  # pip install --user pymdown-extensions
+
+nav:
+  - Getting Started:
+    - Introduction: 'README.md'
+    - Features: 'features.md'
+    - Install and run test example: 'install.md'
+    - Extended tutorial: 'tutorial.md'
+  - How-to Guides:
+    - How to configure reference genome assemblies: 'howto/install-refgenie.md'
+    - How to download SRA data: 'howto/download.md'
+    - How to create a custom annotation file: 'howto/create-annotation-file.md'
+    - How to run multiple samples using looper: 'howto/run-looper.md'
+    - How to run the pipeline on a cluster: 'howto/run-cluster.md'
+    - How to run the pipeline in a container: 'howto/use-container.md'
+  - Reference: 
+    - Example output file structure: 'browse_output.md'
+    - "Example summary: gold project": 'files/examples/gold/summary.html'
+    - "Example summary: tutorial project": 'files/examples/tutorial/tutorial_summary.html'
+    - Usage: 'usage.md'
+    - FAQ: faq.md
+    - Glossary: 'glossary.md'
+    - Changelog: changelog.md
+    - Support: contact.md
+
+plugins:
+  - search
+  - databio:
+      autodoc_modules: null
+      autodoc_build: "docs_build"
+      usage_template: "docs/usage_template.md"
+      usage_cmds:
+        -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help
+
+navbar:
+  right:
+  - text: Software & Data
+    icon: fa-code fa-lg
+    href: http://databio.org/software/
+  # - text: Contact us
+  #   icon: fa-envelope
+  #   href: contact
