@@ -126,17 +126,21 @@ wget http://big.databio.org/refgenomes/human_repeats_170502.tgz
 wget http://big.databio.org/refgenomes/rCRSd_170502.tgz
 ```
 
-In order to calculate TSS enrichments, you will need a TSS annotation file in your reference genome directory too.  You may generate that using the following commands:
+## 2.2: Download or create annotation files
+
+To calculate TSS enrichments, you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
 ```
-wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz
+wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz \
 zcat hg38_TSS_full.txt.gz | \
   awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
   LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
 ```
 
+We also have [downloadable pre-built genome annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9` that you can use to annotate the reads and peaks.  These files annotate 3' and 5' UTR, Exonic, Intronic, Intergenic, Promoter, and Promoter Flanking Regions of the corresponding genome as indicated in Ensembl or UCSC.  Simply move the corresponding genome annotation file into the `pepatac/anno` folder.  Once present in the `pepatac/anno` folder you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to directly point to this file when running.  You can also [learn how to create a custom annotation file](howto/create-annotation-file.md) to calculate coverage using your own features of interest.
+
 ---
 
-## 2.2: Configure the pipeline
+## 2.3: Configure the pipeline
 
 Once you've obtained assemblies for all genomes you wish to use, you must point the pipeline to where you store these. You can do this in two ways, either: 1) with an environment variable, or 2) by adjusting a configuration option.
 The pipeline looks for genomes stored in a folder specified by the `resources.genomes` attribute in the [pipeline config file](https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml). By default, this points to the shell variable `GENOMES`, so all you have to do is set an environment variable to the location of your [refgenie genomes](https://github.com/databio/refgenie):
@@ -148,11 +152,11 @@ Alternatively, you can skip the `GENOMES` variable and simply change the value o
 
 ---
 
-## 2.3: Run the pipeline
+## 2.4: Run the pipeline
 
 The pipeline can be run directly from the command line for a single sample. Here we'll outline how to run an individual sample, followed by instructions for looping.
 
-### 2.3.1: Running the pipeline script directly (without `looper`)
+### 2.4.1: Running the pipeline script directly (without `looper`)
 
 The pipeline is at its core just a python script, and you can run it on the command line for a single sample. To see the command-line options for usage, see [usage](/usage), which you can also get on the command line by running `pipelines/pepatac.py --help`. You just need to pass a few command-line parameters to specify sample name, reference genome, input files, etc. See [example commands](https://github.com/databio/pepatac/blob/master/example_cmd.txt) that use test data.
 Here's the basic command to run a small test example through the pipeline:
@@ -169,7 +173,7 @@ pipelines/pepatac.py --single-or-paired paired \
 
 This example should take about 15 minutes to complete.
 
-### 2.3.2: Running the pipeline directly in a container
+### 2.4.2: Running the pipeline directly in a container
 
 A full tutorial on using containers is outside the scope of this guide, but here are the basics. Individual jobs can be run in a container by simply running the `pepatac.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. For example, run it locally in singularity like this:
 ```
@@ -185,6 +189,6 @@ Be sure to mount the volumes you need with `--volume`. If you're utilizing any e
 To run on multiple samples, you can just write a loop to process each sample independently with the pipeline, or you can use...[`looper`!](https://github.com/pepkit/looper)  Learn more about using `looper` with `PEPATAC` in the [how-to guides](howto.md) or in the [extended tutorial](tutorial.md)).
 Any questions? Feel free to [reach out to us](contact.md). Otherwise, go analyze some ATAC-seq!
 
-###  2.3.3: Running the pipeline on multiple samples
+###  2.4.3: Running the pipeline on multiple samples
 
 If you need to run it on many samples, you could write your own sample handling code, but we have pre-configured everything to work nicely with [looper, our sample handling engine](http://looper.readthedocs.io). The extended tutorial includes a more [detailed explanation for how to use looper](tutorial.md#23-using-looper-to-run-the-pipeline) to analyze some provided example data.

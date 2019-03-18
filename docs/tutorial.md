@@ -269,16 +269,22 @@ Let's also create another environment variable that points to our genomes.
 export GENOMES="/path/to/pepatac_tutorial/genomes/
 ```
 (Don't forget to add this to your `.bashrc` or `.profile` to ensure it persists).
-Finally, in order to calculate TSS enrichments, you will need a TSS annotation file in your reference genome directory.  Let's do that now.
+
+## 2.2: Download or create annotation files
+
+To calculate TSS enrichments, you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
 ```
 wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz \
 zcat hg38_TSS_full.txt.gz | \
   awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
   LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
-```            
+```
+
+We also have [downloadable pre-built genome annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9` that you can use to annotate the reads and peaks.  These files annotate 3' and 5' UTR, Exonic, Intronic, Intergenic, Promoter, and Promoter Flanking Regions of the corresponding genome as indicated in Ensembl or UCSC.  Simply move the corresponding genome annotation file into the `pepatac/anno` folder.  Once present in the `pepatac/anno` folder you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to directly point to this file when running.  You can also [learn how to create a custom annotation file](howto/create-annotation-file.md) to calculate coverage using your own features of interest.
+
 Alright! Time to setup the pipeline configuration files and run our sample.
 
-## 2.2: Configure project files
+## 2.3: Configure project files
 
 We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A configuration file has been provided for you in the pipeline itself, conveniently named `tutorial.yaml`.  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#23-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
@@ -317,7 +323,7 @@ That's it! Let's analyze that sample!
 
 ---
 
-## 2.3: Using `looper` to run the pipeline
+## 2.4: Using `looper` to run the pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. One of those is an environment variable called `PEPENV` that points to the Looper environment configuration file. For more detailed information regarding this file, [check out the `looper`docs](https://looper.readthedocs.io/en/latest/cluster-computing.html#pepenv-overview). Let's set it up.
 ```
 cd /path/to/pepatac_tutorial/
@@ -371,7 +377,7 @@ After the pipeline is finished, we can look through the output directory togethe
 
 ---
 
-## 3.2: Generate an `HTML` report using `looper`
+## 3.1: Generate an `HTML` report using `looper`
 
 Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](../files/examples/tutorial/tutorial_summary.html).  Otherwise, let's generate a report ourselves.
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `summarize` function of `looper`.
