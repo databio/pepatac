@@ -19,7 +19,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [--lite]
                   [-V]
 
-PEPATAC version 0.8.4
+PEPATAC version 0.8.5
 
 optional arguments:
   -h, --help            show this help message and exit
