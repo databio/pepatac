@@ -39,26 +39,6 @@ def parse_arguments():
     parser.add_argument("-gs", "--genome-size", default="hs", type=str,
                         help="genome size for MACS2")
 
-    parser.add_argument("--frip-ref-peaks", default=None,
-                        dest="frip_ref_peaks", type=str,
-                        help="Reference peak set for calculating FRiP")
-
-    parser.add_argument("--TSS-name", default=None,
-                        dest="TSS_name", type=str,
-                        help="Name of TSS annotation file")
-
-    parser.add_argument("--anno-name", default=None,
-                        dest="anno_name", type=str,
-                        help="Name of reference bed file for calculating FRiF")
-
-    parser.add_argument("--keep", action='store_true',
-                        dest="keep",
-                        help="Keep prealignment BAM files")
-                    
-    parser.add_argument("--noFIFO", action='store_true',
-                        dest="no_fifo",
-                        help="Do NOT use named pipes during prealignments")
-
     parser.add_argument("--peak-caller", dest="peak_caller",
                         default="macs2", choices=PEAK_CALLERS,
                         help="Name of peak caller")
@@ -74,6 +54,30 @@ def parse_arguments():
     parser.add_argument("--prealignments", default=[], type=str, nargs="+",
                         help="Space-delimited list of reference genomes to "
                              "align to before primary alignment.")
+
+    parser.add_argument("--TSS-name", default=None,
+                        dest="TSS_name", type=str,
+                        help="Name of TSS annotation file")
+
+    parser.add_argument("--blacklist", default=None,
+                        dest="blacklist", type=str,
+                        help="Name of peak blacklist file")
+
+    parser.add_argument("--frip-ref-peaks", default=None,
+                        dest="frip_ref_peaks", type=str,
+                        help="Reference peak set for calculating FRiP")
+
+    parser.add_argument("--anno-name", default=None,
+                        dest="anno_name", type=str,
+                        help="Reference bed file for calculating FRiF")
+
+    parser.add_argument("--keep", action='store_true',
+                        dest="keep",
+                        help="Keep prealignment BAM files")
+                    
+    parser.add_argument("--noFIFO", action='store_true',
+                        dest="no_fifo",
+                        help="Do NOT use named pipes during prealignments")
 
     parser.add_argument("--lite", dest="lite", action='store_true',
                         help="Only keep minimal, essential output to conserve "
@@ -479,6 +483,19 @@ def main():
     param = pm.config.parameters
     res = pm.config.resources
 
+    # Check that the required tools are callable by the pipeline
+    is_callable = True
+    missing_tools = []
+    for t, tool in tools.__dict__.items():
+        if type(tool) != bool:
+            if not ngstk.check_command(tool):
+                missing_tools.append(tool)
+                is_callable = False
+    if not is_callable:
+        err_msg = ("PEPATAC could NOT find these required tools: {}\n"
+                   "Confirm they are installed and in your PATH.")
+        pm.fail_pipeline(RuntimeError(err_msg.format(' '.join(missing_tools))))
+
     # Set up reference resource according to genome prefix.
     gfolder = os.path.join(res.genomes, args.genome_assembly)
     res.chrom_sizes = os.path.join(
@@ -488,8 +505,12 @@ def main():
         res.TSS_file = os.path.join(gfolder, args.TSS_name)
     else:
         res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
-    res.blacklist = os.path.join(
-        gfolder, args.genome_assembly + ".blacklist.bed")
+
+    if args.blacklist:
+        res.blacklist = os.path.join(gfolder, args.blacklist)
+    else:
+        res.blacklist = os.path.join(
+            gfolder, args.genome_assembly + ".blacklist.bed")
 
     # Get bowtie2 indexes
     res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
@@ -1267,7 +1288,7 @@ def main():
                                          "_annotations.bed"))
 
             if not os.path.exists(anno_file) and not os.path.exists(anno_unzip):
-                print("Skipping read and peak annotation")
+                print("Skipping read annotation")
                 print("This requires a {} annotation file."
                       .format(args.genome_assembly))
                 print("Confirm this file is present in {} or specify using `--anno-name`"
@@ -1397,8 +1418,11 @@ def main():
                              anchor_image=tssPNG)
             pm.report_object("Peak partition distribution", gpPDF,
                              anchor_image=gpPNG)
-        #else:
-        #    print("Could not find {}".format(anno_local))
+        else:
+            print("Cannot annotate peaks without a {} annotation file"
+                  .format(args.genome_assembly))
+            print("Confirm this file is present in {} or specify using `--anno-name`"
+                  .format(str(os.path.dirname(anno_file))))
 
         if args.lite:
             # Remove everything but ultimate outputs
