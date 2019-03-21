@@ -259,9 +259,9 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         else:
             if useFIFO and paired:
                 pm.wait = False
-                pm.run(cmd1, out_fastq_r2, container=pm.container)
+                pm.run(cmd1, [summary_file, out_fastq_r2], container=pm.container)
                 pm.wait = True
-                pm.run(cmd2, summary_file, container=pm.container)
+                pm.run(cmd2, [summary_file, out_fastq_r2], container=pm.container)
             else:
                 # TODO: switch to this once filter_paired_fq works with SE
                 #pm.run(cmd2, summary_file, container=pm.container)
