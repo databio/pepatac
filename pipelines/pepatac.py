@@ -122,6 +122,10 @@ def calc_frip(bamfile, peakfile, frip_func, pipeline_manager,
     num_peak_reads = pipeline_manager.checkprint(frip_cmd)
     num_aligned_reads = pipeline_manager.get_stat(aligned_reads_key)
     print(num_aligned_reads, num_peak_reads)
+    # python3 requires we be extra careful, and the above commands are returning
+    # some garbage.
+    num_peak_reads = re.sub("[^0-9]", "", num_peak_reads.decode('utf-8'))
+    num_aligned_reads = re.sub("[^0-9]", "", num_aligned_reads)
     return float(num_peak_reads) / float(num_aligned_reads)
 
 
@@ -1041,7 +1045,7 @@ def main():
         cmd += " -o " + exact_target
         cmd += " -w " + smooth_target
         cmd += " -m " + "atac"
-        cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
+        cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
         cmd2 = "touch " + temp_target
         pm.run([cmd, cmd2], temp_target, container=pm.container)
         pm.clean_add(temp_target)
@@ -1077,7 +1081,7 @@ def main():
         # include in summary stats. This could be done in prettier ways which
         # I'm open to. Just adding for the idea.
         with open(Tss_enrich) as f:
-            floats = map(float, f)
+            floats = list(map(float, f))
         try:
             # If the TSS enrichment is 0, don't report
             Tss_score = ((sum(floats[1950:2050]) / 100) /
