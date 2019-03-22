@@ -36,12 +36,12 @@ def parse_arguments():
         required=["input", "genome", "sample-name", "output-parent"])
 
     # Pipeline-specific arguments
-    parser.add_argument("-gs", "--genome-size", default="hs", type=str,
-                        help="genome size for MACS2")
-
     parser.add_argument("--peak-caller", dest="peak_caller",
                         default="macs2", choices=PEAK_CALLERS,
                         help="Name of peak caller")
+
+    parser.add_argument("-gs", "--genome-size", default="hs", type=str,
+                        help="MACS2 genome size")
 
     parser.add_argument("--trimmer", dest="trimmer",
                         default="skewer", choices=TRIMMERS,
@@ -183,46 +183,37 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         pm.clean_add(tempdir)
    
         # Build bowtie2 command
-        if args.keep:
-            cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
-            cmd += bt2_opts_txt
-            cmd += " -x " + assembly_bt2
-            cmd += " --rg-id " + args.sample_name
+        if args.keep or not useFIFO:
+            cmd1 = "(" + tools.bowtie2 + " -p " + str(pm.cores)
+            cmd1 += bt2_opts_txt
+            cmd1 += " -x " + assembly_bt2
+            cmd1 += " --rg-id " + args.sample_name
             if paired:
-                cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
-                cmd += " --un-conc-gz " + out_fastq_bt2
+                cmd1 += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+                #cmd1 += " --un-conc-gz " + out_fastq_bt2
             else:
-                cmd += " -U " + unmap_fq1
-                cmd += " --un-gz " + out_fastq_bt2
-            cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
-            cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
-            cmd += " -T " + tempdir
-            cmd += " -o " + mapped_bam
-            cmd += ") 2>" + summary_file
+                cmd1 += " -U " + unmap_fq1
+                #cmd1 += " --un-gz " + out_fastq_bt2
+            cmd1 += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
+            cmd1 += " | " + tools.samtools + " sort - -@ 1"  # sort output
+            cmd1 += " -T " + tempdir
+            cmd1 += " -o " + mapped_bam
+            cmd1 += ") 2>" + summary_file
             
+            cmd2 = (tools.samtools + " view -f 4 -@ " + str(pm.cores) +
+                    " " + mapped_bam)
             # In this samtools sort command we print to stdout and then use > to
             # redirect instead of  `+ " -o " + mapped_bam` because then samtools
             # uses a random temp file, so it won't choke if the job gets
             # interrupted and restarted at this step.            
         else:
-            if useFIFO and paired:
+            out_fastq_tmp = os.path.join(sub_outdir,
+                assembly_identifier + "_bt2")
+            if os.path.isfile(out_fastq_tmp):
                 out_fastq_tmp = os.path.join(sub_outdir,
-                    assembly_identifier + "_bt2")
-                if os.path.isfile(out_fastq_tmp):
-                    out_fastq_tmp = os.path.join(sub_outdir,
-                        assembly_identifier + "_bt2_2")
-                cmd = "mkfifo " + out_fastq_tmp
-                pm.run(cmd, out_fastq_tmp, container=pm.container)
-            elif useFIFO and not paired:
-                out_fastq_tmp = os.path.join(sub_outdir,
-                    assembly_identifier + "_bt2")
-                if os.path.isfile(out_fastq_tmp):
-                    out_fastq_tmp = os.path.join(sub_outdir,
-                        assembly_identifier + "_bt2_2")
-                cmd = "mkfifo " + out_fastq_tmp
-                pm.run(cmd, out_fastq_tmp, container=pm.container)
-            else:
-                out_fastq_tmp = out_fastq_pre + '_unmap.fq'
+                    assembly_identifier + "_bt2_2")
+            cmd = "mkfifo " + out_fastq_tmp
+            pm.run(cmd, out_fastq_tmp, container=pm.container)
 
             out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
             out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
@@ -258,10 +249,10 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 cmd1 += ") 2>" + summary_file
                 cmd2 = ""
 
-        if args.keep:
-            pm.run(cmd, mapped_bam, container=pm.container)
+        if args.keep or not useFIFO:
+            pm.run([cmd1, cmd2], mapped_bam, container=pm.container)
         else:
-            if useFIFO and paired:
+            if paired:
                 pm.wait = False
                 pm.run(cmd1, out_fastq_r2, container=pm.container)
                 pm.wait = True
@@ -274,14 +265,21 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
 
             pm.clean_add(out_fastq_tmp)
         
-        # get concordant aligned read pairs
-        if args.keep and paired:
-            cmd = ("grep 'aligned concordantly exactly 1 time' " +
+        # get aligned read counts
+        cmd1 = ("grep 'aligned concordantly exactly 1 time' " +
                    summary_file + " | awk '{print $1}'")
+        cmd2 = ("grep 'aligned exactly 1 time' " +
+                   summary_file + " | awk '{print $1}'")
+        if args.keep or not useFIFO and paired:
+            c1 = pm.checkprint(cmd1)
+            c2 = pm.checkprint(cmd2)
+            if c1 and c2:
+                concordant = float(c1) + float(c2)
+            else:
+                concordant = float(c1)
         else:
-            cmd = ("grep 'aligned exactly 1 time' " +
-                   summary_file + " | awk '{print $1}'")
-        concordant = pm.checkprint(cmd)
+            concordant = pm.checkprint(cmd2) 
+        
         if concordant:
             ar = float(concordant)*2
         else:
@@ -301,6 +299,9 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         
         # filter genome reads not mapped
         if args.keep and paired:
+            unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
+            unmap_fq2 = out_fastq_pre + "_unmap_R2.fq.gz"
+        elif not args.keep and not useFIFO and paired :
             unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
             unmap_fq2 = out_fastq_pre + "_unmap_R2.fq.gz"
         elif not args.keep and paired:
@@ -459,6 +460,39 @@ def anno_path(anno_name):
                         ANNO_FOLDER, anno_name)
 
 
+def check_commands(commands, ignore):
+    """
+    Check if command(s) can be called
+
+    :param attributedict commands: dictionary of commands to check
+    :param list ignore: list of commands that are optional and can be ignored
+    """
+
+    # Use `command` to see if command is callable, store exit code
+    is_callable = True
+    uncallable = []
+    for name, command in commands.items():
+        if command not in ignore:
+            # if a command is a java file, modify the command
+            if '.jar' in command:
+                command = "java -jar " + command
+            # if an environment variable is not expanded it means it points to
+            # an uncallable command
+            if '$' in command: 
+                uncallable.append(command)
+
+            code = os.system("command -v {0} >/dev/null 2>&1 || {{ exit 1; }}".format(command))          
+            # If exit code is not 0, track which command failed
+            if code != 0:
+                uncallable.append(command)
+                is_callable = False
+    if is_callable:
+        return True
+    else:
+        print("The following required tool(s) are not callable: {0}".format(' '.join(uncallable)))
+        return False  
+
+
 def main():
     """
     Main pipeline process.
@@ -484,17 +518,9 @@ def main():
     res = pm.config.resources
 
     # Check that the required tools are callable by the pipeline
-    is_callable = True
-    missing_tools = []
-    for t, tool in tools.__dict__.items():
-        if type(tool) != bool:
-            if not ngstk.check_command(tool):
-                missing_tools.append(tool)
-                is_callable = False
-    if not is_callable:
-        err_msg = ("PEPATAC could NOT find these required tools: {}\n"
-                   "Confirm they are installed and in your PATH.")
-        pm.fail_pipeline(RuntimeError(err_msg.format(' '.join(missing_tools))))
+    if not check_commands(tools, ["fseq", "${TRIMMOMATIC}", "${PICARD}", "Rscript"]):
+        err_msg = "Please install missing tools before continuing."
+        pm.fail_pipeline(RuntimeError(err_msg))
 
     # Set up reference resource according to genome prefix.
     gfolder = os.path.join(res.genomes, args.genome_assembly)
@@ -759,9 +785,9 @@ def main():
     # Split genome mapping result bamfile into two: high-quality aligned
     # reads (keepers) and unmapped reads (in case we want to analyze the
     # altogether unmapped reads)
-    # -q 10: skip alignments with MAPQ less than 10
-    cmd2 = (tools.samtools + " view -q 10 -b -@ " + str(pm.cores) +
-            " -U " + failQC_genome_bam + " ")
+    # Default (samtools.params): skip alignments with MAPQ less than 10 (-q 10)
+    cmd2 = (tools.samtools + " view -b " + param.samtools.params + " -@ " +
+            str(pm.cores) + " -U " + failQC_genome_bam + " ")
     if args.paired_end:
         # add a step to accept only reads mapped in proper pair
         cmd2 += "-f 2 "
@@ -789,7 +815,7 @@ def main():
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
         if not pypiper.is_gzipped_fastq(unmapped_fq):
-            cmd = ("gzip " + unmapped_fq)
+            cmd = (ngstk.ziptool + unmapped_fq)
             unmapped_fq = unmapped_fq + ".gz"
             pm.run(cmd, unmapped_fq, container=pm.container)
 
@@ -802,7 +828,7 @@ def main():
     pm.clean_add(temp_mapping_index)
     
     # Determine mitochondrial read counts
-    mito_name = ["chrM", "chrMT", "M", "MT"]
+    mito_name = ["chrM", "chrMT", "M", "MT", "rCRSd"]
     
     # If first run, use the temp bam file
     if os.path.isfile(mapping_genome_bam_temp) and os.stat(mapping_genome_bam_temp).st_size > 0:
@@ -1150,22 +1176,11 @@ def main():
         pm.stop_pipeline()
     else:
         if args.peak_caller == "fseq":
-            fseq_cmd_chunks = [tools.fseq, ("-o", peak_folder)]
-
-            # Parse only a subset of fseq options.
-            for fseq_opt in ["of", "l", "t", "s"]:
-                fseq_value = param.fseq[fseq_opt]
-                # TODO: use more natural try/except once PipelineManager parameters
-                #       AD is strict.
-                if fseq_value == fseq_opt:
-                    # Non-strict pipeline parameters AttributeDict returns key
-                    # itself if missing.
-                    continue
-                # We're building a command, so even non-text values need no special
-                # handling.
-                fseq_optval = ("-{}".format(fseq_opt), fseq_value)
-                fseq_cmd_chunks.append(fseq_optval)
-
+            fseq_cmd_chunks = [
+                tools.fseq,
+                ("-o", peak_folder),
+                param.fseq.params
+            ]
             # Create the peak calling command
             fseq_cmd_chunks.append(peak_input_file)
             fseq_cmd = build_command(fseq_cmd_chunks)
@@ -1186,13 +1201,10 @@ def main():
             macs_cmd_chunks = [
                 "{} callpeak".format(tools.macs2),
                 ("-t", peak_input_file),
-                "-f BED",
-                ("-g", args.genome_size),
                 ("--outdir", peak_folder),
                 ("-n", args.sample_name),
-                ("-q", param.macs2.q),
-                ("--shift", param.macs2.shift),
-                "--nomodel"
+                ("-g", args.genome_size),
+                param.macs2.params
             ]
             # Note: required input file is non-positional ("treatment" file -t)
             cmd = build_command(macs_cmd_chunks)
@@ -1304,13 +1316,14 @@ def main():
 
         if os.path.isfile(anno_local):
             # Get list of features
-            cmd1 = ("gunzip -c " + anno_local + " | cut -f 4 | sort -u")
+            cmd1 = (ngstk.ziptool + " -d -c " + anno_local +
+                    " | cut -f 4 | sort -u")
             ftList = pm.checkprint(cmd1)
             ftList = str.splitlines(ftList)
 
             # Split annotation file on features
-            cmd2 = ("gunzip -c " + anno_local + " | awk -F'\t' '{print>\"" +
-                    QC_folder + "/\"$4}'")
+            cmd2 = (ngstk.ziptool + " -d -c " + anno_local +
+                    " | awk -F'\t' '{print>\"" + QC_folder + "/\"$4}'")
             if len(ftList) >= 1:
                 for pos, anno in enumerate(ftList):
                     annoFile = os.path.join(QC_folder, anno)
@@ -1347,7 +1360,7 @@ def main():
         pm.timestamp("### Plot FRiP/F")
 
         cmd = (tools.samtools + " view -@ " + str(pm.cores) +
-               " -q 15 -c -F4 " + rmdup_bam)
+               param.samtools.params + " -c -F4 " + rmdup_bam)
         totalReads = pm.checkprint(cmd)
         totalReads = str(totalReads).rstrip()
 
