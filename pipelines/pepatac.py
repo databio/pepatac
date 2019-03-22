@@ -10,8 +10,8 @@ __version__ = "0.8.5"
 
 from argparse import ArgumentParser
 import os
-import sys
 import re
+import sys
 import tempfile
 import tarfile
 import pypiper
@@ -190,10 +190,10 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             cmd1 += " --rg-id " + args.sample_name
             if paired:
                 cmd1 += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
-                #cmd1 += " --un-conc-gz " + out_fastq_bt2
+                cmd1 += " --un-conc-gz " + out_fastq_bt2
             else:
                 cmd1 += " -U " + unmap_fq1
-                #cmd1 += " --un-gz " + out_fastq_bt2
+                cmd1 += " --un-gz " + out_fastq_bt2
             cmd1 += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
             cmd1 += " | " + tools.samtools + " sort - -@ 1"  # sort output
             cmd1 += " -T " + tempdir
@@ -207,13 +207,26 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             # uses a random temp file, so it won't choke if the job gets
             # interrupted and restarted at this step.            
         else:
-            out_fastq_tmp = os.path.join(sub_outdir,
-                assembly_identifier + "_bt2")
-            if os.path.isfile(out_fastq_tmp):
+            if useFIFO and paired:
                 out_fastq_tmp = os.path.join(sub_outdir,
-                    assembly_identifier + "_bt2_2")
-            cmd = "mkfifo " + out_fastq_tmp
-            pm.run(cmd, out_fastq_tmp, container=pm.container)
+                    assembly_identifier + "_bt2")
+                if os.path.isfile(out_fastq_tmp):
+                    out_fastq_tmp = os.path.join(sub_outdir,
+                        assembly_identifier + "_bt2_2")
+                cmd = "mkfifo " + out_fastq_tmp
+                if not os.path.exists(out_fastq_tmp):
+                    pm.run(cmd, out_fastq_tmp, container=pm.container)
+            elif useFIFO and not paired:
+                out_fastq_tmp = os.path.join(sub_outdir,
+                    assembly_identifier + "_bt2")
+                if os.path.isfile(out_fastq_tmp):
+                    out_fastq_tmp = os.path.join(sub_outdir,
+                        assembly_identifier + "_bt2_2")
+                cmd = "mkfifo " + out_fastq_tmp
+                if not os.path.exists(out_fastq_tmp):
+                    pm.run(cmd, out_fastq_tmp, container=pm.container)
+            else:
+                out_fastq_tmp = out_fastq_pre + '_unmap.fq'
 
             out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
             out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
@@ -254,9 +267,9 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         else:
             if paired:
                 pm.wait = False
-                pm.run(cmd1, out_fastq_r2, container=pm.container)
+                pm.run(cmd1, [summary_file, out_fastq_r2], container=pm.container)
                 pm.wait = True
-                pm.run(cmd2, summary_file, container=pm.container)
+                pm.run(cmd2, [summary_file, out_fastq_r2], container=pm.container)
             else:
                 # TODO: switch to this once filter_paired_fq works with SE
                 #pm.run(cmd2, summary_file, container=pm.container)
@@ -815,7 +828,11 @@ def main():
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
         if not pypiper.is_gzipped_fastq(unmapped_fq):
+<<<<<<< HEAD
             cmd = (ngstk.ziptool + unmapped_fq)
+=======
+            cmd = (ngstk.ziptool + " " + unmapped_fq)
+>>>>>>> 43de0f286b9b70d52e1db2a6029c5f707ad5554d
             unmapped_fq = unmapped_fq + ".gz"
             pm.run(cmd, unmapped_fq, container=pm.container)
 
