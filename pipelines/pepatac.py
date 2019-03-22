@@ -10,8 +10,8 @@ __version__ = "0.8.5"
 
 from argparse import ArgumentParser
 import os
-import sys
 import re
+import sys
 import tempfile
 import tarfile
 import pypiper
@@ -208,7 +208,8 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                     out_fastq_tmp = os.path.join(sub_outdir,
                         assembly_identifier + "_bt2_2")
                 cmd = "mkfifo " + out_fastq_tmp
-                pm.run(cmd, out_fastq_tmp, container=pm.container)
+                if not os.path.exists(out_fastq_tmp):
+                    pm.run(cmd, out_fastq_tmp, container=pm.container)
             elif useFIFO and not paired:
                 out_fastq_tmp = os.path.join(sub_outdir,
                     assembly_identifier + "_bt2")
@@ -216,7 +217,8 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                     out_fastq_tmp = os.path.join(sub_outdir,
                         assembly_identifier + "_bt2_2")
                 cmd = "mkfifo " + out_fastq_tmp
-                pm.run(cmd, out_fastq_tmp, container=pm.container)
+                if not os.path.exists(out_fastq_tmp):
+                    pm.run(cmd, out_fastq_tmp, container=pm.container)
             else:
                 out_fastq_tmp = out_fastq_pre + '_unmap.fq'
 
