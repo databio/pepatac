@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.5"
+__version__ = "0.8.6"
 
 
 from argparse import ArgumentParser
@@ -47,13 +47,13 @@ def parse_arguments():
                         default="skewer", choices=TRIMMERS,
                         help="Name of read trimming program")
 
-    parser.add_argument("--deduplicator", dest="deduplicator",
-                        default="samblaster", choices=DEDUPLICATORS,
-                        help="Name of deduplicator program")
-
     parser.add_argument("--prealignments", default=[], type=str, nargs="+",
                         help="Space-delimited list of reference genomes to "
                              "align to before primary alignment.")
+
+    parser.add_argument("--deduplicator", dest="deduplicator",
+                        default="samblaster", choices=DEDUPLICATORS,
+                        help="Name of deduplicator program")
 
     parser.add_argument("--TSS-name", default=None,
                         dest="TSS_name", type=str,
@@ -122,10 +122,6 @@ def calc_frip(bamfile, peakfile, frip_func, pipeline_manager,
     num_peak_reads = pipeline_manager.checkprint(frip_cmd)
     num_aligned_reads = pipeline_manager.get_stat(aligned_reads_key)
     print(num_aligned_reads, num_peak_reads)
-    # python3 requires we be extra careful, and the above commands are returning
-    # some garbage.
-    num_peak_reads = re.sub("[^0-9]", "", num_peak_reads.decode('utf-8'))
-    num_aligned_reads = re.sub("[^0-9]", "", num_aligned_reads)
     return float(num_peak_reads) / float(num_aligned_reads)
 
 
@@ -189,7 +185,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
         out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
 
-        if useFIFO:
+        if useFIFO and not args.keep:
             out_fastq_tmp = os.path.join(sub_outdir,
                     assembly_identifier + "_bt2")
             cmd = "mkfifo " + out_fastq_tmp
@@ -208,62 +204,59 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         # For now, revert to old method
 
         # Build bowtie2 command
-        if args.keep or not paired:
-            cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
-            cmd += bt2_opts_txt
-            cmd += " -x " + assembly_bt2
-            cmd += " --rg-id " + args.sample_name
-            cmd += " -U " + unmap_fq1
-            cmd += " --un-gz " + out_fastq_bt2
+        cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
+        cmd += bt2_opts_txt
+        cmd += " -x " + assembly_bt2
+        cmd += " --rg-id " + args.sample_name
+        cmd += " -U " + unmap_fq1
+        cmd += " --un " + out_fastq_tmp
+        if args.keep: #  or not paired
+            #cmd += " --un-gz " + out_fastq_bt2 # TODO drop this for paired... because repair-ing with filter_paired_fq.pl
+            # In this samtools sort command we print to stdout and then use > to
+            # redirect instead of  `+ " -o " + mapped_bam` because then samtools
+            # uses a random temp file, so it won't choke if the job gets
+            # interrupted and restarted at this step.
             cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
             cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
             cmd += " -T " + tempdir
             cmd += " -o " + mapped_bam
-            cmd += ") 2>" + summary_file
-            # In this samtools sort command we print to stdout and then use > to
-            # redirect instead of  `+ " -o " + mapped_bam` because then samtools
-            # uses a random temp file, so it won't choke if the job gets
-            # interrupted and restarted at this step.            
-        else:            
-            cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
-            cmd += bt2_opts_txt
-            cmd += " -x " + assembly_bt2
-            cmd += " --rg-id " + args.sample_name
-            cmd += " -U " + unmap_fq1
-            cmd += " --un " + out_fastq_tmp
-            cmd += " > /dev/null"
-            cmd += ") 2>" + summary_file    
-
-        if args.keep:
-            pm.run([cmd, filter_pair], mapped_bam, container=pm.container)
         else:
-            if paired:
+            cmd += " > /dev/null"
+        cmd += ") 2>" + summary_file
+
+        if paired:
+            if args.keep or not useFIFO:
+                pm.run([cmd, filter_pair], mapped_bam, container=pm.container)
+            else:
                 pm.wait = False
                 pm.run(filter_pair, [summary_file, out_fastq_r2], container=pm.container)
                 pm.wait = True
                 pm.run(cmd, [summary_file, out_fastq_r2], container=pm.container)
+        else:
+            if args.keep:
+                pm.run(cmd, mapped_bam, container=pm.container)
             else:
                 # TODO: switch to this once filter_paired_fq works with SE
                 #pm.run(cmd2, summary_file, container=pm.container)
                 #pm.run(cmd1, out_fastq_r1, container=pm.container)
                 pm.run(cmd, out_fastq_bt2, container=pm.container)
 
-            pm.clean_add(out_fastq_tmp)
-        
+        pm.clean_add(out_fastq_tmp)
+
         # get aligned read counts
-        if args.keep and paired:
-            cmd = ("grep 'aligned concordantly exactly 1 time' " +
-                   summary_file + " | awk '{print $1}'")
-        else:
-            cmd = ("grep 'aligned exactly 1 time' " +
-                   summary_file + " | awk '{print $1}'")
-        concordant = pm.checkprint(cmd)
-        if concordant:
-            ar = float(concordant)*2
+        #if args.keep and paired:
+        #    cmd = ("grep 'aligned concordantly exactly 1 time' " +
+        #           summary_file + " | awk '{print $1}'")
+        #else:
+        cmd = ("grep 'aligned exactly 1 time' " + summary_file +
+               " | awk '{print $1}'")
+        align_exact = pm.checkprint(cmd)
+        if align_exact:
+            ar = float(align_exact)*2
         else:
             ar = 0
 
-        # report concordant aligned reads
+        # report aligned reads
         pm.report_result("Aligned_reads_" + assembly_identifier, ar)
         try:
             # wrapped in try block in case Trimmed_reads is not reported in this
@@ -275,13 +268,9 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             res_key = "Alignment_rate_" + assembly_identifier
             pm.report_result(res_key, round(float(ar) * 100 / float(tr), 2))
         
-        # filter genome reads not mapped
-        if args.keep and paired:
+        if paired:
             unmap_fq1 = out_fastq_r1
             unmap_fq2 = out_fastq_r2
-        elif not args.keep and paired :
-            unmap_fq1 = out_fastq_pre + "_unmap_R1.fq.gz"
-            unmap_fq2 = out_fastq_pre + "_unmap_R2.fq.gz"
         else:
             # Use alternate once filter_paired_fq is working with SE
             #unmap_fq1 = out_fastq_r1
@@ -450,7 +439,7 @@ def check_commands(commands, ignore):
                 command = "java -jar " + command
             # if an environment variable is not expanded it means it points to
             # an uncallable command
-            if '$' in command:
+            if '$' in command: 
                 uncallable.append(command)
 
             code = os.system("command -v {0} >/dev/null 2>&1 || {{ exit 1; }}".format(command))
@@ -682,7 +671,6 @@ def main():
                trimmed_fastq, args.paired_end, trimmed_fastq_R2,
                fastqc_folder=os.path.join(param.outfolder, "fastqc")),
            container=pm.container)
-
     
     pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
     pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
@@ -810,8 +798,7 @@ def main():
     else:
         bam_file = mapping_genome_bam
 
-    cmd = (tools.samtools + " idxstats " + mapping_genome_bam_temp +
-            " | grep")
+    cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
     for name in mito_name:
         cmd += " -we '" + name + "'"
     cmd += "| cut -f 3"
@@ -1035,24 +1022,18 @@ def main():
                         map_genome_folder, args.sample_name + "_smooth.bw")
     shift_bed = os.path.join(exact_folder, args.sample_name + "_shift.bed")
 
-    #wig_cmd_callable = ngstk.check_command("wigToBigWig")
-
-    if wig_cmd_callable:
-        cmd = tool_path("bamSitesToWig.py")
-        cmd += " -i " + rmdup_bam
-        cmd += " -c " + res.chrom_sizes
-        cmd += " -b " + shift_bed # request bed output
-        cmd += " -o " + exact_target
-        cmd += " -w " + smooth_target
-        cmd += " -m " + "atac"
-        cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
-        cmd2 = "touch " + temp_target
-        pm.run([cmd, cmd2], temp_target, container=pm.container)
-        pm.clean_add(temp_target)
-        pm.clean_add(temp_exact_folder)
-    else:
-        print("Skipping signal track production -- Could not call \'wigToBigWig\'.")
-        print("Check that you have the required UCSC tools in your PATH.")
+    cmd = tool_path("bamSitesToWig.py")
+    cmd += " -i " + rmdup_bam
+    cmd += " -c " + res.chrom_sizes
+    cmd += " -b " + shift_bed # request bed output
+    cmd += " -o " + exact_target
+    cmd += " -w " + smooth_target
+    cmd += " -m " + "atac"
+    cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
+    cmd2 = "touch " + temp_target
+    pm.run([cmd, cmd2], temp_target, container=pm.container)
+    pm.clean_add(temp_target)
+    pm.clean_add(temp_exact_folder)
 
     # TSS enrichment
     if not os.path.exists(res.TSS_file):
@@ -1081,7 +1062,7 @@ def main():
         # include in summary stats. This could be done in prettier ways which
         # I'm open to. Just adding for the idea.
         with open(Tss_enrich) as f:
-            floats = list(map(float, f))
+            floats = map(float, f)
         try:
             # If the TSS enrichment is 0, don't report
             Tss_score = ((sum(floats[1950:2050]) / 100) /
@@ -1332,7 +1313,7 @@ def main():
 
         pm.timestamp("### Plot FRiP/F")
 
-        cmd = (tools.samtools + " view -@ " + str(pm.cores) +
+        cmd = (tools.samtools + " view -@ " + str(pm.cores) + " " +
                param.samtools.params + " -c -F4 " + rmdup_bam)
         totalReads = pm.checkprint(cmd)
         totalReads = str(totalReads).rstrip()
