@@ -175,8 +175,6 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             # Default options
             bt2_opts_txt = " -k 1"  # Return only 1 alignment
             bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-            if paired and args.keep:
-                bt2_opts_txt += " -X 2000"
 
         # samtools sort needs a temporary directory
         tempdir = tempfile.mkdtemp(dir=sub_outdir)
@@ -699,13 +697,15 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                 args, tools, args.paired_end, False, unmap_fq1, unmap_fq2, reference,
                 assembly_bt2=_get_bowtie2_index(res.genomes, reference),
-                outfolder=param.outfolder, aligndir="prealignments")
+                outfolder=param.outfolder, aligndir="prealignments",
+                bt2_opts_txt = param.bowtie2_pre.params)
                 to_compress.extend((unmap_fq1, unmap_fq2))
             else:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                 args, tools, args.paired_end, True, unmap_fq1, unmap_fq2, reference,
                 assembly_bt2=_get_bowtie2_index(res.genomes, reference),
-                outfolder=param.outfolder, aligndir="prealignments")
+                outfolder=param.outfolder, aligndir="prealignments",
+                bt2_opts_txt = param.bowtie2_pre.params)
                 to_compress.extend((unmap_fq1, unmap_fq2))
 
     pm.timestamp("### Map to genome")
@@ -722,15 +722,19 @@ def main():
     unmap_genome_bam = os.path.join(
         map_genome_folder, args.sample_name + "_unmap.bam")
 
-    bt2_options = " --very-sensitive"
-    bt2_options += " -X 2000"
+    if not param.bowtie2.params:
+        bt2_options = " --very-sensitive"
+        if args.paired_end:
+            bt2_options += " -X 2000"
+    else:
+        bt2_options = param.bowtie2.params
 
     # samtools sort needs a temporary directory
     tempdir = tempfile.mkdtemp(dir=map_genome_folder)
     pm.clean_add(tempdir)
 
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
-    cmd += bt2_options
+    cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
     cmd += " -x " + res.bt2_genome
     if args.paired_end:
