@@ -173,7 +173,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
 
         if not bt2_opts_txt:
             # Default options
-            bt2_opts_txt = " -k 1"  # Return only 1 alignment
+            bt2_opts_txt = "-k 1"  # Return only 1 alignment
             bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
 
         # samtools sort needs a temporary directory
@@ -203,7 +203,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
 
         # Build bowtie2 command
         cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
-        cmd += bt2_opts_txt
+        cmd += " " + bt2_opts_txt
         cmd += " -x " + assembly_bt2
         cmd += " --rg-id " + args.sample_name
         cmd += " -U " + unmap_fq1
