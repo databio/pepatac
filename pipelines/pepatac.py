@@ -683,16 +683,16 @@ def main():
     unmap_fq2 = trimmed_fastq_R2
 
     # Map to any requested prealignments
-    # We recommend mapping to chrM first for ATAC-seq data
+    # We recommend mapping to chrM (i.e. rCRSd) prior to primary genome alignment
     pm.timestamp("### Prealignments")
+    # Keep track of the unmapped files in order to compress them after final
+    # alignment.
+    to_compress = []
     if len(args.prealignments) == 0:
         print("You may use `--prealignments` to align to references before "
               "the genome alignment step. See docs.")
     else:
         print("Prealignment assemblies: " + str(args.prealignments))
-        # Keep track of the unmapped files in order to compress them after final
-        # alignment.
-        to_compress = []
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
             if args.no_fifo:
