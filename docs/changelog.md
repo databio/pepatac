@@ -1,6 +1,18 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.6] -- 2019-03-26
+
+### Changed
+- Use ngtsk ziptool option universally 
+- Change how tools are parameterized and include bowtie2
+- Simply and clarify prealignment steps
+- Improve argument order for better readability
+
+### Added
+- Perform a pre-check that all required tools are callable
+- Add multiple targets and a pre-check for FIFO usage
+
 ## [0.8.5] -- 2019-03-19
 
 ### Changed

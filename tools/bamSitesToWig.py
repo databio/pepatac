@@ -199,7 +199,7 @@ class CutTracer(pararead.ParaReadProcessor):
                 header_line = ("fixedStep chrom=" + chrom + " start=" +
                                str(begin) + " step=1\n")
 
-            cutsToWigProcess.stdin.write(header_line)
+            cutsToWigProcess.stdin.write(header_line.encode('utf-8'))
 
         if self.smoothbw:
             if self.variable_step:
@@ -209,17 +209,17 @@ class CutTracer(pararead.ParaReadProcessor):
                                str(begin) + " step=" + str(self.step_size) +
                                "\n")
 
-            cutsToWigProcessSm.stdin.write(header_line)
+            cutsToWigProcessSm.stdin.write(header_line.encode('utf-8'))
 
         try:
             for read in reads:
                 shifted_pos = get_shifted_pos(read, shift_factor)
 
                 if self.exactbw:
-                    cutsToWigProcess.stdin.write(str(shifted_pos) + "\n")
+                    cutsToWigProcess.stdin.write((str(shifted_pos) + "\n").encode('utf-8'))
 
                 if self.smoothbw:
-                    cutsToWigProcessSm.stdin.write(str(shifted_pos) + "\n")
+                    cutsToWigProcessSm.stdin.write((str(shifted_pos) + "\n").encode('utf-8'))
 
                 if self.bedout:
                     strand = "-" if read.is_reverse else "+"

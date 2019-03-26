@@ -19,3 +19,13 @@ _site/
 /_site/
 .sass-cache/
 .jekyll-metadata
+
+# Annotation files
+anno/hg38_annotations.bed.gz
+anno/hg19_annotations.bed.gz
+anno/mm10_annotations.bed.gz
+anno/mm9_annotations.bed.gz
+
+# Tutorial files
+examples/data/tutorial_r1.fastq.gz
+examples/data/tutorial_r2.fastq.gz
