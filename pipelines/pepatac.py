@@ -37,7 +37,10 @@ def parse_arguments():
 
     # Pipeline-specific arguments
     parser.add_argument("-gs", "--genome-size", default="hs", type=str,
-                        help="genome size for MACS2")
+                        help="Effective genome size for MACS2. It can be 1.0e+9 "
+                        "or 1000000000 or shortcuts:'hs' for human (2.7e9), "
+                        "'mm' for mouse (1.87e9), 'ce' for C. elegans (9e7) "
+                        "or 'dm' for fruitfly (1.2e8), Default:hs")
 
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
@@ -45,7 +48,7 @@ def parse_arguments():
 
     parser.add_argument("--TSS-name", default=None,
                         dest="TSS_name", type=str,
-                        help="Name of TSS annotation file")
+                        help="Filename of TSS annotation file.")
 
     parser.add_argument("--anno-name", default=None,
                         dest="anno_name", type=str,
@@ -53,7 +56,7 @@ def parse_arguments():
 
     parser.add_argument("--keep", action='store_true',
                         dest="keep",
-                        help="Keep prealignment BAM files")
+                        help="Enable this flag to keep prealignment BAM files")
                     
     parser.add_argument("--noFIFO", action='store_true',
                         dest="no_fifo",
