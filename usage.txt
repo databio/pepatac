@@ -2,16 +2,14 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
                   PARENT_OUTPUT_FOLDER [-M MEMORY_LIMIT] [-P NUMBER_OF_CORES]
                   -S SAMPLE_NAME -I INPUT_FILES [INPUT_FILES ...]
                   [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G GENOME_ASSEMBLY
-                  [-Q SINGLE_OR_PAIRED] [-gs GENOME_SIZE]
-                  [--frip-ref-peaks FRIP_REF_PEAKS] [--TSS-name TSS_NAME]
-                  [--anno-name ANNO_NAME] [--keep] [--noFIFO]
-                  [--peak-caller {fseq,macs2}]
-                  [--trimmer {trimmomatic,pyadapt,skewer}]
-                  [--deduplicator {picard,samblaster}]
-                  [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]] [--lite]
-                  [-V]
+                  [-Q SINGLE_OR_PAIRED] [--peak-caller {fseq,macs2}]
+                  [-gs GENOME_SIZE] [--trimmer {trimmomatic,pyadapt,skewer}]
+                  [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]]
+                  [--deduplicator {picard,samblaster}] [--TSS-name TSS_NAME]
+                  [--blacklist BLACKLIST] [--frip-ref-peaks FRIP_REF_PEAKS]
+                  [--anno-name ANNO_NAME] [--keep] [--noFIFO] [--lite] [-V]
 
-PEPATAC version 0.8.5
+PEPATAC version 0.8.6
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -23,31 +21,35 @@ optional arguments:
                         Pipeline configuration file (YAML). Relative paths are
                         with respect to the pipeline script.
   -M MEMORY_LIMIT, --mem MEMORY_LIMIT
-                        Memory limit (in Mb) for processes accepting such
+                        Memory limit for processes accepting such. Default
+                        units are megabytes unless specified using the suffix
+                        [K|M|G|T].
   -P NUMBER_OF_CORES, --cores NUMBER_OF_CORES
                         Number of cores for parallelized processes
   -I2 [INPUT_FILES2 [INPUT_FILES2 ...]], --input2 [INPUT_FILES2 [INPUT_FILES2 ...]]
                         Secondary input files, such as read2
   -Q SINGLE_OR_PAIRED, --single-or-paired SINGLE_OR_PAIRED
                         Single- or paired-end sequencing protocol
-  -gs GENOME_SIZE, --genome-size GENOME_SIZE
-                        genome size for MACS2
-  --frip-ref-peaks FRIP_REF_PEAKS
-                        Reference peak set for calculating FRiP
-  --TSS-name TSS_NAME   Name of TSS annotation file
-  --anno-name ANNO_NAME
-                        Name of reference bed file for calculating FRiF
-  --keep                Keep prealignment BAM files
-  --noFIFO              Do NOT use named pipes during prealignments
   --peak-caller {fseq,macs2}
                         Name of peak caller
+  -gs GENOME_SIZE, --genome-size GENOME_SIZE
+                        MACS2 genome size
   --trimmer {trimmomatic,pyadapt,skewer}
                         Name of read trimming program
-  --deduplicator {picard,samblaster}
-                        Name of deduplicator program
   --prealignments PREALIGNMENTS [PREALIGNMENTS ...]
                         Space-delimited list of reference genomes to align to
                         before primary alignment.
+  --deduplicator {picard,samblaster}
+                        Name of deduplicator program
+  --TSS-name TSS_NAME   Name of TSS annotation file
+  --blacklist BLACKLIST
+                        Name of peak blacklist file
+  --frip-ref-peaks FRIP_REF_PEAKS
+                        Reference peak set for calculating FRiP
+  --anno-name ANNO_NAME
+                        Reference bed file for calculating FRiF
+  --keep                Keep prealignment BAM files
+  --noFIFO              Do NOT use named pipes during prealignments
   --lite                Only keep minimal, essential output to conserve disk
                         space.
   -V, --version         show program's version number and exit

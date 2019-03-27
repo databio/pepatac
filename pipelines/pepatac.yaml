@@ -17,7 +17,6 @@ tools:  # absolute paths to required tools
   bedGraphToBigWig: bedGraphToBigWig
   wigToBigWig: wigToBigWig
   bigWigCat: bigWigCat
-  bedSort: bedSort
   bedToBigBed: bedToBigBed
   # optional tools
   fseq: fseq  
@@ -31,15 +30,34 @@ resources:
   adapters: null  # Set to null to use default adapter file included in repository
 
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool
+# Adjust/Add/Remove parameters for individual tools here
+  bowtie2_pre: # Modify bowtie2 prealignment settings
+    params: ''
+    # pipeline default: -k 1 -D 20 -R 3 -N 1 -L 20 -i S,1,0.50
+    # -k 1: report up to <1> alns per read; MAPQ not meaningful
+    # -D 20: give up extending after <20> failed extends in a row
+    # -R 3: for reads w/ repetitive seeds, try <3> sets of seeds
+    # -N 1: max # mismatches in seed alignment; can be 0 or 1
+    # -L 20: length of seed substrings; must be >3, <32
+    # -i S,1,0.50: interval between seed substrings w/r/t read len
+  bowtie2: # Modify bowtie2 primary genome alignment settings
+    params: ''
+    # pipeline default: --very-sensitive -X 2000
+    # --very-sensitive: -D 20 -R 3 -N 0 -L 20 -i S,1,0.50
+    # -X 2000: paired-end maximum fragment length
   samtools:
-    q: 10
+    params: '-q 10'
+    # -q: skip alignments with MAPQ < 10.
   macs2: 
-    f: BED
-    q: 0.01
-    shift: 0
+    params: '-f BED -q 0.01 --shift 0 --nomodel'
+    # -f: Format of tag file.
+    # -q: The qvalue (minimum FDR) cutoff to call significant regions.
+    # --shift:  Assign an arbitrary shift in bp. See MACS documentation.
+    # --nomodel: Will bybass building the shifting model.
   fseq:
-    of: npf    # narrowPeak as output format
-    l: 600     # feature length
-    t: 4.0     # "threshold" (standard deviations)
-    s: 1       # wiggle track step
+    params: '-of npf -l 600 -t 4.0 -s 1'
+    # -of: narrowPeak as output format.
+    # -l: feature length.
+    # -t: "threshold" (standard deviations).
+    # -s: wiggle track step.
     

@@ -5,7 +5,7 @@ FROM phusion/baseimage:0.10.2
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.9.1
+LABEL version 0.9.5
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -38,8 +38,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes mysql-server \
 # Install python tools
 RUN pip install --upgrade pip
 RUN pip install virtualenv && \
+    pip install cython && \
     pip install numpy && \
-    pip install MACS2 && \
     pip install pandas && \
     pip install pararead && \
     pip install piper
@@ -62,6 +62,14 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-de
     Rscript -e "install.packages('gtable')" && \
     Rscript -e "install.packages('scales')" && \
     Rscript -e "install.packages('stringr')"
+
+# Install MACS2 from github
+# Must install this way due to bug using easy_install in MACS2 setup.py with pip
+WORKDIR /home/tools/
+RUN git clone git://github.com/taoliu/MACS.git && \
+    cd /home/tools/MACS && \
+    python setup_w_cython.py install && \
+    python setup.py install
 
 # Install bedtools
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
@@ -162,7 +170,8 @@ RUN wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmoma
 ENV PATH=/home/tools/bin:/home/tools/:/home/tools/bin/kentUtils/:/home/src/F-seq-master/dist~/fseq/bin:/home/src/bowtie2-2.3.4.1:/home/src/skewer:/home/src/samtools-1.7:/home/src/Trimmomatic-0.36/:/home/src/htslib-1.7:$PATH \
     TRIMMOMATIC=/home/src/Trimmomatic-0.36/trimmomatic-0.36.jar \
     PICARD=/home/tools/bin/picard.jar \
-    R_LIBS_USER=/usr/local/lib/R/site-library/
+    R_LIBS_USER=/usr/local/lib/R/site-library/ \
+    PYTHONPATH=/usr/local/lib/python2.7/dist-packages:$PYTHONPATH
 
 # Define default command
 WORKDIR /home/
