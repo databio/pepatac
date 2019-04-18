@@ -1,4 +1,5 @@
-readPepatacPeakBeds = function(project) {
+
+readPepatacPeakBedsOld = function(project) {
   # define default column names in GenomicRanges::GRanges objects
   DEFAULT_GRANGES_COLS = c('chr', 'start', 'end')
   # inferring the suffix, which is "peak_calling_" + genome_assembly,
@@ -22,7 +23,7 @@ readPepatacPeakBeds = function(project) {
     # use the provided arguments to construct the path
     dir = file.path(prefix, sample_name, suffix)
     # find BED files in the path
-    bedFiles = list.files(path=dir, pattern="*_peaks.bed")
+    bedFiles = list.files(path=dir, pattern="*.bed")
     # get absolute paths to the BED files
     bedFilesAbs = file.path(dir,bedFiles)
     gr = list()
@@ -40,4 +41,31 @@ readPepatacPeakBeds = function(project) {
   })
   names(result) = samples_names
   return(result)
+}
+
+readPepatacPeakBeds = function(project) {
+  pytor = function(str) gsub("(\\{.*?)\\.(.*?\\})", "\\1$\\2", str)
+  piface = yaml::yaml.load_file(config(project)$metadata$pipeline_interface)
+  outputs = piface$pipelines$pepatac.py$outputs
+  outputs
+  samples(project)[,name := sample_name]
+  s = samples(project)
+  files = apply(s, 1, function(x) {
+    with(list(sample=x), glue::glue(pytor(outputs$peaks_bed)))
+    })
+  files
+
+  prefix = ifelse(is.null(config(project)$metadata$results_subdir),
+                  "results_pipeline", config(project)$metadata$results_subdir)
+
+  d = lapply(file.path(prefix, s$sample_name, files), function(x) {
+        DEFAULT_GRANGES_COLS = c('chr', 'start', 'end')
+      message("Reading ", x)
+        df = data.table::fread(x)
+        colnames(df)[1:3] = DEFAULT_GRANGES_COLS
+        gr = GenomicRanges::GRanges(df)
+        return(gr) }
+    )
+  names(d) = s$sample_name
+  GenomicRanges::GRangesList(d)
 }

@@ -28,11 +28,21 @@ pipelines:
       "--keep": keep
       "--noFIFO": no_fifo
       "--lite": lite
+    outputs:
+      smooth_bw: "aligned_{sample.genome}/{sample.sample_name}_smooth.bw"
+      exact_bw:  "aligned_{sample.genome}_exact/{sample.sample_name}_exact.bw"
+      aligned_bam: "aligned_{sample.genome}/{sample.sample_name}_sort.bam"
+      pre_smooth_bw: "aligned_{project.prealignments}/{sample.sample_name}_smooth.bw"
+      peaks_bed: "peak_calling_{sample.genome}/{sample.sample_name}_peaks.bed"
+      summits_bed: "peak_calling_{sample.genome}/{sample.sample_name}_summits.bed"
     compute:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
     summarizers:
       - tools/PEPATAC_summarizer.R
+    bioconductor:
+      readFunName: readPepatacPeakBeds
+      readFunPath: BiocProject/readPepatacPeakBeds.R
     summary_results:
       - alignment_percent_file:
         caption: "Alignment percent file"
