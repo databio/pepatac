@@ -43,13 +43,41 @@ readPepatacPeakBedsOld = function(project) {
   return(result)
 }
 
+readPepatacPeakBedsOld2 = function(project) {
+  pytor = function(str) gsub("(\\{.*?)\\.(.*?\\})", "\\1$\\2", str)
+  piface = yaml::yaml.load_file(config(project)$metadata$pipeline_interface)
+  outputs = piface$pipelines$pepatac.py$outputs
+  outputs
+  pepr::samples(project)[,name := sample_name]
+  s = pepr::samples(project)
+  files = apply(s, 1, function(x) {
+    with(list(sample=x), glue::glue(pytor(outputs$peaks_bed)))
+    })
+  files
+
+  prefix = ifelse(is.null(config(project)$metadata$results_subdir),
+                  "results_pipeline", config(project)$metadata$results_subdir)
+
+  d = lapply(file.path(prefix, s$sample_name, files), function(x) {
+        DEFAULT_GRANGES_COLS = c('chr', 'start', 'end')
+      message("Reading ", x)
+        df = data.table::fread(x)
+        colnames(df)[1:3] = DEFAULT_GRANGES_COLS
+        gr = GenomicRanges::GRanges(df)
+        return(gr) }
+    )
+  names(d) = s$sample_name
+  GenomicRanges::GRangesList(d)
+}
+
+
 readPepatacPeakBeds = function(project) {
   pytor = function(str) gsub("(\\{.*?)\\.(.*?\\})", "\\1$\\2", str)
   piface = yaml::yaml.load_file(config(project)$metadata$pipeline_interface)
   outputs = piface$pipelines$pepatac.py$outputs
   outputs
-  samples(project)[,name := sample_name]
-  s = samples(project)
+  pepr::samples(project)[,name := sample_name]
+  s = pepr::samples(project)
   files = apply(s, 1, function(x) {
     with(list(sample=x), glue::glue(pytor(outputs$peaks_bed)))
     })
