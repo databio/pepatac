@@ -37,8 +37,6 @@ nav:
 plugins:
   - search
   - databio:
-      autodoc_modules: null
-      autodoc_build: "docs_build"
       usage_template: "docs/usage_template.md"
       usage_cmds:
         -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help
