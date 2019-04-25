@@ -1,1 +1,1 @@
-<!-- If applicable, please attach the entire PEPATAC_log.md file from your failed run. This includes information about versions that will help us diagnose your problem. -->
+<!-- If applicable, please attach the entire PEPATAC_log.md file from your failed run and delete this message. This includes information about versions that will help us diagnose your problem.You will need to change the extension to .txt because GitHub does not allow uploading .md files directly.. -->
