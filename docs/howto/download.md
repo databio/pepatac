@@ -6,11 +6,10 @@ This guide walks you through downloading data from SRA that can go directly into
 
 ## **1: Install `geofetch`**
 
-To download data from the Sequence Read Archive (SRA), we'll use some convenient companion software to assist in the download process called [`geofetch`](https://code.databio.org/geofetch).
+To download data from the Sequence Read Archive (SRA), we'll use some convenient companion software to assist in the download process called [`geofetch`](https://code.databio.org/geofetch), which can be installed from PyPI:
 
-Clone the `geofetch` repository:
 ```
-git clone https://github.com/pepkit/geofetch.git
+pip install --upgrade geofetch
 ```
 
 ---
@@ -65,7 +64,7 @@ Now that all our requirements for downloading data are set.  Let's actually get 
 
 To automatically download sample metadata and generate configuration files that will allow us to convert the `.sra` files into `.bam` files, use the following:
 ```
-python geofetch.py -i GSE### -m /path/to/metadata/folder -n PROJECT_NAME
+geofetch -i GSE### -m /path/to/metadata/folder -n PROJECT_NAME
 ```
 
 ---
