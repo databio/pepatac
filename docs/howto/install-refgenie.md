@@ -3,19 +3,13 @@
 This guide shows you how to download reference genome assemblies for `PEPATAC`. Whether using the container or native version of `PEPATAC`, you will need to provide reference genome assemblies produced by [`refgenie`](https://github.com/databio/refgenie).
 One feature of the pipeline is prealignments, which siphons off reads by aligning to small genomes before the main alignment to the primary reference genome. Any prealignments you want to do will also require `refgenie` assemblies. When using the default configuration files, the pipeline will pre-align to the mitochondrial genome, so by default you will need `refgenie` assemblies for the `rCRSd` genome (*for human*) or `mouse_chrM` (*for mouse*) in addition to the primary assembly you wish to use. Other common prealignment references are provided by [ref_decoy](https://github.com/databio/ref_decoy).
 
----
-
 ## 1: Using `refgenie` assemblies
 
 You have two options for using `refgenie` assemblies with `PEPATAC`. If you're using a common genome, you can probably download an existing [`refgenie` assembly](http://big.databio.org/refgenomes).  Otherwise, you can create your own (see instructions below).
 
----
-
 ### 1.1: Download pre-indexed `refgenie` assemblies
 
 Pre-built genome indices exist for common genomes including: `hg38`, `hg19`, `mm10`, and `mm9`. You may simply [download the corresponding pre-indexed references](http://big.databio.org/refgenomes) to get started immediately.
-
----
 
 ### 1.2: Build custom `refgenie` assemblies
 
@@ -44,8 +38,6 @@ Run `refgenie` with:
 src/refgenie.py -i INPUT_FILE.fa
 ```
 where `INPUT_FILE.fa` is a fasta file of your reference genome, and can be either a local file or a URL.
-
----
 
 ## 2: Configure the pipeline to use `refgenie` assemblies
 Once you've procured assemblies for all genomes you wish to use, you must point the pipeline to where you store these. You can do this in two ways, either: 1) with an environment variable, or 2) by adjusting a configuration option.

@@ -2,7 +2,7 @@
 
 This guide walks you through the nitty-gritty of how to install each prerequisite package.
 
-## 1: `PEPATAC` pipeline
+## 1: Clone the `PEPATAC` pipeline
 
 To begin, we need to get the `PEPATAC` pipeline itself.  The pipeline is hosted on [github](https://github.com/databio/pepatac).  If you don't have git installed, follow the [git installation instructions](https://git-scm.com/download/linux), and here is a [brief introduction to git](https://guides.github.com/introduction/git-handbook/). To install PEPATAC, you can use one of the following methods:
 
@@ -40,7 +40,7 @@ Success! If you had any issues, feel free to [reach out to us with questions](co
 
 ## 2: Install required software
 
-You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. If you want to install it natively, skip to the [native installation instructions](tutorial.md#122-install-software-requirements-natively).
+You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. 
 
 To use `PEPATAC`, we need the following software:
 **Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install of these like this:  
@@ -155,7 +155,7 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/"
 That should do it!  Now we'll [install some **optional** packages](tutorial.md#13-install-optional-software).  Of course, these are not required, but for the purposes of this tutorial we're going to be completionists.
 
 
-## 3: Install optional software
+### 2.1: Optional software
 
 `PEPATAC` uses `R` to generate quality control plots.  These are **optional** and the pipeline will run without them, but you would not get any QC plots.  If you need to don't have [R installed, you can follow these instructions](https://cran.r-project.org/doc/manuals/r-release/R-admin.html).  We'll use and install the necessary packages in this example.  Here is the list of required packages:
 
@@ -195,7 +195,7 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.4/"
 That's it! Everything we need to run `PEPATAC` to its full potential should be installed.  If you are interested and have experience using containers, you can check out the [alternate installation methods](install.md#121-use-containers).
 
 
-## 4: Create environment variables
+### 2.2: Create environment variables
 
 We also need to create some environment variables to help point `looper` to where we keep our data files and our tools.  You may either set the environment variables up, like we're going to do now, or you may simply hard code the necessary locations in our configuration files.
 First, let's create a `PROCESSED` variable that represents the location where we want to save output.
@@ -210,7 +210,7 @@ export CODEBASE="/path/to/pepatac_tutorial/tools/"
 Fantastic! Now that we have the pipeline and its requirements installed, we're ready to get our reference genome(s).
 
 
-## 5: Download a reference genome
+## 3: Download a reference genome
 
 Before we analyze anything, we also need a reference genome.  `PEPATAC` uses `refgenie` genomes.  For the purposes of this tutorial, we'll just download pre-built genomes.  Follow the `'refgenie` instructions if you'd like to [build your own reference genome](https://github.com/databio/refgenie). First, let's change into our `genomes/` folder.
 ```
@@ -224,6 +224,10 @@ tar xvfz rCRSd_170502.tgz
 rm hg38.tgz
 rm human_repeats_170502.tgz
 rm rCRSd_170502.tgz
+
+
+## 4: Point the pipeline to your Refgenie assemblies
+
 ```
 Let's also create another environment variable that points to our genomes.
 ```
@@ -231,7 +235,8 @@ export GENOMES="/path/to/pepatac_tutorial/genomes/
 ```
 (Don't forget to add this to your `.bashrc` or `.profile` to ensure it persists).
 
-## 6: Download or create annotation files
+
+## 5: Download or create annotation files
 
 To calculate TSS enrichments, you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
 ```
