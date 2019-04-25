@@ -1,12 +1,12 @@
 # Download raw data from SRA for use in <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
 
-This guide is designed to walk you through obtaining SRA data files that can go directly into `PEPATAC`.
+This guide walks you through downloading data from SRA that can go directly into `PEPATAC`.
 
 ---
 
 ## **1: Install `geofetch`**
 
-To download data from the Sequence Read Archive (SRA), we'll use some convenient companion software to assist in the download process called [`geofetch`](https://github.com/pepkit/geofetch)
+To download data from the Sequence Read Archive (SRA), we'll use some convenient companion software to assist in the download process called [`geofetch`](https://code.databio.org/geofetch).
 
 Clone the `geofetch` repository:
 ```

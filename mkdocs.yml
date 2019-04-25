@@ -18,7 +18,7 @@ nav:
     - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
-    - How to configure reference genome assemblies: 'howto/install-refgenie.md'
+    - Configuring reference genomes: 'howto/install-refgenie.md'
     - How to download SRA data: 'howto/download.md'
     - How to create a custom annotation file: 'howto/create-annotation-file.md'
     - How to run multiple samples using looper: 'howto/run-looper.md'
