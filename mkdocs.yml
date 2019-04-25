@@ -19,11 +19,11 @@ nav:
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
     - Configuring reference genomes: 'howto/install-refgenie.md'
-    - How to download SRA data: 'howto/download.md'
-    - How to create a custom annotation file: 'howto/create-annotation-file.md'
-    - How to run multiple samples using looper: 'howto/run-looper.md'
-    - How to run the pipeline on a cluster: 'howto/run-cluster.md'
-    - How to run the pipeline in a container: 'howto/use-container.md'
+    - Downloading SRA data: 'howto/download.md'
+    - Creating a custom annotation file: 'howto/create-annotation-file.md'
+    - Running multiple samples using looper: 'howto/run-looper.md'
+    - Running PEPATAC on a cluster: 'howto/run-cluster.md'
+    - Running PEPATAC in a container: 'howto/use-container.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
     - "Example summary: gold project": 'files/examples/gold/summary.html'

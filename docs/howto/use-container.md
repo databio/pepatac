@@ -1,5 +1,9 @@
 # Run <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> in a container
 
+We have produced both docker and singularity containers that hold all the necessary software for `PEPATAC`. You can run `PEPATAC` as an individual pipeline on a single sample using these containers by directly calling `docker run` or `singularity exec`. Or, you can rely on `looper`, which is already set up to run any pipeline in existing containers using the `divvy` templating system. Instructions for both follow: 
+
+## Running individual samples in a container
+
 The pipeline has been successfully run in both a Linux and MacOS environment. With `docker` you need to bind mount your volume that contains the pipeline and your `$GENOMES` location, as well as provide the container the same environment variables your host environment is using.
 
 In the first example, we're mounting our home user directory (`/home/jps3ag/`) which contains the parent directories to our `$GENOMES` folder and to the pipeline itself. We'll also provide the pipeline two environment variables, `$GENOMES` and `$HOME`.
@@ -43,3 +47,6 @@ docker run --rm -it --volume /Users/jps3ag/:/Users/jps3ag/ \
   --genome-size hs \
   -O $HOME/pepatac_test
 ```
+
+## Running multiple samples in a container with looper
+
