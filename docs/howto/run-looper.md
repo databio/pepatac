@@ -5,7 +5,7 @@ This guide walks you through extending `PEPATAC` to run on multiple samples usin
 
 ## 1: Install `looper`
 
-This pipeline is pre-configured to work with `looper`. [Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally, in containers, using any cluster resource manager, or in containers on a cluster.
+[Looper](http://looper.readthedocs.io/) is a pipeline submission engine that makes it easy to deploy any pipeline across samples. It will let you run the jobs locally, in containers, using any cluster resource manager, or in containers on a cluster.
 
 You can install `looper` using `pip`:
 

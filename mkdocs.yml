@@ -18,12 +18,14 @@ nav:
     - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
+    - Detailed install guide: 'howto/detailed-install.md'
     - Configuring reference genomes: 'howto/install-refgenie.md'
+    - Running multiple samples: 'howto/run-looper.md'
     - Downloading SRA data: 'howto/download.md'
-    - Creating a custom annotation file: 'howto/create-annotation-file.md'
-    - Running multiple samples using looper: 'howto/run-looper.md'
-    - Running PEPATAC on a cluster: 'howto/run-cluster.md'
-    - Running PEPATAC in a container: 'howto/use-container.md'
+    - Using a custom peak annotation: 'howto/create-annotation-file.md'
+    - Configuring prealignments: 'howto/prealignments.md'
+    - Running on a cluster: 'howto/run-cluster.md'
+    - Running in a container: 'howto/use-container.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
     - "Example summary: gold project": 'files/examples/gold/summary.html'

@@ -4,6 +4,19 @@ We have produced both docker and singularity containers that hold all the necess
 
 ## Running individual samples in a container
 
+Individual jobs can be run in a container by simply running the `pepatac.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. For example, run it locally in singularity like this:
+```
+singularity exec --bind $GENOMES $SIMAGES/pepatac pipelines/pepatac.py --help
+```
+
+With `docker`, you can use:
+```
+docker run --rm -it databio/pepatac pipelines/pepatac.py --help
+```
+Be sure to mount the volumes you need with `--volume`. If you're utilizing any environment variables (e.g. `$GENOMES`), don't forget to include those in your docker command with the `-e` option. For a more detailed example, check out our guide to learn [how to run pepatac in a container](howto/use-container.md).
+
+### Container details 
+
 The pipeline has been successfully run in both a Linux and MacOS environment. With `docker` you need to bind mount your volume that contains the pipeline and your `$GENOMES` location, as well as provide the container the same environment variables your host environment is using.
 
 In the first example, we're mounting our home user directory (`/home/jps3ag/`) which contains the parent directories to our `$GENOMES` folder and to the pipeline itself. We'll also provide the pipeline two environment variables, `$GENOMES` and `$HOME`.
@@ -50,3 +63,4 @@ docker run --rm -it --volume /Users/jps3ag/:/Users/jps3ag/ \
 
 ## Running multiple samples in a container with looper
 
+To run multiple samples in a container, you simply need to configure `looper` to use a container-compatible template. The looper documentation has detailed instructions for [how to run pipelines in containers](http://code.databio.org/looper/containers/).
