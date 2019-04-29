@@ -1069,7 +1069,7 @@ def main():
         # include in summary stats. This could be done in prettier ways which
         # I'm open to. Just adding for the idea.
         with open(Tss_enrich) as f:
-            floats = map(float, f)
+            floats = list(map(float, f))
         try:
             # If the TSS enrichment is 0, don't report
             Tss_score = ((sum(floats[1950:2050]) / 100) /
