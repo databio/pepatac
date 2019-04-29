@@ -779,10 +779,10 @@ def main():
     pm.run([cmd, cmd2], mapping_genome_bam,
            follow=check_alignment_genome, container=pm.container)
 
-    # Compress all unmapped read files
+    pm.timestamp("### Compress all unmapped read files")
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
-        if not pypiper.is_gzipped_fastq(unmapped_fq):
+        if not pypiper.is_gzipped_fastq(unmapped_fq) and not unmapped_fq == '':
             cmd = (ngstk.ziptool + " " + unmapped_fq)
             unmapped_fq = unmapped_fq + ".gz"
             pm.run(cmd, unmapped_fq, container=pm.container)
