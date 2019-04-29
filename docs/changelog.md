@@ -1,6 +1,10 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+- Improve interaction with `BiocProject` auto-loading results in R.
+
+
 ## [0.8.6] -- 2019-03-26
 
 ### Changed
