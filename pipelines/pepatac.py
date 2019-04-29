@@ -1086,30 +1086,32 @@ def main():
         # Fragment distribution
 
         pm.timestamp("### Plot fragment distribution")
+        if paired:
+            fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
+            frag_dist_tool = tool_path("fragment_length_dist.pl")
+            cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
 
-        fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
-        frag_dist_tool = tool_path("fragment_length_dist.pl")
-        cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
+            frag_length_counts_file = args.sample_name + "_fragCount.txt"
+            fragL_count = os.path.join(QC_folder, frag_length_counts_file)
+            cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
 
-        frag_length_counts_file = args.sample_name + "_fragCount.txt"
-        fragL_count = os.path.join(QC_folder, frag_length_counts_file)
-        cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
+            fragL_dis1 = os.path.join(QC_folder, args.sample_name +
+                                      "_fragLenDistribution.pdf")
+            fragL_dis2 = os.path.join(QC_folder, args.sample_name +
+                                      "_fragLenDistribution.txt")
+            cmd2 = build_command(
+                [tools.Rscript, tool_path("fragment_length_dist.R"),
+                 fragL, fragL_count, fragL_dis1, fragL_dis2])
 
-        fragL_dis1 = os.path.join(QC_folder, args.sample_name +
-                                  "_fragLenDistribution.pdf")
-        fragL_dis2 = os.path.join(QC_folder, args.sample_name +
-                                  "_fragLenDistribution.txt")
-        cmd2 = build_command(
-            [tools.Rscript, tool_path("fragment_length_dist.R"),
-             fragL, fragL_count, fragL_dis1, fragL_dis2])
+            pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True,
+                   container=pm.container)
 
-        pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True,
-               container=pm.container)
-
-        fragL_png = os.path.join(QC_folder, args.sample_name +
-                                 "_fragLenDistribution.png")
-        pm.report_object("Fragment distribution", fragL_dis1,
-                         anchor_image=fragL_png)
+            fragL_png = os.path.join(QC_folder, args.sample_name +
+                                     "_fragLenDistribution.png")
+            pm.report_object("Fragment distribution", fragL_dis1,
+                             anchor_image=fragL_png)
+        else: 
+            print("Fragment distribution requires paired-end data")
 
     # Peak calling
 
