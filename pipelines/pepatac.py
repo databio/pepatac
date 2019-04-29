@@ -1036,7 +1036,7 @@ def main():
     cmd += " -o " + exact_target
     cmd += " -w " + smooth_target
     cmd += " -m " + "atac"
-    cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
+    cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
     cmd2 = "touch " + temp_target
     pm.run([cmd, cmd2], temp_target, container=pm.container)
     pm.clean_add(temp_target)
