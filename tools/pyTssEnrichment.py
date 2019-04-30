@@ -71,7 +71,7 @@ def sub_Mat(start):
     # loop through the intervals and get relevent info
     bamfile = pysam.Samfile(options.a, "rb")
     end=min(start+chunksize,len(p1_ints))
-    for i in range(start,end):
+    for i in range(int(start),int(end)):
         # get interval as num
         center = int(p1_ints[i][1])+(int(p1_ints[i][2])-int(p1_ints[i][1]))/2
         s_int=center-int(options.e)
@@ -125,7 +125,7 @@ cols = int(options.e)*2
 maxi=len(p1_ints)
 chunksize=maxi/int(options.c)
 chunks=maxi/chunksize
-starts=range(0,maxi,chunksize)
+starts=range(0,int(maxi),int(chunksize))
 
 # parallel processed computation of matrix for each chunk
 if __name__ == "__main__":
