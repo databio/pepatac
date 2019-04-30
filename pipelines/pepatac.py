@@ -485,6 +485,10 @@ def main():
         err_msg = "Please install missing tools before continuing."
         pm.fail_pipeline(RuntimeError(err_msg))
 
+    if args.input2 and not args.paired_end:
+        err_msg = "Incompatible settings: You specified single-end, but provided --input2."
+        pm.fail_pipeline(RuntimeError(err_msg))
+
     # Set up reference resource according to genome prefix.
     gfolder = os.path.join(res.genomes, args.genome_assembly)
     res.chrom_sizes = os.path.join(
@@ -559,16 +563,28 @@ def main():
     local_input_files = ngstk.merge_or_link(
         [args.input, args.input2], raw_folder, args.sample_name)
     cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
-        local_input_files, args.sample_name, args.paired_end, fastq_folder)
+        local_input_files, args.sample_name, args.paired_end, fastq_folder,
+        zipmode=True)
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
                local_input_files, unaligned_fastq, args.paired_end),
            container=pm.container)
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
     print(local_input_files)
-    untrimmed_fastq1 = out_fastq_pre + "_R1.fastq"
-    untrimmed_fastq2 = out_fastq_pre + "_R2.fastq" if args.paired_end else None
+    print(unaligned_fastq)
 
+    # untrimmed_fastq1 = out_fastq_pre + "_R1.fastq"
+    # untrimmed_fastq2 = out_fastq_pre + "_R2.fastq" if args.paired_end else None
+
+    if args.paired_end:
+        untrimmed_fastq1 = unaligned_fastq[0]
+        untrimmed_fastq2 = unaligned_fastq[1]
+    else:
+        untrimmed_fastq1 = unaligned_fastq
+        untrimmed_fastq2 = None
+
+    print("fq1: " + str(untrimmed_fastq1))
+    print("fq2: " + str(untrimmed_fastq2))
     ########################
     # Begin adapter trimming
     ########################
@@ -579,8 +595,8 @@ def main():
         trimming_prefix = os.path.join(fastq_folder, args.sample_name)
     else:
         trimming_prefix = out_fastq_pre
-    trimmed_fastq = trimming_prefix + "_R1.trim.fastq"
-    trimmed_fastq_R2 = trimming_prefix + "_R2.trim.fastq"
+    trimmed_fastq = trimming_prefix + "_R1.trim.fastq.gz"
+    trimmed_fastq_R2 = trimming_prefix + "_R2.trim.fastq.gz"
 
     # Create trimming command(s).
     if args.trimmer == "pyadapt":
@@ -590,8 +606,8 @@ def main():
         # TODO: make pyadapt give options for output file name.
         trim_cmd_chunks = [
             tool_path("pyadapter_trim.py"),
-            ("-a", local_input_files[0]),
-            ("-b", local_input_files[1]),
+            ("-a", untrimmed_fastq1),
+            ("-b", untrimmed_fastq2),
             ("-o", out_fastq_pre),
             "-u"
         ]
@@ -1086,7 +1102,7 @@ def main():
         # Fragment distribution
 
         pm.timestamp("### Plot fragment distribution")
-        if paired:
+        if args.paired_end:
             fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
             frag_dist_tool = tool_path("fragment_length_dist.pl")
             cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
