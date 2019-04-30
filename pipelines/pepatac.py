@@ -16,6 +16,7 @@ import tempfile
 import tarfile
 import pypiper
 from pypiper import build_command
+from ubiquerg import check_fastq
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER  = "anno"
@@ -561,7 +562,7 @@ def main():
     cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
         local_input_files, args.sample_name, args.paired_end, fastq_folder)
     pm.run(cmd, unaligned_fastq,
-           follow=ngstk.check_fastq(
+           follow=check_fastq(
                local_input_files, unaligned_fastq, args.paired_end),
            container=pm.container)
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
