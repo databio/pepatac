@@ -632,14 +632,14 @@ def main():
         # Create the skewer file renaming commands.
         if args.paired_end:
             skewer_filename_pairs = \
-                [("{}-trimmed-pair1.fastq".format(out_fastq_pre),
+                [("{}-trimmed-pair1.fastq.gz".format(out_fastq_pre),
                  trimmed_fastq)]
             skewer_filename_pairs.append(
-                ("{}-trimmed-pair2.fastq".format(out_fastq_pre),
+                ("{}-trimmed-pair2.fastq.gz".format(out_fastq_pre),
                  trimmed_fastq_R2))
         else:
             skewer_filename_pairs = \
-                [("{}-trimmed.fastq".format(out_fastq_pre), trimmed_fastq)]
+                [("{}-trimmed.fastq.gz".format(out_fastq_pre), trimmed_fastq)]
 
         trimming_renaming_commands = [build_command(["mv", old, new])
                                       for old, new in skewer_filename_pairs]
