@@ -16,6 +16,7 @@ import tempfile
 import tarfile
 import pypiper
 from pypiper import build_command
+from ubiquerg import count_lines
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER  = "anno"
@@ -1116,7 +1117,7 @@ def main():
     pm.timestamp("### Call peaks")
 
     def report_peak_count():
-        num_peaksfile_lines = int(ngstk.count_lines(peak_output_file).strip())
+        num_peaksfile_lines = int(count_lines(peak_output_file).strip())
         num_peaks = max(0, num_peaksfile_lines - 1)
         pm.report_result("Peak_count", num_peaks)
 
