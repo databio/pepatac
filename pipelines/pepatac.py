@@ -621,6 +621,7 @@ def main():
             ("-t", str(args.cores)),
             ("-m", "pe" if args.paired_end else "any"),
             ("-x", res.adapters),
+            "-z",  # compress output
             "--quiet",
             ("-o", out_fastq_pre),
             untrimmed_fastq1,
