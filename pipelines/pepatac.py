@@ -16,7 +16,7 @@ import tempfile
 import tarfile
 import pypiper
 from pypiper import build_command
-from ubiquerg import count_lines
+from ubiquerg import count_lines, is_gzipped_fastq
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER  = "anno"
@@ -783,7 +783,7 @@ def main():
     # Compress all unmapped read files
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
-        if not pypiper.is_gzipped_fastq(unmapped_fq):
+        if not is_gzipped_fastq(unmapped_fq):
             cmd = (ngstk.ziptool + " " + unmapped_fq)
             unmapped_fq = unmapped_fq + ".gz"
             pm.run(cmd, unmapped_fq, container=pm.container)
