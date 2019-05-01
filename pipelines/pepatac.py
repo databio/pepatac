@@ -16,7 +16,6 @@ import tempfile
 import tarfile
 import pypiper
 from pypiper import build_command
-from ubiquerg import count_lines, is_gzipped_fastq
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER  = "anno"
@@ -783,7 +782,7 @@ def main():
     # Compress all unmapped read files
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
-        if not is_gzipped_fastq(unmapped_fq):
+        if not pypiper.is_gzipped_fastq(unmapped_fq):
             cmd = (ngstk.ziptool + " " + unmapped_fq)
             unmapped_fq = unmapped_fq + ".gz"
             pm.run(cmd, unmapped_fq, container=pm.container)
@@ -1117,7 +1116,7 @@ def main():
     pm.timestamp("### Call peaks")
 
     def report_peak_count():
-        num_peaksfile_lines = int(count_lines(peak_output_file).strip())
+        num_peaksfile_lines = int(ngstk.count_lines(peak_output_file).strip())
         num_peaks = max(0, num_peaksfile_lines - 1)
         pm.report_result("Peak_count", num_peaks)
 

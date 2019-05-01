@@ -1,5 +1,3 @@
-git+https://github.com/pepkit/pypiper/#egg=pypiper
-git+https://github.com/pepkit/looper/#egg=looper
+git+https://github.com/epigen/pypiper/#egg=pypiper
+git+https://github.com/epigen/looper/#egg=looper
 git+https://github.com/databio/pararead/#egg=pararead
-git+https://github.com/pepkit/ubiquerg/#egg=ubiquerg
-
