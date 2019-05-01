@@ -563,7 +563,7 @@ def main():
         local_input_files, args.sample_name, args.paired_end, fastq_folder)
     pm.run(cmd, unaligned_fastq,
            follow=check_fastq(
-               local_input_files, unaligned_fastq, args.paired_end),
+               local_input_files, unaligned_fastq, args.paired_end, pm),
            container=pm.container)
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
     print(local_input_files)
