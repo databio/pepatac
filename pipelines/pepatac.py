@@ -565,13 +565,12 @@ def main():
     cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
         local_input_files, args.sample_name, args.paired_end, fastq_folder,
         zipmode=True)
+    print(cmd)
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
                local_input_files, unaligned_fastq, args.paired_end),
            container=pm.container)
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
-    print(local_input_files)
-    print(unaligned_fastq)
 
     # untrimmed_fastq1 = out_fastq_pre + "_R1.fastq"
     # untrimmed_fastq2 = out_fastq_pre + "_R2.fastq" if args.paired_end else None
@@ -583,8 +582,11 @@ def main():
         untrimmed_fastq1 = unaligned_fastq
         untrimmed_fastq2 = None
 
-    print("fq1: " + str(untrimmed_fastq1))
-    print("fq2: " + str(untrimmed_fastq2))
+    # TODO: add these debug printlines when there's some pypiper logging infrastructure
+    # print(local_input_files)
+    # print(unaligned_fastq)
+    # print("fq1: " + str(untrimmed_fastq1))
+    # print("fq2: " + str(untrimmed_fastq2))
     ########################
     # Begin adapter trimming
     ########################
@@ -595,8 +597,8 @@ def main():
         trimming_prefix = os.path.join(fastq_folder, args.sample_name)
     else:
         trimming_prefix = out_fastq_pre
-    trimmed_fastq = trimming_prefix + "_R1.trim.fastq.gz"
-    trimmed_fastq_R2 = trimming_prefix + "_R2.trim.fastq.gz"
+    trimmed_fastq = trimming_prefix + "_R1.trim.fastq"
+    trimmed_fastq_R2 = trimming_prefix + "_R2.trim.fastq"
 
     # Create trimming command(s).
     if args.trimmer == "pyadapt":
@@ -615,13 +617,15 @@ def main():
 
     elif args.trimmer == "skewer":
         # Create the primary skewer command.
+        # Don't compress output at this stage, because the pre-alignment mechanism
+        # requires unzipped fastq.
         trim_cmd_chunks = [
             tools.skewer,  # + " --quiet"
             ("-f", "sanger"),
             ("-t", str(args.cores)),
             ("-m", "pe" if args.paired_end else "any"),
             ("-x", res.adapters),
-            "-z",  # compress output
+            # "-z",  # compress output
             "--quiet",
             ("-o", out_fastq_pre),
             untrimmed_fastq1,
@@ -632,14 +636,14 @@ def main():
         # Create the skewer file renaming commands.
         if args.paired_end:
             skewer_filename_pairs = \
-                [("{}-trimmed-pair1.fastq.gz".format(out_fastq_pre),
+                [("{}-trimmed-pair1.fastq".format(out_fastq_pre),
                  trimmed_fastq)]
             skewer_filename_pairs.append(
-                ("{}-trimmed-pair2.fastq.gz".format(out_fastq_pre),
+                ("{}-trimmed-pair2.fastq".format(out_fastq_pre),
                  trimmed_fastq_R2))
         else:
             skewer_filename_pairs = \
-                [("{}-trimmed.fastq.gz".format(out_fastq_pre), trimmed_fastq)]
+                [("{}-trimmed.fastq".format(out_fastq_pre), trimmed_fastq)]
 
         trimming_renaming_commands = [build_command(["mv", old, new])
                                       for old, new in skewer_filename_pairs]
