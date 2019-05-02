@@ -1,6 +1,7 @@
 protocol_mapping:
   ATAC: pepatac.py
   ATAC-SEQ: pepatac.py 
+  ATAC-seq: pepatac.py 
 
 pipelines:
   pepatac.py:
