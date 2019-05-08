@@ -11,38 +11,9 @@ git clone git@github.com:databio/pepatac.git
 
 ## 2: Install required software
 
-You have two options for software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively.
+You have two options for software prerequisites: 1) use a container, or 2) install all prerequisites natively. If you want to use a container, you need only either `docker` or `singularity` -- please see instructions in [how to run PEPATAC in a container](howto/user-container.md). Otherwise, follow these instructions to install the requirements natively:
 
-
-### 2.1: Use containers
-You may simply run `PEPATAC` directly in a provided container.  First, make sure your environment is set up to run either docker or singularity containers. Then, pull the container image:
-
-**Docker**: You can pull the docker [databio/pepatac image](https://hub.docker.com/r/databio/pepatac/) from dockerhub like this:
-
-```
-docker pull databio/pepatac
-```
-
-Or build the image using the included Dockerfile (you can use a recipe in the included Makefile):
-```
-cd pepatac/
-make docker
-```
-
-**Singularity**: You can [download the singularity image](http://big.databio.org/simages/pepatac) or build it from the docker image using the Makefile:
-```
-cd pepatac/
-make singularity
-```
-
-Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the folder where your image is stored, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
-
-If your containers are set up correctly, then you can skip the next section about installing software. If you need help with containers, see our more detailed instructions on [running the pipeline in a container](howto/use-container.md).
-
-
-### 2.2: Install software requirements natively
-
-#### Python packages
+### Python packages
 
 `PEPATAC` uses several  packages under the hood. Make sure you're up-to-date with a user-specific install:
 
@@ -51,11 +22,11 @@ cd pepatac
 pip install --user -r requirements.txt
 ```
 
-#### Required executables
+### Required executables
 
 We will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/), [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml), [fastqc (v0.11.5+)](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/),  [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster), [samtools (v1.7+)](http://www.htslib.org/), [skewer (v0.1.126+)](https://github.com/relipmoc/skewer), [UCSC tools](http://hgdownload.soe.ucsc.edu/admin/exe/) (bedGraphToBigWig, wigToBigWig, bigWigCat, bedToBigBed), [pigz (v2.3.4+)](https://zlib.net/pigz/). You should follow instructions to install each individual program. If you need help installing these, see the [detailed installation instructions](howto/detailed-install.md).
       
-#### R packages
+### R packages
 
 `PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [pepatacr](link). Install it with:
 
@@ -106,10 +77,9 @@ This example should take about 15 minutes to complete.  See [other example comma
 
 This is just the beginning. For your next step, take a look at one of these user guides:
 
+- [Running on multiple samples with looper](howto/run-looper)
 - [Extended tutorial for running a single sample](tutorial.md)
 - [Running the pipeline directly in a container](howto/use-container)
-- [Running on multiple samples with looper](howto/run-looper)
 - See other detailed user guide links in the side menu
 
 Any questions? Feel free to [reach out to us](contact.md). Otherwise, go analyze some ATAC-seq!
-
