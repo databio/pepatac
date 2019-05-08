@@ -35,8 +35,7 @@ Time to get PEPATAC!
 ```
 git clone git@github.com:databio/pepatac.git
 ```
-Success! If you had any issues, feel free to [reach out to us with questions](contact.md).  Otherwise, let's move on to installing additional [required](tutorial.md#12-install-required-software) and [optional](tutorial.md#13-install-optional-software) software.
-
+Success! If you had any issues, feel free to [reach out to us with questions](contact.md).  Otherwise, let's move on to installing additional software.
 
 ## 2: Install required software
 
@@ -45,7 +44,7 @@ You have two options for installing the software prerequisites: 1) use a contain
 To use `PEPATAC`, we need the following software:
 **Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install of these like this:  
 ```
-pip install --user numpy pandas piper https://github.com/pepkit/looper/zipball/master \
+pip install --user numpy pandas piper loopercli \
 pararead MACS2
 ```
 **Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the pipeline configuration file (pipelines/pepatac.yaml) tools section.
