@@ -55,7 +55,7 @@ if len(sys.argv)==1:
 # assign mat
 def asn_mat(val,mat,s_int,e_int,t,i,weight):
     if float(val)>=s_int and float(val)<e_int-1 and t<rows:  # -1 correct?
-        base = val-s_int
+        base = int(val-s_int)
         if len(p1_ints[0]) == 3:
             mat[t][base] += weight
         elif p1_ints[i][int(options.s)-1] == "-":
