@@ -1,23 +1,19 @@
 # Download raw data from SRA for use in <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
 
-This guide is designed to walk you through obtaining SRA data files that can go directly into `PEPATAC`.
+This guide walks you through downloading data from SRA that can go directly into `PEPATAC`.
 
----
 
-## **1: Install `geofetch`**
+## 1: Install `geofetch`
 
-To download data from the Sequence Read Archive (SRA), we'll use some convenient companion software to assist in the download process called [`geofetch`](https://github.com/pepkit/geofetch)
+To download data from the Sequence Read Archive (SRA), we'll use some convenient companion software called [`geofetch`](https://geofetch.databio.org), which can be installed from PyPI:
 
-Clone the `geofetch` repository:
-```
-git clone https://github.com/pepkit/geofetch.git
+```console
+pip install --upgrade geofetch
 ```
 
----
+## 2: Install `NCBI SRA Toolkit`
 
-## **2: Install `NCBI SRA Toolkit`**
-
-To use `geofetch` you'll need to have the `NCBI SRA Toolkit` installed as well ([see complete SRA Toolkit documentation](https://github.com/ncbi/sra-tools/wiki/Building-and-Installing-from-Source)).
+To use `geofetch` you'll need to have the `NCBI SRA Toolkit` installed ([see complete SRA Toolkit documentation](https://github.com/ncbi/sra-tools/wiki/Building-and-Installing-from-Source)).
 
 The following will perform a basic installation of the toolkit.  For users without root access and for custom installation procedures [check out the NCBI SRA toolkit wiki](https://github.com/ncbi/sra-tools/wiki/).
 ```
@@ -53,24 +49,21 @@ export PATH="$PATH:/path/to/sra-tools/bin/"
 
 So you only have to do this the first time through, add the updates to `PATH` to your `.bashrc` or `.profile`.
 
----
-
-## **3: Download data**
+## 3: Download data
 
 Now that all our requirements for downloading data are set.  Let's actually get some ATAC-seq reads.
 
----
 
-### **3.1: Get metadata, configuration files, and `.sra` files**
+
+### 3.1: Get metadata, configuration files, and `.sra` files
 
 To automatically download sample metadata and generate configuration files that will allow us to convert the `.sra` files into `.bam` files, use the following:
-```
-python geofetch.py -i GSE### -m /path/to/metadata/folder -n PROJECT_NAME
+```console
+geofetch -i GSE### -m /path/to/metadata/folder -n PROJECT_NAME
 ```
 
----
 
-### **3.2: Convert `.sra` files to `.bam`**
+### 3.2: Convert `.sra` files to `.bam`
 
 Next we're going to convert those downloaded `.sra` files using `looper`. If you haven't installed `looper`, do that now before moving forward ([see `looper` docs](https://looper.readthedocs.io/en/latest/)).
 
@@ -122,7 +115,7 @@ export SRARAW="/path/to/pepatac_tutorial/data/sra/"
 ```
 (Add these environment variables to your `.bashrc` or `.profile` so you don't have to always do this step).
 Finally, convert the `.sra` files!
-```
+```console
 looper run /path/to/metadata/PROJECT_NAME/PROJECT_NAME_config.yaml \
   --sp sra_convert \
   --lump 10 \

@@ -4,9 +4,7 @@ Information regarding universal ATAC-seq [terms and definitions](https://www.enc
 
 Additional information relevant to `PEPATAC` output and interpretation includes:
 
----
-
-## **Peak calling output**
+## Peak calling output
 
 The pipeline's default peak caller is `MACS2`.  More [detailed descriptions regarding `MACS2` output](https://github.com/taoliu/MACS) may be discovered in the `MACS2` repository.
 
@@ -23,9 +21,7 @@ The following files are included in default `PEPATAC` analyses:
     4. read count
 - **&lt;sample_name&gt;_peaks.bigBed**: A bigNarrowPeak (bigBed) formatted version of the narrowPeak file produced by `MACS2`. Check out the [bigNarrowPeak track format](https://genome.ucsc.edu/goldenpath/help/bigNarrowPeak.html) page for more information.
 
----
-
-## **QC output**
+## QC output
 
 - **&lt;sample_name&gt;_bamQC.tsv**: A tabular file containing alignment statistics and library complexity measures.  
   Includes:
@@ -51,9 +47,8 @@ The following files are included in default `PEPATAC` analyses:
 - **&lt;sample_name&gt;_TssEnrichment.txt**: A text file containing a single column of read counts at each position flanking transcription start sites (-2000 - TSS - +2000).
 - **&lt;sample_name&gt;_TssEnrichment.[png/pdf]**: Global TSS enrichment plot(s). Illustrates the aggregate enrichment around *all* transcription start sites.
 
----
 
-## **Signal tracks**
+## Signal tracks
 
 The tool to produce these tracks, `bamSitesToWig.py`, is included in the `PEPATAC` repository and may be called indpendently with parameters like the `--smooth-length` further customized.
 

@@ -21,8 +21,14 @@ $file_fq2 = shift;
 $file_fq1_filtered = shift;
 $file_fq2_filtered = shift;
 open(my $fh_filter, "<", $file_filter);
+# We can't read from compressed input because it messes with the way the files
+# are read in, but this is how you would do it.
+# open(my $fh_fq1, "gunzip -c $file_fq1 |");
+# open(my $fh_fq2, "gunzip -c $file_fq2 |");
 open(my $fh_fq1, "<", $file_fq1);
 open(my $fh_fq2, "<", $file_fq2);
+
+
 open(FH_FQ1_FILT, ">", $file_fq1_filtered);
 open(FH_FQ2_FILT, ">", $file_fq2_filtered);
 

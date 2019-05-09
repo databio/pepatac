@@ -5,13 +5,13 @@
 # Last updated 7/16/17: Vince Reuter
 #
 # Dependencies: Script requires PEPATAC_TSSenrichmentPlot.R to be in the same directory
-#				For pyPiper, these two scripts would be in the tools directory
+#                               For pyPiper, these two scripts would be in the tools directory
 #
 # Function: Script takes as input a BAM file and a bed file of single base positions and plots the enrichment of signal around those regions
-#			This enrichment is calculated as the cumulative insertions per base divided by the average number of insertions in the first 100 bases of the window
+#                       This enrichment is calculated as the cumulative insertions per base divided by the average number of insertions in the first 100 bases of the window
 #
 # Parameters: This version of the script expects a certain set or parameters in order to properly interface with ATAC_Rscript_TSSenrichmentPlot_pyPiper.R
-#			  Those parameters are: -p ends -e 2000 -u -v -s 4 -o <someFile.TssEnrichment>
+#                         Those parameters are: -p ends -e 2000 -u -v -s 4 -o <someFile.TssEnrichment>
 
 
 import os
@@ -59,7 +59,7 @@ def asn_mat(val,mat,s_int,e_int,t,i,weight):
         if len(p1_ints[0]) == 3:
             mat[t][base] += weight
         elif p1_ints[i][int(options.s)-1] == "-":
-            mat[t][len(mat[0])-base-1] += weight	
+            mat[t][len(mat[0])-base-1] += weight        
         else:
             mat[t][base] += weight
     return mat
@@ -71,7 +71,7 @@ def sub_Mat(start):
     # loop through the intervals and get relevent info
     bamfile = pysam.Samfile(options.a, "rb")
     end=min(start+chunksize,len(p1_ints))
-    for i in range(start,end):
+    for i in range(int(start),int(end)):
         # get interval as num
         center = int(p1_ints[i][1])+(int(p1_ints[i][2])-int(p1_ints[i][1]))/2
         s_int=center-int(options.e)
@@ -90,25 +90,25 @@ def sub_Mat(start):
                 continue
             # get read positions
             if p2_rds.is_reverse:
-		continue
+                continue
             else:
-		l_pos = p2_rds.pos+4
+                l_pos = p2_rds.pos+4
                 # calculate center point
-		ilen = abs(p2_rds.tlen)-9
+                ilen = abs(p2_rds.tlen)-9
                 #ilen = 1
-		r_pos=l_pos+ilen
-		c_pos=l_pos+ilen/2
-		if ilen%2==1 and options.p=='center':
-			mat=asn_mat(c_pos,mat,s_int,e_int,ilen,i,0.5)
-			mat=asn_mat(c_pos+1,mat,s_int,e_int,ilen,i,0.5)
-		elif ilen%2!=1 and options.p=='center':
-			mat=asn_mat(c_pos,mat,s_int,e_int,ilen,i,1)
-		# save ends or read centers to v-plot
-		elif options.p == 'ends':
-			mat = asn_mat(l_pos,mat,s_int,e_int,ilen,i,1)
-			mat = asn_mat(r_pos,mat,s_int,e_int,ilen,i,1)
-		else:
-			sys.exit('Error, check parameters')
+                r_pos=l_pos+ilen
+                c_pos=l_pos+ilen/2
+                if ilen%2==1 and options.p=='center':
+                        mat=asn_mat(c_pos,mat,s_int,e_int,ilen,i,0.5)
+                        mat=asn_mat(c_pos+1,mat,s_int,e_int,ilen,i,0.5)
+                elif ilen%2!=1 and options.p=='center':
+                        mat=asn_mat(c_pos,mat,s_int,e_int,ilen,i,1)
+                # save ends or read centers to v-plot
+                elif options.p == 'ends':
+                        mat = asn_mat(l_pos,mat,s_int,e_int,ilen,i,1)
+                        mat = asn_mat(r_pos,mat,s_int,e_int,ilen,i,1)
+                else:
+                        sys.exit('Error, check parameters')
     return mat
 
 ##### INPUTS AND OUTPUTS #####
@@ -125,7 +125,7 @@ cols = int(options.e)*2
 maxi=len(p1_ints)
 chunksize=maxi/int(options.c)
 chunks=maxi/chunksize
-starts=range(0,maxi,chunksize)
+starts=range(0,int(maxi),int(chunksize))
 
 # parallel processed computation of matrix for each chunk
 if __name__ == "__main__":

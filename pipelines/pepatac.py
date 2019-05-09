@@ -485,6 +485,10 @@ def main():
         err_msg = "Please install missing tools before continuing."
         pm.fail_pipeline(RuntimeError(err_msg))
 
+    if args.input2 and not args.paired_end:
+        err_msg = "Incompatible settings: You specified single-end, but provided --input2."
+        pm.fail_pipeline(RuntimeError(err_msg))
+
     # Set up reference resource according to genome prefix.
     gfolder = os.path.join(res.genomes, args.genome_assembly)
     res.chrom_sizes = os.path.join(
@@ -559,16 +563,30 @@ def main():
     local_input_files = ngstk.merge_or_link(
         [args.input, args.input2], raw_folder, args.sample_name)
     cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
-        local_input_files, args.sample_name, args.paired_end, fastq_folder)
+        local_input_files, args.sample_name, args.paired_end, fastq_folder,
+        zipmode=True)
+    print(cmd)
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
                local_input_files, unaligned_fastq, args.paired_end),
            container=pm.container)
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
-    print(local_input_files)
-    untrimmed_fastq1 = out_fastq_pre + "_R1.fastq"
-    untrimmed_fastq2 = out_fastq_pre + "_R2.fastq" if args.paired_end else None
 
+    # untrimmed_fastq1 = out_fastq_pre + "_R1.fastq"
+    # untrimmed_fastq2 = out_fastq_pre + "_R2.fastq" if args.paired_end else None
+
+    if args.paired_end:
+        untrimmed_fastq1 = unaligned_fastq[0]
+        untrimmed_fastq2 = unaligned_fastq[1]
+    else:
+        untrimmed_fastq1 = unaligned_fastq
+        untrimmed_fastq2 = None
+
+    # TODO: add these debug printlines when there's some pypiper logging infrastructure
+    # print(local_input_files)
+    # print(unaligned_fastq)
+    # print("fq1: " + str(untrimmed_fastq1))
+    # print("fq2: " + str(untrimmed_fastq2))
     ########################
     # Begin adapter trimming
     ########################
@@ -590,8 +608,8 @@ def main():
         # TODO: make pyadapt give options for output file name.
         trim_cmd_chunks = [
             tool_path("pyadapter_trim.py"),
-            ("-a", local_input_files[0]),
-            ("-b", local_input_files[1]),
+            ("-a", untrimmed_fastq1),
+            ("-b", untrimmed_fastq2),
             ("-o", out_fastq_pre),
             "-u"
         ]
@@ -599,12 +617,15 @@ def main():
 
     elif args.trimmer == "skewer":
         # Create the primary skewer command.
+        # Don't compress output at this stage, because the pre-alignment mechanism
+        # requires unzipped fastq.
         trim_cmd_chunks = [
             tools.skewer,  # + " --quiet"
             ("-f", "sanger"),
             ("-t", str(args.cores)),
             ("-m", "pe" if args.paired_end else "any"),
             ("-x", res.adapters),
+            # "-z",  # compress output
             "--quiet",
             ("-o", out_fastq_pre),
             untrimmed_fastq1,
@@ -779,10 +800,10 @@ def main():
     pm.run([cmd, cmd2], mapping_genome_bam,
            follow=check_alignment_genome, container=pm.container)
 
-    # Compress all unmapped read files
+    pm.timestamp("### Compress all unmapped read files")
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
-        if not pypiper.is_gzipped_fastq(unmapped_fq):
+        if not pypiper.is_gzipped_fastq(unmapped_fq) and not unmapped_fq == '':
             cmd = (ngstk.ziptool + " " + unmapped_fq)
             unmapped_fq = unmapped_fq + ".gz"
             pm.run(cmd, unmapped_fq, container=pm.container)
@@ -1036,7 +1057,7 @@ def main():
     cmd += " -o " + exact_target
     cmd += " -w " + smooth_target
     cmd += " -m " + "atac"
-    cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
+    cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
     cmd2 = "touch " + temp_target
     pm.run([cmd, cmd2], temp_target, container=pm.container)
     pm.clean_add(temp_target)
@@ -1069,7 +1090,7 @@ def main():
         # include in summary stats. This could be done in prettier ways which
         # I'm open to. Just adding for the idea.
         with open(Tss_enrich) as f:
-            floats = map(float, f)
+            floats = list(map(float, f))
         try:
             # If the TSS enrichment is 0, don't report
             Tss_score = ((sum(floats[1950:2050]) / 100) /
@@ -1086,30 +1107,32 @@ def main():
         # Fragment distribution
 
         pm.timestamp("### Plot fragment distribution")
+        if args.paired_end:
+            fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
+            frag_dist_tool = tool_path("fragment_length_dist.pl")
+            cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
 
-        fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
-        frag_dist_tool = tool_path("fragment_length_dist.pl")
-        cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
+            frag_length_counts_file = args.sample_name + "_fragCount.txt"
+            fragL_count = os.path.join(QC_folder, frag_length_counts_file)
+            cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
 
-        frag_length_counts_file = args.sample_name + "_fragCount.txt"
-        fragL_count = os.path.join(QC_folder, frag_length_counts_file)
-        cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
+            fragL_dis1 = os.path.join(QC_folder, args.sample_name +
+                                      "_fragLenDistribution.pdf")
+            fragL_dis2 = os.path.join(QC_folder, args.sample_name +
+                                      "_fragLenDistribution.txt")
+            cmd2 = build_command(
+                [tools.Rscript, tool_path("fragment_length_dist.R"),
+                 fragL, fragL_count, fragL_dis1, fragL_dis2])
 
-        fragL_dis1 = os.path.join(QC_folder, args.sample_name +
-                                  "_fragLenDistribution.pdf")
-        fragL_dis2 = os.path.join(QC_folder, args.sample_name +
-                                  "_fragLenDistribution.txt")
-        cmd2 = build_command(
-            [tools.Rscript, tool_path("fragment_length_dist.R"),
-             fragL, fragL_count, fragL_dis1, fragL_dis2])
+            pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True,
+                   container=pm.container)
 
-        pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True,
-               container=pm.container)
-
-        fragL_png = os.path.join(QC_folder, args.sample_name +
-                                 "_fragLenDistribution.png")
-        pm.report_object("Fragment distribution", fragL_dis1,
-                         anchor_image=fragL_png)
+            fragL_png = os.path.join(QC_folder, args.sample_name +
+                                     "_fragLenDistribution.png")
+            pm.report_object("Fragment distribution", fragL_dis1,
+                             anchor_image=fragL_png)
+        else: 
+            print("Fragment distribution requires paired-end data")
 
     # Peak calling
 
