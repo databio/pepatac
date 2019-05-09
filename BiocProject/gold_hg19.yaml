@@ -17,7 +17,3 @@ implied_columns:
     human:
       genome: hg19
       macs_genome_size: hs
-
-bioconductor:
-  read_fun_name: readPepatacPeakBeds
-  read_fun_path: readPepatacPeakBeds.R
