@@ -183,8 +183,8 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         tempdir = tempfile.mkdtemp(dir=sub_outdir)
         pm.clean_add(tempdir)
    
-        out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
-        out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
+        out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq.gz'
+        out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq.gz'
 
         if useFIFO and not args.keep:
             out_fastq_tmp = os.path.join(sub_outdir,
