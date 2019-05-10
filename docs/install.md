@@ -43,6 +43,9 @@ Whether using the container or native version, you will need to provide referenc
 wget http://big.databio.org/refgenomes/hg38.tgz
 wget http://big.databio.org/refgenomes/human_repeats_170502.tgz
 wget http://big.databio.org/refgenomes/rCRSd_170502.tgz
+tar -xf hg38.tgz
+tar -xf human_repeats_170502.tgzz
+tar -xf rCRSd_170502.tgz
 ```
 
 At this point, you could choose to extend `PEPATAC` by adding a few additional files into your refgenie assembly. For more details, see [how to create a custom annotation file](howto/create-annotation-file.md) to explore using your own features of interest.
@@ -77,9 +80,9 @@ This example should take about 15 minutes to complete.  See [other example comma
 
 This is just the beginning. For your next step, take a look at one of these user guides:
 
-- [Running on multiple samples with looper](howto/run-looper)
+- [Running on multiple samples with looper](howto/run-looper.md)
 - [Extended tutorial for running a single sample](tutorial.md)
-- [Running the pipeline directly in a container](howto/use-container)
+- [Running the pipeline directly in a container](howto/use-container.md)
 - See other detailed user guide links in the side menu
 
 Any questions? Feel free to [reach out to us](contact.md). Otherwise, go analyze some ATAC-seq!
