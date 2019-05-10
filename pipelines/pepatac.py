@@ -597,8 +597,8 @@ def main():
         trimming_prefix = os.path.join(fastq_folder, args.sample_name)
     else:
         trimming_prefix = out_fastq_pre
-    trimmed_fastq = trimming_prefix + "_R1.trim.fastq"
-    trimmed_fastq_R2 = trimming_prefix + "_R2.trim.fastq"
+    trimmed_fastq = trimming_prefix + "_R1_trim.fastq"
+    trimmed_fastq_R2 = trimming_prefix + "_R2_trim.fastq"
 
     # Create trimming command(s).
     if args.trimmer == "pyadapt":
