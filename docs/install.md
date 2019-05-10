@@ -4,7 +4,7 @@ Let's get you running `PEPATAC` quickly. If you get stuck or prefer more details
 
 ## 1: Clone the `PEPATAC` pipeline
 
-Clone the pipeline using SSH:
+Clone the pipeline:
 ```
 git clone https://github.com/databio/pepatac.git
 ```
