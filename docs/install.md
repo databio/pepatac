@@ -77,9 +77,9 @@ This example should take about 15 minutes to complete.  See [other example comma
 
 This is just the beginning. For your next step, take a look at one of these user guides:
 
-- [Running on multiple samples with looper](howto/run-looper)
+- [Running on multiple samples with looper](/howto/run-looper)
 - [Extended tutorial for running a single sample](tutorial.md)
-- [Running the pipeline directly in a container](howto/use-container)
+- [Running the pipeline directly in a container](/howto/use-container)
 - See other detailed user guide links in the side menu
 
 Any questions? Feel free to [reach out to us](contact.md). Otherwise, go analyze some ATAC-seq!
