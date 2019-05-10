@@ -37,7 +37,7 @@ That's it! Everything we need to run `PEPATAC` to its full potential should be i
 
 ## 3: Download `refgenie` assemblies
 
-Whether using the container or native version, you will need to provide reference genome assemblies produced by [refgenie](https://github.com/databio/refgenie). Any [prealignments](howto/prealignments.md) you want to use will also require refgenie assemblies. You may download [pre-indexed references](http://big.databio.org/refgenomes) for common genomes, or you may index your own ([see refgenie instructions](howto/install-refgenie.md)). For this example, let's grab the `hg38` genome to use as our primary assembly, and for prealignments we'll use `human_repeats`, and `rCRSd` (Revised Cambridge Reference Sequence for human mtDNA).
+Whether using the container or native version, you will need to provide reference genome assemblies produced by [refgenie](https://refgenie.databio.org). Any [prealignments](howto/prealignments.md) you want to use will also require refgenie assemblies. You may [download[pre-indexed references](http://refgenie.databio.org/en/latest/download/) for common genomes, or you may index your own ([see refgenie instructions](howto/install-refgenie.md)). For this example, let's grab the `hg38` genome to use as our primary assembly, and for prealignments we'll use `human_repeats`, and `rCRSd` (Revised Cambridge Reference Sequence for human mtDNA).
 
 ```console
 wget http://big.databio.org/refgenomes/hg38.tgz
@@ -77,9 +77,9 @@ This example should take about 15 minutes to complete.  See [other example comma
 
 This is just the beginning. For your next step, take a look at one of these user guides:
 
-- [Running on multiple samples with looper](/howto/run-looper)
+- [Running on multiple samples with looper](howto/run-looper)
 - [Extended tutorial for running a single sample](tutorial.md)
-- [Running the pipeline directly in a container](/howto/use-container)
+- [Running the pipeline directly in a container](howto/use-container)
 - See other detailed user guide links in the side menu
 
 Any questions? Feel free to [reach out to us](contact.md). Otherwise, go analyze some ATAC-seq!
