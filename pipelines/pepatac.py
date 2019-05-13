@@ -696,7 +696,7 @@ def main():
                fastqc_folder=os.path.join(param.outfolder, "fastqc")),
            container=pm.container)
     
-    pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
+    pm.clean_add(os.path.join(fastq_folder, "*.fastq"), conditional=True)
     pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
     #########################
     # End adapter trimming
@@ -1449,5 +1449,4 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("Pipeline aborted.")
-        sys.exit(1)
+        sys.exit("Pipeline aborted")
