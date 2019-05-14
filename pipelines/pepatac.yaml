@@ -49,7 +49,8 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     params: '-q 10'
     # -q: skip alignments with MAPQ < 10.
   macs2: 
-    params: '-f BED -q 0.01 --shift 0 --nomodel'
+    params: '-f BED -q 0.01 --shift 0 --nomodel' # default variable width peaks
+    #params: '--shift -75 --extsize 150 --nomodel --call-summits --nolambda --keep-dup all -p 0.01'
     # -f: Format of tag file.
     # -q: The qvalue (minimum FDR) cutoff to call significant regions.
     # --shift:  Assign an arbitrary shift in bp. See MACS documentation.

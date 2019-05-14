@@ -37,9 +37,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes mysql-server \
     
 # Install python tools
 RUN pip install --upgrade pip
+RUN pip install numpy  # must install separate from MACS2 due to setup_requires conflicts
 RUN pip install virtualenv && \
     pip install cython && \
-    pip install numpy && \
     pip install pandas && \
     pip install pararead && \
     pip install piper

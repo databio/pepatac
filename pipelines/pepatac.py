@@ -20,6 +20,7 @@ from pypiper import build_command
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER  = "anno"
 PEAK_CALLERS = ["fseq", "macs2"]
+PEAK_TYPES   = ["variable", "fixed"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 
@@ -66,9 +67,22 @@ def parse_arguments():
                         dest="blacklist", type=str,
                         help="Name of peak blacklist file")
 
+    parser.add_argument("--peak-type", default="variable",
+                        dest="peak_type", choices=PEAK_TYPES, type=str,
+                        help="Call variable or fixed width peaks")
+
+    parser.add_argument("--extend", default=250,
+                        dest="extend", type=int,
+                        help="How far to extend fixed width peaks up and "
+                             "downstream.")
+
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
                         help="Reference peak set for calculating FRiP")
+
+    parser.add_argument("--motif", action='store_true',
+                        dest="motif",
+                        help="Perform motif enrichment analysis")
 
     parser.add_argument("--anno-name", default=None,
                         dest="anno_name", type=str,
@@ -1150,6 +1164,8 @@ def main():
     ngstk.make_dir(peak_folder)
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
+    fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
+                                    "_peaks_fixedWidth.narrowPeak")
     peak_input_file = shift_bed
 
     if not os.path.isfile(peak_input_file):
@@ -1184,20 +1200,37 @@ def main():
 
         else:
             # MACS2
-            macs_cmd_chunks = [
+            # Note: required input file is non-positional ("treatment" file -t)
+            macs_cmd_base = [
                 "{} callpeak".format(tools.macs2),
                 ("-t", peak_input_file),
                 ("--outdir", peak_folder),
                 ("-n", args.sample_name),
-                ("-g", args.genome_size),
-                param.macs2.params
+                ("-g", args.genome_size)
             ]
-            # Note: required input file is non-positional ("treatment" file -t)
-            cmd = build_command(macs_cmd_chunks)
+            if args.peak_type == "variable":            
+                cmd = build_command([macs_cmd_base, param.macs2.params])
+            elif args.peak_type == "fixed":
+                fixed_width = ('--shift -75 --extsize 150 --nomodel '
+                               '--call-summits --nolambda --leep-dup all '
+                               '-p 0.01')
+                cmd = build_command([macs_cmd_base, fixed_width])
+            else:  # default to variable
+                cmd = build_command([macs_cmd_base, param.macs2.params])
 
         # Call peaks and report peak count.
         pm.run(cmd, peak_output_file, follow=report_peak_count,
                container=pm.container)
+
+        if args.peak_type == "fixed":
+            # extend peaks from summit by 'extend', account for --shift
+            cmd = ("awk '{$2 = $2 - " + str(args.extend - 75) +
+                   "; " + "$3 = $3 + " + str(args.extend + 75) +
+                   "; print}' " + peak_output_file + " > " +
+                   fixed_peak_file)
+            peak_output_file = fixed_peak_file
+            pm.run(cmd, peak_output_file, container=pm.container)
+            # remove overlapping peaks
 
         # Filter peaks in blacklist.
         if os.path.exists(res.blacklist):

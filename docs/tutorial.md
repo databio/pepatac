@@ -43,13 +43,13 @@ implied_columns:
     human:
     genome: hg38
     macs_genome_size: hs
-    prealignments: rCRSd human_repeats`</pre>
+    prealignments: rCRSd human_repeats
 ```
 There is also a sample annotation file referenced in our configuration file.  The sample annotation file contains metadata and other information about our sample. Just like before, this file, named `tutorial.csv` has been provided.  You may check it out if you wish, otherwise we're all set.
 If you open `tutorial.csv`, you should see the following:
 ```
 sample_name,protocol,organism,read1,read2,read_type
-tutorial,ATAC,human,tutorial_r1,tutorial_r2,75,paired
+tutorial,ATAC,human,tutorial_r1,tutorial_r2,paired
 ```
 That's it! Let's analyze that sample!
 

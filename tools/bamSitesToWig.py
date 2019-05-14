@@ -3,7 +3,7 @@
 __author__ = ["Nathan C. Sheffield", "Jason Smith"]
 __credits__ = []
 __license__ = "BSD2"
-__version__ = "0.3"
+__version__ = "0.3.1"
 __email__ = "nathan@code.databio.org"
 
 from argparse import ArgumentParser
@@ -52,7 +52,10 @@ class CutTracer(pararead.ParaReadProcessor):
         self.exactbw = exactbw
         self.summary_filename = summary_filename
         self.verbosity=verbosity
-        self.variable_step=variable_step
+        if variable_step:
+            self.variable_step = 1 # perl True
+        else:
+            self.variable_step = 0 # perl False
         self.bedout = bedout
         self.smoothbw = smoothbw
         self.smooth_length = smooth_length
@@ -97,11 +100,12 @@ class CutTracer(pararead.ParaReadProcessor):
         chromOutFile = self._tempf(chrom)
         chromOutFileBw = chromOutFile + ".bw"
 
-        cutsToWig = os.path.join(os.path.dirname(__file__), "cutsToWig.pl")
+        cutsToWig = os.path.join(os.path.dirname(__file__), "cutsToWig")
 
-        cmd = "sort -n | perl " + cutsToWig + " " + str(chrom_size) + str(self.variable_step)
+        cmd = ("sort -n | " + cutsToWig + " " +
+               str(chrom_size) + " " + str(self.variable_step))
         # cmd = "awk 'FNR==1 {print;next} { for (i = $1-" + str(self.smooth_length) + \
-        #     "; i <= $1+" + str(self.smooth_length) + "; ++i) print i }' | sort -n | perl " + \
+        #     "; i <= $1+" + str(self.smooth_length) + "; ++i) print i }' | sort -n | " + \
         #     cutsToWig + " " + str(chrom_size) 
         cmd2 = ("wigToBigWig -clip -fixedSummaries -keepAllChromosomes stdin " +
                 self.chrom_sizes_file + " " + chromOutFileBw)
@@ -119,12 +123,12 @@ class CutTracer(pararead.ParaReadProcessor):
 
         if self.smoothbw:
             cutsToWigSm = os.path.join(os.path.dirname(__file__),
-                                       "smoothWig.pl")
+                                       "smoothWig")
             chromOutFileBwSm = chromOutFile + "_smooth.bw"
             tmpFile = chromOutFile + "_cuts.txt"
-            cmd = ("sort -n | tee " + tmpFile + " | perl " + cutsToWigSm +
+            cmd = ("sort -n | tee " + tmpFile + " | " + cutsToWigSm +
                    " " + str(chrom_size) + " " +  str(self.smooth_length) +
-                   " " + str(self.step_size))
+                   " " + str(self.step_size) + " " + str(self.variable_step))
             cmd2 = ("wigToBigWig -clip -fixedSummaries " +
                     "-keepAllChromosomes stdin " + self.chrom_sizes_file +
                     " " + chromOutFileBwSm)
@@ -194,7 +198,7 @@ class CutTracer(pararead.ParaReadProcessor):
 
         if self.exactbw:
             if self.variable_step:
-                header_line = "variableStep chrom=" + chrom + " span=1\n";
+                header_line = "variableStep chrom=" + chrom + "\n";
             else: 
                 header_line = ("fixedStep chrom=" + chrom + " start=" +
                                str(begin) + " step=1\n")
@@ -203,7 +207,7 @@ class CutTracer(pararead.ParaReadProcessor):
 
         if self.smoothbw:
             if self.variable_step:
-                header_line = "variableStep chrom=" + chrom + " span=1\n";
+                header_line = "variableStep chrom=" + chrom + "\n";
             else:
                 header_line = ("fixedStep chrom=" + chrom + " start=" +
                                str(begin) + " step=" + str(self.step_size) +
