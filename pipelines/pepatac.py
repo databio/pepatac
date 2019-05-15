@@ -69,7 +69,8 @@ def parse_arguments():
 
     parser.add_argument("--peak-type", default="variable",
                         dest="peak_type", choices=PEAK_TYPES, type=str,
-                        help="Call variable or fixed width peaks")
+                        help="Call variable or fixed width peaks.\n"
+                             "Fixed width requires MACS2.")
 
     parser.add_argument("--extend", default=250,
                         dest="extend", type=int,
@@ -78,7 +79,7 @@ def parse_arguments():
 
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
-                        help="Reference peak set for calculating FRiP")
+                        help="Reference peak set (BED format) for calculating FRiP")
 
     parser.add_argument("--motif", action='store_true',
                         dest="motif",
@@ -86,7 +87,7 @@ def parse_arguments():
 
     parser.add_argument("--anno-name", default=None,
                         dest="anno_name", type=str,
-                        help="Reference bed file for calculating FRiF")
+                        help="Reference annotation file (BED format) for calculating FRiF")
 
     parser.add_argument("--keep", action='store_true',
                         dest="keep",
@@ -178,29 +179,19 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
         mapped_bam = os.path.join(sub_outdir, bamname)
         summary_name = "{}_{}_bt_aln_summary.log".format(args.sample_name,
-                                                          assembly_identifier)
+                                                         assembly_identifier)
         summary_file = os.path.join(sub_outdir, summary_name)
+
         out_fastq_pre = os.path.join(
             sub_outdir, args.sample_name + "_" + assembly_identifier)
-        # bowtie2 unmapped filename format
-        if paired:
-            out_fastq_bt2 = out_fastq_pre + '_unmap_R%.fq.gz'
-        else:
-            out_fastq_bt2 = out_fastq_pre + '_unmap_R1.fq.gz'
 
-        if not bt2_opts_txt:
-            # Default options
-            bt2_opts_txt = "-k 1"  # Return only 1 alignment
-            bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+        out_fastq_r1    = out_fastq_pre + '_unmap_R1.fq'
+        out_fastq_r1_gz = out_fastq_r1  + '.gz'
 
-        # samtools sort needs a temporary directory
-        tempdir = tempfile.mkdtemp(dir=sub_outdir)
-        pm.clean_add(tempdir)
-   
-        out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq.gz'
-        out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq.gz'
+        out_fastq_r2    = out_fastq_pre + '_unmap_R2.fq'
+        out_fastq_r2_gz = out_fastq_r2  + '.gz'
 
-        if useFIFO and not args.keep:
+        if useFIFO and paired and not args.keep:
             out_fastq_tmp = os.path.join(sub_outdir,
                     assembly_identifier + "_bt2")
             cmd = "mkfifo " + out_fastq_tmp
@@ -209,7 +200,8 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 os.remove(out_fastq_tmp)
             pm.run(cmd, out_fastq_tmp, container=pm.container)
         else:
-            out_fastq_tmp = out_fastq_pre + '_unmap.fq'
+            out_fastq_tmp    = out_fastq_pre + '_unmap.fq'
+            out_fastq_tmp_gz = out_fastq_tmp + ".gz"
 
         filter_pair = build_command([tools.perl,
             tool_path("filter_paired_fq.pl"), out_fastq_tmp,
@@ -220,6 +212,15 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
            # unmap_fq1, out_fastq_r1])
         # For now, revert to old method
 
+        if not bt2_opts_txt:
+            # Default options
+            bt2_opts_txt = "-k 1"  # Return only 1 alignment
+            bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+
+        # samtools sort needs a temporary directory
+        tempdir = tempfile.mkdtemp(dir=sub_outdir)
+        pm.clean_add(tempdir)  
+
         # Build bowtie2 command
         cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
         cmd += " " + bt2_opts_txt
@@ -228,13 +229,14 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         cmd += " -U " + unmap_fq1
         cmd += " --un " + out_fastq_tmp
         if args.keep: #  or not paired
-            #cmd += " --un-gz " + out_fastq_bt2 # TODO drop this for paired... because repair-ing with filter_paired_fq.pl
+            #cmd += " --un-gz " + out_fastq_bt2 
+            # Drop this for paired...repairing with filter_paired_fq.pl
             # In this samtools sort command we print to stdout and then use > to
             # redirect instead of  `+ " -o " + mapped_bam` because then samtools
             # uses a random temp file, so it won't choke if the job gets
             # interrupted and restarted at this step.
             cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
-            cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
+            cmd += " | " + tools.samtools + " sort - -@ 1"      # sort output
             cmd += " -T " + tempdir
             cmd += " -o " + mapped_bam
         else:
@@ -246,9 +248,11 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 pm.run([cmd, filter_pair], mapped_bam, container=pm.container)
             else:
                 pm.wait = False
-                pm.run(filter_pair, [summary_file, out_fastq_r2], container=pm.container)
+                pm.run(filter_pair, [summary_file, out_fastq_r2_gz],
+                       container=pm.container)
                 pm.wait = True
-                pm.run(cmd, [summary_file, out_fastq_r2], container=pm.container)
+                pm.run(cmd, [summary_file, out_fastq_r2_gz],
+                       container=pm.container)
         else:
             if args.keep:
                 pm.run(cmd, mapped_bam, container=pm.container)
@@ -256,7 +260,8 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 # TODO: switch to this once filter_paired_fq works with SE
                 #pm.run(cmd2, summary_file, container=pm.container)
                 #pm.run(cmd1, out_fastq_r1, container=pm.container)
-                pm.run(cmd, out_fastq_bt2, container=pm.container)
+                pm.run(cmd, out_fastq_tmp_gz,
+                       container=pm.container)
 
         pm.clean_add(out_fastq_tmp)
 
@@ -291,7 +296,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         else:
             # Use alternate once filter_paired_fq is working with SE
             #unmap_fq1 = out_fastq_r1
-            unmap_fq1 = out_fastq_bt2
+            unmap_fq1 = out_fastq_tmp
             unmap_fq2 = ""
 
         return unmap_fq1, unmap_fq2
@@ -511,7 +516,8 @@ def main():
         gfolder, args.genome_assembly + ".chromSizes")
 
     if args.TSS_name:
-        res.TSS_file = os.path.join(gfolder, args.TSS_name)
+        # see if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks): as example
+        res.TSS_file = os.path.join(gfolder, args.TSS_name)  # TODO: convert this to absolute path to specified file
     else:
         res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
 
@@ -735,18 +741,34 @@ def main():
         for reference in args.prealignments:
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
-                args, tools, args.paired_end, False, unmap_fq1, unmap_fq2, reference,
-                assembly_bt2=_get_bowtie2_index(res.genomes, reference),
-                outfolder=param.outfolder, aligndir="prealignments",
-                bt2_opts_txt = param.bowtie2_pre.params)
-                to_compress.extend((unmap_fq1, unmap_fq2))
+                    args, tools, args.paired_end, False,
+                    unmap_fq1, unmap_fq2, reference,
+                    assembly_bt2=_get_bowtie2_index(res.genomes, reference),
+                    outfolder=param.outfolder, aligndir="prealignments",
+                    bt2_opts_txt = param.bowtie2_pre.params)
+                if args.paired_end:
+                    to_compress.extend((unmap_fq1, unmap_fq2))
+                else:
+                    to_compress.extend(unmap_fq1)
             else:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
-                args, tools, args.paired_end, True, unmap_fq1, unmap_fq2, reference,
-                assembly_bt2=_get_bowtie2_index(res.genomes, reference),
-                outfolder=param.outfolder, aligndir="prealignments",
-                bt2_opts_txt = param.bowtie2_pre.params)
-                to_compress.extend((unmap_fq1, unmap_fq2))
+                    args, tools, args.paired_end, True,
+                    unmap_fq1, unmap_fq2, reference,
+                    assembly_bt2=_get_bowtie2_index(res.genomes, reference),
+                    outfolder=param.outfolder, aligndir="prealignments",
+                    bt2_opts_txt = param.bowtie2_pre.params)
+                if args.paired_end:
+                    to_compress.extend((unmap_fq1, unmap_fq2))
+                else:
+                    to_compress.extend(unmap_fq1)
+
+    pm.timestamp("### Compress all unmapped read files")
+    for unmapped_fq in to_compress:
+        # Compress unmapped fastq reads
+        if not pypiper.is_gzipped_fastq(unmapped_fq) and not unmapped_fq == '':
+            cmd = (ngstk.ziptool + " " + unmapped_fq)
+            unmapped_fq = unmapped_fq + ".gz"
+            pm.run(cmd, unmapped_fq, container=pm.container)
 
     pm.timestamp("### Map to genome")
     map_genome_folder = os.path.join(
@@ -772,6 +794,9 @@ def main():
     # samtools sort needs a temporary directory
     tempdir = tempfile.mkdtemp(dir=map_genome_folder)
     pm.clean_add(tempdir)
+
+    unmap_fq1 = unmap_fq1 + ".gz"
+    unmap_fq2 = unmap_fq2 + ".gz"
 
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
     cmd += " " + bt2_options
@@ -815,14 +840,6 @@ def main():
 
     pm.run([cmd, cmd2], mapping_genome_bam,
            follow=check_alignment_genome, container=pm.container)
-
-    pm.timestamp("### Compress all unmapped read files")
-    for unmapped_fq in to_compress:
-        # Compress unmapped fastq reads
-        if not pypiper.is_gzipped_fastq(unmapped_fq) and not unmapped_fq == '':
-            cmd = (ngstk.ziptool + " " + unmapped_fq)
-            unmapped_fq = unmapped_fq + ".gz"
-            pm.run(cmd, unmapped_fq, container=pm.container)
 
     # Index the temporary bam file and the sorted bam file
     temp_mapping_index = os.path.join(mapping_genome_bam_temp + ".bai")
@@ -1178,26 +1195,29 @@ def main():
         pm.stop_pipeline()
     else:
         if args.peak_caller == "fseq":
-            fseq_cmd_chunks = [
-                tools.fseq,
-                ("-o", peak_folder),
-                param.fseq.params
-            ]
-            # Create the peak calling command
-            fseq_cmd_chunks.append(peak_input_file)
-            fseq_cmd = build_command(fseq_cmd_chunks)
+            if args.peak_type == "fixed":
+                err_msg = "Must use MACS2 when calling fixed width peaks."
+                pm.fail_pipeline(RuntimeError(err_msg))
+            else:
+                fseq_cmd_chunks = [
+                    tools.fseq,
+                    ("-o", peak_folder),
+                    param.fseq.params
+                ]
+                # Create the peak calling command
+                fseq_cmd_chunks.append(peak_input_file)
+                fseq_cmd = build_command(fseq_cmd_chunks)
 
-            # Create the file merge/delete commands.
-            chrom_peak_files = os.path.join(peak_folder, "*.npf")
-            merge_chrom_peaks_files = (
-                "cat {peakfiles} > {combined_peak_file}"
-                .format(peakfiles=chrom_peak_files,
-                        combined_peak_file=peak_output_file))
-            pm.clean_add(chrom_peak_files)
+                # Create the file merge/delete commands.
+                chrom_peak_files = os.path.join(peak_folder, "*.npf")
+                merge_chrom_peaks_files = (
+                    "cat {peakfiles} > {combined_peak_file}"
+                    .format(peakfiles=chrom_peak_files,
+                            combined_peak_file=peak_output_file))
+                pm.clean_add(chrom_peak_files)
 
-            # Pypiper serially executes the commands.
-            cmd = [fseq_cmd, merge_chrom_peaks_files]
-
+                # Pypiper serially executes the commands.
+                cmd = [fseq_cmd, merge_chrom_peaks_files]
         else:
             # MACS2
             # Note: required input file is non-positional ("treatment" file -t)
@@ -1208,17 +1228,20 @@ def main():
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
             ]
-            if args.peak_type == "variable":            
-                cmd = build_command([macs_cmd_base, param.macs2.params])
+            if args.peak_type == "variable":
+                macs_cmd_base.extend(param.macs2.params.split())
             elif args.peak_type == "fixed":
                 fixed_width = ('--shift -75 --extsize 150 --nomodel '
-                               '--call-summits --nolambda --leep-dup all '
+                               '--call-summits --nolambda --keep-dup all '
                                '-p 0.01')
-                cmd = build_command([macs_cmd_base, fixed_width])
+                macs_cmd_base.extend(fixed_width.split())
             else:  # default to variable
-                cmd = build_command([macs_cmd_base, param.macs2.params])
+                macs_cmd_base.extend(param.macs2.params.split())
 
         # Call peaks and report peak count.
+        print("peak_type: {}".format(args.peak_type))  # DEBUG
+        print("macs_cmd_base: {}".format(macs_cmd_base))  # DEBUG
+        cmd = build_command(macs_cmd_base)
         pm.run(cmd, peak_output_file, follow=report_peak_count,
                container=pm.container)
 
@@ -1313,6 +1336,7 @@ def main():
             pm.run(cmd, anno_local, container=pm.container)
         else:
             # Default annotation file
+            # TODO: handle unzip correctly
             anno_file  = os.path.abspath(anno_path(args.genome_assembly +
                                          "_annotations.bed.gz"))
             anno_unzip = os.path.abspath(anno_path(args.genome_assembly +
@@ -1469,7 +1493,8 @@ def main():
             pm.clean_add(failQC_genome_bam)
             pm.clean_add(unmap_genome_bam)
             for unmapped_fq in to_compress:
-                pm.clean_add(unmapped_fq + ".gz")
+                if not unmapped_fq:
+                    pm.clean_add(unmapped_fq + ".gz")
 
         # COMPLETE!
         pm.stop_pipeline()
