@@ -19,13 +19,17 @@ pipelines:
     optional_arguments:
       "--input2": read2
       "--peak-caller": peak_caller
-      "--frip-ref-peaks": FRIP_ref
+      "--genome-size": macs_genome_size
+      "--trimmer": trimmer
       "--prealignments": prealignments
       "--deduplicator": deduplicator
-      "--trimmer": trimmer
-      "--genome-size": macs_genome_size
-      "--anno-name": anno_name
       "--TSS-name": TSS_name
+      "--blacklist": blacklist
+      "--peak-type": peak_type
+      "--extend": extend
+      "--frip-ref-peaks": frip_ref_peaks
+      "--motif": motif
+      "--anno-name": anno_name      
       "--keep": keep
       "--noFIFO": no_fifo
       "--lite": lite
