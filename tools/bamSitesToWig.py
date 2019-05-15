@@ -53,9 +53,9 @@ class CutTracer(pararead.ParaReadProcessor):
         self.summary_filename = summary_filename
         self.verbosity=verbosity
         if variable_step:
-            self.variable_step = 1 # perl True
+            self.variable_step = 1 # True
         else:
-            self.variable_step = 0 # perl False
+            self.variable_step = 0 # False
         self.bedout = bedout
         self.smoothbw = smoothbw
         self.smooth_length = smooth_length
@@ -100,12 +100,12 @@ class CutTracer(pararead.ParaReadProcessor):
         chromOutFile = self._tempf(chrom)
         chromOutFileBw = chromOutFile + ".bw"
 
-        cutsToWig = os.path.join(os.path.dirname(__file__), "cutsToWig")
+        cutsToWig = os.path.join(os.path.dirname(__file__), "cutsToWig.pl")
 
-        cmd = ("sort -n | " + cutsToWig + " " +
+        cmd = ("sort -n | perl " + cutsToWig + " " +
                str(chrom_size) + " " + str(self.variable_step))
         # cmd = "awk 'FNR==1 {print;next} { for (i = $1-" + str(self.smooth_length) + \
-        #     "; i <= $1+" + str(self.smooth_length) + "; ++i) print i }' | sort -n | " + \
+        #     "; i <= $1+" + str(self.smooth_length) + "; ++i) print i }' | sort -n | perl " + \
         #     cutsToWig + " " + str(chrom_size) 
         cmd2 = ("wigToBigWig -clip -fixedSummaries -keepAllChromosomes stdin " +
                 self.chrom_sizes_file + " " + chromOutFileBw)
@@ -123,10 +123,10 @@ class CutTracer(pararead.ParaReadProcessor):
 
         if self.smoothbw:
             cutsToWigSm = os.path.join(os.path.dirname(__file__),
-                                       "smoothWig")
+                                       "smoothWig.pl")
             chromOutFileBwSm = chromOutFile + "_smooth.bw"
             tmpFile = chromOutFile + "_cuts.txt"
-            cmd = ("sort -n | tee " + tmpFile + " | " + cutsToWigSm +
+            cmd = ("sort -n | tee " + tmpFile + " | perl " + cutsToWigSm +
                    " " + str(chrom_size) + " " +  str(self.smooth_length) +
                    " " + str(self.step_size) + " " + str(self.variable_step))
             cmd2 = ("wigToBigWig -clip -fixedSummaries " +
