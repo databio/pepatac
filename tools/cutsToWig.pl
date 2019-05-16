@@ -68,6 +68,10 @@ if ($variableStep) {  # Use variableStep wiggle format
 	while($countIndex <= $chrSize) {
 		$countIndex++;
 	}
+	# If there are no additional cutSites
+	if ($currentCount == 1) {
+		print "$chrSize\t0\n";
+	}
 } else {  # Use fixedStep wiggle format
 	# Print out 0s until the first cut
 	while ($countIndex < $cutSite) {
