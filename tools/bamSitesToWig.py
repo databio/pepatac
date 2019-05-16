@@ -67,6 +67,7 @@ class CutTracer(pararead.ParaReadProcessor):
         try:
             self.check_command("wigToBigWig")
             self.check_command("perl")
+            self.check_command("bigWigCat")            
         except AttributeError:
             # backwards compatibility with earlier versions of pararead that did
             # not have a check_command function
