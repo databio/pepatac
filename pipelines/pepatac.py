@@ -1246,14 +1246,22 @@ def main():
                container=pm.container)
 
         if args.peak_type == "fixed":
-            # extend peaks from summit by 'extend', account for --shift
-            cmd = ("awk '{$2 = $2 - " + str(args.extend - 75) +
-                   "; " + "$3 = $3 + " + str(args.extend + 75) +
+            # extend peaks from summit by 'extend'
+            # start extend from center of 150bp (extsize) peak
+            cmd = ("awk '{$2 = $2 + 75 - " + str(args.extend) +
+                   "; " + "$3 = $3 - 75 + " + str(args.extend) +
                    "; print}' " + peak_output_file + " > " +
                    fixed_peak_file)
             peak_output_file = fixed_peak_file
             pm.run(cmd, peak_output_file, container=pm.container)
             # remove overlapping peaks
+            cmd = build_command([tools.Rscript,
+                                 tool_path("PEPATAC_reducePeaks.R"),
+                                 fixed_peak_file,
+                                 res.chrom_sizes,
+                                 peak_output_file])
+            pm.run(cmd, peak_output_file, nofail=False, container=pm.container)
+            pm.clean_add(fixed_peak_file)
 
         # Filter peaks in blacklist.
         if os.path.exists(res.blacklist):
@@ -1261,7 +1269,6 @@ def main():
                                        "_peaks_rmBlacklist.narrowPeak")
             cmd = (tools.bedtools + " intersect " + " -a " + peak_output_file +
                    " -b " + res.blacklist + " -v  >" + filter_peak)
-
             pm.run(cmd, filter_peak, container=pm.container)
 
         pm.timestamp("### Calculate fraction of reads in peaks (FRiP)")
