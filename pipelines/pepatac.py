@@ -1183,6 +1183,8 @@ def main():
                                     "_peaks.narrowPeak")
     fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks_fixedWidth.narrowPeak")
+    norm_fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
+                                        "_peaks_fixedWidth_normalized.narrowPeak")
     peak_input_file = shift_bed
 
     if not os.path.isfile(peak_input_file):
@@ -1239,8 +1241,8 @@ def main():
                 macs_cmd_base.extend(param.macs2.params.split())
 
         # Call peaks and report peak count.
-        print("peak_type: {}".format(args.peak_type))  # DEBUG
-        print("macs_cmd_base: {}".format(macs_cmd_base))  # DEBUG
+        #print("peak_type: {}".format(args.peak_type))  # DEBUG
+        #print("macs_cmd_base: {}".format(macs_cmd_base))  # DEBUG
         cmd = build_command(macs_cmd_base)
         pm.run(cmd, peak_output_file, follow=report_peak_count,
                container=pm.container)
@@ -1248,7 +1250,7 @@ def main():
         if args.peak_type == "fixed":
             # extend peaks from summit by 'extend'
             # start extend from center of 150bp (extsize) peak
-            cmd = ("awk '{$2 = $2 + 75 - " + str(args.extend) +
+            cmd = ("awk -v OFS='\t' {$2 = $2 + 75 - " + str(args.extend) +
                    "; " + "$3 = $3 - 75 + " + str(args.extend) +
                    "; print}' " + peak_output_file + " > " +
                    fixed_peak_file)
@@ -1259,8 +1261,9 @@ def main():
                                  tool_path("PEPATAC_reducePeaks.R"),
                                  fixed_peak_file,
                                  res.chrom_sizes,
-                                 peak_output_file])
-            pm.run(cmd, peak_output_file, nofail=False, container=pm.container)
+                                 norm_fixed_peak_file])
+            pm.run(cmd, norm_fixed_peak_file, nofail=False, container=pm.container)
+            peak_output_file = norm_fixed_peak_file
             pm.clean_add(fixed_peak_file)
 
         # Filter peaks in blacklist.
@@ -1337,10 +1340,16 @@ def main():
 
         if args.anno_name:
             anno_file  = os.path.abspath(args.anno_name)
-            anno_unzip = os.path.splitext(anno_file)[0]
-            anno_local = os.path.join(raw_folder, args.anno_name)
-            cmd = ("ln -sf " + anno_file + " " + anno_local)
-            pm.run(cmd, anno_local, container=pm.container)
+            anno_local = os.path.join(raw_folder, os.path.basename(args.anno_name))
+            if not os.path.exists(anno_file):
+                print("Skipping read annotation")
+                print("This requires a valid {} annotation file."
+                      .format(args.genome_assembly))
+                print("Confirm {} is present."
+                      .format(str(os.path.dirname(anno_file))))
+            else:
+                cmd = ("ln -sf " + anno_file + " " + anno_local) 
+                pm.run(cmd, anno_local, container=pm.container)
         else:
             # Default annotation file
             # TODO: handle unzip correctly
@@ -1349,18 +1358,36 @@ def main():
             anno_unzip = os.path.abspath(anno_path(args.genome_assembly +
                                          "_annotations.bed"))
 
-            if not os.path.exists(anno_file) and not os.path.exists(anno_unzip):
-                print("Skipping read annotation")
+            if not os.path.exists(anno_file):
+                print("Skipping read annotation...")
                 print("This requires a {} annotation file."
                       .format(args.genome_assembly))
                 print("Confirm this file is present in {} or specify using `--anno-name`"
                       .format(str(os.path.dirname(anno_file))))
+            elif not os.path.exists(anno_unzip):
+                print("Skipping read annotation...")
+                print("This requires a {} annotation file."
+                      .format(args.genome_assembly))
+                print("Confirm this file is present in {} or specify using `--anno-name`"
+                      .format(str(os.path.dirname(anno_unzip))))
             else:
-                anno_local = os.path.join(raw_folder,
+                if os.path.exists(anno_file):
+                    anno_local = os.path.join(raw_folder,
                                           args.genome_assembly +
                                           "_annotations.bed.gz")
-                cmd = ("ln -sf " + anno_file + " " + anno_local)
-                pm.run(cmd, anno_local, container=pm.container)            
+                    cmd = ("ln -sf " + anno_file + " " + anno_local)
+                elif os.path.exists(anno_unzip):
+                    anno_local = os.path.join(raw_folder,
+                                          args.genome_assembly +
+                                          "_annotations.bed")
+                    cmd = ("ln -sf " + anno_unzip + " " + anno_local)
+                else:
+                    print("Skipping read annotation...")
+                    print("This requires a {} annotation file."
+                          .format(args.genome_assembly))
+                    print("Could not find {}.`"
+                          .format(str(os.path.dirname(anno_file))))
+                pm.run(cmd, anno_local, container=pm.container)           
 
         annoList = list()
 
@@ -1368,8 +1395,9 @@ def main():
             # Get list of features
             cmd1 = (ngstk.ziptool + " -d -c " + anno_local +
                     " | cut -f 4 | sort -u")
-            ftList = pm.checkprint(cmd1)
-            ftList = str.splitlines(ftList)
+            ftList = pm.checkprint(cmd1, shell=True)
+            #ftList = str.splitlines(ftList)
+            ftList = ftList.splitlines()
 
             # Split annotation file on features
             cmd2 = (ngstk.ziptool + " -d -c " + anno_local +
