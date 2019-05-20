@@ -107,7 +107,7 @@ if (file.exists(file.path(argv$chrsize)) && info$size != 0) {
     }
 }
     
-if (exists("peaks") & exists("cSize") {
+if (exists("peaks") & exists("cSize")) {
     hits  <- foverlaps(peaks, peaks,
                        by.x=c("chrom", "chromStart", "chromEnd"),
                        type="any", which=TRUE, nomatch=0)
@@ -125,7 +125,11 @@ if (exists("peaks") & exists("cSize") {
     for (i in nrow(cSize)) {
         final[chrom == cSize$chrom[i] & chromEnd > cSize$size[i], chromEnd := cSize$size[i]]
     }
-    fwrite(final, argv$output)
+    # normalize peak scores for cross sample comparison
+    final[, score := .(score/(sum(score)/1000000))]
+    final[score < 0, score := 0]
+    # save final peak set
+    fwrite(final, argv$output, sep="\t", col.names=FALSE)
 } else {
     message("PEPATAC_reducePeaks.R failed. Check peak and chrom.sizes files.")
 }
