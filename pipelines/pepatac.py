@@ -13,9 +13,9 @@ import os
 import re
 import sys
 import tempfile
-import tarfile
 import pypiper
 from pypiper import build_command
+from refgenconf import RefGenomeConfiguration as RGC
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER  = "anno"
@@ -321,12 +321,25 @@ def _get_bowtie2_index(genomes_folder, genome_assembly):
         e.g. 'mm10'
     :return str: path to bowtie2 index subfolder within central assemblies
         home, for assembly indicated
-    """   
+    """
     return os.path.join(genomes_folder, genome_assembly,
                         "indexed_bowtie2", genome_assembly)
 
 
-def _check_bowtie2_index(genomes_folder, genome_assembly):
+def _find_bt2_path(oracle, assembly, idx_key="indexed_bowtie2"):
+    if isinstance(oracle, str):
+        if not os.path.isdir(oracle):
+            raise ValueError()
+        bt2_path = os.path.join(oracle, assembly, idx_key)
+    else:
+        if not isinstance(oracle, RGC):
+            raise TypeError("Info source for determining bowtie2 index must be "
+                            "string or {}; got {}".format(RGC.__name__, type(oracle)))
+        bt2_path = oracle.get_asset(assembly, idx_key)
+    return bt2_path
+
+
+def _check_bowtie2_index(oracle, genome_assembly):
     """
     Confirm bowtie2 index is present.
 
@@ -334,13 +347,19 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
     assembly (as produced by the RefGenie reference builder) contains the
     correct number of non-empty files.
 
-    :param str genomes_folder: path to central genomes directory, i.e. the
-        root for multiple assembly subdirectories
+    :param str | refgenconf.ReferenceGenomeConfiguration oracle: path to main
+        genomes directory, i.e. the root for multiple assembly subdirectories;
+        alternatively, a ReferenceGenomeConfiguration instance, which provides
+        relevant genome asset pointers
     :param str genome_assembly: name of the specific assembly of interest,
         e.g. 'mm10'
     """
-    bt2_path = os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2")
-    
+
+    bt2_path = _find_bt2_path(oracle, genome_assembly)
+
+    genomes_folder = oracle if isinstance(oracle, str) else oracle.genome_folder
+    tarname = genome_assembly + ".tar.gz"
+
     if os.path.isdir(bt2_path):
         if not os.listdir(bt2_path):
             err_msg = "'{}' does not contain any files.\n{}\n{}"
@@ -353,11 +372,9 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
             pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
         else:
             path, dirs, files = next(os.walk(bt2_path))
-    elif os.path.isfile(os.path.join(genomes_folder, (genome_assembly + ".tar.gz"))):
-        print("Did you mean this: {}".format(os.path.join(
-            genomes_folder, (genome_assembly + ".tar.gz"))))
-        err_msg = "Extract {} before proceeding."
-        pm.fail_pipeline(IOError(err_msg.format(genome_assembly + ".tar.gz")))
+    elif os.path.isfile(os.path.join(genomes_folder, tarname)):
+        print("Did you mean this: {}".format(os.path.join(genomes_folder, tarname)))
+        pm.fail_pipeline(IOError("Extract {} before proceeding.".format(tarname)))
     else:
         err_msg = "Could not find the '{}' index at: {}\n{}\n{}"
         loc_msg = ("Try updating/confirming the 'genomes' variable in "
@@ -386,8 +403,8 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
         pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
 
     bt_expected = [genome_assembly + s for s in bt]
-    bt_present  = [bt for bt in files if any(s in bt for s in bt_expected)]
-    bt_missing  = list(set(bt_expected) - set(bt_present))
+    bt_present = [bt for bt in files if any(s in bt for s in bt_expected)]
+    bt_missing = list(set(bt_expected) - set(bt_present))
     # if there are any missing files (bowtie2 file naming is constant), fail
     if bt_missing:
         err_msg = "The {} bowtie2 index is missing the following file(s): {}"
@@ -417,6 +434,7 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
     for f in fa_files:
         if os.stat(os.path.join(bt2_path, f)).st_size == 0:
             pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
+
 
 def tool_path(tool_name):
     """
@@ -477,6 +495,24 @@ def check_commands(commands, ignore):
         return False  
 
 
+def _add_resources(args, res):
+    try:
+        # TODO: how to name this? consider env vars?
+        cfg = res.genome_config
+    except AttributeError:
+        return os.path.join(res.genomes, args.genome_assembly)
+    else:
+        rgc = RGC(cfg)
+        gfolder = rgc.genome_folder
+    res.chrom_sizes = os.path.join(gfolder, args.genome_assembly + ".chromSizes")
+    tss_name = args.TSS_name or args.genome_assembly + "_TSS.tsv"
+    # TODO: convert this to absolute path to specified file
+    res.TSS_file = os.path.join(gfolder, tss_name)
+    blacklist_name = args.blacklist or args.genome_assembly + ".blacklist.bed"
+    res.blacklist = os.path.join(gfolder, blacklist_name)
+    return res
+
+
 def main():
     """
     Main pipeline process.
@@ -511,21 +547,7 @@ def main():
         pm.fail_pipeline(RuntimeError(err_msg))
 
     # Set up reference resource according to genome prefix.
-    gfolder = os.path.join(res.genomes, args.genome_assembly)
-    res.chrom_sizes = os.path.join(
-        gfolder, args.genome_assembly + ".chromSizes")
-
-    if args.TSS_name:
-        # see if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks): as example
-        res.TSS_file = os.path.join(gfolder, args.TSS_name)  # TODO: convert this to absolute path to specified file
-    else:
-        res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
-
-    if args.blacklist:
-        res.blacklist = os.path.join(gfolder, args.blacklist)
-    else:
-        res.blacklist = os.path.join(
-            gfolder, args.genome_assembly + ".blacklist.bed")
+    res = _add_resources(args, res)
 
     # Get bowtie2 indexes
     res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
