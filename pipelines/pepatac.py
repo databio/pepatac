@@ -1250,7 +1250,7 @@ def main():
         if args.peak_type == "fixed":
             # extend peaks from summit by 'extend'
             # start extend from center of 150bp (extsize) peak
-            cmd = ("awk -v OFS='\t' {$2 = $2 + 75 - " + str(args.extend) +
+            cmd = ("awk -v OFS='\t' '{$2 = $2 + 75 - " + str(args.extend) +
                    "; " + "$3 = $3 - 75 + " + str(args.extend) +
                    "; print}' " + peak_output_file + " > " +
                    fixed_peak_file)
