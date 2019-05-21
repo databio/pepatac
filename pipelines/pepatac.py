@@ -443,7 +443,7 @@ def anno_path(anno_name):
                         ANNO_FOLDER, anno_name)
 
 
-def check_commands(commands, ignore=None):
+def check_commands(commands, ignore=''):
     """
     Check if command(s) can be called
 
@@ -507,7 +507,7 @@ def main():
         err_msg = "Please install missing tools before continuing."
         pm.fail_pipeline(RuntimeError(err_msg))
     if args.motif:
-        if not check_commands(["findMotifsGenome.pl"]):
+        if not check_commands({"findMotifsGenome.pl":"findMotifsGenome.pl"}):
             err_msg = "Please install Homer before continuing."
             pm.fail_pipeline(RuntimeError(err_msg))
 
