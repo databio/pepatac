@@ -197,6 +197,7 @@ if (length(finalList) >= 1) {
     peakSet[,group := gsub("_peak.*","",name)]
     peakList <- splitDataTable(peakSet, "group")
     original <- copy(final)
+    #TODO: find alternative to this for loop
     for (i in 1:length(peakList)) {
         setkey(final, chrom, chromStart, chromEnd)
         setkey(peakList[[i]], chrom, chromStart, chromEnd)

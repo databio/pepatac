@@ -461,7 +461,7 @@ def anno_path(anno_name):
                         ANNO_FOLDER, anno_name)
 
 
-def check_commands(commands, ignore):
+def check_commands(commands, ignore=''):
     """
     Check if command(s) can be called
 
@@ -492,7 +492,7 @@ def check_commands(commands, ignore):
         return True
     else:
         print("The following required tool(s) are not callable: {0}".format(' '.join(uncallable)))
-        return False  
+        return False
 
 
 def _add_resources(args, res):
@@ -532,9 +532,14 @@ def main():
     res = pm.config.resources
 
     # Check that the required tools are callable by the pipeline
-    if not check_commands(tools, ["fseq", "${TRIMMOMATIC}", "${PICARD}", "Rscript"]):
+    if not check_commands(tools, ["fseq", "${TRIMMOMATIC}", "${PICARD}",
+                                  "Rscript", "findMotifsGenome.pl"]):
         err_msg = "Please install missing tools before continuing."
         pm.fail_pipeline(RuntimeError(err_msg))
+    if args.motif:
+        if not check_commands({"findMotifsGenome.pl":"findMotifsGenome.pl"}):
+            err_msg = "Please install Homer before continuing."
+            pm.fail_pipeline(RuntimeError(err_msg))
 
     if args.input2 and not args.paired_end:
         err_msg = "Incompatible settings: You specified single-end, but provided --input2."
@@ -1414,12 +1419,11 @@ def main():
                     " | awk -F'\t' '{print>\"" + QC_folder + "/\"$4}'")
             if len(ftList) >= 1:
                 for pos, anno in enumerate(ftList):
-                    annoFile = os.path.join(QC_folder, anno)
-                    pm.run(cmd2, annoCov, container=pm.container)
-
                     # Rename files to valid filenames
+                    annoFile = os.path.join(QC_folder, anno)
                     validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
                     fileName = os.path.join(QC_folder, validName)
+                    pm.run(cmd2, fileName, container=pm.container)
                     cmd = 'mv "{old}" "{new}"'.format(old=annoFile, new=fileName)
                     pm.run(cmd, fileName,
                            container=pm.container)
@@ -1540,6 +1544,26 @@ def main():
             for unmapped_fq in to_compress:
                 if not unmapped_fq:
                     pm.clean_add(unmapped_fq + ".gz")
+
+        if args.motif:
+            # Perform motif analysis
+            pm.timestamp("### Motif analysis")
+            # convert narrowPeak to BED6
+            peak_bed_file = os.path.join(peak_folder,  args.sample_name +
+                                    "_peaks.bed")
+            cmd = ("cut -f 1-6 " + peak_output_file > peak_bed_file)
+            pm.run(cmd, peak_bed_file, container=pm.container)
+            pm.clean_add(peak_bed_file) 
+            # create preparsed directory
+            tempdir = tempfile.mkdtemp(dir=peak_folder)
+            pm.clean_add(tempdir)
+            # perform motif analysis
+            motifHTML  = os.path.join(peak_folder, "homerResults.html")
+            cmd = ("findMotifsGenome.pl " + peak_bed_file +
+                   args.genome_assembly + peak_folder +
+                   "-size given -mask -preparsedDir " + tempdir)
+            pm.run(cmd, motifHTML, container=pm.container)
+            pm.report_object("Motif analysis", motifHTML)
 
         # COMPLETE!
         pm.stop_pipeline()
