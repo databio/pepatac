@@ -1249,11 +1249,12 @@ def main():
 
         if args.peak_type == "fixed":
             # extend peaks from summit by 'extend'
-            # start extend from center of 150bp (extsize) peak
-            cmd = ("awk -v OFS='\t' '{$2 = $2 + 75 - " + str(args.extend) +
-                   "; " + "$3 = $3 - 75 + " + str(args.extend) +
-                   "; print}' " + peak_output_file + " > " +
-                   fixed_peak_file)
+            # start extend from center of peak
+            cmd = ("awk -v OFS='" + "\t" +
+                   "' '{$2 = int(($3 - $2)/2 + $2 - " +
+                   str(args.extend) + "); " +
+                   "$3 = int($2 + " + str(2*args.extend) +
+                   "); print}' " + peak_output_file + " > " + fixed_peak_file)
             peak_output_file = fixed_peak_file
             pm.run(cmd, peak_output_file, container=pm.container)
             # remove overlapping peaks
@@ -1390,7 +1391,7 @@ def main():
             cmd1 = (ngstk.ziptool + " -d -c " + anno_local +
                     " | cut -f 4 | sort -u")
             ftList = pm.checkprint(cmd1, shell=True)
-            #ftList = str.splitlines(ftList)
+            #print("ftList: {}".format(ftList))  # DEBUG
             ftList = ftList.splitlines()
 
             # Split annotation file on features
@@ -1399,7 +1400,7 @@ def main():
             if len(ftList) >= 1:
                 for pos, anno in enumerate(ftList):
                     annoFile = os.path.join(QC_folder, anno)
-                    pm.run(cmd2, annoFile, container=pm.container)
+                    pm.run(cmd2, annoCov, container=pm.container)
 
                     # Rename files to valid filenames
                     validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
