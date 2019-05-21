@@ -1,7 +1,7 @@
 #! /usr/bin/env Rscript
 ###############################################################################
 #3/09/18
-#Last Updated 5/20/19
+#Last Updated 7/16/18
 #Jason Smith
 #narrowPeakToBigBed.R
 #
