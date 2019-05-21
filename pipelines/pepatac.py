@@ -1358,18 +1358,12 @@ def main():
             anno_unzip = os.path.abspath(anno_path(args.genome_assembly +
                                          "_annotations.bed"))
 
-            if not os.path.exists(anno_file):
+            if not os.path.exists(anno_file) and not os.path.exists(anno_unzip):
                 print("Skipping read annotation...")
                 print("This requires a {} annotation file."
                       .format(args.genome_assembly))
                 print("Confirm this file is present in {} or specify using `--anno-name`"
                       .format(str(os.path.dirname(anno_file))))
-            elif not os.path.exists(anno_unzip):
-                print("Skipping read annotation...")
-                print("This requires a {} annotation file."
-                      .format(args.genome_assembly))
-                print("Confirm this file is present in {} or specify using `--anno-name`"
-                      .format(str(os.path.dirname(anno_unzip))))
             else:
                 if os.path.exists(anno_file):
                     anno_local = os.path.join(raw_folder,
