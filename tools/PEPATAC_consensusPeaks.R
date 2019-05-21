@@ -83,6 +83,25 @@ buildFilePath <- function(suffix, pep=prj) {
               paste0(config(pep)$name, suffix))
 }
 
+# Efficiently split a data.table by a column in the table
+# 
+# @param  DT Data.table to split
+# @param  splitFactor Column to split, which can be a character vector
+#         or an integer.
+# @return List of data.table objects, split by column
+# @examples
+#   DT = data.table(letters, grp = rep(c("group1", "group2"), 13))
+#   splitDataTable(DT, "grp")
+#   splitDataTable(DT, 2)
+# @export
+splitDataTable = function(DT, splitFactor) {
+    if (is.numeric(splitFactor)) {
+        splitFactor = colnames(DT)[splitFactor]
+        message("Integer splitFactor, changed to: ", splitFactor)
+    }
+    lapply( split(1:nrow(DT), DT[, get(splitFactor)]), function(x) DT[x])
+}
+
 ###############################################################################
 ##### Main #####
 
@@ -148,11 +167,13 @@ if (length(fileList) > 1) {
     quit()
 }
 
-if (length(finalList) > 1) {
+if (length(finalList) >= 1) {
+    # create combined peaks
     peaks           <- rbindlist(lapply(finalList, fread))
     colnames(peaks) <- c("chrom", "chromStart", "chromEnd", "name", "score",
                          "strand", "signalValue", "pValue", "qValue", "peak")
     setkey(peaks, chrom, chromStart, chromEnd)
+    # keep highest scored peaks
     hits    <- foverlaps(peaks, peaks,
                          by.x=c("chrom", "chromStart", "chromEnd"),
                          type="any", which=TRUE, nomatch=0)
@@ -170,6 +191,28 @@ if (length(finalList) > 1) {
     for (i in nrow(cSize)) {
         final[chrom == cSize$chrom[i] & chromEnd > cSize$size[i], chromEnd := cSize$size[i]]
     }
+
+    # identify reproducible peaks
+    peakSet <- copy(peaks)
+    peakSet[,group := gsub("_peak.*","",name)]
+    peakList <- splitDataTable(peakSet, "group")
+    original <- copy(final)
+    for (i in 1:length(peakList)) {
+        setkey(final, chrom, chromStart, chromEnd)
+        setkey(peakList[[i]], chrom, chromStart, chromEnd)
+        hits <- foverlaps(peakList[[i]], final, by.x=c("chrom", "chromStart", "chromEnd"), type="any", which=TRUE, nomatch=0)
+        # track the number of overlaps of final peak set peaks
+        if (i == 1) {
+            final[hits$yid, count := 1]
+            final[is.na(get("count")), ("count") := 0]
+        } else {
+            final[hits$yid, count := get("count") + 1] 
+        }
+    }
+    # keep peaks present in 2 or more individual peak sets
+    # keep peaks with score per million >= 5
+    final <- final[count >= 2 & score >= 5,]
+    final[,count := NULL]
 
     # Produce output directory
     dir.create(
