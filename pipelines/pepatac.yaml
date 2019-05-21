@@ -27,6 +27,7 @@ tools:  # absolute paths to required tools
 # user configure 
 resources:
   genomes: ${GENOMES}
+  genome_config: ${REFGENIE}
   adapters: null  # Set to null to use default adapter file included in repository
 
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool

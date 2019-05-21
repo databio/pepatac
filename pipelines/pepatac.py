@@ -15,7 +15,7 @@ import sys
 import tempfile
 import pypiper
 from pypiper import build_command
-from refgenconf import RefGenomeConfiguration as RGC
+from refgenconf import RefGenomeConfiguration as RGC, select_genome_config
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER  = "anno"
@@ -307,7 +307,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         return unmap_fq1, unmap_fq2
 
 
-def _get_bowtie2_index(genomes_folder, genome_assembly):
+def _get_bowtie2_index(oracle, genome_assembly, idx_key="indexed_bowtie2"):
     """
     Create path to genome assembly folder with refgenie structure.
 
@@ -315,28 +315,28 @@ def _get_bowtie2_index(genomes_folder, genome_assembly):
     to bowtie2) for a genome assembly that follows the folder structure
     produced by the RefGenie reference builder.
 
-    :param str genomes_folder: path to central genomes directory, i.e. the
-        root for multiple assembly subdirectories
+    :param str | refgenconf.RefGenomeConfiguration oracle: path to main
+        genomes directory, i.e. the root for multiple assembly subdirectories;
+        alternatively, a ReferenceGenomeConfiguration instance, which provides
+        relevant genome asset pointers
     :param str genome_assembly: name of the specific assembly of interest,
         e.g. 'mm10'
+    :param str idx_key: key/attr name for datum that stores bowtie2 index
+        folder path
     :return str: path to bowtie2 index subfolder within central assemblies
         home, for assembly indicated
     """
-    return os.path.join(genomes_folder, genome_assembly,
-                        "indexed_bowtie2", genome_assembly)
+    try:
+        return oracle.get_asset(genome_assembly, idx_key)
+    except AttributeError:
+        return os.path.join(oracle, genome_assembly, idx_key, genome_assembly)
 
 
 def _find_bt2_path(oracle, assembly, idx_key="indexed_bowtie2"):
-    if isinstance(oracle, str):
-        if not os.path.isdir(oracle):
-            raise ValueError()
-        bt2_path = os.path.join(oracle, assembly, idx_key)
-    else:
-        if not isinstance(oracle, RGC):
-            raise TypeError("Info source for determining bowtie2 index must be "
-                            "string or {}; got {}".format(RGC.__name__, type(oracle)))
-        bt2_path = oracle.get_asset(assembly, idx_key)
-    return bt2_path
+    try:
+        return oracle.get_asset(assembly, idx_key)
+    except AttributeError:
+        return os.path.join(oracle, assembly, idx_key)
 
 
 def _check_bowtie2_index(oracle, genome_assembly):
@@ -347,7 +347,7 @@ def _check_bowtie2_index(oracle, genome_assembly):
     assembly (as produced by the RefGenie reference builder) contains the
     correct number of non-empty files.
 
-    :param str | refgenconf.ReferenceGenomeConfiguration oracle: path to main
+    :param str | refgenconf.RefGenomeConfiguration oracle: path to main
         genomes directory, i.e. the root for multiple assembly subdirectories;
         alternatively, a ReferenceGenomeConfiguration instance, which provides
         relevant genome asset pointers
@@ -496,20 +496,14 @@ def check_commands(commands, ignore):
 
 
 def _add_resources(args, res):
-    try:
-        # TODO: how to name this? consider env vars?
-        cfg = res.genome_config
-    except AttributeError:
-        return os.path.join(res.genomes, args.genome_assembly)
-    else:
-        rgc = RGC(cfg)
-        gfolder = rgc.genome_folder
-    res.chrom_sizes = os.path.join(gfolder, args.genome_assembly + ".chromSizes")
-    tss_name = args.TSS_name or args.genome_assembly + "_TSS.tsv"
-    # TODO: convert this to absolute path to specified file
-    res.TSS_file = os.path.join(gfolder, tss_name)
-    blacklist_name = args.blacklist or args.genome_assembly + ".blacklist.bed"
-    res.blacklist = os.path.join(gfolder, blacklist_name)
+    # TODO: how to name this? consider env vars?
+    rgc = RGC(select_genome_config(res.get("genome_config")))
+    from attmap import EchoAttMap
+    translations = EchoAttMap({"TSS_file": "tss_annotation"})
+    for asset in ["chrom_sizes", "TSS_file", "blacklist"]:
+        res[asset] = rgc.get_asset(args.genome_assembly, getattr(translations, asset))
+    res.bt2_genome = _get_bowtie2_index(rgc, args.genome_assembly)
+    res.rgc = rgc
     return res
 
 
@@ -550,10 +544,9 @@ def main():
     res = _add_resources(args, res)
 
     # Get bowtie2 indexes
-    res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
-    _check_bowtie2_index(res.genomes, args.genome_assembly)
+    _check_bowtie2_index(res.rgc, args.genome_assembly)
     for reference in args.prealignments:
-        _check_bowtie2_index(res.genomes, reference)
+        _check_bowtie2_index(res.rgc, reference)
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
@@ -765,7 +758,7 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, False,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=_get_bowtie2_index(res.genomes, reference),
+                    assembly_bt2=_get_bowtie2_index(res.rgc, reference),
                     outfolder=param.outfolder, aligndir="prealignments",
                     bt2_opts_txt = param.bowtie2_pre.params)
                 if args.paired_end:
@@ -776,7 +769,7 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, True,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=_get_bowtie2_index(res.genomes, reference),
+                    assembly_bt2=_get_bowtie2_index(res.rgc, reference),
                     outfolder=param.outfolder, aligndir="prealignments",
                     bt2_opts_txt = param.bowtie2_pre.params)
                 if args.paired_end:
