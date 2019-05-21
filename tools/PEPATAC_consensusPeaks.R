@@ -90,11 +90,17 @@ buildFilePath <- function(suffix, pep=prj) {
 configFile <- argv$config
 prj        <- suppressWarnings(Project(configFile))
 
-# generate initial peak set
-numSamples <- length(samples(prj)$sample_name)  # sample names list
-peakList   <- data.table(peakFiles = list(numSamples))
-genome     <- config(prj)$implied_columns[[1]][[1]]$genome
+# warn about calling on variable width peaks
+message("WARNING: PEPATAC_consensusPeaks is designed to produce a consensus peak
+         set from *fixed* width peaks generated using the --peak_type fixed
+         argument.")
 
+# generate initial peak set
+info <- capture.output({ 
+  numSamples <- length(samples(prj)$sample_name)
+})
+peakList   <- data.table(peakFiles = list(numSamples))
+genome     <- invisible(config(prj)$implied_columns[[1]][[1]]$genome)
 cPath      <- file.path(paste0(Sys.getenv("GENOMES"),
                         genome, "/",
                         genome, ".chrom.sizes"))
@@ -108,11 +114,13 @@ if (file.exists(cPath)) {
 }
 
 # generate paths to peak files
-peakList[,peakFiles:=.(list(unique(file.path(config(prj)$metadata$output_dir,
-                       paste0("results_pipeline/", samples(prj)$sample_name),
-                       paste0("peak_calling_", genome),
-                       paste0(samples(prj)$sample_name,
-                       "_peaks_fixedWidth_normalized.narrowPeak")))))]
+info <- capture.output({ 
+  peakList[,peakFiles:=.(list(unique(file.path(config(prj)$metadata$output_dir,
+            paste0("results_pipeline/", samples(prj)$sample_name),
+            paste0("peak_calling_", genome),
+            paste0(samples(prj)$sample_name,
+            "_peaks_fixedWidth_normalized.narrowPeak")))))]
+})
 
 final <- data.table(chrom=character(),
                     chromStart=integer(),
