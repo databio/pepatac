@@ -115,8 +115,8 @@ if (exists("peaks") & exists("cSize")) {
     setkey(hits, xid)
     setkey(qVals, index)
     out     <- hits[qVals, nomatch=0]
-    keep    <- out[out[,.I[which.max(qValue)],by=xid]$V1]
-    indices <- unique(keep$yid)
+    keep    <- out[out[,.I[which.max(qValue)],by=yid]$V1]
+    indices <- unique(keep$xid)
     final   <- peaks[indices,]
     # trim any bad peaks (extend beyond chromosome)
     # can't be negative

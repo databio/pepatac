@@ -181,8 +181,8 @@ if (length(finalList) >= 1) {
     setkey(hits, xid)
     setkey(scores, index)
     out     <- hits[scores, nomatch=0]
-    keep    <- out[out[,.I[which.max(score)],by=xid]$V1]
-    indices <- unique(keep$yid)
+    keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
+    indices <- unique(keep$xid)
     final   <- peaks[indices,]
     # trim any bad peaks (extend beyond chromosome)
     # can't be negative
