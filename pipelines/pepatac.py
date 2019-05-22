@@ -1520,6 +1520,39 @@ def main():
             print("Confirm this file is present in {} or specify using `--anno-name`"
                   .format(str(os.path.dirname(anno_file))))
 
+        if args.motif:
+            # Perform motif analysis
+            pm.timestamp("### Motif analysis")
+            # convert narrowPeak to BED6
+            peak_bed_file = os.path.join(peak_folder,  args.sample_name +
+                                         "_peaks.bed")
+            if os.path.exists(peak_output_file) and os.stat(peak_output_file).st_size > 0:
+                cmd = ("cut -f 1-6 " + peak_output_file + " > " + peak_bed_file)
+                pm.run(cmd, peak_bed_file, container=pm.container)
+                pm.clean_add(peak_bed_file) 
+                # create preparsed directory
+                tempdir = tempfile.mkdtemp(dir=peak_folder)
+                pm.clean_add(tempdir)
+                # perform motif analysis
+                motifHTML  = os.path.join(peak_folder, "homerResults.html")
+                cmd = ("findMotifsGenome.pl " + peak_bed_file + " " +
+                       args.genome_assembly + " " + peak_folder +
+                       " -size given -mask -preparsedDir " + tempdir)
+                pm.run(cmd, motifHTML, container=pm.container)
+                pm.report_object("Motif analysis", motifHTML)
+            elif not os.path.exists(peak_output_file):
+                print("Cannot perform motif enrichment.")
+                print("Could not find {}".format(peak_output_file))
+                pm.stop_pipeline()
+            elif os.stat(peak_output_file).st_size == 0:
+                print("Cannot perform motif enrichment.")
+                print("{} is empty.".format(peak_output_file))
+                pm.stop_pipeline()
+            else:
+                print("Cannot perform motif enrichment.")
+                print("Confirm peak calling was successful.")
+                pm.stop_pipeline()
+
         if args.lite:
             # Remove everything but ultimate outputs
             pm.clean_add(fragL)
@@ -1535,26 +1568,6 @@ def main():
             for unmapped_fq in to_compress:
                 if not unmapped_fq:
                     pm.clean_add(unmapped_fq + ".gz")
-
-        if args.motif:
-            # Perform motif analysis
-            pm.timestamp("### Motif analysis")
-            # convert narrowPeak to BED6
-            peak_bed_file = os.path.join(peak_folder,  args.sample_name +
-                                    "_peaks.bed")
-            cmd = ("cut -f 1-6 " + peak_output_file > peak_bed_file)
-            pm.run(cmd, peak_bed_file, container=pm.container)
-            pm.clean_add(peak_bed_file) 
-            # create preparsed directory
-            tempdir = tempfile.mkdtemp(dir=peak_folder)
-            pm.clean_add(tempdir)
-            # perform motif analysis
-            motifHTML  = os.path.join(peak_folder, "homerResults.html")
-            cmd = ("findMotifsGenome.pl " + peak_bed_file +
-                   args.genome_assembly + peak_folder +
-                   "-size given -mask -preparsedDir " + tempdir)
-            pm.run(cmd, motifHTML, container=pm.container)
-            pm.report_object("Motif analysis", motifHTML)
 
         # COMPLETE!
         pm.stop_pipeline()
