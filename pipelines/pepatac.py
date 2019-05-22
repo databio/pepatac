@@ -1404,33 +1404,39 @@ def main():
                     " | awk -F'\t' '{print>\"" + QC_folder + "/\"$4}'")
             if len(ftList) >= 1:
                 for pos, anno in enumerate(ftList):
-                    # Rename files to valid filenames
+                    # working files
                     annoFile = os.path.join(QC_folder, anno)
                     validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
                     fileName = os.path.join(QC_folder, validName)
-                    pm.run(cmd2, fileName, container=pm.container)
-                    cmd = 'mv "{old}" "{new}"'.format(old=annoFile, new=fileName)
-                    pm.run(cmd, fileName,
-                           container=pm.container)
-
                     annoSort = os.path.join(QC_folder, validName + "_sort.bed")
-                    cmd3 = ("cut -f 1-3 " + fileName +
-                            " | bedtools sort -i stdin -faidx " +
-                            chrOrder + " > " + annoSort)
-                    pm.run(cmd3, annoSort, container=pm.container)
-
                     annoCov = os.path.join(QC_folder, args.sample_name + "_" +
                                            validName + "_coverage.bed")
-                    annoList.append(annoCov)
 
+                    # Extract feature files
+                    pm.run(cmd2, annoFile.encode('utf-8'), container=pm.container)
+
+                    # Rename files to valid filenames
+                    cmd = 'mv "{old}" "{new}"'.format(old=annoFile.encode('utf-8'),
+                                                      new=fileName.encode('utf-8'))
+                    pm.run(cmd, fileName.encode('utf-8'), container=pm.container)
+
+                    # Sort files
+                    cmd3 = ("cut -f 1-3 " + fileName.encode('utf-8') +
+                            " | bedtools sort -i stdin -faidx " +
+                            chrOrder + " > " + annoSort.encode('utf-8'))
+                    pm.run(cmd3, annoSort.encode('utf-8'), container=pm.container)
+
+                    # Calculate coverage
+                    annoList.append(annoCov.encode('utf-8'))
                     cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
-                            annoSort + " -b " + rmdup_bam + " -g " + chrOrder +
-                            " > " + annoCov)
-                    pm.run(cmd4, annoCov, container=pm.container)
-                    pm.clean_add(fileName)
-                    pm.clean_add(annoSort)
+                            annoSort.encode('utf-8') + " -b " + rmdup_bam +
+                            " -g " + chrOrder + " > " + annoCov.encode('utf-8'))
+                    pm.run(cmd4, annoCov.encode('utf-8'), container=pm.container)
+                    pm.clean_add(fileName.encode('utf-8'))
+                    pm.clean_add(annoSort.encode('utf-8'))
+
                     if args.lite:
-                        pm.clean_add(annoCov)
+                        pm.clean_add(annoCov.encode('utf-8'))
 
         # Plot FRiF or FRiP
 
