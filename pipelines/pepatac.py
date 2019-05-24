@@ -307,7 +307,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         return unmap_fq1, unmap_fq2
 
 
-def _get_bowtie2_index(oracle, genome_assembly, idx_key="indexed_bowtie2"):
+def _get_bowtie2_index(rgc, genome_assembly, idx_key="indexed_bowtie2"):
     """
     Create path to genome assembly folder with refgenie structure.
 
@@ -315,10 +315,8 @@ def _get_bowtie2_index(oracle, genome_assembly, idx_key="indexed_bowtie2"):
     to bowtie2) for a genome assembly that follows the folder structure
     produced by the RefGenie reference builder.
 
-    :param str | refgenconf.RefGenomeConfiguration oracle: path to main
-        genomes directory, i.e. the root for multiple assembly subdirectories;
-        alternatively, a ReferenceGenomeConfiguration instance, which provides
-        relevant genome asset pointers
+    :param refgenconf.RefGenomeConfiguration rgc: a genome configuration
+        instance, which provides relevant genome asset pointers
     :param str genome_assembly: name of the specific assembly of interest,
         e.g. 'mm10'
     :param str idx_key: key/attr name for datum that stores bowtie2 index
@@ -326,20 +324,10 @@ def _get_bowtie2_index(oracle, genome_assembly, idx_key="indexed_bowtie2"):
     :return str: path to bowtie2 index subfolder within central assemblies
         home, for assembly indicated
     """
-    try:
-        return oracle.get_asset(genome_assembly, idx_key)
-    except AttributeError:
-        return os.path.join(oracle, genome_assembly, idx_key, genome_assembly)
+    return rgc.get_asset(genome_assembly, idx_key)
 
 
-def _find_bt2_path(oracle, assembly, idx_key="indexed_bowtie2"):
-    try:
-        return oracle.get_asset(assembly, idx_key)
-    except AttributeError:
-        return os.path.join(oracle, assembly, idx_key)
-
-
-def _check_bowtie2_index(oracle, genome_assembly):
+def _check_bowtie2_index(rgc, genome_assembly):
     """
     Confirm bowtie2 index is present.
 
@@ -347,17 +335,15 @@ def _check_bowtie2_index(oracle, genome_assembly):
     assembly (as produced by the RefGenie reference builder) contains the
     correct number of non-empty files.
 
-    :param str | refgenconf.RefGenomeConfiguration oracle: path to main
-        genomes directory, i.e. the root for multiple assembly subdirectories;
-        alternatively, a ReferenceGenomeConfiguration instance, which provides
-        relevant genome asset pointers
+    :param refgenconf.RefGenomeConfiguration rgc: a genome configuration
+        instance, which provides relevant genome asset pointers
     :param str genome_assembly: name of the specific assembly of interest,
         e.g. 'mm10'
     """
 
-    bt2_path = _find_bt2_path(oracle, genome_assembly)
+    bt2_path = _get_bowtie2_index(rgc, genome_assembly)
 
-    genomes_folder = oracle if isinstance(oracle, str) else oracle.genome_folder
+    genomes_folder = rgc.genome_folder
     tarname = genome_assembly + ".tar.gz"
 
     if os.path.isdir(bt2_path):
@@ -498,9 +484,8 @@ def check_commands(commands, ignore=''):
 def _add_resources(args, res):
     # TODO: how to name this? consider env vars?
     rgc = RGC(select_genome_config(res.get("genome_config")))
-    for asset in ["chrom_sizes", "blacklist", "tss_annotation"]:
+    for asset in ["chrom_sizes", "blacklist", "indexed_bowtie2", "tss_annotation"]:
         res[asset] = rgc.get_asset(args.genome_assembly, asset)
-    res.bt2_genome = _get_bowtie2_index(rgc, args.genome_assembly)
     res.rgc = rgc
     return res
 
@@ -819,7 +804,7 @@ def main():
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
     cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
-    cmd += " -x " + res.bt2_genome
+    cmd += " -x " + res.indexed_bowtie2
     if args.paired_end:
         cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
     else:
