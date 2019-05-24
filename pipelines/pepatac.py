@@ -1419,33 +1419,39 @@ def main():
                     " | awk -F'\t' '{print>\"" + QC_folder + "/\"$4}'")
             if len(ftList) >= 1:
                 for pos, anno in enumerate(ftList):
-                    # Rename files to valid filenames
+                    # working files
                     annoFile = os.path.join(QC_folder, anno)
                     validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
                     fileName = os.path.join(QC_folder, validName)
-                    pm.run(cmd2, fileName, container=pm.container)
-                    cmd = 'mv "{old}" "{new}"'.format(old=annoFile, new=fileName)
-                    pm.run(cmd, fileName,
-                           container=pm.container)
-
                     annoSort = os.path.join(QC_folder, validName + "_sort.bed")
-                    cmd3 = ("cut -f 1-3 " + fileName +
-                            " | bedtools sort -i stdin -faidx " +
-                            chrOrder + " > " + annoSort)
-                    pm.run(cmd3, annoSort, container=pm.container)
-
                     annoCov = os.path.join(QC_folder, args.sample_name + "_" +
                                            validName + "_coverage.bed")
-                    annoList.append(annoCov)
 
+                    # Extract feature files
+                    pm.run(cmd2, annoFile.encode('utf-8'), container=pm.container)
+
+                    # Rename files to valid filenames
+                    cmd = 'mv "{old}" "{new}"'.format(old=annoFile.encode('utf-8'),
+                                                      new=fileName.encode('utf-8'))
+                    pm.run(cmd, fileName.encode('utf-8'), container=pm.container)
+
+                    # Sort files
+                    cmd3 = ("cut -f 1-3 " + fileName.encode('utf-8') +
+                            " | bedtools sort -i stdin -faidx " +
+                            chrOrder + " > " + annoSort.encode('utf-8'))
+                    pm.run(cmd3, annoSort.encode('utf-8'), container=pm.container)
+
+                    # Calculate coverage
+                    annoList.append(annoCov.encode('utf-8'))
                     cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
-                            annoSort + " -b " + rmdup_bam + " -g " + chrOrder +
-                            " > " + annoCov)
-                    pm.run(cmd4, annoCov, container=pm.container)
-                    pm.clean_add(fileName)
-                    pm.clean_add(annoSort)
+                            annoSort.encode('utf-8') + " -b " + rmdup_bam +
+                            " -g " + chrOrder + " > " + annoCov.encode('utf-8'))
+                    pm.run(cmd4, annoCov.encode('utf-8'), container=pm.container)
+                    pm.clean_add(fileName.encode('utf-8'))
+                    pm.clean_add(annoSort.encode('utf-8'))
+
                     if args.lite:
-                        pm.clean_add(annoCov)
+                        pm.clean_add(annoCov.encode('utf-8'))
 
         # Plot FRiF or FRiP
 
@@ -1529,6 +1535,39 @@ def main():
             print("Confirm this file is present in {} or specify using `--anno-name`"
                   .format(str(os.path.dirname(anno_file))))
 
+        if args.motif:
+            # Perform motif analysis
+            pm.timestamp("### Motif analysis")
+            # convert narrowPeak to BED6
+            peak_bed_file = os.path.join(peak_folder,  args.sample_name +
+                                         "_peaks.bed")
+            if os.path.exists(peak_output_file) and os.stat(peak_output_file).st_size > 0:
+                cmd = ("cut -f 1-6 " + peak_output_file + " > " + peak_bed_file)
+                pm.run(cmd, peak_bed_file, container=pm.container)
+                pm.clean_add(peak_bed_file) 
+                # create preparsed directory
+                tempdir = tempfile.mkdtemp(dir=peak_folder)
+                pm.clean_add(tempdir)
+                # perform motif analysis
+                motifHTML  = os.path.join(peak_folder, "homerResults.html")
+                cmd = ("findMotifsGenome.pl " + peak_bed_file + " " +
+                       args.genome_assembly + " " + peak_folder +
+                       " -size given -mask -preparsedDir " + tempdir)
+                pm.run(cmd, motifHTML, container=pm.container)
+                pm.report_object("Motif analysis", motifHTML)
+            elif not os.path.exists(peak_output_file):
+                print("Cannot perform motif enrichment.")
+                print("Could not find {}".format(peak_output_file))
+                pm.stop_pipeline()
+            elif os.stat(peak_output_file).st_size == 0:
+                print("Cannot perform motif enrichment.")
+                print("{} is empty.".format(peak_output_file))
+                pm.stop_pipeline()
+            else:
+                print("Cannot perform motif enrichment.")
+                print("Confirm peak calling was successful.")
+                pm.stop_pipeline()
+
         if args.lite:
             # Remove everything but ultimate outputs
             pm.clean_add(fragL)
@@ -1544,26 +1583,6 @@ def main():
             for unmapped_fq in to_compress:
                 if not unmapped_fq:
                     pm.clean_add(unmapped_fq + ".gz")
-
-        if args.motif:
-            # Perform motif analysis
-            pm.timestamp("### Motif analysis")
-            # convert narrowPeak to BED6
-            peak_bed_file = os.path.join(peak_folder,  args.sample_name +
-                                    "_peaks.bed")
-            cmd = ("cut -f 1-6 " + peak_output_file > peak_bed_file)
-            pm.run(cmd, peak_bed_file, container=pm.container)
-            pm.clean_add(peak_bed_file) 
-            # create preparsed directory
-            tempdir = tempfile.mkdtemp(dir=peak_folder)
-            pm.clean_add(tempdir)
-            # perform motif analysis
-            motifHTML  = os.path.join(peak_folder, "homerResults.html")
-            cmd = ("findMotifsGenome.pl " + peak_bed_file +
-                   args.genome_assembly + peak_folder +
-                   "-size given -mask -preparsedDir " + tempdir)
-            pm.run(cmd, motifHTML, container=pm.container)
-            pm.report_object("Motif analysis", motifHTML)
 
         # COMPLETE!
         pm.stop_pipeline()
