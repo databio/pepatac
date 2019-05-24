@@ -498,10 +498,8 @@ def check_commands(commands, ignore=''):
 def _add_resources(args, res):
     # TODO: how to name this? consider env vars?
     rgc = RGC(select_genome_config(res.get("genome_config")))
-    from attmap import EchoAttMap
-    translations = EchoAttMap({"TSS_file": "tss_annotation"})
-    for asset in ["chrom_sizes", "TSS_file", "blacklist"]:
-        res[asset] = rgc.get_asset(args.genome_assembly, getattr(translations, asset))
+    for asset in ["chrom_sizes", "blacklist", "tss_annotation"]:
+        res[asset] = rgc.get_asset(args.genome_assembly, asset)
     res.bt2_genome = _get_bowtie2_index(rgc, args.genome_assembly)
     res.rgc = rgc
     return res
@@ -1117,16 +1115,16 @@ def main():
     pm.clean_add(temp_exact_folder)
 
     # TSS enrichment
-    if not os.path.exists(res.TSS_file):
+    if not os.path.exists(res.tss_annotation):
         print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}"
-              .format(res.TSS_file))
+              .format(res.tss_annotation))
     else:
         pm.timestamp("### Calculate TSS enrichment")
 
         Tss_enrich = os.path.join(QC_folder, args.sample_name +
                                   "_TssEnrichment.txt")
         cmd = tool_path("pyTssEnrichment.py")
-        cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends"
+        cmd += " -a " + rmdup_bam + " -b " + res.tss_annotation + " -p ends"
         cmd += " -c " + str(pm.cores)
         cmd += " -e 2000 -u -v -s 4 -o " + Tss_enrich
         pm.run(cmd, Tss_enrich, nofail=True, container=pm.container)
