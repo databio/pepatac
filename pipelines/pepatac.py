@@ -307,7 +307,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         return unmap_fq1, unmap_fq2
 
 
-def _get_bowtie2_index(rgc, genome_assembly, idx_key="indexed_bowtie2"):
+def _get_bowtie2_index(rgc, genome_assembly, idx_key="indexed_bowtie2", **kwargs):
     """
     Create path to genome assembly folder with refgenie structure.
 
@@ -324,7 +324,7 @@ def _get_bowtie2_index(rgc, genome_assembly, idx_key="indexed_bowtie2"):
     :return str: path to bowtie2 index subfolder within central assemblies
         home, for assembly indicated
     """
-    return rgc.get_asset(genome_assembly, idx_key)
+    return rgc.get_asset(genome_assembly, idx_key, **kwargs)
 
 
 def _check_bowtie2_index(rgc, genome_assembly):
@@ -341,34 +341,23 @@ def _check_bowtie2_index(rgc, genome_assembly):
         e.g. 'mm10'
     """
 
-    bt2_path = _get_bowtie2_index(rgc, genome_assembly)
+    try:
+        bt2_path = _get_bowtie2_index(rgc, genome_assembly, check_exist=os.path.isdir)
+    except IOError as e:
+        pm.fail_pipeline(e)
 
-    genomes_folder = rgc.genome_folder
-    tarname = genome_assembly + ".tar.gz"
-
-    if os.path.isdir(bt2_path):
-        if not os.listdir(bt2_path):
-            err_msg = "'{}' does not contain any files.\n{}\n{}"
-            loc_msg = ("Try updating/confirming the 'genomes' variable in "
-                       "'pipelines/pepatac.yaml'.")
-            typ_msg = ("Confirm that '{}' "
-                       "is the correct genome, and that you have successfully "
-                       "built a refgenie genome "
-                       "by that name.".format(genome_assembly))
-            pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
-        else:
-            path, dirs, files = next(os.walk(bt2_path))
-    elif os.path.isfile(os.path.join(genomes_folder, tarname)):
-        print("Did you mean this: {}".format(os.path.join(genomes_folder, tarname)))
-        pm.fail_pipeline(IOError("Extract {} before proceeding.".format(tarname)))
-    else:
-        err_msg = "Could not find the '{}' index at: {}\n{}\n{}"
+    if not os.listdir(bt2_path):
+        err_msg = "'{}' does not contain any files.\n{}\n{}"
         loc_msg = ("Try updating/confirming the 'genomes' variable in "
                    "'pipelines/pepatac.yaml'.")
         typ_msg = ("Confirm that '{}' "
-                   "is the correct genome.".format(genome_assembly))
-        pm.fail_pipeline(IOError(err_msg.format(genome_assembly, bt2_path,
-                                                loc_msg, typ_msg)))
+                   "is the correct genome, and that you have successfully "
+                   "built a refgenie genome "
+                   "by that name.".format(genome_assembly))
+        pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
+    else:
+        path, dirs, files = next(os.walk(bt2_path))
+
     # check for bowtie small index
     if [bt for bt in files if bt.endswith('bt2')]:
         bt = ['.1.bt2', '.2.bt2', '.3.bt2', '.4.bt2',
@@ -416,7 +405,7 @@ def _check_bowtie2_index(rgc, genome_assembly):
         typ_msg = ("Confirm that you have successfully built a refgenie "
                    "genome for '{}'.".format(genome_assembly))
         pm.fail_pipeline(IOError(err_msg.format(
-            genome_assembly, (genomes_folder + genome_assembly), typ_msg)))
+            genome_assembly, (rgc.genome_folder + genome_assembly), typ_msg)))
     for f in fa_files:
         if os.stat(os.path.join(bt2_path, f)).st_size == 0:
             pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
