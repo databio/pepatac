@@ -18,11 +18,12 @@ from pypiper import build_command
 from refgenconf import RefGenomeConfiguration as RGC, select_genome_config
 
 TOOLS_FOLDER = "tools"
-ANNO_FOLDER  = "anno"
+ANNO_FOLDER = "anno"
 PEAK_CALLERS = ["fseq", "macs2"]
-PEAK_TYPES   = ["variable", "fixed"]
+PEAK_TYPES = ["variable", "fixed"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
+BT2_IDX_KEY = "indexed_bowtie2"
 
 
 def parse_arguments():
@@ -307,26 +308,6 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         return unmap_fq1, unmap_fq2
 
 
-def _get_bowtie2_index(rgc, genome_assembly, idx_key="indexed_bowtie2", **kwargs):
-    """
-    Create path to genome assembly folder with refgenie structure.
-
-    Convenience function that returns the bowtie2 index prefix (to be passed
-    to bowtie2) for a genome assembly that follows the folder structure
-    produced by the RefGenie reference builder.
-
-    :param refgenconf.RefGenomeConfiguration rgc: a genome configuration
-        instance, which provides relevant genome asset pointers
-    :param str genome_assembly: name of the specific assembly of interest,
-        e.g. 'mm10'
-    :param str idx_key: key/attr name for datum that stores bowtie2 index
-        folder path
-    :return str: path to bowtie2 index subfolder within central assemblies
-        home, for assembly indicated
-    """
-    return rgc.get_asset(genome_assembly, idx_key, **kwargs)
-
-
 def _check_bowtie2_index(rgc, genome_assembly):
     """
     Confirm bowtie2 index is present.
@@ -342,7 +323,8 @@ def _check_bowtie2_index(rgc, genome_assembly):
     """
 
     try:
-        bt2_path = _get_bowtie2_index(rgc, genome_assembly, check_exist=os.path.isdir)
+        bt2_path = rgc.get_asset(
+            genome_assembly, BT2_IDX_KEY, check_exist=os.path.isdir)
     except IOError as e:
         pm.fail_pipeline(e)
 
@@ -473,7 +455,7 @@ def check_commands(commands, ignore=''):
 def _add_resources(args, res):
     # TODO: how to name this? consider env vars?
     rgc = RGC(select_genome_config(res.get("genome_config")))
-    for asset in ["chrom_sizes", "blacklist", "indexed_bowtie2", "tss_annotation"]:
+    for asset in ["chrom_sizes", "blacklist", BT2_IDX_KEY, "tss_annotation"]:
         res[asset] = rgc.get_asset(args.genome_assembly, asset)
     res.rgc = rgc
     return res
@@ -735,9 +717,9 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, False,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=_get_bowtie2_index(res.rgc, reference),
+                    assembly_bt2=res.rgc.get_asset(reference, BT2_IDX_KEY),
                     outfolder=param.outfolder, aligndir="prealignments",
-                    bt2_opts_txt = param.bowtie2_pre.params)
+                    bt2_opts_txt=param.bowtie2_pre.params)
                 if args.paired_end:
                     to_compress.extend((unmap_fq1, unmap_fq2))
                 else:
@@ -746,9 +728,9 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, True,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=_get_bowtie2_index(res.rgc, reference),
+                    assembly_bt2=res.rgc.get_asset(reference, BT2_IDX_KEY), 
                     outfolder=param.outfolder, aligndir="prealignments",
-                    bt2_opts_txt = param.bowtie2_pre.params)
+                    bt2_opts_txt=param.bowtie2_pre.params)
                 if args.paired_end:
                     to_compress.extend((unmap_fq1, unmap_fq2))
                 else:
