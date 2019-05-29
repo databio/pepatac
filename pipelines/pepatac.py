@@ -15,7 +15,7 @@ import sys
 import tempfile
 import pypiper
 from pypiper import build_command
-from refgenconf import RefGenomeConfiguration as RGC, select_genome_config
+from refgenconf import RefGenConf as RGC, select_genome_config
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
@@ -316,7 +316,7 @@ def _check_bowtie2_index(rgc, genome_assembly):
     assembly (as produced by the RefGenie reference builder) contains the
     correct number of non-empty files.
 
-    :param refgenconf.RefGenomeConfiguration rgc: a genome configuration
+    :param refgenconf.RefGenConf rgc: a genome configuration
         instance, which provides relevant genome asset pointers
     :param str genome_assembly: name of the specific assembly of interest,
         e.g. 'mm10'
