@@ -1,6 +1,7 @@
 # General
 *.pyc
 .~lock*
+.idea/
 
 # Tests
 .cache/

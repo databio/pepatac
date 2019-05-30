@@ -4,3 +4,4 @@ pararead
 pandas
 piper
 MACS2
+refgenconf

@@ -13,16 +13,17 @@ import os
 import re
 import sys
 import tempfile
-import tarfile
 import pypiper
 from pypiper import build_command
+from refgenconf import RefGenConf as RGC, select_genome_config
 
 TOOLS_FOLDER = "tools"
-ANNO_FOLDER  = "anno"
+ANNO_FOLDER = "anno"
 PEAK_CALLERS = ["fseq", "macs2"]
-PEAK_TYPES   = ["variable", "fixed"]
+PEAK_TYPES = ["variable", "fixed"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
+BT2_IDX_KEY = "indexed_bowtie2"
 
 
 def parse_arguments():
@@ -307,26 +308,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         return unmap_fq1, unmap_fq2
 
 
-def _get_bowtie2_index(genomes_folder, genome_assembly):
-    """
-    Create path to genome assembly folder with refgenie structure.
-
-    Convenience function that returns the bowtie2 index prefix (to be passed
-    to bowtie2) for a genome assembly that follows the folder structure
-    produced by the RefGenie reference builder.
-
-    :param str genomes_folder: path to central genomes directory, i.e. the
-        root for multiple assembly subdirectories
-    :param str genome_assembly: name of the specific assembly of interest,
-        e.g. 'mm10'
-    :return str: path to bowtie2 index subfolder within central assemblies
-        home, for assembly indicated
-    """   
-    return os.path.join(genomes_folder, genome_assembly,
-                        "indexed_bowtie2", genome_assembly)
-
-
-def _check_bowtie2_index(genomes_folder, genome_assembly):
+def _check_bowtie2_index(rgc, genome_assembly):
     """
     Confirm bowtie2 index is present.
 
@@ -334,38 +316,30 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
     assembly (as produced by the RefGenie reference builder) contains the
     correct number of non-empty files.
 
-    :param str genomes_folder: path to central genomes directory, i.e. the
-        root for multiple assembly subdirectories
+    :param refgenconf.RefGenConf rgc: a genome configuration
+        instance, which provides relevant genome asset pointers
     :param str genome_assembly: name of the specific assembly of interest,
         e.g. 'mm10'
     """
-    bt2_path = os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2")
-    
-    if os.path.isdir(bt2_path):
-        if not os.listdir(bt2_path):
-            err_msg = "'{}' does not contain any files.\n{}\n{}"
-            loc_msg = ("Try updating/confirming the 'genomes' variable in "
-                       "'pipelines/pepatac.yaml'.")
-            typ_msg = ("Confirm that '{}' "
-                       "is the correct genome, and that you have successfully "
-                       "built a refgenie genome "
-                       "by that name.".format(genome_assembly))
-            pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
-        else:
-            path, dirs, files = next(os.walk(bt2_path))
-    elif os.path.isfile(os.path.join(genomes_folder, (genome_assembly + ".tar.gz"))):
-        print("Did you mean this: {}".format(os.path.join(
-            genomes_folder, (genome_assembly + ".tar.gz"))))
-        err_msg = "Extract {} before proceeding."
-        pm.fail_pipeline(IOError(err_msg.format(genome_assembly + ".tar.gz")))
-    else:
-        err_msg = "Could not find the '{}' index at: {}\n{}\n{}"
+
+    try:
+        bt2_path = rgc.get_asset(
+            genome_assembly, BT2_IDX_KEY, check_exist=os.path.isdir)
+    except IOError as e:
+        pm.fail_pipeline(e)
+
+    if not os.listdir(bt2_path):
+        err_msg = "'{}' does not contain any files.\n{}\n{}"
         loc_msg = ("Try updating/confirming the 'genomes' variable in "
                    "'pipelines/pepatac.yaml'.")
         typ_msg = ("Confirm that '{}' "
-                   "is the correct genome.".format(genome_assembly))
-        pm.fail_pipeline(IOError(err_msg.format(genome_assembly, bt2_path,
-                                                loc_msg, typ_msg)))
+                   "is the correct genome, and that you have successfully "
+                   "built a refgenie genome "
+                   "by that name.".format(genome_assembly))
+        pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
+    else:
+        path, dirs, files = next(os.walk(bt2_path))
+
     # check for bowtie small index
     if [bt for bt in files if bt.endswith('bt2')]:
         bt = ['.1.bt2', '.2.bt2', '.3.bt2', '.4.bt2',
@@ -386,8 +360,8 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
         pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
 
     bt_expected = [genome_assembly + s for s in bt]
-    bt_present  = [bt for bt in files if any(s in bt for s in bt_expected)]
-    bt_missing  = list(set(bt_expected) - set(bt_present))
+    bt_present = [bt for bt in files if any(s in bt for s in bt_expected)]
+    bt_missing = list(set(bt_expected) - set(bt_present))
     # if there are any missing files (bowtie2 file naming is constant), fail
     if bt_missing:
         err_msg = "The {} bowtie2 index is missing the following file(s): {}"
@@ -413,10 +387,11 @@ def _check_bowtie2_index(genomes_folder, genome_assembly):
         typ_msg = ("Confirm that you have successfully built a refgenie "
                    "genome for '{}'.".format(genome_assembly))
         pm.fail_pipeline(IOError(err_msg.format(
-            genome_assembly, (genomes_folder + genome_assembly), typ_msg)))
+            genome_assembly, (rgc.genome_folder + genome_assembly), typ_msg)))
     for f in fa_files:
         if os.stat(os.path.join(bt2_path, f)).st_size == 0:
             pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
+
 
 def tool_path(tool_name):
     """
@@ -477,6 +452,15 @@ def check_commands(commands, ignore=''):
         return False
 
 
+def _add_resources(args, res):
+    # TODO: how to name this? consider env vars?
+    rgc = RGC(select_genome_config(res.get("genome_config")))
+    for asset in ["chrom_sizes", "blacklist", BT2_IDX_KEY, "tss_annotation"]:
+        res[asset] = rgc.get_asset(args.genome_assembly, asset)
+    res.rgc = rgc
+    return res
+
+
 def main():
     """
     Main pipeline process.
@@ -516,27 +500,12 @@ def main():
         pm.fail_pipeline(RuntimeError(err_msg))
 
     # Set up reference resource according to genome prefix.
-    gfolder = os.path.join(res.genomes, args.genome_assembly)
-    res.chrom_sizes = os.path.join(
-        gfolder, args.genome_assembly + ".chromSizes")
-
-    if args.TSS_name:
-        # see if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks): as example
-        res.TSS_file = os.path.join(gfolder, args.TSS_name)  # TODO: convert this to absolute path to specified file
-    else:
-        res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
-
-    if args.blacklist:
-        res.blacklist = os.path.join(gfolder, args.blacklist)
-    else:
-        res.blacklist = os.path.join(
-            gfolder, args.genome_assembly + ".blacklist.bed")
+    res = _add_resources(args, res)
 
     # Get bowtie2 indexes
-    res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
-    _check_bowtie2_index(res.genomes, args.genome_assembly)
+    _check_bowtie2_index(res.rgc, args.genome_assembly)
     for reference in args.prealignments:
-        _check_bowtie2_index(res.genomes, reference)
+        _check_bowtie2_index(res.rgc, reference)
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
@@ -748,9 +717,9 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, False,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=_get_bowtie2_index(res.genomes, reference),
+                    assembly_bt2=res.rgc.get_asset(reference, BT2_IDX_KEY),
                     outfolder=param.outfolder, aligndir="prealignments",
-                    bt2_opts_txt = param.bowtie2_pre.params)
+                    bt2_opts_txt=param.bowtie2_pre.params)
                 if args.paired_end:
                     to_compress.extend((unmap_fq1, unmap_fq2))
                 else:
@@ -759,9 +728,9 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, True,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=_get_bowtie2_index(res.genomes, reference),
+                    assembly_bt2=res.rgc.get_asset(reference, BT2_IDX_KEY), 
                     outfolder=param.outfolder, aligndir="prealignments",
-                    bt2_opts_txt = param.bowtie2_pre.params)
+                    bt2_opts_txt=param.bowtie2_pre.params)
                 if args.paired_end:
                     to_compress.extend((unmap_fq1, unmap_fq2))
                 else:
@@ -806,7 +775,7 @@ def main():
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
     cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
-    cmd += " -x " + res.bt2_genome
+    cmd += " -x " + res.indexed_bowtie2
     if args.paired_end:
         cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
     else:
@@ -1102,16 +1071,16 @@ def main():
     pm.clean_add(temp_exact_folder)
 
     # TSS enrichment
-    if not os.path.exists(res.TSS_file):
+    if not os.path.exists(res.tss_annotation):
         print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}"
-              .format(res.TSS_file))
+              .format(res.tss_annotation))
     else:
         pm.timestamp("### Calculate TSS enrichment")
 
         Tss_enrich = os.path.join(QC_folder, args.sample_name +
                                   "_TssEnrichment.txt")
         cmd = tool_path("pyTssEnrichment.py")
-        cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends"
+        cmd += " -a " + rmdup_bam + " -b " + res.tss_annotation + " -p ends"
         cmd += " -c " + str(pm.cores)
         cmd += " -e 2000 -u -v -s 4 -o " + Tss_enrich
         pm.run(cmd, Tss_enrich, nofail=True, container=pm.container)
