@@ -161,6 +161,10 @@ if (length(fileList) > 1) {
             finalList <- append(finalList,fileList[i])
         }
     }
+} else if (length(fileList) == 1 ) {
+    message("PEPATAC_consensusPeaks.R found only a single peak file.")
+    message("Does your project include more than one sample?")
+    quit()
 } else {
     message("PEPATAC_consensusPeaks.R was unable to find any peak files.")
     message("Check that individual peak files exist for your samples.")
