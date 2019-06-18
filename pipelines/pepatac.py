@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.6"
+__version__ = "0.8.7"
 
 
 from argparse import ArgumentParser
@@ -1277,7 +1277,7 @@ def main():
             cmd1 = (ngstk.ziptool + " -d -c " + anno_local +
                     " | cut -f 4 | sort -u")
             ftList = pm.checkprint(cmd1)
-            ftList = str.splitlines(ftList)
+            ftList = str.splitlines(str(ftList))
 
             # Split annotation file on features
             cmd2 = (ngstk.ziptool + " -d -c " + anno_local +

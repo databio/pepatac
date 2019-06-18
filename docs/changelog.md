@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.7] -- 2019-06-18
+### Fixed
+- Bug with python2 unicode strings.
+
+
 ## [0.8.6] -- 2019-03-26
 
 ### Changed
