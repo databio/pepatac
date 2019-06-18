@@ -23,7 +23,7 @@ PEAK_CALLERS = ["fseq", "macs2"]
 PEAK_TYPES = ["variable", "fixed"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
-BT2_IDX_KEY = "indexed_bowtie2"
+BT2_IDX_KEY = "bowtie2"
 
 
 def parse_arguments():
@@ -455,8 +455,13 @@ def check_commands(commands, ignore=''):
 def _add_resources(args, res):
     # TODO: how to name this? consider env vars?
     rgc = RGC(select_genome_config(res.get("genome_config")))
-    for asset in ["chrom_sizes", "blacklist", BT2_IDX_KEY, "tss_annotation"]:
+    #print("rgc: {}".format(str(rgc)))  # DEBUG
+    for asset in ["chrom_sizes", BT2_IDX_KEY]:
+        #print("asset: {}".format(str(asset)))  # DEBUG
         res[asset] = rgc.get_asset(args.genome_assembly, asset)
+    for asset in ["blacklist", "tss_annotation"]:
+        res[asset] = rgc.get_asset(args.genome_assembly, asset,
+                                   strict_exists=False)
     res.rgc = rgc
     return res
 
@@ -486,7 +491,7 @@ def main():
     res = pm.config.resources
 
     # Check that the required tools are callable by the pipeline
-    if not check_commands(tools, ["fseq", "${TRIMMOMATIC}", "${PICARD}",
+    if not check_commands(tools, ["fseq", "${TRIMMOMATIC}", "${PICARD}", "skewer",
                                   "Rscript", "findMotifsGenome.pl"]):
         err_msg = "Please install missing tools before continuing."
         pm.fail_pipeline(RuntimeError(err_msg))
@@ -717,7 +722,8 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, False,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=res.rgc.get_asset(reference, BT2_IDX_KEY),
+                    assembly_bt2=os.path.join(
+                        res.rgc.get_asset(reference, BT2_IDX_KEY), reference),
                     outfolder=param.outfolder, aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
                 if args.paired_end:
@@ -728,7 +734,8 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, True,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=res.rgc.get_asset(reference, BT2_IDX_KEY), 
+                    assembly_bt2=os.path.join(
+                        res.rgc.get_asset(reference, BT2_IDX_KEY), reference), 
                     outfolder=param.outfolder, aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
                 if args.paired_end:
@@ -775,13 +782,14 @@ def main():
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
     cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
-    cmd += " -x " + res.indexed_bowtie2
+    cmd += " -x " + os.path.join(
+        res.rgc.get_asset(args.genome_assembly, BT2_IDX_KEY),
+                          args.genome_assembly)
     if args.paired_end:
         cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
     else:
         cmd += " -U " + unmap_fq1
     cmd += " | " + tools.samtools + " view -bS - -@ 1 "
-    # cmd += " -f 2 -q 10"  # quality and pairing filter
     cmd += " | " + tools.samtools + " sort - -@ 1"
     cmd += " -T " + tempdir
     cmd += " -o " + mapping_genome_bam_temp
@@ -816,7 +824,7 @@ def main():
            follow=check_alignment_genome, container=pm.container)
 
     # Index the temporary bam file and the sorted bam file
-    temp_mapping_index = os.path.join(mapping_genome_bam_temp + ".bai")
+    temp_mapping_index   = os.path.join(mapping_genome_bam_temp + ".bai")
     mapping_genome_index = os.path.join(mapping_genome_bam + ".bai")
     cmd1 = tools.samtools + " index " + mapping_genome_bam_temp
     cmd2 = tools.samtools + " index " + mapping_genome_bam
