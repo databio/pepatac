@@ -106,7 +106,7 @@ RUN wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.4.1/bo
 
 # Install samblaster
 WORKDIR /home/tools/
-RUN git clone git://github.com/GregoryFaust/samblaster.git && \
+RUN git clone https://github.com/GregoryFaust/samblaster.git && \
     cd /home/tools/samblaster && \
     make && \
     ln -s /home/tools/samblaster/samblaster /usr/bin/
@@ -131,7 +131,7 @@ RUN wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig 
 
 # Install Skewer
 WORKDIR /home/src/
-RUN git clone git://github.com/relipmoc/skewer.git && \
+RUN git clone https://github.com/relipmoc/skewer.git && \
     cd /home/src/skewer && \
     make && \
     make install
