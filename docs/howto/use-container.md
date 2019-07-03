@@ -41,6 +41,7 @@ Be sure to mount the volumes you need with `--volume`. If you're utilizing any e
 
 ### Container details 
 
+#### Using `docker`
 The pipeline has been successfully run in both a Linux and MacOS environment. With `docker` you need to bind mount your volume that contains the pipeline and your `$GENOMES` location, as well as provide the container the same environment variables your host environment is using.
 
 In the first example, we're mounting our home user directory (`/home/jps3ag/`) which contains the parent directories to our `$GENOMES` folder and to the pipeline itself. We'll also provide the pipeline two environment variables, `$GENOMES` and `$HOME`.
@@ -85,6 +86,33 @@ docker run --rm -it --volume /Users/jps3ag/:/Users/jps3ag/ \
   -O $HOME/pepatac_test
 ```
 
+#### Using `singularity`
+
+First, build a singularity container from the docker image and create a running instance (be sure to mount your directories containing your `$GENOMES` folder and pipeline.
+```
+singularity build pepatac docker://databio/pepatac:latest
+singularity instance.start -B /home/jps3ag/:/home/jps3aq/ pepatac pepatac_instance
+```
+
+Second, run your command.
+```
+singularity exec instance://pepatac_instance \
+  /home/jps3ag/src/pepatac/pipelines/pepatac.py --single-or-paired single \
+  --prealignments rCRSd human_repeats \
+  --genome hg38 \
+  --sample-name test1 \
+  --input /home/jps3ag/src/pepatac/examples/data/test1_r1.fastq.gz \
+  --input2 /home/jps3ag/src/pepatac/examples/data/test1_r2.fastq.gz \
+  --genome-size hs \
+  -O $HOME/pepatac_test
+```
+
+Third, close your instance when finished.
+```
+singularity instance.stop pepatac_instance
+```
+
 ## Running multiple samples in a container with looper
 
 To run multiple samples in a container, you simply need to configure `looper` to use a container-compatible template. The looper documentation has detailed instructions for [how to run pipelines in containers](http://code.databio.org/looper/containers/).
+
