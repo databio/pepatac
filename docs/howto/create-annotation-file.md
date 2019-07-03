@@ -1,25 +1,39 @@
-# How to create a custom annotation file
+# Download or create annotation files for <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> 
 
-To calculate TSS enrichments, you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory. We have [downloadable pre-built genome annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9` that you can use to annotate the reads and peaks.  These files annotate 3' and 5' UTR, Exonic, Intronic, Intergenic, Promoter, and Promoter Flanking Regions of the corresponding genome as indicated in Ensembl or UCSC.  Simply move the corresponding genome annotation file into the `pepatac/anno` folder.  Once present in the `pepatac/anno` folder you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to directly point to this file when running.  You can also [learn how to create a custom annotation file](howto/create-annotation-file.md) to calculate coverage using your own features of interest.
+For each annotation source (TSS or general features), we provide [downloadable defaults](http://big.databio.org/pepatac/) for common genomes.  You may also recreate these yourself as described below.
 
+### TSS
 
+To calculate [TSS enrichments](../glossary.md), you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
+```console
+wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz \
+zcat hg38_TSS_full.txt.gz | \
+  awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
+  LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
+```
+This asset (`tss_annotation`) needs to be [included in your `$REFGENIE` configuration file](#Example_PEPATAC_REFGENIE_configuration_file) for the pipeline to detect it automatically.  Alternatively, you can use the `--TSS-name` pipeline option to provide a path directly to this file.
 
+### Features
+
+We also have [downloadable genome feature annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9`.  These files annotate 3' and 5' UTR, Exons, Introns, Promoters, and Promoter Flanking Regions.  If present in the corresponding reference genome folder and included as an asset (named `feat_annotation`) in your `$REFGENIE` configuration file you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to just directly point to this file.
+
+#### Create a custom feature annotation file
 
 The pipeline will calculate the fraction of reads in genomic features using one of our [provided annotation files](http://big.databio.org/pepatac/), but you can also specify this file yourself.
 
-This annotation file is really just a `BED` file, with the chromosomal coordinates and type of feature included.  For example, the [downloadable `hg19_annotations.bed.gz` file](http://big.databio.org/pepatac/hg19_annotations.bed.gz) looks like so:
+This annotation file is really just a modified `BED` file, with the chromosomal coordinates and type of feature included.  For example, the [downloadable `hg38_annotations.bed.gz` file](http://big.databio.org/pepatac/hg38_annotations.bed.gz) looks like so:
 
 ```
-chr1	28400	29801	Promoter	.	*
-chr1	713400	715201	Promoter	.	*
-chr1	761800	764001	Promoter	.	*
-chr1	839600	840601	Promoter	.	*
-chr1	859200	860001	Promoter	.	*
-chr1	893800	895001	Promoter	.	*
-chr1	895400	896801	Promoter	.	*
-chr1	902000	902601	Promoter	.	*
-chr1	934200	934801	Promoter	.	*
-chr1	935200	936001	Promoter	.	*
+chr1	28200	30001	Promoter	.	*
+chr1	198800	200201	Promoter	.	*
+chr1	778000	780001	Promoter	.	*
+chr1	817400	817601	Promoter	.	*
+chr1	826200	828801	Promoter	.	*
+chr1	904200	905201	Promoter	.	*
+chr1	923800	924601	Promoter	.	*
+chr1	925000	925601	Promoter	.	*
+chr1	941800	942201	Promoter	.	*
+chr1	958400	961401	Promoter	.	*
 ```
 
 Just like a standard `BED` file, the first three fields are:  
@@ -29,15 +43,24 @@ Just like a standard `BED` file, the first three fields are:
 
 Column four is the **name** column, in our case the name of our feature of interest. The fifth column is the **score**, which would determine how darkly an item would be displayed in a genome browser if you chose to set that or if the information in your file of interest has ascribed a score to the features. The final, sixth, column is the **strand** column.
 
-After creating your `BED` file, you can point the pipeline to it using the `--anno-name` option and providing the path to your file.  The pipeline will then use that file to determine the fractions of reads that cover those features.
+After creating your `BED` file, you can point the pipeline to it using the `--anno-name` option followed with the path to your file.  The pipeline will then use that file to determine the fractions of reads that cover those features.
 
+### Example `PEPATAC` `REGENIE` configuration file
 
+As mentioned above, you can point the pipeline directly to your annotation files using the matching arguments.
 
-
-If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
-```
-wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz \
-zcat hg38_TSS_full.txt.gz | \
-  awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
-  LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
+Alternatively, if they are all present in the corresponding reference genome folders, you can direct `refgenie` to detect them automatically. Here's an example of what a `refgenie` configuration file would look like:
+```yaml
+genome_folder: $GENOMES
+genome_server: http://refgenomes.databio.org
+genomes:
+  hg38:
+    bowtie2:
+      path: indexed_bowtie2
+    chrom_sizes:
+      path: hg38.chrom.sizes
+    tss_annotation:
+      path: hg38_TSS.tsv
+    feat_annotation:
+      path: hg38_annotations.bed.gz
 ```
