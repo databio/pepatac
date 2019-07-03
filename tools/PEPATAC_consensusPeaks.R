@@ -119,7 +119,7 @@ info <- capture.output({
   numSamples <- length(samples(prj)$sample_name)
 })
 peakList   <- data.table(peakFiles = list(numSamples))
-genome     <- invisible(config(prj)$implied_columns[[1]][[1]]$genome)
+genome     <- invisible(config(prj)$implied_attributes[[1]][[1]]$genome)
 cPath      <- file.path(paste0(Sys.getenv("GENOMES"),
                         genome, "/",
                         genome, ".chrom.sizes"))
