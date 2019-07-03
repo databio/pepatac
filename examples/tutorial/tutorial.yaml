@@ -17,3 +17,18 @@ implied_columns:
       genome: hg38
       macs_genome_size: hs
       prealignments: rCRSd human_repeats
+      deduplicator: samblaster # Default. [options: picard]
+      trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
+      peak_type: variable      # Default. [options: fixed]
+      extend: 250              # Default. For fixed-width peaks, extend this distance up- and down-stream.
+      frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
+      TSS_name: $GENOMES/hg38/hg38_TSS.tsv             # Default. Pipeline checks corresponding genome folder without specifying.
+      blacklist: $GENOMES/hg38/hg38.blacklist.bed.gz   # Default. Pipeline checks corresponding genome folder without specifying.
+      anno_name: $GENOMES/hg38/hg38_annotations.bed.gz # Default. Pipeline checks corresponding genome folder without specifying.
+
+pipeline_args:
+#  peppro.py:
+#    "--motif": null  # Default is FALSE. Pass flag to perform motif analysis (requires Homer)
+#    "--keep": null   # Default is FALSE. Pass flag to keep prealignment BAM files.
+#    "--noFIFO": null # Default is FALSE. Pass flag to NOT use named pipes during prealignments.
+#    "--lite": null   # Default is FALSE. Pass flag to only keep minimal, essential output to conserve disk space.
