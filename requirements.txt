@@ -1,8 +1,8 @@
+loopercli
+MACS2
 numpy
-https://github.com/pepkit/looper/zipball/master 
 pararead
 pandas
 piper
-MACS2
 refgenconf
 refgenie
