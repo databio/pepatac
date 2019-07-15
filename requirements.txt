@@ -5,3 +5,4 @@ pandas
 piper
 MACS2
 refgenconf
+refgenie
