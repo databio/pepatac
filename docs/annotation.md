@@ -1,6 +1,34 @@
-# Download or create annotation files for <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> 
+# Custom reference data
 
-For each annotation source (TSS or general features), we provide [downloadable defaults](http://big.databio.org/pepatac/) for common genomes.  You may also recreate these yourself as described below.
+The pipeline uses reference data at various stages, such as for alignment, calculating TSS enrichments, and other QC scores. If you're using a common genome assembly, these resources are pre-built and can be easily downloaded using `refgenie pull`, as described in the setup instructions. If the resources are not available, you'll have to build them. This document outlines how we created the reference data, so you can recreate it if you need to. The easiest way to do this is use `refgenie build`. All you need to do is:
+
+## 1: Build the fasta asset
+
+You need a FASTA file for your genome. You can insert this file into refgenie like this:
+
+```console
+refgenie build -g GENOME -a fasta --fasta path/to/file.fa
+```
+
+## 2: Build the refgene_anno asset
+
+You will need a refGene annotation, which produces the TSS annotation asset. For hg38, we obtain this from [ucsc](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz). Build it for a custom genome like this:
+
+```console
+refgenie build -g GENOME -a refgene_anno --refgene path/to/file.txt.gz
+```
+
+
+## 4: Build the feat_annotation and bowtie2_index assets
+The `feat_annotation` asset includes feature annotations used to calculate various QC metrics. The `bowtie2_index` is used for alignment. `Refgenie` can automatically build these after you have the above assets installed:
+
+```console
+refgenie build -g GENOME -a feat_annotation bowtie2_index
+```
+
+
+That's it! These assets will be automatically detected if you build them like this with refgenie. If you want to know what we're doing, or customize these, more details follow:
+
 
 ### TSS
 
