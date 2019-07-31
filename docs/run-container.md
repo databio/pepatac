@@ -37,7 +37,7 @@ With `docker`, you can use:
 ```
 docker run --rm -it databio/pepatac pipelines/pepatac.py --help
 ```
-Be sure to mount the volumes you need with `--volume`. If you're utilizing any environment variables (e.g. `$GENOMES`), don't forget to include those in your docker command with the `-e` option. For a more detailed example, check out our guide to learn [how to run pepatac in a container](howto/use-container.md).
+Be sure to mount the volumes you need with `--volume`. If you're utilizing any environment variables (e.g. `$GENOMES`), don't forget to include those in your docker command with the `-e` option.
 
 ### Container details 
 
@@ -114,5 +114,5 @@ singularity instance.stop pepatac_instance
 
 ## Running multiple samples in a container with looper
 
-To run multiple samples in a container, you simply need to configure `looper` to use a container-compatible template. The looper documentation has detailed instructions for [how to run pipelines in containers](http://code.databio.org/looper/containers/).
+To run multiple samples in a container, you simply need to configure `looper` to use a container-compatible template. The looper documentation has detailed instructions for [how to run pipelines in containers](https://looper.databio.org/).
 

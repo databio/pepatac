@@ -1,8 +1,33 @@
 # <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> pipeline step-by-step guide
 
-Welcome to the `PEPATAC` extended tutorial! Use this to learn the ropes. We'll use a provided ATAC-seq dataset and run through the step-by-step process of setting up the configuration files, running the pipeline, and looking over the results together. To use this tutorial, you should have a basic familiarity with [working in a command line driven environment](http://matt.might.net/articles/basic-unix/). You also need to have already installed `PEPATAC` prerequisites, which you can do following the [detailed installation guide](howto/detailed-install.md).
+Welcome to the `PEPATAC` extended tutorial! Use this to learn the ropes. We'll use a provided ATAC-seq dataset and run through the step-by-step process of setting up the configuration files, running the pipeline, and looking over the results together. To use this tutorial, you should have a basic familiarity with [working in a command line driven environment](http://matt.might.net/articles/basic-unix/). You also need to have already installed `PEPATAC` prerequisites, which you can do following the [install instructions](install.md).
 
-## 1: Download tutorial read files
+## 1: Set up folders
+
+From an open terminal, let's first create a directory we'll use to run through this guide:
+```
+mkdir pepatac_tutorial
+```
+
+Let's move into our newly created directory and create a few more folders that we'll use later.
+```
+cd pepatac_tutorial/
+mkdir data
+mkdir genomes
+mkdir processed
+mkdir templates
+mkdir tools
+cd tools/
+```
+
+Time to get PEPATAC!
+```
+git clone git@github.com:databio/pepatac.git
+```
+Success! If you had any issues, feel free to [reach out to us with questions](contact.md).  Otherwise, let's move on to installing additional software.
+
+
+## 2: Download tutorial read files
 
 We're going to work with some files a little larger than the test data included in the pipeline so we can see all the features included in a full run of the pipeline.  Go ahead and download the [tutorial_r1.fastq.gz](http://big.databio.org/pepatac/tutorial_r1.fastq.gz) and [tutorial_r2.fastq.gz](http://big.databio.org/pepatac/tutorial_r2.fastq.gz) files. 
 ```console
@@ -16,7 +41,7 @@ mv tutorial_r1.fastq.gz pepatac/examples/data/
 mv tutorial_r2.fastq.gz pepatac/examples/data/
 ```
 
-## 2: Configure project files
+## 3: Configure project files
 
 We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A configuration file has been provided for you in the pipeline itself, conveniently named `tutorial.yaml`.  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#23-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
@@ -54,7 +79,7 @@ tutorial,ATAC,human,tutorial_r1,tutorial_r2,paired
 That's it! Let's analyze that sample!
 
 
-## 3: Using `looper` to run the pipeline
+## 4: Using `looper` to run the pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. One of those is an environment variable called `PEPENV` that points to the Looper environment configuration file. For more detailed information regarding this file, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing.html#pepenv-overview). Let's set it up.
 ```
 cd /path/to/pepatac_tutorial/
@@ -107,7 +132,7 @@ Congratulations! Your first sample should be running through the pipeline now.
 After the pipeline is finished, we can look through the output directory together.  We've provided a breakdown of that directory in the [browse output page](/browse_output/).
 
 
-## 4: Generate an `HTML` report using `looper`
+## 5: Generate an `HTML` report using `looper`
 
 Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](../files/examples/tutorial/tutorial_summary.html).  Otherwise, let's generate a report ourselves.
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `summarize` function of `looper`.

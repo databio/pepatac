@@ -44,7 +44,7 @@
 
 `PEPATAC` is a python script. Once you have all the prerequisites installed, you just run it on the command line (see [usage](usage) for the complete arguments list):
 
-```
+```console
 pepatac.py --input reads.fq.gz [options...]
 ```
 

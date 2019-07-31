@@ -2,42 +2,8 @@
 
 This guide walks you through the nitty-gritty of how to install each prerequisite package.
 
-## 1: Clone the `PEPATAC` pipeline
 
-To begin, we need to get the `PEPATAC` pipeline itself.  The pipeline is hosted on [github](https://github.com/databio/pepatac).  If you don't have git installed, follow the [git installation instructions](https://git-scm.com/download/linux), and here is a [brief introduction to git](https://guides.github.com/introduction/git-handbook/). To install PEPATAC, you can use one of the following methods:
-
-* using SSH:
-```
-git clone git@github.com:databio/pepatac.git
-```
-* using HTTPS:
-```
-git clone https://github.com/databio/pepatac.git
-```
-
-We'll use SSH in this example.  From an open terminal, let's first create a directory we'll use to run through this guide:
-```
-mkdir pepatac_tutorial
-```
-
-Let's move into our newly created directory and create a few more folders that we'll use later.
-```
-cd pepatac_tutorial/
-mkdir data
-mkdir genomes
-mkdir processed
-mkdir templates
-mkdir tools
-cd tools/
-```
-
-Time to get PEPATAC!
-```
-git clone git@github.com:databio/pepatac.git
-```
-Success! If you had any issues, feel free to [reach out to us with questions](contact.md).  Otherwise, let's move on to installing additional software.
-
-## 2: Install required software
+## Install required software
 
 You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. 
 
@@ -191,7 +157,7 @@ Don't forget to add this to your `PATH` too!
 ```
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.4/"
 ```
-That's it! Everything we need to run `PEPATAC` to its full potential should be installed.  If you are interested and have experience using containers, you can check out the [alternate installation methods](install.md#121-use-containers).
+That's it! Everything we need to run `PEPATAC` to its full potential should be installed.  If you are interested and have experience using containers, you can check out the [alternate installation methods](run-container.md).
 
 
 ### 2.2: Create environment variables
@@ -245,6 +211,6 @@ zcat hg38_TSS_full.txt.gz | \
   LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
 ```
 
-We also have [downloadable pre-built genome annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9` that you can use to annotate the reads and peaks.  These files annotate 3' and 5' UTR, Exonic, Intronic, Intergenic, Promoter, and Promoter Flanking Regions of the corresponding genome as indicated in Ensembl or UCSC.  Simply move the corresponding genome annotation file into the `pepatac/anno` folder.  Once present in the `pepatac/anno` folder you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to directly point to this file when running.  You can also [learn how to create a custom annotation file](howto/create-annotation-file.md) to calculate coverage using your own features of interest.
+We also have [downloadable pre-built genome annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9` that you can use to annotate the reads and peaks.  These files annotate 3' and 5' UTR, Exonic, Intronic, Intergenic, Promoter, and Promoter Flanking Regions of the corresponding genome as indicated in Ensembl or UCSC.  Simply move the corresponding genome annotation file into the `pepatac/anno` folder.  Once present in the `pepatac/anno` folder you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to directly point to this file when running.  You can also [learn how to create a custom annotation file](annotation.md) to calculate coverage using your own features of interest.
 
 Alright! Time to setup the pipeline configuration files and run our sample.
