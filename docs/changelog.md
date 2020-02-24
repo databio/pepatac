@@ -35,7 +35,7 @@ All notable changes to this project will be documented in this file.
 - Switched to samblaster for default deduplication
 - Improved readability of reported results
 - Improved help messages
-- Fix mitochdonrial counting and remainding removal
+- Fix mitochondrial counting and remaining removal
 - Use gunzip instead of zcat for MacOS compatibility
 
 ### Added
