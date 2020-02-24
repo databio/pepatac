@@ -13,9 +13,8 @@ import os
 import sys
 
 import pararead
-#from pararead.processor import _LOGGER
-from pararead import add_logging_options, ParaReadProcessor
-from pararead import logger_via_cli
+from logmuse import add_logging_options
+from logmuse import logger_via_cli
 
 import pandas as _pd
 import numpy as np
@@ -190,7 +189,7 @@ class bamQC(pararead.ParaReadProcessor):
                 if not os.path.exists(temp_files[i] + '.npy'):
                     continue
                 # load chrom data and add to dict                
-                chrStats = np.load(temp_files[i] + '.npy')
+                chrStats = np.load(temp_files[i] + '.npy', allow_pickle=True)
                 stats = {k: stats.get(k, 0) + chrStats.item().get(k, 0) for k in set(stats) | set(chrStats.item())}
             if stats['num_pairs'] == 0:
                 total = max(1, float(stats['num_reads'])) 
