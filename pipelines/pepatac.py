@@ -23,7 +23,7 @@ PEAK_CALLERS = ["fseq", "macs2"]
 PEAK_TYPES = ["variable", "fixed"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
-BT2_IDX_KEY = "bowtie2"
+BT2_IDX_KEY = "bowtie2_index"
 
 
 def parse_arguments():
@@ -442,7 +442,8 @@ def check_commands(commands, ignore=''):
 def _add_resources(args, res):
     rgc = RGC(select_genome_config(res.get("genome_config")))
     #print("rgc: {}".format(str(rgc)))  # DEBUG
-    for asset in ["chrom_sizes", BT2_IDX_KEY]:
+    res["chrom_sizes"] = rgc.get_asset(args.genome_assembly, "fasta", seek_key = "chrom_sizes")
+    for asset in [BT2_IDX_KEY]:
         #print("asset: {}".format(str(asset)))  # DEBUG
         res[asset] = rgc.get_asset(args.genome_assembly, asset)
     # OPT
