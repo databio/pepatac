@@ -189,7 +189,7 @@ class bamQC(pararead.ParaReadProcessor):
                 if not os.path.exists(temp_files[i] + '.npy'):
                     continue
                 # load chrom data and add to dict                
-                chrStats = np.load(temp_files[i] + '.npy')
+                chrStats = np.load(temp_files[i] + '.npy', allow_pickle=True)
                 stats = {k: stats.get(k, 0) + chrStats.item().get(k, 0) for k in set(stats) | set(chrStats.item())}
             if stats['num_pairs'] == 0:
                 total = max(1, float(stats['num_reads'])) 
