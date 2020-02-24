@@ -13,9 +13,8 @@ import os
 import sys
 
 import pararead
-#from pararead.processor import _LOGGER
-from pararead import add_logging_options, ParaReadProcessor
-from pararead import logger_via_cli
+from logmuse import add_logging_options
+from logmuse import logger_via_cli
 
 import pandas as _pd
 import numpy as np
