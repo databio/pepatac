@@ -1,9 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.8.7] -- 2019-06-18
+## [0.8.7] -- 2020-02-24
 ### Fixed
 - Bug with python2 unicode strings.
+- Bug with pararead/logmuse dependencies
+- Bug with bamQC pickling
 
 
 ## [0.8.6] -- 2019-03-26
