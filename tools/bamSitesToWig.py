@@ -17,8 +17,8 @@ import sys
 import pararead
 import pysam
 
-from pararead import add_logging_options, ParaReadProcessor
-from pararead import logger_via_cli
+from logmuse import add_logging_options
+from logmuse import logger_via_cli
 
 MODES = ["dnase", "atac"]
 
