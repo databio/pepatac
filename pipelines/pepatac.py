@@ -379,18 +379,18 @@ def _check_bowtie2_index(rgc, genome_assembly):
                            "genome by that name.".format(genome_assembly))
                 pm.fail_pipeline(IOError(err_msg.format(f, bt2_path, typ_msg)))
 
-    genome_file = genome_assembly + ".fa"
-    fa_files = [fa for fa in files if genome_file in fa]
-    if not fa_files:
-        # The fasta file does not exist
-        err_msg = "Could not find '{}.fa' in '{}'\n{}"
-        typ_msg = ("Confirm that you have successfully built a refgenie "
-                   "genome for '{}'.".format(genome_assembly))
-        pm.fail_pipeline(IOError(err_msg.format(
-            genome_assembly, os.path.join(rgc.genome_folder + genome_assembly), typ_msg)))
-    for f in fa_files:
-        if os.stat(os.path.join(bt2_path, f)).st_size == 0:
-            pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
+    # genome_file = genome_assembly + ".fa"
+    # fa_files = [fa for fa in files if genome_file in fa]
+    # if not fa_files:
+    #     # The fasta file does not exist
+    #     err_msg = "Could not find '{}.fa' in '{}'\n{}"
+    #     typ_msg = ("Confirm that you have successfully built a refgenie "
+    #                "genome for '{}'.".format(genome_assembly))
+    #     pm.fail_pipeline(IOError(err_msg.format(
+    #         genome_assembly, os.path.join(rgc.genome_folder + genome_assembly), typ_msg)))
+    # for f in fa_files:
+    #     if os.stat(os.path.join(bt2_path, f)).st_size == 0:
+    #         pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
 
 
 def tool_path(tool_name):
