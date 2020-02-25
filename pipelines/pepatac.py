@@ -387,7 +387,7 @@ def _check_bowtie2_index(rgc, genome_assembly):
         typ_msg = ("Confirm that you have successfully built a refgenie "
                    "genome for '{}'.".format(genome_assembly))
         pm.fail_pipeline(IOError(err_msg.format(
-            genome_assembly, (rgc.genome_folder + genome_assembly), typ_msg)))
+            genome_assembly, os.path.join(rgc.genome_folder + genome_assembly), typ_msg)))
     for f in fa_files:
         if os.stat(os.path.join(bt2_path, f)).st_size == 0:
             pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
@@ -441,7 +441,7 @@ def check_commands(commands, ignore=''):
 
 def _add_resources(args, res):
     rgc = RGC(select_genome_config(res.get("genome_config")))
-    #print("rgc: {}".format(str(rgc)))  # DEBUG
+    
     res["chrom_sizes"] = rgc.get_asset(args.genome_assembly, "fasta", seek_key = "chrom_sizes")
     for asset in [BT2_IDX_KEY]:
         #print("asset: {}".format(str(asset)))  # DEBUG
@@ -491,8 +491,10 @@ def _add_resources(args, res):
                    "point directly to the file using --anno-name.\n")
             print(err.format(asset))
             print(msg)
-    res.rgc = rgc
-    return res
+    
+    # This is broken with attmap; it's losing it's RGC status...
+    # res.rgc = rgc
+    return res, rgc
 
 
 def main():
@@ -534,12 +536,13 @@ def main():
         pm.fail_pipeline(RuntimeError(err_msg))
 
     # Set up reference resource according to genome prefix.
-    res = _add_resources(args, res)
+    res, resrgc = _add_resources(args, res)
 
     # Get bowtie2 indexes
-    _check_bowtie2_index(res.rgc, args.genome_assembly)
+    # print(type(resrgc))  # Debug
+    _check_bowtie2_index(resrgc, args.genome_assembly)
     for reference in args.prealignments:
-        _check_bowtie2_index(res.rgc, reference)
+        _check_bowtie2_index(resrgc, reference)
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
@@ -750,7 +753,7 @@ def main():
                     args, tools, args.paired_end, False,
                     unmap_fq1, unmap_fq2, reference,
                     assembly_bt2=os.path.join(
-                        res.rgc.get_asset(reference, BT2_IDX_KEY), reference),
+                        resrgc.get_asset(reference, BT2_IDX_KEY), reference),
                     outfolder=param.outfolder, aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
                 if args.paired_end:
@@ -762,7 +765,7 @@ def main():
                     args, tools, args.paired_end, True,
                     unmap_fq1, unmap_fq2, reference,
                     assembly_bt2=os.path.join(
-                        res.rgc.get_asset(reference, BT2_IDX_KEY), reference), 
+                        resrgc.get_asset(reference, BT2_IDX_KEY), reference), 
                     outfolder=param.outfolder, aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
                 if args.paired_end:
@@ -810,7 +813,7 @@ def main():
     cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
     cmd += " -x " + os.path.join(
-        res.rgc.get_asset(args.genome_assembly, BT2_IDX_KEY),
+        resrgc.get_asset(args.genome_assembly, BT2_IDX_KEY),
                           args.genome_assembly)
     if args.paired_end:
         cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
