@@ -808,5 +808,706 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
     }
 }
 
+#' The function rounds the up to the nearest "nice" number.
+#'
+#' From:
+#' https://stackoverflow.com/questions/6461209/how-to-round-up-to-the-nearest-10-or-100-or-x
+roundUpNice <- function(x, nice=c(1,2,3,4,5,6,7,8,9,10)) {
+    if(length(x) != 1) stop("'x' must be of length 1")
+    10^floor(log10(x)) * nice[[which(x <= 10^floor(log10(x)) * nice)[[1]]]]
+}
 
+
+#' From:
+#' https://github.com/baptiste/egg/blob/master/R/setPanelSize.r
+setPanelSize <- function(p=NULL, g=ggplotGrob(p), file=NULL, 
+                           margin=unit(1, "in"),
+                           width=unit(4, "in"), 
+                           height=unit(4, "in")){
+    
+    panels        <- grep("panel", g$layout$name)
+    panel_index_w <- unique(g$layout$l[panels])
+    panel_index_h <- unique(g$layout$t[panels])
+    nw            <- length(panel_index_w)
+    nh            <- length(panel_index_h)
+    
+    if(getRversion() < "3.3.0"){
+        # the following conversion is necessary
+        # because there is no `[<-`.unit method
+        # so promoting to unit.list allows standard list indexing
+        g$widths  <- grid:::unit.list(g$widths)
+        g$heights <- grid:::unit.list(g$heights)        
+        g$widths[panel_index_w]  <- rep(list(width), nw)
+        g$heights[panel_index_h] <- rep(list(height), nh)
+    } else {
+        g$widths[panel_index_w]  <- rep(width, nw)
+        g$heights[panel_index_h] <- rep(height, nh)
+    }
+    
+    if(!is.null(file))
+        ggsave(file, g, limitsize = FALSE,
+               width=convertWidth(sum(g$widths) + margin, 
+                                  unitTo="in", valueOnly=TRUE),
+               height=convertHeight(sum(g$heights) + margin,  
+                                    unitTo="in", valueOnly=TRUE))
+    invisible(g)
+}
+
+
+#' Helper function to build a file path to the correct output folder using a
+#' specified suffix
+#'
+#' @param suffix A file suffix identifier
+#' @param pep A PEP project configuration file
+buildFilePath <- function(suffix, pep=prj) {
+    file.path(config(pep)$metadata$output_dir, "summary",
+              paste0(config(pep)$name, suffix))
+}
+
+
+#' Return a list of prealignments from a stats_summary.tsv file if they exist
+#'
+#' @param stats_file A looper derived stats_summary.tsv file
+getPrealignments <- function(stats_file) {
+    pre <- gsub("Aligned_reads_","",
+                unique(grep("Aligned_reads_.*",
+                colnames(stats_file), value=TRUE)))
+    if (length(pre) > 0) {
+        return(pre)
+    } else {
+        return(NULL)
+    }
+}
+
+
+#' This function is meant to plot project level raw aligned reads.
+#'
+#' @param prj A PEPr Project object
+#' @param stats A looper derived stats_summary.tsv file
+#' @keywords aligned reads raw
+#' @export
+plotAlignedRaw <- function(prj, stats) {
+    align_theme <- theme(
+        plot.background   = element_blank(),
+        panel.grid.major  = element_blank(),
+        panel.grid.minor  = element_blank(),
+        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.background  = element_blank(),
+        axis.line         = element_blank(),
+        axis.text.x       = element_text(face = "plain", color = "black", 
+                                          size = 20, hjust = 0.5),
+        axis.text.y       = element_text(face = "plain", color = "black",
+                                          size = 20, hjust = 1),
+        axis.title.x      = element_text(face = "plain", color = "black", 
+                                          size = 22, hjust = 0.5, vjust = 0.5),
+        axis.title.y      = element_text(face = "plain", color = "black", 
+                                          size = 22, hjust = 0.5),
+        plot.title        = element_text(face = "bold", color = "black", 
+                                          size = 12, hjust = 0.5),
+        axis.ticks        = element_line(size = 0.5),
+        axis.ticks.length = unit(2, "mm"),
+        legend.background = element_rect(fill = "transparent"),
+        legend.text       = element_text(size = 16),
+        legend.title      = element_blank()
+    )
+
+    # Get prealignments if they exist
+    prealignments <- getPrealignments(stats)
+
+    unaligned <- stats$Fastq_reads - stats$Aligned_reads
+    # If prealignments exist...include in unaligned reads count
+    if (!is.null(prealignments)) {
+        for (i in 1:length(unlist(prealignments))) {
+            unaligned <- unaligned - stats[, (paste("Aligned_reads",
+                                           unlist(prealignments)[i], sep="_")),
+                                           with=FALSE][[1]]
+        }
+    }
+
+    align_raw <- tryCatch(
+        {
+            data.table(sample = stats$sample_name,
+                       unaligned = as.integer(unaligned),
+                       duplicates = as.integer(stats$Duplicate_reads))
+        },
+        error=function(e) {
+            message("The summary file values for unaligned or duplicate reads",
+                    " are missing.")
+            message("Here's the original error message: ", e)
+            return(NULL)
+        },
+        warning=function(e) {
+            message("The summary file contains missing values for the number",
+                    " of unaligned or duplicate_reads.")
+            message("Here's the original error message: ", e)
+            return(NULL)
+        }
+    )
+
+    if (is.null(align_raw)) {
+        quit()
+    }
+
+    # Split counts based on genome name
+    genome_names   <- unique(stats$Genome)
+    for (i in 1:length(genome_names)) {
+        row_pos    <- grep(genome_names[i], stats$Genome)
+        read_count <- rep(0,nrow(stats))
+        reads      <- stats$Aligned_reads[stats$Genome==genome_names[i]]
+        read_dedup <- stats$Dedup_aligned_reads[stats$Genome==genome_names[i]]
+        if (length(read_dedup) == length(reads)) {
+            reads  <- read_dedup
+        }
+        for (j in 1:length(reads)) {
+            read_count[row_pos[j]] <- reads[j]
+        }
+        align_raw[, (genome_names[i]) := as.integer(read_count)]
+    }
+
+    # If prealignments exist...add to data.table
+    if (!is.null(prealignments)) {
+        for (i in 1:length(unlist(prealignments))) {
+            align_raw[, unlist(prealignments)[i] := as.integer(
+               stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
+               with=FALSE][[1]])]
+        }
+        setcolorder(align_raw, c("sample", "unaligned",
+                                paste(unlist(prealignments)),
+                                "duplicates", paste(unique(stats$Genome))))
+    } else {
+        setcolorder(align_raw, c("sample", "unaligned", "duplicates",
+                                paste(unique(stats$Genome))))
+    }
+
+    align_raw$sample <- factor(align_raw$sample, levels = align_raw$sample)
+
+    melt_align_raw <- melt(align_raw, id.vars = "sample")
+    max_reads      <- max(rowSums(align_raw[,2:ncol(align_raw)]))
+    upper_limit    <- roundUpNice(max_reads/1000000)
+    chart_height   <- (length(unique(align_raw$sample))) * 0.75
+    plot_colors    <- data.table(unaligned="gray15")
+
+    if (!is.null(prealignments)) {
+        more_colors <- colorpanel(length(unlist(prealignments)),
+                                  low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
+        for (i in 1:length(unlist(prealignments))) {
+            plot_colors[, unlist(prealignments)[i] := more_colors[i]]
+        }
+    }
+
+    plot_colors[, duplicates := "#FC1E25"]
+    more_colors <- colorpanel(length(genome_names),
+                              low="#4876FF", mid="#94D9CE", high="#7648FF")
+    for (i in 1:length(genome_names)) {
+        plot_colors[, (genome_names[i]) := more_colors[i]]
+    }
+
+    align_raw_plot <- (
+        ggplot(melt_align_raw, aes(x=sample, y=as.numeric(value)/1000000)) +
+            geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) +
+            guides(fill=guide_legend(reverse=TRUE)) +
+            labs(x="", y="Number of reads (M)") +
+            scale_x_discrete(limits=rev(levels(melt_align_raw$sample))) +
+            scale_y_continuous(limits=c(0,upper_limit), expand=c(0,0)) +
+            scale_fill_manual(values=paste(plot_colors)) +
+            coord_flip() +
+            align_theme)
+
+    # Produce full-size PDF
+    suppressWarnings(
+        setPanelSize(
+            align_raw_plot,
+            file=buildFilePath("_alignmentRaw.pdf", prj),
+            width=unit(8,"inches"),
+            height=unit(chart_height,"inches")
+            )
+        )
+
+    # Produce snap-shot thumbnail PNG for HTML display
+    # Limit to 25 samples max
+    if (length(align_raw$sample) > 25) {
+        align_raw_thumb <- align_raw[1:25]
+        more_to_see     <- data.frame(t(c("...", rep(0, (ncol(align_raw_thumb)-1)))))
+        colnames(more_to_see)  <- colnames(align_raw_thumb)
+        align_raw_thumb        <- rbind(align_raw_thumb, more_to_see)
+        align_raw_thumb$sample <- droplevels(align_raw_thumb)$sample
+        melt_align_raw_thumb   <- melt(align_raw_thumb, id.vars="sample")
+        chart_height           <- (length(unique(align_raw_thumb$sample))) * 0.75
+    } else {melt_align_raw_thumb <- melt_align_raw}
+
+    thumb_raw_plot <- (
+        ggplot(melt_align_raw_thumb, aes(x=sample, y=as.numeric(value)/1000000)) +
+            geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) +
+            guides(fill=guide_legend(reverse=TRUE)) +
+            labs(x="", y="Number of reads (M)") +
+            scale_x_discrete(limits=rev(levels(melt_align_raw_thumb$sample))) +
+            scale_y_continuous(limits=c(0,upper_limit), expand=c(0,0)) +
+            scale_fill_manual(values=paste(plot_colors)) +
+            coord_flip() +
+            align_theme)
+
+    suppressWarnings(
+        setPanelSize(
+            thumb_raw_plot,
+            file=buildFilePath("_alignmentRaw.png", prj),
+            width=unit(8,"inches"),
+            height=unit(chart_height,"inches")
+            )
+        )
+}
+
+
+#' This function is meant to plot project level percent aligned reads.
+#'
+#' @param prj A PEPr Project object
+#' @param stats A looper derived stats_summary.tsv file
+#' @keywords aligned reads percent
+#' @export
+plotAlignedPct <- function(prj, stats) {
+    align_theme <- theme(
+        plot.background   = element_blank(),
+        panel.grid.major  = element_blank(),
+        panel.grid.minor  = element_blank(),
+        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.background  = element_blank(),
+        axis.line         = element_blank(),
+        axis.text.x       = element_text(face = "plain", color = "black", 
+                                          size = 20, hjust = 0.5),
+        axis.text.y       = element_text(face = "plain", color = "black",
+                                          size = 20, hjust = 1),
+        axis.title.x      = element_text(face = "plain", color = "black", 
+                                          size = 22, hjust = 0.5, vjust = 0.5),
+        axis.title.y      = element_text(face = "plain", color = "black", 
+                                          size = 22, hjust = 0.5),
+        plot.title        = element_text(face = "bold", color = "black", 
+                                          size = 12, hjust = 0.5),
+        axis.ticks        = element_line(size = 0.5),
+        axis.ticks.length = unit(2, "mm"),
+        legend.background = element_rect(fill = "transparent"),
+        legend.text       = element_text(size = 16),
+        legend.title      = element_blank()
+    )
+
+    unaligned <- 100 - stats$Alignment_rate
+    if (!is.null(prealignments)) {
+        for (i in 1:length(unlist(prealignments))) {
+            unaligned <- unaligned - stats[, (paste("Alignment_rate",
+                                           unlist(prealignments)[i], sep="_")),
+                                           with=FALSE][[1]]
+        }
+    }
+    # If the pipeline hasn't performed duplicate removal yet, or there are
+    #  actually no duplicates, set the duplicate alignment rate to zero
+    duplicates <- list()
+    for (i in 1:length(stats$Alignment_rate)) {
+        if (stats$Dedup_alignment_rate[i] == 0) {
+            duplicates[[i]] <- as.numeric(0)
+        } else {
+            duplicates[[i]] <- as.numeric(stats$Alignment_rate[i] -
+                                          stats$Dedup_alignment_rate[i])
+        }
+    }
+
+    align_percent <- data.table(sample=stats$sample_name,
+                                unaligned=unaligned,
+                                duplicates=as.numeric(duplicates))
+
+    # Split percents based on genome name
+    genome_names   <- unique(stats$Genome)
+    for (i in 1:length(genome_names)) {
+        row_pos    <- grep(genome_names[i], stats$Genome)
+        read_count <- rep(0, nrow(stats))
+        reads      <- stats$Dedup_alignment_rate[stats$Genome==genome_names[i]]
+        for (j in 1:length(grep('^0', reads))) {
+            # If the pipeline has yet to remove duplicates, or there are actually
+            # no duplicates, use the Alignment_rate parameter instead
+            row_num        <- grep('^0', reads)[j]
+            reads[row_num] <- stats$Alignment_rate[stats$Genome==genome_names[i]][row_num]
+        }
+        for (k in 1:length(reads)) {
+            read_count[row_pos[k]] <- reads[k]
+        }
+        align_percent[, (genome_names[i]) := as.numeric(read_count)]
+    }
+
+    if (!is.null(prealignments)) {
+        for (i in 1:length(unlist(prealignments))) {
+            align_percent[, unlist(prealignments)[i] := as.double(
+                stats[, (paste("Alignment_rate",
+                      unlist(prealignments)[i], sep="_")),
+                      with=FALSE][[1]])]
+        }
+        setcolorder(align_percent, c("sample", "unaligned",
+                                    paste(unlist(prealignments)),
+                                    "duplicates", paste(unique(stats$Genome))))
+    } else {
+        setcolorder(align_percent, c("sample", "unaligned", "duplicates",
+                                    paste(unique(stats$Genome))))
+    }
+
+    align_percent$sample <- factor(align_percent$sample,
+                                   levels=align_percent$sample)
+
+    # Warn user if sample has aberrant values
+    aberrant_samples <- data.frame(Sample=character(),
+                                   Target=character(),
+                                   Alignment_rate=numeric())
+    aberrant <- FALSE
+    for (i in 1:nrow(align_percent)) {
+        for (j in 2:ncol(align_percent)) {
+            if (align_percent[i][[j]] < 0 || align_percent[i][[j]] > 100) {
+                aberrant_samples <- rbind(
+                    aberrant_samples,
+                    data.frame(Sample=align_percent$sample[i],
+                               Target=colnames(align_percent[, ..j]),
+                               Alignment_rate=align_percent[i][[j]]))
+                align_percent[i, j] <- 0
+                aberrant <- TRUE
+            }
+        }
+    }
+    if (aberrant) {
+        message("Warning: Aberrant alignment rates detected and set to 0.")
+        print(aberrant_samples, row.names=FALSE)
+    }
+
+    melt_align_percent <- melt(align_percent, id.vars="sample")
+    upper_limit        <- 103
+    chart_height       <- (length(unique(align_percent$sample))) * 0.75
+
+    plot_colors <- data.table(unaligned="gray15")
+
+    if (!is.null(prealignments)) {
+        more_colors <- colorpanel(length(unlist(prealignments)), 
+                                 low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
+        for (i in 1:length(unlist(prealignments))) {
+            plot_colors[, unlist(prealignments)[i] := more_colors[i]]
+        }
+    }
+
+    plot_colors[, duplicates := "#FC1E25"]
+    more_colors <- colorpanel(length(genome_names), 
+                             low="#4876FF", mid="#94D9CE", high="#7648FF")
+    for (i in 1:length(genome_names)) {
+        plot_colors[, (genome_names[i]) := more_colors[i]]
+    }
+
+    align_percent_plot <- (
+        ggplot(melt_align_percent, aes(x=sample, y=as.numeric(value))) +
+            geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) + 
+            guides(fill=guide_legend(reverse=TRUE)) +
+            labs(x="", y="Percent of reads") +
+            scale_x_discrete(limits=rev(levels(melt_align_percent$sample))) +
+            scale_y_continuous(limits=c(0,upper_limit), expand=c(0,0)) +
+            scale_fill_manual(values=paste(plot_colors)) +
+            coord_flip() + 
+            align_theme)
+
+    # Produce full-size PDF
+    suppressWarnings(
+        setPanelSize(
+            align_percent_plot, 
+            file=buildFilePath("_alignmentPercent.pdf", prj), 
+            width=unit(8,"inches"), 
+            height=unit(chart_height,"inches")
+            )
+        )
+
+    # Produce snap-shot thumbnail PNG for HTML display
+    # Limit to 25 samples max
+    if (length(align_percent$sample) > 25) {
+        align_percent_thumb <- align_percent[1:25]
+        more_to_see         <- data.frame(t(c("...",
+                                rep(0, (ncol(align_percent_thumb)-1)))))
+        colnames(more_to_see)      <- colnames(align_percent_thumb)
+        align_percent_thumb        <- rbind(align_percent_thumb, more_to_see)
+        align_percent_thumb$sample <- droplevels(align_percent_thumb)$sample
+        melt_align_percent_thumb   <- melt(align_percent_thumb,
+                                           id.vars="sample")
+        chart_height        <- ((length(unique(align_percent_thumb$sample))) *
+                                0.75)
+    } else {melt_align_percent_thumb <- melt_align_percent}
+
+    thumb_percent_plot <- (
+        ggplot(melt_align_percent_thumb, aes(x=sample, y=as.numeric(value))) +
+            geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) + 
+            guides(fill=guide_legend(reverse=TRUE)) +
+            labs(x="", y="Percent of reads") +
+            scale_x_discrete(limits=rev(levels(melt_align_percent_thumb$sample))) +
+            scale_y_continuous(limits=c(0,upper_limit), expand=c(0,0)) +
+            scale_fill_manual(values=paste(plot_colors)) +
+            coord_flip() +
+            align_theme)
+
+    suppressWarnings(
+        setPanelSize(
+            thumb_percent_plot, 
+            file=buildFilePath("_alignmentPercent.png", prj), 
+            width=unit(8,"inches"), 
+            height=unit(chart_height,"inches")
+            )
+        )
+}
+
+
+#' This function is meant to plot TSS scores.
+#'
+#' @param prj A PEPr Project object
+#' @param stats A looper derived stats_summary.tsv file
+#' @keywords TSS scores
+#' @export
+plotTSSscores <- function(prj, stats) {
+    align_theme <- theme(
+        plot.background   = element_blank(),
+        panel.grid.major  = element_blank(),
+        panel.grid.minor  = element_blank(),
+        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.background  = element_blank(),
+        axis.line         = element_blank(),
+        axis.text.x       = element_text(face = "plain", color = "black", 
+                                          size = 20, hjust = 0.5),
+        axis.text.y       = element_text(face = "plain", color = "black",
+                                          size = 20, hjust = 1),
+        axis.title.x      = element_text(face = "plain", color = "black", 
+                                          size = 22, hjust = 0.5, vjust = 0.5),
+        axis.title.y      = element_text(face = "plain", color = "black", 
+                                          size = 22, hjust = 0.5),
+        plot.title        = element_text(face = "bold", color = "black", 
+                                          size = 12, hjust = 0.5),
+        axis.ticks        = element_line(size = 0.5),
+        axis.ticks.length = unit(2, "mm"),
+        legend.background = element_rect(fill = "transparent"),
+        legend.text       = element_text(size = 16),
+        legend.title      = element_blank()
+    )
+
+    # Establish red/green color scheme
+    red_min      <- 0
+    red_max      <- TSS_CUTOFF-0.01
+    red_breaks   <- seq(red_min,red_max,0.01)
+    red_colors   <- colorpanel(length(red_breaks),
+                               "#AF0000","#E40E00","#FF7A6A")
+    green_min    <- TSS_CUTOFF
+    green_max    <- 30
+    green_breaks <- seq(green_min,green_max,0.01)
+    green_colors <- colorpanel(length(green_breaks)-1,
+                               "#B4E896","#009405","#003B00")
+    TSS_colors   <- c(red_colors, green_colors)
+
+    # Organize data for plotting
+    TSS_score <- tryCatch(
+        {
+            cbind.data.frame(sample=stats$sample_name, 
+                             TSS=round(stats$TSS_Score, digits=2),
+                             QCcolor=(TSS_colors[round(stats$TSS_Score+0.01,
+                                                      digits=2)*100]))
+        },
+        error=function(e) {
+            message("The summary file value(s) for the TSS score(s)",
+                    " is/are missing.")
+            message("Here's the original error message: ", e)
+            return(NULL)
+        },
+        warning=function(e) {
+            message("The summary file value(s) for the TSS score(s)",
+                    " is/are incomplete.")
+            message("Here's the original warning message: ", e)
+            return(NULL)
+        }
+    )
+
+    if (is.null(TSS_score)) {
+        quit()
+    }
+
+    max_TSS      <- max(stats$TSS_Score, na.rm=TRUE)
+    upper_limit  <- roundUpNice(max_TSS)
+    chart_height <- (length(unique(TSS_score$sample))) * 0.75
+
+    TSS_score$sample <- factor(TSS_score$sample, levels=TSS_score$sample)
+
+    TSS_plot <- ggplot(
+        TSS_score, aes(x=sample, y=as.numeric(TSS))) +
+        geom_bar(colour="black", size=0.25, width=0.7, stat="identity",
+                 fill=rev(TSS_score$QCcolor)) +
+        geom_hline(yintercept=6, linetype=2, color="grey", size=0.25) +
+        labs(x="", y="TSS Enrichment Score") +
+        scale_x_discrete(limits=rev(TSS_score$sample)) +
+        scale_y_continuous(limits=c(0,upper_limit), expand=c(0,0)) +
+        coord_flip() +
+        align_theme
+
+    # Produce both PDF and PNG
+    suppressWarnings(
+        setPanelSize(
+            TSS_plot, file=buildFilePath("_TSSEnrichment.pdf", prj),
+            width=unit(8,"inches"), 
+            height=unit(chart_height,"inches")
+            )
+        )
+
+    # Produce snap-shot thumbnail PNG for HTML display
+    # Limit to 25 samples max
+    if (length(TSS_score$sample) > 25) {
+        TSS_score_thumb <- TSS_score[1:25, ]
+        chart_height    <- (length(unique(TSS_score_thumb$sample))) * 0.75
+        more_to_see     <- data.frame(t(c("...", "0", "#AF0000")))
+        colnames(more_to_see) <- colnames(TSS_score_thumb)
+        TSS_score_thumb       <- rbind(TSS_score_thumb, more_to_see)
+    } else {TSS_score_thumb <- TSS_score}
+
+    TSS_plot <- ggplot(
+        TSS_score_thumb, aes(x=sample, y=as.numeric(TSS))) +
+        geom_bar(colour="black", size=0.25, width=0.7, stat="identity",
+                 fill=rev(TSS_score_thumb$QCcolor)) +
+        geom_hline(yintercept=6, linetype=2, color="grey", size=0.25) +
+        labs(x="", y="TSS Enrichment Score") +
+        scale_x_discrete(limits=rev(TSS_score_thumb$sample)) +
+        scale_y_continuous(limits=c(0,upper_limit), expand=c(0,0)) +
+        coord_flip() +
+        align_theme
+
+    suppressWarnings(
+        setPanelSize(
+            TSS_plot, file=buildFilePath("_TSSEnrichment.png", prj),
+            width=unit(8,"inches"),
+            height=unit(chart_height,"inches")
+            )
+        )
+}
+
+
+#' This function is meant to plot library sizes.
+#'
+#' @param prj A PEPr Project object
+#' @param stats A looper derived stats_summary.tsv file
+#' @keywords library size
+#' @export
+plotTSSscores <- function(prj, stats) {
+    align_theme <- theme(
+        plot.background   = element_blank(),
+        panel.grid.major  = element_blank(),
+        panel.grid.minor  = element_blank(),
+        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.background  = element_blank(),
+        axis.line         = element_blank(),
+        axis.text.x       = element_text(face = "plain", color = "black", 
+                                          size = 20, hjust = 0.5),
+        axis.text.y       = element_text(face = "plain", color = "black",
+                                          size = 20, hjust = 1),
+        axis.title.x      = element_text(face = "plain", color = "black", 
+                                          size = 22, hjust = 0.5, vjust = 0.5),
+        axis.title.y      = element_text(face = "plain", color = "black", 
+                                          size = 22, hjust = 0.5),
+        plot.title        = element_text(face = "bold", color = "black", 
+                                          size = 12, hjust = 0.5),
+        axis.ticks        = element_line(size = 0.5),
+        axis.ticks.length = unit(2, "mm"),
+        legend.background = element_rect(fill = "transparent"),
+        legend.text       = element_text(size = 16),
+        legend.title      = element_blank()
+    )
+
+    picard_lib_size <- cbind.data.frame(
+                        sample=stats$sample_name, 
+                        LibSize=(as.numeric(stats$Picard_est_lib_size)/1000000))
+    max_size        <- max(picard_lib_size$LibSize)
+    upper_limit     <- roundUpNice(max_size)
+    chart_height    <- (length(unique(picard_lib_size$sample))) * 0.75
+    
+    picard_lib_size$sample <- factor(picard_lib_size$sample, 
+                                     levels = picard_lib_size$sample)
+    
+    lib_size_plot <- ggplot(picard_lib_size, 
+                            aes(x = sample, y = as.numeric(LibSize))) +
+        geom_col(colour="black", size = 0.25, width=0.8, 
+                 fill = "royalblue1") + 
+        labs(x = "", y = "Picard Library Size (M)") +
+        scale_x_discrete(limits = rev(levels(picard_lib_size$sample))) +
+        scale_y_continuous(limits = c(0,upper_limit), expand=c(0,0)) +
+        coord_flip() + 
+        align_theme
+    
+    # Produce both PDF and PNG
+    suppressWarnings(
+        setPanelSize(lib_size_plot,
+                     file=buildFilePath("_LibSize.pdf", prj),
+                     width=unit(8,"inches"),
+                     height=unit(chart_height,"inches")
+                    )
+    )
+    suppressWarnings(
+        setPanelSize(lib_size_plot,
+                     file=buildFilePath("_LibSize.png", prj),
+                     width=unit(8,"inches"),
+                     height=unit(chart_height,"inches")
+                    )
+    )
+}
+
+
+#' This function is meant to plot multiple summary graphs from the summary table 
+#' made by the Looper summarize command
+#' **Unimplemented** Looper can't take arguments...
+#'
+#' @param pep A PEP configuration file
+#' @keywords summarize PEPATAC
+#' @export
+summarizer <- function(pep) {
+    # Load PEP configuration file
+    prj <- suppressWarnings(Project(pep))
+
+    # Build the stats summary file path
+    summary_file <- file.path(config(prj)$metadata$output_dir,
+                              paste0(config(prj)$name, "_stats_summary.tsv"))
+
+    # Produce output directory
+    dir.create(
+        suppressMessages(
+            file.path(config(prj)$metadata$output_dir, "summary")),
+        showWarnings = FALSE)
+
+    # read in stats summary file
+    if (file.exists(summary_file)) {
+        stats <- suppressWarnings(fread(summary_file,
+                                        header=TRUE,
+                                        check.names=FALSE))
+    } else {
+        message("PEPATAC.R summarizer was unable to locate the summary file.")
+        quit()
+    }
+
+    message("Generating plots (png/pdf) using ", summary_file)
+
+    # Set absent values in table to zero
+    stats[is.na(stats)]   <- 0
+    stats[is.null(stats)] <- 0
+    stats[stats==""]      <- 0
+    stats$Picard_est_lib_size[stats$Picard_est_lib_size=="Unknown"] <- 0
+
+    # plot raw alignment statistics for the project
+    plotAlignedRaw(prj, stats)
+
+    # plot percent alignment statistics for the project
+    plotAlignedPct(prj, stats)
+
+    # plot the TSS scores for all project samples
+    plotTSSscores(prj, stats)
+
+    # plot library sizes if that was calculated
+    if (any(!is.na(stats$Picard_est_lib_size))) {
+        plotLibSize(prj, stats)
+    } else {quit()}
+}
+
+
+#' This function is meant to identify a project level set of consensus peaks.
+#' **Unimplemented** Looper can't take arguments...
+#'
+#' @param pep A PEP configuration file
+#' @keywords consensus peaks
+#' @export
+consensusPeaks <- function(pep) {
+
+}
 ################################################################################

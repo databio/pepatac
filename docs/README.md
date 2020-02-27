@@ -17,9 +17,6 @@
 - **Prealignments**: `PEPATAC` pioneers a *prealignment* strategy to filter mitochondrial reads, leading to faster runtime and more accurate alignment statistics.
 - **Flexibility**: Choose from multiple adapter trimmers, peak callers, and output options. Or, just use the defaults.
 
-
-
-
 ## Outputs
 
 `PEPATAC` produces many outputs to set the stage for project-specific analysis:
@@ -38,7 +35,6 @@
 	    - [Peak chromosomal distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_chr_dist.pdf)
 	    - [Peak genomic partition distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_partition_dist.pdf)
 	    - [Fraction of reads *and/or* peaks in features (FRiF)](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_frif.pdf)
-
 
 ## Quick start
 

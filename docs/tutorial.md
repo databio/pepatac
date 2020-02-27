@@ -43,7 +43,7 @@ mv tutorial_r2.fastq.gz pepatac/examples/data/
 
 ## 3: Configure project files
 
-We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A configuration file has been provided for you in the pipeline itself, conveniently named `tutorial.yaml`.  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#23-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
+We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A configuration file has been provided for you in the pipeline itself, conveniently named `tutorial.yaml`.  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#3-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
 ```
 nano tutorial.yaml
@@ -56,7 +56,7 @@ metadata:
   sample_annotation: tutorial.csv
   output_dir: "$PROCESSED/tutorial/"
   pipeline_interfaces: "$CODEBASE/pepatac/pipeline_interface.yaml"
-
+        
 derived_columns: [read1, read2]
 
 data_sources:
@@ -66,9 +66,25 @@ data_sources:
 implied_columns:
   organism:
     human:
-    genome: hg38
-    macs_genome_size: hs
-    prealignments: rCRSd human_repeats
+      genome: hg38
+      macs_genome_size: hs
+      prealignments: rCRSd human_repeats
+      deduplicator: samblaster # Default. [options: picard]
+      trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
+      peak_type: variable      # Default. [options: fixed]
+      extend: 250              # Default. For fixed-width peaks, extend this distance up- and down-stream.
+      frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
+      TSS_name: $GENOMES/hg38/hg38_TSS.tsv             # Default. Pipeline checks corresponding genome folder without specifying.
+      blacklist: $GENOMES/hg38/hg38.blacklist.bed.gz   # Default. Pipeline checks corresponding genome folder without specifying.
+      anno_name: $GENOMES/hg38/hg38_annotations.bed.gz # Default. Pipeline checks corresponding genome folder without specifying.
+
+pipeline_args:
+#  peppro.py:
+#    "--motif": null  # Default is FALSE. Pass flag to perform motif analysis (requires Homer)
+#    "--keep": null   # Default is FALSE. Pass flag to keep prealignment BAM files.
+#    "--noFIFO": null # Default is FALSE. Pass flag to NOT use named pipes during prealignments.
+#    "--lite": null   # Default is FALSE. Pass flag to only keep minimal, essential output to conserve disk space.
+
 ```
 There is also a sample annotation file referenced in our configuration file.  The sample annotation file contains metadata and other information about our sample. Just like before, this file, named `tutorial.csv` has been provided.  You may check it out if you wish, otherwise we're all set.
 If you open `tutorial.csv`, you should see the following:
@@ -79,33 +95,37 @@ tutorial,ATAC,human,tutorial_r1,tutorial_r2,paired
 That's it! Let's analyze that sample!
 
 
+<<<<<<< Updated upstream
 ## 4: Using `looper` to run the pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. One of those is an environment variable called `PEPENV` that points to the Looper environment configuration file. For more detailed information regarding this file, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing.html#pepenv-overview). Let's set it up.
+=======
+## 3: Using `looper` to run the pipeline
+Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. `Looper` uses [`divvy`](http://code.databio.org/divvy) to manage computing resource configuration so that projects and pipelines can easily travel among environments. For more detailed information, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing/). Let's set it up.
+>>>>>>> Stashed changes
 ```
 cd /path/to/pepatac_tutorial/
-touch pepenv.yaml
+touch compute_config.yaml
 ```
-Open that file in your favorite text editor.  We'll add in the following example for our environment.  You'll need to edit this file further for your own setup and you can [learn more about that in the `looper` docs](https://looper.readthedocs.io/en/latest/index.html).
+Open that file in your favorite text editor.  We'll add in the following example for running locally.  You'll need to edit this file further for your own setup and you can [learn more about that in the `looper` docs](https://looper.readthedocs.io/en/latest/index.html).
 ```
-nano pepenv.yaml
+nano compute_config.yaml
 ```
-Paste the following into pepenv.yaml
+Paste the following into compute_config.yaml
 ```
 compute:
-  local:
+  default:
     submission_template: templates/localhost_template.sub
     submission_command: sh
 ```
 Now, let's close and save that file and create an environment variable pointing to our configuration file.
 ```
-export PEPENV="/path/to/pepatac_tutorial/pepenv.yaml"
+export DIVCFG="/path/to/pepatac_tutorial/compute_config.yaml"
 ```
-(Remember to add `PEPENV` to your `.bashrc` or `.profile` to ensure it persists).
-The `Looper` environment configuration file points to submission template(s) in order to know how to run a sample or series of samples.  If you'd like to learn more, check out the [`PEPENV` configuration file and submission templates](https://github.com/pepkit/pepenv). We're going to simply setup a local template for the purposes of this tutorial.  You can also easily create templates for cluster or container use as well!
+(Remember to add `DIVCFG` to your `.bashrc` or `.profile` to ensure it persists).
+The `Looper` environment configuration file points to submission template(s) in order to know how to run a samples locally or using cluster resources.  If you'd like to learn more, check out the [`DIVCFG` configuration file and submission templates](http://code.databio.org/divvy). We're going to simply setup a local template for the purposes of this tutorial.  You can also easily create [templates for cluster or container use as well](https://github.com/pepkit/divcfg/tree/master/templates)!
 Let's change to our `templates/` directory to make our first submission template.
 ```
 cd /path/to/pepatac_tutorial/templates/
-touch localhost_template.sub
 nano localhost_template.sub
 ```             
 Paste the following into the localhost_template.sub:
@@ -117,7 +137,7 @@ echo 'Start time:' `date +'%Y-%m-%d %T'`
 
 {
 {CODE}
-} | tee {LOGFILE}
+} | tee {LOGFILE} --ignore-interrupts
 ```
 Save and close that file, and return to our main tutorial directory.
 ```
@@ -125,7 +145,7 @@ cd ../
 ```
 Now, we'll use `looper` to run the sample locally.
 ```
-looper run tutorial.yaml --compute local
+looper run tutorial.yaml
 ```         
 Congratulations! Your first sample should be running through the pipeline now.
 
@@ -137,7 +157,7 @@ After the pipeline is finished, we can look through the output directory togethe
 Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](../files/examples/tutorial/tutorial_summary.html).  Otherwise, let's generate a report ourselves.
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `summarize` function of `looper`.
 ```
-looper summarize tutorial.yaml --compute local
+looper summarize tutorial.yaml
 ```         
 That's it! Easy, right? `Looper` conveniently provides you with the location where the HTML report is produced.  You may either open the report with your preferred internet browser using the PATH provided, or we can change directories to the report's location and open it there.  Let's go ahead and change into the directory that contains the report.
 ```

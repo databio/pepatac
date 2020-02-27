@@ -48,7 +48,8 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         "\t frag\t plot fragment length distribution\n",
         "\t anno\t plot peak and read annotation distributions\n",
         "\t bigbed\t convert narrowPeak format to bigBED\n",
-        "\t reduce\t reduce overlapping peaks\n"
+        "\t reduce\t reduce overlapping peaks\n",
+        "\t summarize\t plot project summary statistics\n"
     )
     message(usage)
 } else if (!is.na(subcmd) && tolower(subcmd) == "frif") {
@@ -257,7 +258,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         "\n",
         "Usage:   PEPATAC.R [command] {args}\n",
         "Version: ", version, "\n\n",
-        "Command: bigbed \t convert narrowPeak format to bigBED\n\n",
+        "Command: reduce \t reduce overlapping peaks\n\n",
         " -i, --input\t\t Path to narrowPeak file.\n",
         " -c, --chr_sizes\t Genome chromosome sizes file. <Chr> <Size>.\n",
         " -o, --output\t\t Output file (optional).\n"
@@ -285,6 +286,31 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
                     chr_sizes=chr_sizes,
                     output=output)
     }
+} else if (!is.na(subcmd) && tolower(subcmd) == "summarize") {
+    usage <- paste0(
+        "\n",
+        "Usage:   PEPATAC.R [command] {args}\n",
+        "Version: ", version, "\n\n",
+        "Command: summarize \t plot project summary statistics\n\n",
+        " -i, --input\t\t PEP configuration file.\n"
+    )
+
+    help <- opt_get(name = c("help", "?", "h"), required=FALSE,
+                    default=FALSE, n=0)
+    if (!help) {
+        help <- suppressWarnings(
+            if(length(opt_get_args()) == 1) {TRUE} else {FALSE}
+        )
+    }
+    if (help) {
+        message(usage)
+        quit()
+    } else {
+        input <- opt_get(name = c("input", "i"), required=TRUE,
+                         description="PEP configuration file.")
+
+        reducePeaks(pep=input)
+    }
 } else {
     usage <- paste0(
         "\n",
@@ -295,7 +321,8 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         "\t frag\t plot fragment length distribution\n",
         "\t anno\t plot peak and read annotation distributions\n",
         "\t bigbed\t convert narrowPeak format to bigBED\n",
-        "\t reduce\t reduce overlapping peaks\n"
+        "\t reduce\t reduce overlapping peaks\n",
+        "\t summarize\t plot project summary statistics\n"
     )
     message(usage)
     quit()

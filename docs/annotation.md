@@ -30,7 +30,7 @@ refgenie build -g GENOME -a feat_annotation bowtie2_index
 That's it! These assets will be automatically detected if you build them like this with refgenie. If you want to know what we're doing, or customize these, more details follow:
 
 
-### TSS
+## TSS
 
 To calculate [TSS enrichments](../glossary.md), you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
 ```console
@@ -39,13 +39,13 @@ zcat hg38_TSS_full.txt.gz | \
   awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
   LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
 ```
-This asset (`tss_annotation`) needs to be [included in your `$REFGENIE` configuration file](#Example_PEPATAC_REFGENIE_configuration_file) for the pipeline to detect it automatically.  Alternatively, you can use the `--TSS-name` pipeline option to provide a path directly to this file.
+This asset (`tss_annotation`) needs to be [included in your `$REFGENIE` configuration file](create-annotation-file.md#example-pepatac-refgenie-configuration-file) for the pipeline to detect it automatically.  Alternatively, you can use the `--TSS-name` pipeline option to provide a path directly to this file.
 
-### Features
+## Features
 
 We also have [downloadable genome feature annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9`.  These files annotate 3' and 5' UTR, Exons, Introns, Promoters, and Promoter Flanking Regions.  If present in the corresponding reference genome folder and included as an asset (named `feat_annotation`) in your `$REFGENIE` configuration file you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to just directly point to this file.
 
-#### Create a custom feature annotation file
+### Create a custom feature annotation file
 
 The pipeline will calculate the fraction of reads in genomic features using one of our [provided annotation files](http://big.databio.org/pepatac/), but you can also specify this file yourself.
 
@@ -73,11 +73,11 @@ Column four is the **name** column, in our case the name of our feature of inter
 
 After creating your `BED` file, you can point the pipeline to it using the `--anno-name` option followed with the path to your file.  The pipeline will then use that file to determine the fractions of reads that cover those features.
 
-### Example `PEPATAC` `REGENIE` configuration file
+## Example `PEPATAC` `refgenie` configuration file
 
 As mentioned above, you can point the pipeline directly to your annotation files using the matching arguments.
 
-Alternatively, if they are all present in the corresponding reference genome folders, you can direct `refgenie` to detect them automatically. Here's an example of what a `refgenie` configuration file would look like:
+Alternatively, if they are all present in the corresponding reference genome folders, you can direct `refgenie` to detect them automatically. Here's an example of what a `refgenie` configuration file would look like for `hg38`:
 ```yaml
 genome_folder: $GENOMES
 genome_server: http://refgenomes.databio.org

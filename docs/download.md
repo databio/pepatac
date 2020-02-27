@@ -53,8 +53,6 @@ So you only have to do this the first time through, add the updates to `PATH` to
 
 Now that all our requirements for downloading data are set.  Let's actually get some ATAC-seq reads.
 
-
-
 ### 3.1: Get metadata, configuration files, and `.sra` files
 
 To automatically download sample metadata and generate configuration files that will allow us to convert the `.sra` files into `.bam` files, use the following:
@@ -62,29 +60,28 @@ To automatically download sample metadata and generate configuration files that 
 geofetch -i GSE### -m /path/to/metadata/folder -n PROJECT_NAME
 ```
 
-
 ### 3.2: Convert `.sra` files to `.bam`
 
 Next we're going to convert those downloaded `.sra` files using `looper`. If you haven't installed `looper`, do that now before moving forward ([see `looper` docs](https://looper.readthedocs.io/en/latest/)).
 
-`Looper` requires a few variables and configuration files to work for a specific user. One of those is an environment variable called `PEPENV` that points to the `looper` environment configuration file. For more detailed information regarding this file, check out the [`looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing.html#pepenv-overview).
+`Looper` requires a few variables and configuration files to work for a specific user. One of those is an environment variable called `DIVCFG` that points to the `looper` environment configuration file. For more detailed information regarding this file, check out the [`looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing.html).
 
-Create a `pepenv.yaml` file and edit this file for your own setup (see [`looper` docs for more information](https://looper.readthedocs.io/en/latest/index.html)).
+Create a `compute_config.yaml` file and edit this file for your own setup (see [`looper` docs for more information](https://looper.readthedocs.io/en/latest/index.html)).
 
-Paste the following into `pepenv.yaml` and save your changes:
+Paste the following into `compute_config.yaml` and save your changes:
 ```
 compute:
-  local:
+  default:
     submission_template: templates/localhost_template.sub
     submission_command: sh
 ```
 Create an environment variable that points to this file:
 ```
-export PEPENV="/path/to/pepatac_tutorial/pepenv.yaml"
+export DIVCFG="/path/to/pepatac_tutorial/compute_config.yaml"
 ```
-(Remember to add `PEPENV` to your `.bashrc` or `.profile` to ensure it persists).
+(Remember to add `DIVCFG` to your `.bashrc` or `.profile` to ensure it persists).
 
-The `looper` environment configuration file points to submission template(s) in order to know how to run a sample or series of samples.  You can [read more about the `PEPENV` configuration file and submission templates here](https://github.com/pepkit/pepenv). We're going to simply setup a local template for the purposes of this tutorial.  You can also easily create templates for cluster or container use as well!
+The `looper` environment configuration file points to submission template(s) in order to know how to run a sample or series of samples.  You can [read more about the `DIVCFG` configuration file and submission templates here](http://divvy.databio.org/en/latest/configuration/). We're going to simply setup a local template for the purposes of this tutorial.  You can also easily create templates for cluster or container use as well!
 ```
 nano localhost_template.sub
 ```
@@ -97,7 +94,7 @@ echo 'Start time:' `date +'%Y-%m-%d %T'`
 
 {
 {CODE}
-} | tee {LOGFILE}
+} | tee {LOGFILE} --ignore-interrupts
 ```
 We also need to create additional environment variables to help point `looper` to where we want to download and convert our `.sra` files.  These variables are part of the configuration file that `geofetch` produced earlier in the `metadata/` folder. You may either set the environment variables or you simply hard code the necessary locations in the configuration file.
 
@@ -118,7 +115,6 @@ Finally, convert the `.sra` files!
 ```console
 looper run /path/to/metadata/PROJECT_NAME/PROJECT_NAME_config.yaml \
   --sp sra_convert \
-  --lump 10 \
-  --compute local
+  --lump 10
 ```
 Fantastic! Now we downloaded and converted a SRA file into `.bam`, which can go directly into `PEPATAC`.

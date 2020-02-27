@@ -1405,14 +1405,15 @@ def main():
         ########################################################################
         pm.timestamp("### Calculate peak coverage")
 
-        cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peak_bed)
-        cmd2 = (tools.samtools + " view -H " + rmdup_bam +
-                " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
-                "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
-        cmd3 = (tools.bedtools + " sort -i " + peak_bed + " -faidx " +
-                chr_order + " > " + sort_peak_bed)
-        pm.run([cmd1, cmd2, cmd3], sort_peak_bed, nofail=True,
-               container=pm.container)
+        if not os.path.exists(peak_coverage) or args.new_start:
+            cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peak_bed)
+            cmd2 = (tools.samtools + " view -H " + rmdup_bam +
+                    " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+                    "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
+            cmd3 = (tools.bedtools + " sort -i " + peak_bed + " -faidx " +
+                    chr_order + " > " + sort_peak_bed)
+            pm.run([cmd1, cmd2, cmd3], sort_peak_bed, nofail=True,
+                   container=pm.container)
         
         cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
                 sort_peak_bed + " -b " + rmdup_bam + " -g " + chr_order +
@@ -1450,7 +1451,7 @@ def main():
                  ("-o", QC_folder)
                 ])
 
-        if os.path.isfile(anno_local):
+        if os.path.isfile(anno_local) and not os.path.exists(gp_PDF):
             pm.run(cmd, gp_PDF)
             pm.report_object("Peak chromosome distribution", ga_PDF,
                              anchor_image=ga_PNG)
@@ -1458,11 +1459,6 @@ def main():
                              anchor_image=tss_PNG)
             pm.report_object("Peak partition distribution", gp_PDF,
                              anchor_image=gp_PNG)
-        else:
-            print("Cannot annotate peaks without a {} annotation file"
-                  .format(args.genome_assembly))
-            print("Confirm this file is present in {} or specify using `--anno-name`"
-                  .format(str(os.path.dirname(res.feat_annotation))))
 
         ########################################################################
         #                       Perform motif analysis                         #
@@ -1523,8 +1519,8 @@ def main():
             if len(ft_list) >= 1:
                 for pos, anno in enumerate(ft_list):
                     # working files
-                    anno_file = os.path.join(QC_folder, anno)
-                    valid_name = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
+                    anno_file = os.path.join(QC_folder, str(anno))
+                    valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
                     file_name = os.path.join(QC_folder, valid_name)
                     anno_sort = os.path.join(QC_folder,
                                              valid_name + "_sort.bed")
@@ -1576,7 +1572,6 @@ def main():
             frif_cmd.append(cov)
         cmd = build_command(frif_cmd)
         pm.run(cmd, frif_PDF, nofail=False)
-        pm.report_object("Plus FRiF", frif_PDF, anchor_image=frif_PNG)
 
         if len(anno_list) >= 1:        
             pm.report_object("Cumulative FRiF", frif_PDF,

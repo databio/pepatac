@@ -8,10 +8,16 @@ This guide walks you through the nitty-gritty of how to install each prerequisit
 You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. 
 
 To use `PEPATAC`, we need the following software:
+<<<<<<< Updated upstream:docs/detailed-install.md
 **Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install of these like this:  
 ```console
 pip install --user numpy pandas piper loopercli \
 pararead MACS2
+=======
+**Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install using the included requirements.txt file in the pipeline directory:  
+```
+pip install --user -r requirements.txt
+>>>>>>> Stashed changes:docs/howto/detailed-install.md
 ```
 **Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the pipeline configuration file (pipelines/pepatac.yaml) tools section.
 The following tools are used by the pipeline:  
@@ -128,10 +134,9 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/"
 ```
 That should do it!  Now we'll [install some **optional** packages](tutorial.md#13-install-optional-software).  Of course, these are not required, but for the purposes of this tutorial we're going to be completionists.
 
-
 ### 2.1: Optional software
 
-`PEPATAC` uses `R` to generate quality control plots.  These are **optional** and the pipeline will run without them, but you would not get any QC plots.  If you need to don't have [R installed, you can follow these instructions](https://cran.r-project.org/doc/manuals/r-release/R-admin.html).  We'll use and install the necessary packages in this example.  Here is the list of required packages:
+`PEPATAC` uses `R` to generate quality control plots.  If you don't have [R installed, you can follow these instructions](https://cran.r-project.org/doc/manuals/r-release/R-admin.html).  We'll use and install the necessary packages in this example.  Here is the list of required packages:
 
  - [argparser (v0.4)](https://cran.r-project.org/package=argparser)
  - [data.table (v1.11.2)](https://cran.r-project.org/package=data.table)
@@ -144,6 +149,7 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
  - [pepr (v0.0.2)](http://code.databio.org/pepr/)
  - [scales (v0.5.0)](https://cran.r-project.org/package=scales)
 
+<<<<<<< Updated upstream:docs/detailed-install.md
 To install the needed packages, enter the following command:
 ```console
 Rscript -e "install.packages(c('argparser','devtools', 'data.table', \
@@ -152,6 +158,11 @@ Rscript -e "install.packages(c('argparser','devtools', 'data.table', \
   source('https://bioconductor.org/biocLite.R'); \
   biocLite('GenomicRanges'); \
   devtools::install_github(c('pepkit/pepr', 'databio/GenomicDistributions'))"
+=======
+To install the needed packages, from the `PEPATAC` pipeline directory, enter the following command:
+```
+Rscript -e "install.packages('PEPATACr', repos=NULL, type='source')"
+>>>>>>> Stashed changes:docs/howto/detailed-install.md
 ```
 To extract files quicker, `PEPATAC` can also utilize `pigz` in place of `gzip` if you have it installed.  Let's go ahead and do that now. It's not required, but it can help speed everything up when you have many samples to process.
 ```console
@@ -168,7 +179,6 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.4/"
 ```
 That's it! Everything we need to run `PEPATAC` to its full potential should be installed.  If you are interested and have experience using containers, you can check out the [alternate installation methods](run-container.md).
 
-
 ### 2.2: Create environment variables
 
 We also need to create some environment variables to help point `looper` to where we keep our data files and our tools.  You may either set the environment variables up, like we're going to do now, or you may simply hard code the necessary locations in our configuration files.
@@ -182,3 +192,38 @@ export CODEBASE="/path/to/pepatac_tutorial/tools/"
 ```
 (Add these environment variables to your `.bashrc` or `.profile` so you don't have to always do this step).
 Fantastic! Now that we have the pipeline and its requirements installed, we're ready to get our reference genome(s).
+<<<<<<< Updated upstream:docs/detailed-install.md
+=======
+
+
+## 3: Download a reference genome
+
+Before we analyze anything, we also need a reference genome.  `PEPATAC` uses `refgenie` genomes.  For common genomes, we can just download pre-built versions.  Follow the `'refgenie` instructions if you'd like to [build your own reference genome](https://github.com/databio/refgenie).
+
+```console
+refgenie pull -g hg38 -a bowtie2
+refgenie pull -g rCRSd -a bowtie2
+refgenie pull -g human_repeats -a bowtie2
+```
+
+## 4: Point the pipeline to your `refgenie` assemblies
+
+Let's also create an environment variable that points to our `refgenie` configuration file.
+```
+export REFGENIE="/path/to/genome_config.yaml
+```
+(Don't forget to add this to your `.bashrc` or `.profile` to ensure it persists).
+
+
+## 5: Download or create annotation files
+
+To calculate TSS enrichments, you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
+```
+wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz \
+zcat hg38_TSS_full.txt.gz | \
+  awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
+  LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
+```
+
+We also have [downloadable pre-built genome annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9` that you can use to annotate the reads and peaks.  These files annotate 3' and 5' UTR, Exonic, Intronic, Intergenic, Promoter, and Promoter Flanking Regions of the corresponding genome as indicated in Ensembl or UCSC.  Simply move the corresponding genome annotation file into the `pepatac/anno` folder.  Once present in the `pepatac/anno` folder you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to directly point to this file when running.  You can also [learn how to create a custom annotation file](howto/create-annotation-file.md) to calculate coverage using your own features of interest.
+>>>>>>> Stashed changes:docs/howto/detailed-install.md
