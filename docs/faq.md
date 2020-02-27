@@ -24,26 +24,3 @@ The `$GENOME` environment variable represents the `PATH` to where you have store
 ```
 export GENOME="$HOME/genomes"
 ```
-
-## How do I calculate TSS enrichments?
-
-By default, the pipeline is designed to calculate TSS enrichments. However, you will still need to provide a TSS annotation file in your reference genome directory. You may generate that using the following commands:
-
-```
-wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz
-zcat hg38_TSS_full.txt.gz | \
-  awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
-  LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
-```
-
-Alternatively, you can directly download the TSS annotation files for [hg19](http://big.databio.org/refgenomes/hg19_TSS.tgz) and [hg38](http://big.databio.org/refgenomes/hg38_TSS.tgz).  Remember to put the TSS annotation file in the corresponding `refgenie` genome directory.
-
-## How do I annotate the aligned reads and peak calls?
-
-You must provide the pipeline an annotation file to produce the following files: `*_peaks_chr_dist.pdf`, `*_peaks_partition_dist.pdf`, `*_peaks_TSS_dist.pdf`, `*_frif.pdf`.
-
-A default annotation file that annotates the 5' UTR, 3' UTR, exons, introns, promoters, and promoter flanking regions can be directly downloaded for [hg19](http://big.databio.org/pepatac/hg19_annotations.bed.gz), [hg38](http://big.databio.org/pepatac/hg38_annotations.bed.gz), [mm10](http://big.databio.org/pepatac/mm10_annotations.bed.gz), and [mm9](http://big.databio.org/pepatac/mm9_annotations.bed.gz).
-
-Simply place the downloaded annotation file in the the `pepatac/anno` folder and you're all set. You can also point the pipeline directly to your annotation file with the `--anno-name` option.
-
-You can [learn how to create a custom annotation file](annotation.md) to investigate your own favorite features too!

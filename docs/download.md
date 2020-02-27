@@ -8,7 +8,7 @@ This guide walks you through downloading data from SRA that can go directly into
 To download data from the Sequence Read Archive (SRA), we'll use some convenient companion software called [`geofetch`](https://geofetch.databio.org), which can be installed from PyPI:
 
 ```console
-pip install --upgrade geofetch
+pip install --user --upgrade geofetch
 ```
 
 ## 2: Install `NCBI SRA Toolkit`

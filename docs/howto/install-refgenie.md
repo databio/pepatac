@@ -15,7 +15,7 @@ Pre-built genome indices exist for common genomes including: `hg38`, `hg19`, `mm
 
 For example, get the `hg38` bowtie2 index:
 ```console
-refgenie pull -g hg38 -a bowtie2_index
+refgenie pull hg38/bowtie2_index
 ```
 
 ### Build custom `refgenie` assemblies
