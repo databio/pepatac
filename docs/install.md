@@ -27,19 +27,13 @@ refgenie pull -g hg38 -a bowtie2_index refgene_anno feat_annotation
 PEPATAC also requires `bowtie2_index` for any pre-alignment genomes:
 
 ```console
-refgenie pull -g human_rDNA -a bowtie2_index
 refgenie pull -g rCRSd -a bowtie2_index
 refgenie pull -g human_repeats -a bowtie2_index
 ```
 
-
 ## 3: Install required software
 
-<<<<<<< Updated upstream
-You have two options for software prerequisites: 1) use a container, or 2) install all prerequisites natively. If you want to use a container, you need only either `docker` or `singularity` -- please see instructions in [how to run PEPATAC in a container](run-container.md). Otherwise, follow these instructions to install the requirements natively:
-=======
-You have two options for software prerequisites: 1) use a container, or 2) install all prerequisites natively. If you want to use a container, you need only either `docker` or `singularity` -- please see instructions in [how to run `PEPATAC` in a container](howto/user-container.md). Otherwise, follow these instructions to install the requirements natively:
->>>>>>> Stashed changes
+You have two options for software prerequisites: 1) use a container, or 2) install all prerequisites natively. If you want to use containers, you need our [multi-container environment manager, `bulker`](https://bulker.databio.org/en/latest/), and either `docker` or `singularity` -- please see instructions in [how to run PEPATAC with containers](run-container.md). Otherwise, follow these instructions to install the requirements natively:
 
 ### Python packages
 
@@ -63,8 +57,6 @@ Rscript -e "install.packages('PEPATACr', repos=NULL, type='source')"
 ```
 That's it! Everything we need to run `PEPATAC` to its full potential should be installed.
 
-
-<<<<<<< Updated upstream
 ## 4: Run an example through `looper`
 
 Start by running the example project in the [`examples/test_project/`](https://github.com/databio/pepatac/tree/master/examples/test_project) folder. Let's use the looper's `-d` argument to do a *dry run*, which will create job scripts for every sample in the project, but will not execute them:
@@ -102,37 +94,7 @@ The sample annotation file must specify these columns:
 - read2
 - whatever else you want
 
-=======
-The pipeline relies on [`refgenie` assemblies](http://refgenie.databio.org/en/dev/install/) for alignment.  If you completed the `pip install` action in step 2, you will already have `refgenie` installed. Then, initialize a folder for genome indexes and the `refgenie` config file.
-
-```console
-export REFGENIE=your_genome_folder/genome_config.yaml
-refgenie init -c $REFGENIE
-```
-
-Then, just pull the assets you need.
-
-```console
-refgenie pull -g hg38 -a bowtie2
-refgenie pull -g rCRSd -a bowtie2
-refgenie pull -g human_repeats -a bowtie2
-```
-
-(Add `REFGENIE` to your .bashrc or .profile to ensure it persists). Alternatively, you can skip the `REFGENIE` variable and simply change the value of the `resources.genome_config` option in the [`pipeline_config.yaml`](https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml) file to point to the folder where you stored the assemblies. 
-
-At this point, you could choose to extend `PEPATAC` by [adding genomic annotation files to your refgenie assembly](howto/create-annotation-file.md).
-
-## 4: Run the pipeline script directly
->>>>>>> Stashed changes
-
-
-
-
-<<<<<<< Updated upstream
 # Next steps
-=======
-# 5. Next steps
->>>>>>> Stashed changes
 
 This is just the beginning. For your next step, take a look at one of these user guides:
 
