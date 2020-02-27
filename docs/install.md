@@ -37,10 +37,9 @@ You have two options for software prerequisites: 1) use a container, or 2) insta
 
 ### Python packages
 
-`PEPATAC` uses several packages under the hood. Make sure you're up-to-date with a user-specific install:
+`PEPATAC` uses several packages under the hood. From the `pepatac/` directory:
 
 ```{bash}
-cd pepatac
 pip install --user -r requirements.txt
 ```
 
@@ -50,12 +49,20 @@ We will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](h
       
 ### R packages
 
-`PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/dev/PEPATACr). Install it with:
+`PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/dev/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
 
 ```
-Rscript -e "install.packages('PEPATACr', repos=NULL, type='source')"
+Rscript -e 'install.packages("devtools")'
+Rscript -e 'devtools::install_github("pepkit/pepr")'
+Rscript -e 'install.packages("BiocManager")'
+Rscript -e 'BiocManager::install("GenomicRanges")'
+Rscript -e 'devtools::install_github("databio/GenomicDistributions")'
 ```
-That's it! Everything we need to run `PEPATAC` to its full potential should be installed.
+
+Then, install the `PEPATAC` package.  From the `pepatac/` directory:
+```
+Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
+```
 
 ## 4: Run an example through `looper`
 
