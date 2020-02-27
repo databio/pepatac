@@ -53,7 +53,6 @@ We will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](h
 
 ```
 Rscript -e 'install.packages("devtools")'
-Rscript -e 'install.packages("RCurl")'
 Rscript -e 'devtools::install_github("pepkit/pepr")'
 Rscript -e 'install.packages("BiocManager")'
 Rscript -e 'BiocManager::install("GenomicRanges")'
@@ -65,22 +64,30 @@ Then, install the `PEPATAC` package.  From the `pepatac/` directory:
 Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
 ```
 
-## 4: Run an example through `looper`
+## 4: Run an example project through `PEPATAC`
 
-Start by running the example project in the [`examples/test_project/`](https://github.com/databio/pepatac/tree/master/examples/test_project) folder. Let's use the looper's `-d` argument to do a *dry run*, which will create job scripts for every sample in the project, but will not execute them:
+Start by running the example project (test_config.yaml) in the `examples/test_project/` folder. `PEPATAC` uses a project management tool called `looper` to run the pipeline across samples in a project. Let's use the `-d` argument to do a dry run, which will create job scripts for every sample in a project, but will not execute them:
 
 ```
 cd pepatac
 looper run -d examples/test_project/test_config.yaml
 ```
 
-If the looper executable is not in your `$PATH`, add the following line to your `.bashrc` or `.profile`:
+If the looper executable is not in your $PATH, add the following line to your .bashrc or .profile:
+
 ```
 export PATH=$PATH:~/.local/bin
 ```
-If that worked, let's actually run the example by taking out the `-d` flag:
+
+If that worked, let's actually run the example by taking out the -d flag:
+```
+looper run examples/test_project/test_config.yaml
+```
+
+Or, if you're using [`bulker`](https://bulker.databio.org/en/latest/) to run the pipeline in containers:
 
 ```
+bulker activate databio/pepatac
 looper run examples/test_project/test_config.yaml
 ```
 
@@ -88,7 +95,7 @@ There are lots of other cool things you can do with looper, like dry runs, summa
 
 ## 5: Configure your project files
 
-To run your own samples, you'll need to organize them in **PEP format**, which is explained in [how to create a PEP](https://pepkit.github.io/docs/home/) and is universal to all pipelines that read PEPs, including PEPATAC. To get you started, there are multiple examples you can adapt in the `examples/` folder (*e.g.* [example test PEP](https://github.com/databio/pepatac/tree/master/examples/test_project)). In short, you need two files for your project:
+To run your own samples, you'll need to organize them in **PEP format**, which is explained in [how to create a PEP](https://pepkit.github.io/docs/home/) and is universal to all pipelines that read PEPs, including `PEPATAC`. To get you started, there are multiple examples you can adapt in the `examples/` folder (*e.g.* [example test PEP](https://github.com/databio/pepatac/tree/master/examples/test_project)). In short, you need two files for your project:
 
   1. project config file -- describes output locations, pointers to data, etc.
   2. sample annotation file -- comma-separated value (CSV) list of your samples.
