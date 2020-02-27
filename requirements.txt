@@ -4,9 +4,5 @@ numpy
 pararead
 pandas
 piper
-<<<<<<< Updated upstream
 refgenconf
-=======
-MACS2
->>>>>>> Stashed changes
 refgenie
