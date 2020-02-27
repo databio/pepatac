@@ -53,6 +53,7 @@ We will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](h
 
 ```
 Rscript -e 'install.packages("devtools")'
+Rscript -e 'install.packages("RCurl")'
 Rscript -e 'devtools::install_github("pepkit/pepr")'
 Rscript -e 'install.packages("BiocManager")'
 Rscript -e 'BiocManager::install("GenomicRanges")'
