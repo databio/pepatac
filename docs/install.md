@@ -43,10 +43,6 @@ You have two options for software prerequisites: 1) use a container, or 2) insta
 pip install --user -r requirements.txt
 ```
 
-### Required executables
-
-We will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/), [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml), [fastqc (v0.11.5+)](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/),  [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster), [samtools (v1.7+)](http://www.htslib.org/), [skewer (v0.1.126+)](https://github.com/relipmoc/skewer), [UCSC tools](http://hgdownload.soe.ucsc.edu/admin/exe/) (bedGraphToBigWig, wigToBigWig, bigWigCat, bedToBigBed), [pigz (v2.3.4+)](https://zlib.net/pigz/). You should follow instructions to install each individual program. If you need help installing these, see the [detailed installation instructions](detailed-install.md).
-      
 ### R packages
 
 `PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/dev/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
@@ -64,6 +60,10 @@ Then, install the `PEPATAC` package.  From the `pepatac/` directory:
 Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
 ```
 
+### Tools
+
+We will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/), [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml), [fastqc (v0.11.5+)](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/),  [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster), [samtools (v1.7+)](http://www.htslib.org/), [skewer (v0.1.126+)](https://github.com/relipmoc/skewer), [UCSC tools](http://hgdownload.soe.ucsc.edu/admin/exe/) (bedGraphToBigWig, wigToBigWig, bigWigCat, bedToBigBed), [pigz (v2.3.4+)](https://zlib.net/pigz/). You should follow instructions to install each individual program. If you need help installing these, see the [detailed installation instructions](detailed-install.md).
+      
 ## 4: Run an example project through `PEPATAC`
 
 Start by running the example project (test_config.yaml) in the `examples/test_project/` folder. `PEPATAC` uses a project management tool called `looper` to run the pipeline across samples in a project. Let's use the `-d` argument to do a dry run, which will create job scripts for every sample in a project, but will not execute them:
