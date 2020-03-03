@@ -20,7 +20,7 @@ tools:  # absolute paths to required tools
   bedToBigBed: bedToBigBed
   # optional tools
   fseq: fseq  
-  trimmo: ${TRIMMOMATIC}
+  trimmomatic: ${TRIMMOMATIC}
   picard: ${PICARD}
   Rscript: Rscript 
 
