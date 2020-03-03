@@ -62,11 +62,11 @@ def parse_arguments():
 
     parser.add_argument("--TSS-name", default=None,
                         dest="TSS_name", type=str,
-                        help="Filename of TSS annotation file.")
+                        help="Path to TSS annotation file.")
 
     parser.add_argument("--blacklist", default=None,
                         dest="blacklist", type=str,
-                        help="Name of peak blacklist file")
+                        help="Path to peak blacklist file")
 
     parser.add_argument("--peak-type", default="variable",
                         dest="peak_type", choices=PEAK_TYPES, type=str,
@@ -80,7 +80,7 @@ def parse_arguments():
 
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
-                        help="Reference peak set (BED format) for calculating FRiP")
+                        help="Path to reference peak set (BED format) for calculating FRiP")
 
     parser.add_argument("--motif", action='store_true',
                         dest="motif",
@@ -88,7 +88,7 @@ def parse_arguments():
 
     parser.add_argument("--anno-name", default=None,
                         dest="anno_name", type=str,
-                        help="Reference annotation file (BED format) for calculating FRiF")
+                        help="Path to reference annotation file (BED format) for calculating FRiF")
 
     parser.add_argument("--prioritize", action='store_true', default=False,
                         dest="prioritize",
@@ -226,6 +226,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
 
         # samtools sort needs a temporary directory
         tempdir = tempfile.mkdtemp(dir=sub_outdir)
+        os.chmod(tempdir, 0o771)
         pm.clean_add(tempdir)  
 
         # Build bowtie2 command
@@ -450,6 +451,9 @@ def _add_resources(args, res, asset_dict=None):
         return res, rgc
 
 
+################################################################################
+#                                 Pipeline MAIN                                #
+################################################################################
 def main():
     """
     Main pipeline process.
@@ -513,17 +517,44 @@ def main():
          "required":True},
         {"asset_name":BT2_IDX_KEY, "seek_key":None,
          "tag_name":"default", "arg":None, "user_arg":None,
-         "required":True},
-        {"asset_name":"refgene_anno", "seek_key":"refgene_tss",
-         "tag_name":"default", "arg":"TSS_name", "user_arg":"TSS-name",
-         "required":False},
-        {"asset_name":"feat_annotation", "seek_key":"feat_annotation",
-         "tag_name":"default", "arg":"anno_name", "user_arg":"anno-name",
-         "required":False}
+         "required":True}
     ]
+    # If user specifies TSS file, use that instead of the refgenie asset
+    if not (args.TSS_name):
+        check_list.append = [
+            {"asset_name":"refgene_anno", "seek_key":"refgene_tss",
+             "tag_name":"default", "arg":"TSS_name", "user_arg":"TSS-name",
+             "required":False}
+        ]
+    # If user specifies feature annoation file,
+    # use that instead of the refgenie asset
+    if not (args.feat_annotation):
+        check_list.append = [
+            {"asset_name":"feat_annotation", "seek_key":"feat_annotation",
+            "tag_name":"default", "arg":"anno_name", "user_arg":"anno-name",
+            "required":False}
+        ]
     res, rgc = _add_resources(args, res, check_list)
 
+    # If the user specifies optional files, add those to our resources
+    if ((args.blacklist) and os.path.isfile(args.blacklist) and
+            os.stat(args.blacklist).st_size > 0):
+        res.blacklist = args.blacklist
+    if ((args.frip_ref_peaks) and os.path.isfile(args.frip_ref_peaks) and
+            os.stat(args.frip_ref_peaks).st_size > 0):
+        res.frip_ref_peaks = args.frip_ref_peaks
+    if ((args.TSS_name) and os.path.isfile(args.TSS_name) and
+            os.stat(args.TSS_name).st_size > 0):
+        res.TSS_name = args.TSS_name
+    if ((args.feat_annotation) and os.path.isfile(args.feat_annotation) and
+            os.stat(args.feat_annotation).st_size > 0):
+        res.feat_annotation = args.feat_annotation
+
     # Adapter file can be set in the config; if left null, we use a default.
+    if ((args.adapters) and os.path.isfile(args.adapters) and
+            os.stat(args.adapters).st_size > 0):
+        res.adapters = args.adapters
+
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
 
     param.outfolder = outfolder
@@ -541,9 +572,11 @@ def main():
         pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
 
     if args.input2:
-        if os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size > 0:
+        if (os.path.isfile(args.input2[0]) and
+                os.stat(args.input2[0]).st_size > 0):
             print("Local input file: " + args.input2[0])
-        elif os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size == 0:
+        elif (os.path.isfile(args.input2[0]) and
+                os.stat(args.input2[0]).st_size == 0):
             # The read1 file exists but is empty
             err_msg = "File exists but is empty: {}"
             pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
@@ -997,18 +1030,19 @@ def main():
         cmd1 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " + dedup_log
         cmd2 = tools.samtools + " index " + rmdup_bam
     elif args.deduplicator == "samblaster":
+        nProc = max(int(pm.cores / 4), 1)
         samblaster_cmd_chunks = [
-            "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} sort -n -@ {}".format(tools.samtools, str(nProc)),
             ("-T", tempdir),
             mapping_genome_bam,
             "|",
-            "{} view -h - -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} view -h - -@ {}".format(tools.samtools, str(nProc)),
             "|",
             "{} -r 2> {}".format(tools.samblaster, dedup_log),
             "|",
-            "{} view -b - -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} view -b - -@ {}".format(tools.samtools, str(nProc)),
             "|",
-            "{} sort - -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} sort - -@ {}".format(tools.samtools, str(nProc)),
             ("-T", tempdir),
             ("-o", rmdup_bam)
         ]
@@ -1017,26 +1051,8 @@ def main():
         # no separate metrics file with samblaster
         metrics_file = dedup_log
     else:
-        # default to samblaster
-        samblaster_cmd_chunks = [
-            "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
-            ("-T", tempdir),
-            mapping_genome_bam,
-            "|",
-            "{} view -h - -@ {}".format(tools.samtools, str(pm.cores)),
-            "|",
-            "{} -r 2> {}".format(tools.samblaster, dedup_log),
-            "|",
-            "{} view -b - -@ {}".format(tools.samtools, str(pm.cores)),
-            "|",
-            "{} sort - -@ {}".format(tools.samtools, str(pm.cores)),
-            ("-T", tempdir),
-            ("-o", rmdup_bam)
-        ]
-        cmd1 = build_command(samblaster_cmd_chunks)
-        cmd2 = tools.samtools + " index " + rmdup_bam
-        # no separate metrics file with samblaster
-        metrics_file = dedup_log
+        pm.info("PEPATAC could not determine a valid deduplicator tool")
+        pm.stop_pipeline()
 
     pm.run([cmd1, cmd2], rmdup_bam,
            follow=lambda: post_dup_aligned_reads(metrics_file),
@@ -1353,10 +1369,10 @@ def main():
                              pipeline_manager=pm)
             pm.report_result("FRiP", round(frip, 2))
 
-        if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks):
+        if res.frip_ref_peaks:
             # Use an external reference set of peaks instead of the peaks
             # called from this run
-            frip_ref = calc_frip(rmdup_bam, args.frip_ref_peaks,
+            frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
                                  frip_func=ngstk.simple_frip,
                                  pipeline_manager=pm)
             pm.report_result("FRiP_ref", round(frip_ref, 2))
