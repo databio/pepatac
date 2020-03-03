@@ -6,18 +6,21 @@
 
 `python pipelines/pepatac.py --help`
 ```{console}
-usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-C CONFIG_FILE] -O
-                  PARENT_OUTPUT_FOLDER [-M MEMORY_LIMIT] [-P NUMBER_OF_CORES]
-                  -S SAMPLE_NAME -I INPUT_FILES [INPUT_FILES ...]
+usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
+                  [--logdev] [-C CONFIG_FILE] -O PARENT_OUTPUT_FOLDER
+                  [-M MEMORY_LIMIT] [-P NUMBER_OF_CORES] -S SAMPLE_NAME -I
+                  INPUT_FILES [INPUT_FILES ...]
                   [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G GENOME_ASSEMBLY
                   [-Q SINGLE_OR_PAIRED] [--peak-caller {fseq,macs2}]
                   [-gs GENOME_SIZE] [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]]
                   [--deduplicator {picard,samblaster}] [--TSS-name TSS_NAME]
-                  [--blacklist BLACKLIST] [--frip-ref-peaks FRIP_REF_PEAKS]
-                  [--anno-name ANNO_NAME] [--keep] [--noFIFO] [--lite] [-V]
+                  [--blacklist BLACKLIST] [--peak-type {variable,fixed}]
+                  [--extend EXTEND] [--frip-ref-peaks FRIP_REF_PEAKS]
+                  [--motif] [--anno-name ANNO_NAME] [--prioritize] [--keep]
+                  [--noFIFO] [--lite] [-V]
 
-PEPATAC version 0.8.6
+PEPATAC version 0.8.9-dev
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -25,6 +28,10 @@ optional arguments:
   -N, --new-start       Overwrite all results to start a fresh run
   -D, --dirty           Don't auto-delete intermediate files
   -F, --force-follow    Always run 'follow' commands
+  -T, --testmode        Only print commands, don't run
+  --silent              Silence logging. Overrides verbosity.
+  --verbosity V         Set logging level (1-5 or logging module level name)
+  --logdev              Expand content of logging message format.
   -C CONFIG_FILE, --config CONFIG_FILE
                         Pipeline configuration file (YAML). Relative paths are
                         with respect to the pipeline script.
@@ -41,7 +48,10 @@ optional arguments:
   --peak-caller {fseq,macs2}
                         Name of peak caller
   -gs GENOME_SIZE, --genome-size GENOME_SIZE
-                        MACS2 genome size
+                        MACS2 effective genome size. It can be 1.0e+9 or
+                        1000000000 or shortcuts:'hs' for human (2.7e9), 'mm'
+                        for mouse (1.87e9), 'ce' for C. elegans (9e7) or 'dm'
+                        for fruitfly (1.2e8), Default:hs
   --trimmer {trimmomatic,pyadapt,skewer}
                         Name of read trimming program
   --prealignments PREALIGNMENTS [PREALIGNMENTS ...]
@@ -49,14 +59,23 @@ optional arguments:
                         before primary alignment.
   --deduplicator {picard,samblaster}
                         Name of deduplicator program
-  --TSS-name TSS_NAME   Name of TSS annotation file
+  --TSS-name TSS_NAME   Filename of TSS annotation file.
   --blacklist BLACKLIST
                         Name of peak blacklist file
+  --peak-type {variable,fixed}
+                        Call variable or fixed width peaks. Fixed width
+                        requires MACS2.
+  --extend EXTEND       How far to extend fixed width peaks up and downstream.
   --frip-ref-peaks FRIP_REF_PEAKS
-                        Reference peak set for calculating FRiP
+                        Reference peak set (BED format) for calculating FRiP
+  --motif               Perform motif enrichment analysis
   --anno-name ANNO_NAME
-                        Reference bed file for calculating FRiF
-  --keep                Keep prealignment BAM files
+                        Reference annotation file (BED format) for calculating
+                        FRiF
+  --prioritize          Plot cFRiF/FRiF using mutually exclusive priority
+                        ranked features based on the order of feature
+                        appearance in the feature annotation asset.
+  --keep                Enable this flag to keep prealignment BAM files
   --noFIFO              Do NOT use named pipes during prealignments
   --lite                Only keep minimal, essential output to conserve disk
                         space.
