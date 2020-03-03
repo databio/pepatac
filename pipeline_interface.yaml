@@ -1,7 +1,9 @@
 protocol_mapping:
   ATAC: pepatac.py
+  atac: pepatac.py
   ATAC-SEQ: pepatac.py 
-  ATAC-seq: pepatac.py 
+  ATAC-seq: pepatac.py
+  atac-seq: pepatac.py
 
 pipelines:
   pepatac.py:
@@ -29,7 +31,8 @@ pipelines:
       "--extend": extend
       "--frip-ref-peaks": frip_ref_peaks
       "--motif": motif
-      "--anno-name": anno_name      
+      "--anno-name": anno_name
+      "--prioritize": prioritize
       "--keep": keep
       "--noFIFO": no_fifo
       "--lite": lite
