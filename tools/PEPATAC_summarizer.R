@@ -532,9 +532,10 @@ TSScolors   <- c(redColors,greenColors)
 TSSscore <- tryCatch(
     {
         cbind.data.frame(sample=stats$sample_name, 
-                         TSS=round(stats$TSS_Score, digits=2),
-                         QCcolor=(TSScolors[round(stats$TSS_Score+0.01,
-                                                  digits=2)*100]))
+                         TSS=round(as.numeric(stats$TSS_score), digits=2),
+                         QCcolor=(TSScolors[
+                            round(as.numeric(stats$TSS_score)+0.01,
+                            digits=2)*100]))
     },
     error=function(e) {
         message("The summary file value(s) for the TSS score(s)",
@@ -554,7 +555,7 @@ if (is.null(TSSscore)) {
     quit()
 }
 
-maxTSS      <- max(stats$TSS_Score, na.rm=TRUE)
+maxTSS      <- max(stats$TSS_score, na.rm=TRUE)
 upperLimit  <- roundUpNice(maxTSS)
 chartHeight <- (length(unique(TSSscore$sample))) * 0.75
 
