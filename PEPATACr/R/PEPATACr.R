@@ -14,6 +14,28 @@ NULL
 
 ################################################################################
 # FUNCTIONS
+#' A standardized ggplot theme for PEPATAC plots
+#'
+#' @keywords ggplot2 theme
+#' @examples
+#' theme_PEPATAC()
+theme_PEPATAC <- function(base_family = "sans", ...){
+  theme_classic(base_family = base_family, base_size = 14, ...) +
+  theme(
+    axis.line = element_line(size = 0.5),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_rect(fill = "transparent"),
+    plot.background = element_rect(fill = "transparent", color = NA),
+    legend.background = element_rect(fill = "transparent", color = NA),
+    legend.box.background = element_rect(fill = "transparent", color = NA),
+    aspect.ratio = 1,
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5),
+    panel.border = element_rect(colour = "black", fill=NA, size=0.5)
+  )
+}
 
 #' Calculate the Fraction of Reads in Features (FRiF)
 #'
@@ -22,28 +44,42 @@ NULL
 #' of covered features, the fraction of reads in those features, and the
 #' number of total features.
 #'
-#' @param BED_file A BED format file
-#' @param reads Number of aligned reads
+#' @param bedFile A BED format file
+#' @param total Number of aligned reads (or number of aligned bases)
+#' @param reads If TRUE, we're working with read counts.
+#'              If FALSE, we're working with absolute number of bases
 #' @keywords FRiF
 #' @examples
 #' calcFRiF()
-calcFRiF <- function(BED_file, reads) {
-    colnames(BED_file) <- c("chromosome","start","end","count")
-    grObj   <- makeGRangesFromDataFrame(BED_file)
+calcFRiF <- function(bedFile, total, reads) {
+    colnames(bedFile) <- c("chromosome", "start", "end",
+                           "count", "bases", "width", "fraction")
+    grObj   <- makeGRangesFromDataFrame(bedFile)
     grObj   <- reduce(grObj)
     redBed  <- data.frame(chromosome=seqnames(grObj),
                           start=start(grObj), end=end(grObj))
-    BED_file <- merge(redBed, BED_file, by=c("chromosome","start","end"))
-    BED_file <- cbind(BED_file, size=(BED_file$end-BED_file$start))
-    BED_file <- BED_file[order(-BED_file$count),]
-    BED_file <- BED_file[apply(BED_file != 0, 1, all),]
-    BED_file <- cbind(BED_file, cumsum=cumsum(BED_file$count))
-    BED_file <- cbind(BED_file, cumSize=cumsum(BED_file$size))
-    BED_file <- cbind(BED_file, frip=BED_file$cumsum/as.numeric(reads))
-    BED_file <- cbind(BED_file, numfeats=as.numeric(1:nrow(BED_file)))
-    return(BED_file)
-}
+    bedFile <- merge(redBed, bedFile, by=c("chromosome","start","end"))
+    bedFile <- cbind(bedFile, size=(bedFile$end-bedFile$start))
 
+    if (reads) {
+        bedFile <- bedFile[order(-bedFile$count),]
+    } else {
+        bedFile <- bedFile[order(-bedFile$bases),]
+    }
+
+    bedFile <- bedFile[apply(bedFile != 0, 1, all),]
+
+    if (reads) {
+        bedFile <- cbind(bedFile, cumsum=cumsum(bedFile$count))
+    } else {
+        bedFile <- cbind(bedFile, cumsum=cumsum(bedFile$bases))
+    }
+
+    bedFile <- cbind(bedFile, cumSize=cumsum(bedFile$size))
+    bedFile <- cbind(bedFile, frip=bedFile$cumsum/as.numeric(total))
+    bedFile <- cbind(bedFile, numfeats=as.numeric(1:nrow(bedFile)))
+    return(bedFile)
+}
 
 #' Plot Fraction of Reads in Features (FRiF)
 #'
@@ -52,8 +88,9 @@ calcFRiF <- function(BED_file, reads) {
 #'
 #' @param sample_name Name of sample
 #' @param num_reads Number of aligned reads in sample
+#' @param genome_size Size of genome in bp
 #' @param output_name Output file name
-#' @param BED_file A BED format file
+#' @param bedFile A BED format file
 #' @keywords FRiP FRiF BED
 #' @export
 #' @examples
@@ -65,43 +102,56 @@ calcFRiF <- function(BED_file, reads) {
 #' data("utr5")
 #' plotFRiF(sample_name="example", num_reads=87520,
 #'          output_name="example_frif.pdf",
-#'          BED_file = c("promoter", "promoter_flanking", "exon",
+#'          bedFile = c("promoter", "promoter_flanking", "exon",
 #'                      "intron", "utr3", "utr5"))
 #' @export
-plotFRiF <- function(sample_name, num_reads, output_name, BED_file) {
+plotFRiF <- function(sample_name, num_reads, genome_size,
+                     type = c("cfrif", "frif", "both"),
+                     reads=TRUE, output_name, bedFile) {
     labels  <- data.frame(xPos=numeric(), yPos=numeric(), name=character(),
                           val=numeric(), color=character(),
                           stringsAsFactors=FALSE)
+    feature_dist  <- data.frame(feature=character(), numfeats=numeric(),
+                                numbases=numeric(), expected=numeric(),
+                                stringsAsFactors=FALSE)
     palette <- colorRampPalette(c("#999999", "#FFC107", "#27C6AB", "#004D40",
                                   "#B97BC8", "#009E73", "#C92404", "#E3E550",
                                   "#372B4C", "#E3DAC7", "#27CAE6", "#B361BC",
                                   "#897779", "#6114F8", "#19C42B", "#56B4E9"))
-    plot_col   <- palette(length(BED_file))
-    if (!exists(BED_file[1])) {
-        info   <- file.info(file.path(BED_file[1]))
+    plotColors <- palette(length(bedFile))
+    if (!exists(bedFile[1])) {
+        info   <- file.info(file.path(bedFile[1]))
     }
     name       <- sample_name
 
-    if (exists(BED_file[1])) {
-        bed        <- get(BED_file[1])
-        BED_cov    <- calcFRiF(bed, num_reads)
-        name       <- BED_file[1]
-        labels[1,] <- c(0.95*max(log10(BED_cov$cumSize)),
-                        max(BED_cov$frip)+0.001, name,
-                        round(max(BED_cov$frip),2), "#FF0703")
-        BED_cov$feature <- name
-    } else if (file.exists(file.path(BED_file[1])) && info$size != 0) {
-        bed        <- read.table(file.path(BED_file[1]))
-        BED_cov    <- calcFRiF(bed, num_reads)
-        name       <- basename(tools::file_path_sans_ext(BED_file[1]))
-        name       <- gsub(sample_name, "", name)
-        name       <- gsub("^.*?_", "", name)
-        num_fields <- 2
-        for(i in 1:num_fields) name <- gsub("_[^_]*$", "", name)
-        labels[1,] <- c(0.95*max(log10(BED_cov$cumSize)),
-                        max(BED_cov$frip)+0.001, name,
-                        round(max(BED_cov$frip),2), "#FF0703")
-        BED_cov$feature <- name
+    if (exists(bedFile[1])) {
+        bed        <- get(bedFile[1])
+        bedCov     <- calcFRiF(bed, num_reads, reads)
+        name       <- bedFile[1]
+        labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
+                        name, round(max(bedCov$frip),2), "#FF0703")
+        feature_dist[1,] <- c(name, nrow(bed),
+                              as.numeric(sum(abs(bed$V3-bed$V2))),
+                              as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
+        bedCov$feature <- name
+    } else if (file.exists(file.path(bedFile[1])) && info$size != 0) {
+        bed <- read.table(file.path(bedFile[1]))
+        if (nrow(bed[which(bed$V5 != 0),]) == 0) {
+            message(paste0(name, "  has no covered features"))
+        } else {
+            bedCov     <- calcFRiF(bed, num_reads, reads)
+            name       <- basename(tools::file_path_sans_ext(bedFile[1]))
+            name       <- gsub(sample_name, "", name)
+            name       <- gsub("^.*?_", "", name)
+            numFields  <- 2
+            for(i in 1:numFields) name <- gsub("_[^_]*$", "", name)
+            labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
+                            name, round(max(bedCov$frip),2), "#FF0703")
+            feature_dist[1,] <- c(name, nrow(bed),
+                                  as.numeric(sum(abs(bed$V3-bed$V2))),
+                                  as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
+            bedCov$feature <- name
+        }
     }  else {
         if (is.na(info[1])) {
             message(paste0(name, " coverage file is missing"))
@@ -112,296 +162,425 @@ plotFRiF <- function(sample_name, num_reads, output_name, BED_file) {
         }
     }
 
-    if (exists("BED_cov")) {
-        cov_df <- BED_cov
+    if (exists("bedCov")) {
+        covDF <- bedCov
+    } else {
+        return(ggplot())
     }
 
-    if (length(BED_file) > 1) {
-        for (i in 2:length(BED_file)) {
-            if (exists(BED_file[i])) {
-                name       <- BED_file[i]
+    if (length(bedFile) > 1) {
+        for (i in 2:length(bedFile)) {
+            if (exists(bedFile[i])) {
+                name       <- bedFile[i]
             } else {
-                info       <- file.info(file.path(BED_file[i]))
-                name       <- basename(tools::file_path_sans_ext(BED_file[i]))
+                info       <- file.info(file.path(bedFile[i]))
+                name       <- basename(tools::file_path_sans_ext(bedFile[i]))
                 name       <- gsub(sample_name, "", name)
                 name       <- gsub("^.*?_", "", name)
-                num_fields <- 2
-                for(j in 1:num_fields) name <- gsub("_[^_]*$", "", name)
+                numFields  <- 2
+                for(j in 1:numFields) name <- gsub("_[^_]*$", "", name)
             }
 
-            if (exists(BED_file[i])) {
-                bed      <- get(BED_file[i])
-            } else if (file.exists(file.path(BED_file[i])) && info$size != 0) {
-                bed      <- read.table(file.path(BED_file[i]))
+            if (exists(bedFile[i])) {
+                bed     <- get(bedFile[i])
+            } else if (file.exists(file.path(bedFile[i])) && info$size != 0) {
+                bed     <- read.table(file.path(bedFile[i]))
             } else {
-                out_file <- file.path(output_name)
-                system2(paste("touch"), out_file)
-                quit()
+                outFile <- file.path(output_name)
+                system2(paste("touch"), outFile)
+                quit(save = "no", status = 1, runLast = FALSE)
             }
 
             if (max(bed[,4] > 0)) {
-                if (exists("cov_df")) {
-                    cov_file         <- calcFRiF(bed, num_reads)
-                    cov_file$feature <- name
-                    cov_df <- rbind(cov_df, cov_file)
-                    labels <- rbind(labels, c(0.95*max(log10(cov_file$cumSize)),
-                                              max(cov_file$frip)+0.001,
-                                              name, round(max(cov_file$frip),2),
-                                              plot_col[i]))
+                if (exists("covDF")) {
+                    covFile <- calcFRiF(bed, num_reads, reads)
+                    covFile$feature <- name
+                    covDF   <- rbind(covDF, covFile)
+                    labels  <- rbind(labels, c(0.95*max(log10(covFile$cumSize)),
+                                               max(covFile$frip)+0.001,
+                                               name, round(max(covFile$frip),2),
+                                               plotColors[i]))
+                    feature_dist <- rbind(feature_dist,
+                        c(name, nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
+                          as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
                 } else {
-                    cov_df         <- calcFRiF(bed, num_reads)
-                    cov_df$feature <- name
-                    labels         <- rbind(labels,
-                                            c(0.95*max(log10(cov_df$cumSize)),
-                                              max(cov_df$frip)+0.001,
-                                              name, round(max(cov_df$frip),2),
-                                              plot_col[i]))
+                    covDF         <- calcFRiF(bed, num_reads, reads)
+                    covDF$feature <- name
+                    labels        <- rbind(labels,
+                                           c(0.95*max(log10(covDF$cumSize)),
+                                             max(covDF$frip)+0.001,
+                                             name, round(max(covDF$frip),2),
+                                             plotColors[i]))
+                    feature_dist <- rbind(feature_dist,
+                        c(name, nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
+                          as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
                 }
             }
         }
     }
 
-    # Reorder by labels
-    if (exists("cov_df")) {
-        cov_df$feature <- factor(cov_df$feature, levels=(labels$name))
+    # Reorder by labels (ensures plotting matches up labels and colors)
+    if (exists("covDF")) {
+        covDF$feature <- factor(covDF$feature, levels=(labels$name))
     }
 
-    if (!is.null(BED_file)) {
-        # Produce plot with bed files
-        p <- ggplot(cov_df, aes(x=log10(cumSize), y=frip,
-                               group=feature, color=feature)) +
-            geom_line() +
-            labs(x="log(number of bases)", y="FRiF") +
-            theme_classic() +
-            theme(panel.border = element_rect(colour = "black",
-                                              fill=NA,
-                                              size=0.5))
+    feature_dist$numbases <- as.numeric(feature_dist$numbases)
+    feature_dist$expected <- as.numeric(feature_dist$expected)
+    feature_dist$observed <- as.numeric(labels$val)
+    feature_dist$logOE <- log10(feature_dist$observed/feature_dist$expected)
+    feature_dist$logOE <- ifelse(feature_dist$logOE < 0, 0, feature_dist$logOE)
+    feature_dist <- merge(feature_dist, labels, by.x="feature", by.y="name")
+    #feature_dist <- feature_dist[order(feature_dist$logOE, decreasing=TRUE),]
+    feature_dist <- feature_dist[order(feature_dist$logOE),]
+    rownames(feature_dist) <- NULL
+    feature_dist$feature <- factor(feature_dist$feature,
+                                   levels=feature_dist$feature)
+    feature_dist$color <- factor(feature_dist$color,
+                                 levels=feature_dist$color)
 
-        # Recolor and reposition legend
-        p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
-                                                  labels$val),
-                                    values=labels$color) +
-                 theme(legend.position=c(0.05,0.95),
-                       legend.justification=c(0.1,0.9))
+    if (!is.null(bedFile)) {
+
+        if (tolower(type) == "both") {
+            # Produce plot with bed files
+            # take minimum quantile (only works if everything is above that value)
+            #p <- ggplot(covDF[which(covDF$frip > min(density(covDF$frip)$y)),],
+            #           aes(x=log10(cumSize), y=frip,
+            #               group=feature, color=feature)) +
+            p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
+                        group=feature, color=feature)) +
+                #geom_line(aes(linetype=feature), size=2, alpha=0.5) +
+                geom_line(size=2, alpha=0.5) +
+                guides(linetype = FALSE) +
+                labs(x=expression(log[10]("number of bases")),
+                     y="FRiF") +
+                theme_PEPATAC()
+
+            # Recolor and reposition legend
+            p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
+                                                      labels$val),
+                                        values=labels$color) +
+                labs(color="FRiF") +
+                theme(legend.position="right",
+                      legend.justification=c(0.1,0.9),
+                      legend.background=element_blank(),
+                      legend.text = element_text(size = rel(0.65)),
+                      legend.key = element_blank(),
+                      axis.text.x = element_text(angle = 0, hjust = 1,
+                                                 vjust=0.5))
+
+            p2 <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
+                geom_bar(stat="identity", fill=labels$color, alpha=0.5) + 
+                geom_hline(aes(yintercept=0), linetype="dotted") +
+                xlab('') +
+                ylab(expression(log[10](over(Obs, Exp)))) +
+                coord_flip() +
+                scale_x_discrete(position="top") +
+                theme_PEPATAC() +
+                theme(plot.background = element_rect(fill = "transparent",
+                                                     color = NA,),
+                      panel.background = element_rect(fill = "transparent"),
+                      rect = element_rect(fill = "transparent"),
+                      plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
+
+            g   <- ggplotGrob(p2)
+            min_x <- min(layer_scales(p)$x$range$range)
+            max_x <- max(layer_scales(p)$x$range$range)
+            min_y <- min(layer_scales(p)$y$range$range)
+            max_y <- max(layer_scales(p)$y$range$range)
+
+            p <- p + annotation_custom(grob = g, xmin = 1.05*min_x,
+                                       xmax=min_x*2.05, ymin=max_y/2,
+                                       ymax=max_y)
+        } else if (tolower(type) == "cfrif") {
+            # take minimum quantile (only works if everything is above that value)
+            #p <- ggplot(covDF[which(covDF$frip > min(density(covDF$frip)$y)),],
+            #           aes(x=log10(cumSize), y=frip,
+            #               group=feature, color=feature)) +
+            p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
+                        group=feature, color=feature)) +
+                geom_line(size=2, alpha=0.5) +
+                guides(linetype = FALSE) +
+                labs(x=expression(log[10]("number of bases")), y="FRiF") +
+                theme_PEPATAC()
+
+            # Recolor and reposition legend
+            p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
+                                                      labels$val),
+                                        values=labels$color) +
+                labs(color="FRiF") +
+                theme(legend.position=c(0.075,0.975),
+                      legend.justification=c(0.1,0.9),
+                      legend.title = element_blank(),
+                      legend.text = element_text(size = rel(0.65)), 
+                      legend.background=element_blank(),
+                      legend.key = element_blank(),
+                      axis.text.x = element_text(angle = 0, hjust = 1,
+                                                 vjust=0.5))
+        } else if (tolower(type) == "frif") {
+            p <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
+                geom_bar(stat="identity",
+                         fill = feature_dist$color,
+                         alpha = 0.5) + 
+                geom_hline(aes(yintercept=0), linetype="dotted") +
+                xlab('') +
+                ylab(expression(log[10](over(Obs, Exp)))) +
+                coord_flip() +
+                theme_PEPATAC()
+        } else {
+            # default to both
+            # Produce plot with bed files
+            p <- ggplot(covDF,
+                        aes(x=log10(cumSize), y=frip,
+                            group=feature, color=feature)) +
+                geom_line(aes(linetype=feature), size=2, alpha=0.5) +
+                guides(linetype = FALSE) +
+                labs(x=expression(log[10]("number of bases")),
+                     y="FRiF") +
+                theme_PEPATAC()
+
+            # Recolor and reposition legend
+            p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
+                                                      labels$val),
+                                        values=labels$color) +
+                labs(color="FRiF") +
+                theme(legend.position="right",
+                      legend.justification=c(0.1,0.9),
+                      legend.background=element_blank(),
+                      legend.key = element_blank(),
+                      axis.text.x = element_text(angle = 0, hjust = 1,
+                                                 vjust=0.5))
+
+            p2 <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
+                geom_bar(stat="identity", fill=labels$color, alpha=0.5) + 
+                geom_hline(aes(yintercept=0), linetype="dotted") +
+                xlab('') +
+                ylab(expression(log[10](over(Obs, Exp)))) +
+                coord_flip() +
+                scale_x_discrete(position="top") +
+                theme_PEPATAC() +
+                theme(plot.background = element_rect(fill = "transparent",
+                                                     color = NA,),
+                      panel.background = element_rect(fill = "transparent"),
+                      rect = element_rect(fill = "transparent"),
+                      plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
+
+            g   <- ggplotGrob(p2)
+            min_x <- min(layer_scales(p)$x$range$range)
+            max_x <- max(layer_scales(p)$x$range$range)
+            min_y <- min(layer_scales(p)$y$range$range)
+            max_y <- max(layer_scales(p)$y$range$range)
+
+            p <- p + annotation_custom(grob = g, xmin = 1.05*min_x,
+                                       xmax=min_x*2.05, ymin=max_y/2,
+                                       ymax=max_y)
+        }
+
+        
     } else {
-        write("Unable to produce FRiF plot!\n", stdout())
+        err_msg <- paste0("Unable to produce ", type ," plot!\n")
+        write(err_msg, stdout())
     }
 
     if (!exists("p")) {
         p <- ggplot()
     }
 
-    pdf(file = paste0(tools::file_path_sans_ext(output_name), ".pdf"),
-        width= 7, height = 7, useDingbats=F)
-    print(p)
-    invisible(dev.off())
-
-    png(filename = paste0(tools::file_path_sans_ext(output_name), ".png"),
-        width = 480, height = 480)
-    print(p)
-    invisible(dev.off())
-
-    if (exists("p")) {
-        write("Cumulative FRiF plot completed!\n", stdout())
-    } else {
-        write("Unable to produce FRiF plot!\n", stdout())
-    }
+    return(p)
 }
 
 
 #' Plot TSS enrichment
 #'
-#' This function plots the global TSS enrichment and produces pdf/png files.
+#' This function plots the global TSS enrichment.
 #'
-#' @param TSS_file TSS enrichment file
+#' @param TSSfile TSS enrichment file
 #' @keywords TSS enrichment
 #' @export
 #' @examples
 #' data("tss")
-#' plotTSS(TSS_file = "TSS_file")
+#' plotTSS(TSSfile = "tss")
 #' @export
-plotTSS <- function(TSS_file) {
-    if (length(TSS_file) == 1) {
-        write(paste0("\nGenerating TSS plot with ", TSS_file), stdout())
+plotTSS <- function(TSSfile) {
+    if (length(TSSfile) == 1) {
+        write(paste0("\nGenerating TSS plot with ", TSSfile), stdout())
     } else {
-        if (length(TSS_file) == 2) {
+        if (length(TSSfile) == 2) {
             write(paste0("\nGenerating TSS plot with ",
-                         paste(TSS_file, collapse=" and ")),
+                         paste(TSSfile, collapse=" and ")),
                   stdout())
         } else {
             write(paste0("\nNot sure how to merge the following: ",
-                         paste(TSS_file, collapse=", ")),
+                         paste(TSSfile, collapse=", ")),
                   stdout())
             write(paste0("Did you mean to pass more than 2 files?"), stdout())
-            quit()
+            quit(save = "no", status = 1, runLast = FALSE)
         }
     }
 
-    t1 <- theme(
-        plot.background  = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.border     = element_rect(colour = "black", fill=NA, size=0.5),
-        panel.background = element_blank(),
-        axis.line    = element_blank(),
-        axis.text.x  = element_text(face = "plain", color = "black",
-                                    size = 20, hjust = 0.5),
-        axis.text.y  = element_text(face = "plain", color = "black",
-                                    size = 20, hjust = 0.5),
-        axis.title.x = element_text(face = "plain", color = "black", size = 22,
-                                    hjust = 0.5, vjust=0.5),
-        axis.title.y = element_text(face = "plain", color = "black", size = 22,
-                                    hjust = 0.5),
-        plot.title   = element_text(face="bold", color = "black", size=12,
-                                    hjust=0.5),
-        legend.position="none",
-        axis.ticks.length = unit(2, "mm")
-    )
+    t1 <- theme_classic(base_size=14) + 
+            theme(plot.background  = element_blank(),
+                  panel.grid.major = element_blank(),
+                  panel.grid.minor = element_blank(),
+                  panel.border     = element_rect(colour = "black",
+                                                  fill=NA, size=0.5),
+                  panel.background = element_blank(),
+                  axis.line    = element_blank(),
+                  legend.position="none",
+                  aspect.ratio = 1,
+                  axis.ticks.length = unit(2, "mm"))
 
     iMat <- data.table(V1 = numeric())
-    if (length(TSS_file) == 1) {
-        if (exists(TSS_file[i])) {
-            iMat <- data.table(get(TSS_file))
+    if (length(TSSfile) == 1) {
+        if (exists(TSSfile)) {
+            iMat <- data.table(get(TSSfile))
         } else {
-            iMat <- fread(TSS_file)
+            iMat <- fread(TSSfile)
         }
-    } else if (length(TSS_file) == 2) {
-        for (i in 1:length(TSS_file)) {
-            if (exists(TSS_file[i])) {
+    } else if (length(TSSfile) == 2) {
+        for (i in 1:length(TSSfile)) {
+            if (exists(TSSfile[i])) {
                 if (i == 1) {
-                    iMat <- data.table(get(TSS_file[i]))
+                    iMat <- data.table(get(TSSfile[i]))
                 } else {
-                    iMat <- list(iMat, data.table(get(TSS_file[i])))
+                    iMat <- list(iMat, data.table(get(TSSfile[i])))
                 }
             } else {
                 if (i == 1) {
-                    iMat <- fread(TSS_file[i])
+                    iMat <- fread(TSSfile[i])
                 } else {
-                    iMat <- list(iMat, fread(TSS_file[i]))
+                    iMat <- list(iMat, fread(TSSfile[i]))
                 }
             }
         }
     } else {
         write(paste0("\nNot sure how to merge the following: ",
-                     paste(TSS_file, collapse=", ")),
+                     paste(TSSfile, collapse=", ")),
               stdout())
         write(paste0("Did you mean to pass more than 2 files?"), stdout())
-        quit()
+        quit(save = "no", status = 1, runLast = FALSE)
     }
 
-    if (length(TSS_file) == 1) {
-        plus_minus <- iMat
+    if (length(TSSfile) == 1) {
+        plusMinus <- iMat
     } else {
-        plus       <- iMat[[1]]
-        minus      <- iMat[[2]]
+        plus      <- iMat[[1]]
+        minus     <- iMat[[2]]
     }
 
-    if (exists("plus_minus")) {
-        val       <- 0.05*nrow(plus_minus)
-        #norm_TSS  <- (plus_minus / mean(plus_minus[c(1:val,
-        #            (nrow(plus_minus)-val):nrow(plus_minus)), V1]))
-        norm_TSS           <- plus_minus / mean(plus_minus[c(1:val), V1])
-        colnames(norm_TSS) <- c("score")
-        peak_pos  <- which.max(norm_TSS$score)
-        TSS_score <- round(mean(norm_TSS[(max(0, peak_pos-50)):(min(nrow(norm_TSS),
-                           peak_pos+50)), score]),1)
-        if (is.nan(TSS_score)) {
-            message(paste0("\nNaN produced.  Check ", TSS_file, "\n"))
-            quit()
+    if (exists("plusMinus")) {
+        val      <- 0.05*nrow(plusMinus)
+        #normTSS  <- (plusMinus / mean(plusMinus[c(1:val,
+        #            (nrow(plusMinus)-val):nrow(plusMinus)), V1]))
+        normTSS           <- plusMinus / mean(plusMinus[c(1:val), V1])
+        colnames(normTSS) <- c("score")
+        peakPos  <- which.max(normTSS$score)
+        # check for true peak
+        if ((normTSS$score[peakPos]/normTSS$score[peakPos-1]) > 1.5 &
+            (normTSS$score[peakPos]/normTSS$score[peakPos+1]) > 1.5) {
+            tmpTSS  <- normTSS$score[-peakPos]
+            peakPos <- which.max(tmpTSS) + 1
+        }
+        TSSscore <- round(mean(normTSS[(max(0, peakPos-50)):(min(nrow(normTSS),
+                                       peakPos+50)), score]),1)
+        if (is.nan(TSSscore)) {
+            message(paste0("\nNaN produced.  Check ", TSSfile, "\n"))
+            quit(save = "no", status = 1, runLast = FALSE)
         }
     } else {
-        val       <- 0.05*nrow(plus)
-        #norm_TSS  <- (plus / mean(plus[c(1:val,
+        val      <- 0.05*nrow(plus)
+        #normTSS  <- (plus / mean(plus[c(1:val,
         #            (nrow(plus)-val):nrow(plus)), V1]))
-        norm_TSS           <- plus / mean(plus[c(1:val), V1])
-        colnames(norm_TSS) <- c("score")
-        peak_pos  <- which.max(norm_TSS$score)
-        TSS_score <- round(mean(norm_TSS[(max(0, peak_pos-50)):(min(nrow(norm_TSS),
-                           peak_pos+50)), score]),1)
-        if (is.nan(TSS_score)) {
-            message(paste0("\nNaN produced.  Check ", TSS_file[1], "\n"))
-            quit()
+        normTSS           <- plus / mean(plus[c(1:val), V1])
+        colnames(normTSS) <- c("score")
+        peakPos  <- which.max(normTSS$score)
+        # check for true peak
+        if ((normTSS$score[peakPos]/normTSS$score[peakPos-1]) > 1.5 &
+            (normTSS$score[peakPos]/normTSS$score[peakPos+1]) > 1.5) {
+            tmpTSS  <- normTSS$score[-peakPos]
+            peakPos <- which.max(tmpTSS) + 1
+        }
+        TSSscore <- round(mean(normTSS[(max(0, peakPos-50)):(min(nrow(normTSS),
+                                       peakPos+50)), score]),1)
+        if (is.nan(TSSscore)) {
+            message(paste0("\nNaN produced.  Check ", TSSfile[1], "\n"))
+            quit(save = "no", status = 1, runLast = FALSE)
         }
     }
     
-    line_col <- "red2"
-    if (TSS_score > TSS_CUTOFF)
+    lineColor <- "red2"
+    if (TSSscore > TSS_CUTOFF)
     {
-        line_col <- "springgreen4"
+        lineColor <- "springgreen4"
     }
 
-    # name        <- basename(tools::file_path_sans_ext(TSS_file[1]))
-    # num_fields  <- 2
-    # for(j in 1:num_fields) name <- gsub("_[^_]*$", "", name)
-    # sample_name <- paste(dirname(TSS_file[1]), name, sep="/")
-    sample_name <- sampleName(TSS_file[1])
+    name        <- basename(tools::file_path_sans_ext(TSSfile[1]))
+    numFields   <- 2
+    for(j in 1:numFields) name <- gsub("_[^_]*$", "", name)
+    sample_name <- paste(dirname(TSSfile[1]), name, sep="/")
 
-    pre <- ggplot(norm_TSS, aes(x=(as.numeric(rownames(norm_TSS))-
-                                 (nrow(norm_TSS)/2)),
+    pre <- ggplot(normTSS, aes(x=(as.numeric(rownames(normTSS))-
+                                 (nrow(normTSS)/2)),
                                y=score, group=1, colour="black")) +
-        geom_hline(yintercept = 6, linetype = 2,
-                   color = "grey", size = 0.25) +
+        # geom_hline(yintercept = 6, linetype = 2,
+        #            color = "grey", size = 0.25) +
         geom_smooth(method="loess", span=0.02,
-                    se=FALSE, colour=line_col) +
-        labs(x = "Distance from TSS (bp)", y = "TSS Enrichment Score")
+                    se=FALSE, colour=lineColor) +
+        labs(x = "Distance from TSS (bp)", y = "TSS enrichment score")
+    y_max <- roundUpNice(TSSscore)
     p <- pre + t1 +
          scale_x_continuous(expand=c(0,0)) +
          scale_y_continuous(expand=c(0,0)) +
-         coord_cartesian(xlim=c(-2300,2300), ylim=c(0,32))
+         coord_cartesian(xlim=c(-2300, 2300), ylim=c(0, 1.1*y_max))
     if (exists("minus")) {
         val      <- 0.025*nrow(minus)
-        # norm_TSS  <- (minus / mean(minus[c(1:val,
+        # normTSS  <- (minus / mean(minus[c(1:val,
         #             (nrow(minus)-val):nrow(minus)), V1]))
-        minus_norm_TSS           <- minus / mean(minus[c(1:val), V1])
-        colnames(minus_norm_TSS) <- c("score")
-        peak_pos        <- which.max(minus_norm_TSS$score)
-        minus_TSS_score <- round(
-            mean(minus_norm_TSS[(max(0, peak_pos-50)):(min(nrow(norm_TSS),
-                               peak_pos+50)), score]),1)
-        if (is.nan(minus_TSS_score)) {
-            message(paste0("\nNaN produced.  Check ", TSS_file[2], "\n"))
-            quit()
+        minusNormTSS           <- minus / mean(minus[c(1:val), V1])
+        colnames(minusNormTSS) <- c("score")
+        peakPos       <- which.max(minusNormTSS$score)
+        # check for true peak
+        if ((minusNormTSS$score[peakPos]/minusNormTSS$score[peakPos-1]) > 1.5 &
+            (minusNormTSS$score[peakPos]/minusNormTSS$score[peakPos+1]) > 1.5) {
+            tmpTSS  <- minusNormTSS$score[-peakPos]
+            peakPos <- which.max(tmpTSS) + 1
         }
-        p <- p + geom_smooth(data=minus_norm_TSS,
-                             aes(x=(as.numeric(rownames(minus_norm_TSS))-
-                                   (nrow(norm_TSS)/2)),
+
+        minusTSSscore <- round(
+            mean(minusNormTSS[(max(0, peakPos-50)):(min(nrow(minusNormTSS),
+                               peakPos+50)), score]),1)
+        if (is.nan(minusTSSscore)) {
+            message(paste0("\nNaN produced.  Check ", TSSfile[2], "\n"))
+            quit(save = "no", status = 1, runLast = FALSE)
+        }
+        p <- p + geom_smooth(data=minusNormTSS,
+                             aes(x=(as.numeric(rownames(minusNormTSS))-
+                                   (nrow(minusNormTSS)/2)),
                                  y=score, group=1, colour="black"),
                              method="loess", span=0.02,
                              se=FALSE, colour="blue") +
-                 annotate("rect", xmin=1200, xmax=2300, ymin=25, ymax=32,
-                          fill="gray95", size = 0.5) +
-                 annotate("text", x=1750, y=31, label="TSS Score", fontface = 1,
-                          size=6, hjust=0.5) +
-                 annotate("text", x=1500, y=29, label="+", fontface = 2,
-                          size=8, hjust=0.5, color=line_col) +
-                 annotate("text", x=1500, y=27, label=TSS_score, fontface = 2,
-                          size=8, hjust=0.5, color=line_col) +
-                 annotate("text", x=2000, y=29, label="-",
-                          fontface = 2, size=8, hjust=0.5, color="blue") +
-                 annotate("text", x=2000, y=27, label=minus_TSS_score,
-                          fontface = 2, size=8, hjust=0.5, color="blue")
+                annotate("rect", xmin=1200, xmax=2300, ymin=0.9*y_max,
+                         ymax=1.1*y_max, fill="gray95") +
+                annotate("text", x=1750, y=1.05*y_max, label="TSS Score",
+                         fontface = 1, hjust=0.5) +
+                annotate("text", x=1500, y=y_max, label="+", fontface = 2,
+                          hjust=0.5, color=lineColor) +
+                annotate("text", x=1500, y=0.95*y_max, label=TSSscore,
+                         fontface = 2,  hjust=0.5, color=lineColor) +
+                annotate("text", x=2000, y=y_max, label="-",
+                         fontface = 2,  hjust=0.5, color="blue") +
+                annotate("text", x=2000, y=0.95*y_max, label=minusTSSscore,
+                         fontface = 2,  hjust=0.5, color="blue")
     } else {
-        p <- p + annotate("rect", xmin=1200, xmax=2300, ymin=27, ymax=32,
-                          fill="gray95", size = 0.5) +
-                 annotate("text", x=1750, y=31, label="TSS Score",
-                          fontface = 1, size=6, hjust=0.5) +
-                 annotate("text", x=1750, y=29, label=TSS_score, fontface = 2,
-                          size=10, hjust=0.5)
+        p <- p + annotate("rect", xmin=1200, xmax=2300, ymin=0.9*y_max,
+                          ymax=1.1*y_max, fill="gray95") +
+                 annotate("text", x=1750, y=1.05*y_max, label="TSS Score",
+                          fontface = 1, hjust=0.5) +
+                 annotate("text", x=1750, y=0.95*y_max, label=TSSscore,
+                          fontface = 2, hjust=0.5)
     }
 
-    png(filename = paste0(sample_name, "_TSS_enrichment.png"),
-        width = 480, height = 480)
-    print(p)
-    invisible(dev.off())
-
-    pdf(file = paste0(sample_name, "_TSS_enrichment.pdf"),
-        width= 7, height = 7, useDingbats=F)
-    print(p)
-    invisible(dev.off())
-
-    write("Completed TSS enrichment plot!\n", stdout())
+    return(p)
 }
-
 
 #' Plot fragment length distribution
 #'
@@ -415,56 +594,121 @@ plotTSS <- function(TSS_file) {
 #' @keywords fragment distribution
 #' @export
 #' @examples
-#' data("fragL")
-#' data("fragL_count")
-#' plotFLD(fragL = "fragL", fragL_count = "fragL_count",
-#'         fragL_dis1 = "fragLenDistribution_example.pdf",
-#'         fragL_dis2 = "fragLenDistribution_example.txt")
+#' data("frag_len")
+#' data("frag_len_count")
+#' plotFLD(fragL = "frag_len", fragL_count = "frag_len_count",
+#'         fragL_txt = "fragLenDistribution_example.txt", max_fragment=200)
 #' @export
-plotFLD <- function(fragL, fragL_count,
-                    fragL_dis1="fragLenDistribution.pdf",
-                    fragL_dis2="fragLenDistribution.txt") {
+plotFLD <- function(fragL,
+                    fragL_count,
+                    fragL_txt="fragLenDistribution.txt",
+                    max_fragment = 200) {
 
-    outfile_png <- gsub('pdf', 'png', fragL_dis1)
+    if (exists(fragL_count)) {
+        dat <- data.table(get(fragL_count))
+    } else if (file.exists(fragL_count)) {
+        dat <- fread(fragL_count)
+    } else {
+        stop(paste0("FileExistsError: ", fragL_count, " could not be found."))
+        quit(save = "no", status = 1, runLast = FALSE)
+    }
 
-    dat  <- fread(fragL_count)
-    dat1 <- dat[dat$V2<=600,]
+    if (exists(fragL)) {
+        summary_table <- data.table(get(fragL))
+    } else if (file.exists(fragL)) {
+        summary_table <- fread(fragL)
+    } else {
+        stop(paste0("FileExistsError: ", fragL, " could not be found."))
+        quit(save = "no", status = 1, runLast = FALSE)
+    }
+
+    dat1 <- dat[dat$V2<=max_fragment,]
     tmp  <- seq(1:as.numeric(dat1[1,2]-1))
     dat0 <- data.table(V1=rep(0,length(tmp)),V2=tmp)
     dat2 <- rbind(dat0, dat1)
 
-    t1 = theme_classic(base_size=14) +
-         theme(axis.line = element_line(size = 0.5)) +
-         theme(panel.grid.major = element_blank(),
-               panel.grid.minor = element_blank(),
-               legend.position = "none",
-               aspect.ratio = 1,
-               panel.border = element_rect(colour = "black",
-                                          fill=NA, size=0.5)) +
-         theme(plot.title = element_text(hjust = 0.5))
+    x_min <- which.min(dat1$V1[1:which.max(dat1$V1)])
 
-    p <- ggplot(dat1, aes(x=V2, y=V1)) +
-             geom_line(aes(color='red')) +
-             xlab("Read length") + 
-             ylab("Read counts") +
-             ggtitle("Insert size distribution") +
-             t1
+    dat3 <- dat1[x_min:nrow(dat1),]
+    abbr <- getAbbr(dat3$V1)
+    if (abbr == '') {
+        ylabel <- "Number of reads"
+    } else {
+        ylabel <- paste0("Number of reads (", abbr, ")")
+    }
 
-    # Save plot to pdf file
-    pdf(file=fragL_dis1, width= 7, height = 7, useDingbats=F)
-    print(p)
-    invisible(dev.off())
-         
-    # Save plot to png file
-    png(filename=outfile_png, width = 480, height = 480)
-    print(p)
-    invisible(dev.off())
+    count_factor <- getFactor(dat3$V1)
 
-    dat  <- fread(fragL)
-    summ <- data.table(Min=min(dat$V1), Max=max(dat$V1), Median=median(dat$V1),
-                       Mean=mean(dat$V1), Stdev=sd(dat$V1))
+    p <- ggplot(dat3, aes(x=V2, y=V1/count_factor)) +
+            geom_point(size=1, alpha=0.25) +
+            geom_line(alpha=0.5) +
+            # annotate("rect", xmin=-Inf, xmax=20, ymin=-Inf, ymax=Inf,
+            #      alpha=0.1, fill="#ff001e") +
+            # annotate("text", x=25, y=(max(dat1$V1)/2),
+            #          size=theme_get()$text[["size"]]/4,
+            #          label="partial degradation", angle=90, col="#858585") +
+            # annotate("rect", xmin=-Inf, xmax=30, ymin=-Inf, ymax=Inf,
+            #          alpha=0.1, fill="#ffee00") + 
+            # annotate("text", x=7.5, y=(max(dat1$V1)/2),
+            #          size=theme_get()$text[["size"]]/4,
+            #          label="high degradation", angle=90, col="#858585") +
+            labs(x="Fragment length", y=ylabel) +
+            theme_PEPATAC() +
+            theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+
+    summ <- data.table(Min=min(summary_table$V1),
+                       Max=max(summary_table$V1),
+                       Median=median(summary_table$V1),
+                       Mean=mean(summary_table$V1),
+                       Stdev=sd(summary_table$V1))
     # Write summary table to stats file
-    fwrite(summ, file=fragL_dis2, row.names=F, quote=F, sep="\t")
+    fwrite(summ, file=fragL_txt, row.names=F, quote=F, sep="\t")
+
+    return(p)
+}
+
+
+
+#' Calculate mode(s) of data
+#'
+#' From: https://stackoverflow.com/questions/2547402/is-there-a-built-in-function-for-finding-the-mode
+#' @param x A vector of numbers or characters
+#' @param return_multiple Bool to return multiple modes or first in order
+#' @param na.rm Bool Remove NAs
+#'
+#' @keywords mode
+mode <- function(x, return_multiple = TRUE, na.rm = FALSE) {
+    if(na.rm){
+        x <- na.omit(x)
+    }
+    ux       <- unique(x)
+    freq     <- tabulate(match(x, ux))
+    mode_loc <- if(return_multiple) which(freq==max(freq)) else which.max(freq)
+    return(ux[mode_loc])
+}
+
+
+#' Determine the appropriate abbreviation for large numbers
+#'
+#' Modified From: https://stackoverflow.com/questions/28159936/formatting-large-currency-or-dollar-values-to-millions-billions
+#' @param vec A vector of numbers
+#'
+#' @keywords abbreviation
+getAbbr <- function(vec) { 
+    div <- findInterval(as.numeric(gsub("\\,", "", vec)), c(0, 1e3, 1e6, 1e9, 1e12) )
+    return(paste(c("","K","M","B","T")[mode(div)]))
+}
+
+
+#' Determine the appropriate dividing factor for large numbers
+#'
+#' Modified From: https://stackoverflow.com/questions/28159936/formatting-large-currency-or-dollar-values-to-millions-billions
+#' @param vec A vector of numbers
+#'
+#' @keywords abbreviation
+getFactor <- function(vec) { 
+    div <- findInterval(as.numeric(gsub("\\,", "", vec)), c(0, 1e3, 1e6, 1e9, 1e12) )
+    return(as.numeric(paste(c(1, 1e3, 1e6, 1e9, 1e12)[mode(div)])))
 }
 
 
@@ -506,6 +750,7 @@ filetype <- function(path){
 #' @param delim A delimiter for the fields splitting a path or string
 sampleName <- function(path, num_fields=2, delim='_') {
     name <- basename(tools::file_path_sans_ext(path))
+    if(num_fields == 0) {return(name)}
     for(n in 1:num_fields) name <- gsub(paste0(delim, "[^", delim, "]*$"), "", name)
     return(paste(dirname(path), name, sep="/"))
 }
@@ -516,6 +761,7 @@ sampleName <- function(path, num_fields=2, delim='_') {
 #' This function is meant to annotate called peaks or aligned reads by known or
 #' predicted genomic regions
 #'
+#' @param plot Choose the type of plot to produce
 #' @param feat BED6 file containing annotated features of interest
 #' @param input input file to be annotated
 #' @param peaks BED or narrowPeak format file of called peaks
@@ -529,8 +775,9 @@ sampleName <- function(path, num_fields=2, delim='_') {
 #' plotAnno(feat = "feat", input="peaks", type = "np",
 #'          genome = "hg38", output = ".")
 #' @export
-plotAnno <- function(input, type=c("np", "bed"), feat,
-                     genome = "hg38", output=".") {
+plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
+                     input, type=c("np", "bed"), feat,
+                     genome = "hg38", output="chromosome_distribution.pdf") {
 
     sample_path = sampleName(input)
 
@@ -569,94 +816,80 @@ plotAnno <- function(input, type=c("np", "bed"), feat,
     # Convert to GRanges Object
     query  <- makeGRangesFromDataFrame(in_bed, keep.extra.columns=TRUE)
 
-    # Chromosome distribution plot
-    x      <- suppressMessages(aggregateOverGenomeBins(query, genome))
-    # Don't plot lowest 10% represented chromosomes
-    tbl    <- data.frame(table(x$chr))
-    cutoff <- quantile(tbl$Freq, 0.1)
-    keep   <- tbl[tbl$Freq > cutoff, 1]
-    x      <- x[x$chr %in% keep,]
-    if (nrow(x) > 0) {
-        ga_plot <- plotGenomeAggregate(x)
-
-        pdf(file = file.path(output,
-            paste(basename(sample_path), output_type, "chr_dist.pdf", sep="_")),
-            width= 7, height = 7, useDingbats=F)
-        print(ga_plot)
-        invisible(dev.off())
-
-        png(file.path(output,
-            paste(basename(sample_path), output_type, "chr_dist.png", sep="_")),
-            width = 480, height = 480)
-        print(ga_plot)
-        invisible(dev.off())
-    } else {
-        message("Too few peaks to plot. Check the genome alignment rates.")
-    }
-
-    # Feature distance distribution plots
-    TSS_dist <- TSSDistance(query, genome)
-    if (!is.na(TSS_dist[1])) {
-        TSS_plot <- plotFeatureDist(TSS_dist, featureName="TSS")
-
-        pdf(file = file.path(output,
-            paste(basename(sample_path), output_type, "TSS_dist.pdf", sep="_")),
-            width= 7, height = 7, useDingbats=F)
-        print(TSS_plot)
-        invisible(dev.off())
-
-        png(file.path(output,
-            paste(basename(sample_path), output_type, "TSS_dist.png", sep="_")),
-            width = 480, height = 480)
-        print(TSS_plot)
-        invisible(dev.off())
-    } else {
-        quit()
-    }
-
-    # Partition distribution plots
-    knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
-    if (exists(feat)) {
-        anno_file <- data.table(get(feat))
-    } else {
-        if (filetype(paste0(feat)) == "gzfile") {
-            anno_file <- fread(cmd=(sprintf('gzip -d -c %s', shQuote(file.path(feat)))))
-            suppressWarnings(closeAllConnections())
+    if (tolower(plot) == "chromosome") {
+        # Chromosome distribution plot
+        x      <- suppressMessages(calcChromBinsRef(query, genome))
+        # Don't plot lowest 10% represented chromosomes
+        tbl    <- data.frame(table(x$chr))
+        cutoff <- quantile(tbl$Freq, 0.1)
+        keep   <- tbl[tbl$Freq > cutoff, 1]
+        x      <- x[x$chr %in% keep,]
+        if (nrow(x) > 0) {
+            ga_plot <- plotChromBins(x)
+            return(ga_plot)
         } else {
-            anno_file <- fread(file.path(feat))
+            message("Too few peaks to plot. Check the genome alignment rates.")
+            return(ggplot())
         }
-    }
-    
-    colnames(anno_file) <- c("chromosome", "start", "end",
-                             "name", "scores", "strand")
-    priority <- sapply(unique(anno_file$name), list)
-    dt_list  <- splitDataTable(anno_file, "name")
-    dt_list  <- dt_list[names(priority)]
-    gl       <- GRangesList(lapply(dt_list, makeGRangesFromDataFrame))
+    } else if (tolower(plot) == "tss") {
+        # Feature distance distribution plots
+        TSS_dist <- calcFeatureDistRefTSS(query, genome)
+        if (!is.na(TSS_dist[1])) {
+            TSS_plot <- plotFeatureDist(TSS_dist, featureName="TSS")
+            return(TSS_plot)
+        } else {
+            message("Unable to produce TSS distribution plot.")
+            return(ggplot())
+        }
+    } else if (tolower(plot) == "genomic") {
+        # Partition distribution plots
+        knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
+        if (exists(feat)) {
+            anno_file <- data.table(get(feat))
+        } else {
+            if (filetype(paste0(feat)) == "gzfile") {
+                anno_file <- fread(cmd=(sprintf('gzip -d -c %s', shQuote(file.path(feat)))))
+                suppressWarnings(closeAllConnections())
+            } else {
+                anno_file <- fread(file.path(feat))
+            }
+        }
+        
+        colnames(anno_file) <- c("chromosome", "start", "end",
+                                 "name", "scores", "strand")
+        priority <- sapply(unique(anno_file$name), list)
+        dt_list  <- splitDataTable(anno_file, "name")
+        dt_list  <- dt_list[names(priority)]
+        gl       <- GRangesList(lapply(dt_list, makeGRangesFromDataFrame))
 
-    if (genome %in% knownGenomes) {
-        gp   <- suppressWarnings(
-                    assignPartitions(query, gl, remainder = "Intergenic"))
+        if (genome %in% knownGenomes) {
+            gp   <- suppressWarnings(
+                      calcPartitions(query, gl, remainder = "Intergenic"))
+        } else {
+            gp   <- suppressWarnings(
+                      calcPartitions(query, gl, remainder = "Other"))
+        }
+
+        gp_plot   <- plotPartitions(gp)
+
+        return(gp_plot)
     } else {
-        gp   <- suppressWarnings(
-                    assignPartitions(query, gl, remainder = "Other"))
-    }
-
-    gp_plot   <- plotPartitions(gp)
-
-    pdf(file = file.path(output,
-        paste(basename(sample_path), output_type, "partition_dist.pdf", sep="_")),
-        width= 7, height = 7, useDingbats=F)
-    print(gp_plot)
-    invisible(dev.off())
-
-    png(file.path(output,
-        paste(basename(sample_path), output_type, "partition_dist.png", sep="_")),
-        width = 480, height = 480)
-    print(gp_plot)
-    invisible(dev.off())
-
-    write(paste0(output_type, " annotation complete!\n"), stdout())
+        # Default to chromosome distribution plot
+        # Chromosome distribution plot
+        x      <- suppressMessages(calcChromBinsRef(query, genome))
+        # Don't plot lowest 10% represented chromosomes
+        tbl    <- data.frame(table(x$chr))
+        cutoff <- quantile(tbl$Freq, 0.1)
+        keep   <- tbl[tbl$Freq > cutoff, 1]
+        x      <- x[x$chr %in% keep,]
+        if (nrow(x) > 0) {
+            ga_plot <- plotChromBins(x)
+            return(ga_plot)
+        } else {
+            message("Too few peaks to plot. Check the genome alignment rates.")
+            return(ggplot())
+        }
+    }    
 }
 
 
