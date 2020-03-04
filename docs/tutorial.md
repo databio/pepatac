@@ -74,9 +74,7 @@ implied_columns:
       peak_type: variable      # Default. [options: fixed]
       extend: 250              # Default. For fixed-width peaks, extend this distance up- and down-stream.
       frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
-      TSS_name: $GENOMES/hg38/hg38_TSS.tsv             # Default. Pipeline checks corresponding genome folder without specifying.
-      blacklist: $GENOMES/hg38/hg38.blacklist.bed.gz   # Default. Pipeline checks corresponding genome folder without specifying.
-      anno_name: $GENOMES/hg38/hg38_annotations.bed.gz # Default. Pipeline checks corresponding genome folder without specifying.
+      blacklist: $GENOMES/hg38/hg38.blacklist.bed.gz
 
 pipeline_args:
 #  peppro.py:
@@ -95,13 +93,9 @@ tutorial,ATAC,human,tutorial_r1,tutorial_r2,paired
 That's it! Let's analyze that sample!
 
 
-<<<<<<< Updated upstream
 ## 4: Using `looper` to run the pipeline
-Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. One of those is an environment variable called `PEPENV` that points to the Looper environment configuration file. For more detailed information regarding this file, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing.html#pepenv-overview). Let's set it up.
-=======
-## 3: Using `looper` to run the pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. `Looper` uses [`divvy`](http://code.databio.org/divvy) to manage computing resource configuration so that projects and pipelines can easily travel among environments. For more detailed information, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing/). Let's set it up.
->>>>>>> Stashed changes
+
 ```
 cd /path/to/pepatac_tutorial/
 touch compute_config.yaml
@@ -121,7 +115,7 @@ Now, let's close and save that file and create an environment variable pointing 
 ```
 export DIVCFG="/path/to/pepatac_tutorial/compute_config.yaml"
 ```
-(Remember to add `DIVCFG` to your `.bashrc` or `.profile` to ensure it persists).
+(Remember to add `DIVCFG` to your `.bashrc` or `.profile` to ensure it persists).  
 The `Looper` environment configuration file points to submission template(s) in order to know how to run a samples locally or using cluster resources.  If you'd like to learn more, check out the [`DIVCFG` configuration file and submission templates](http://code.databio.org/divvy). We're going to simply setup a local template for the purposes of this tutorial.  You can also easily create [templates for cluster or container use as well](https://github.com/pepkit/divcfg/tree/master/templates)!
 Let's change to our `templates/` directory to make our first submission template.
 ```
