@@ -1365,7 +1365,7 @@ def main():
                              pipeline_manager=pm)
             pm.report_result("FRiP", round(frip, 2))
 
-        if args.frip_ref_peaks:
+        if  os.path.exists(res.frip_ref_peaks):
             # Use an external reference set of peaks instead of the peaks
             # called from this run
             frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
