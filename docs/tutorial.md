@@ -78,10 +78,11 @@ implied_columns:
 
 pipeline_args:
 #  peppro.py:
-#    "--motif": null  # Default is FALSE. Pass flag to perform motif analysis (requires Homer)
-#    "--keep": null   # Default is FALSE. Pass flag to keep prealignment BAM files.
-#    "--noFIFO": null # Default is FALSE. Pass flag to NOT use named pipes during prealignments.
-#    "--lite": null   # Default is FALSE. Pass flag to only keep minimal, essential output to conserve disk space.
+#    "--motif": null      # Default is FALSE. Pass flag to perform motif analysis (requires Homer)
+#    "--prioritize": null # Default is FALSE. Pass flag to priority rank the features by order in feat_annotation asset
+#    "--keep": null       # Default is FALSE. Pass flag to keep prealignment BAM files.
+#    "--noFIFO": null     # Default is FALSE. Pass flag to NOT use named pipes during prealignments.
+#    "--lite": null       # Default is FALSE. Pass flag to only keep minimal, essential output to conserve disk space.
 
 ```
 There is also a sample annotation file referenced in our configuration file.  The sample annotation file contains metadata and other information about our sample. Just like before, this file, named `tutorial.csv` has been provided.  You may check it out if you wish, otherwise we're all set.

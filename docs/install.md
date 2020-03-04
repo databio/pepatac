@@ -21,14 +21,14 @@ Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it pers
 Next, pull the assets you need. Replace `hg38` in the example below if you need to use a different genome assembly. If these assets are not available automatically for your genome of interest, then you'll need to [build them](annotation.md). Download these required assets with this command:
 
 ```console
-refgenie pull -g hg38 -a bowtie2_index refgene_anno feat_annotation
+refgenie pull hg38/bowtie2_index refgene_anno feat_annotation
 ```
 
 PEPATAC also requires `bowtie2_index` for any pre-alignment genomes:
 
 ```console
-refgenie pull -g rCRSd -a bowtie2_index
-refgenie pull -g human_repeats -a bowtie2_index
+refgenie pull rCRSd/bowtie2_index
+refgenie pull human_repeats/bowtie2_index
 ```
 
 ## 3: Install required software

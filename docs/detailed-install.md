@@ -3,23 +3,14 @@
 This guide walks you through the nitty-gritty of how to install each prerequisite package.
 
 
-## Install required software
+## 1. Install required software
 
-You have two options for installing the software prerequisites: 1) use a container, in which case you need only either `docker` or `singularity`; or 2) install all prerequisites natively. 
-
-To use `PEPATAC`, we need the following software:
-<<<<<<< Updated upstream:docs/detailed-install.md
-**Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install of these like this:  
-```console
-pip install --user numpy pandas piper loopercli \
-pararead MACS2
-=======
 **Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](http://liulab.dfci.harvard.edu/MACS/) as the default. You can do a user-specific install using the included requirements.txt file in the pipeline directory:  
 ```
-pip install --user -r requirements.txt
->>>>>>> Stashed changes:docs/howto/detailed-install.md
+pip install --user --upgrade -r requirements.txt
 ```
-**Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the pipeline configuration file (pipelines/pepatac.yaml) tools section.
+
+**Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the [pipeline configuration file](../pipelines/pepatac.yaml) tools section.
 The following tools are used by the pipeline:  
 
 * [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/)
@@ -29,18 +20,16 @@ The following tools are used by the pipeline:
 * [samtools (v1.7)](http://www.htslib.org/)
 * [skewer (v0.1.126+)](https://github.com/relipmoc/skewer)
 * UCSC tools (v3.5.1)
-    * [bedGraphToBigWig (v4)](https://www.encodeproject.org/software/bedgraphtobigwig/)
     * [wigToBigWig (v4)](https://www.encodeproject.org/software/wigtobigwig/)
     * [bigWigCat (v4)](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
-    * [bedSort](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
     * [bedToBigBed](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
 
 We'll install each of these pieces of software before moving forward.  Let's start right at the beginning and install `bedtools`.  We're going to install from source, but if you would prefer to install from a package manager, you can follow the instructions in the [bedtools' installation guide](http://bedtools.readthedocs.io/en/latest/content/installation.html).
 ```console
 cd tools/
-wget https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz
-tar -zxvf bedtools-2.25.0.tar.gz
-rm bedtools-2.25.0.tar.gz
+wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools-2.29.2.tar.gz
+tar -zxvf bedtools-2.29.0.tar.gz
+rm bedtools-2.29.0.tar.gz
 cd bedtools2
 make
 ```
@@ -53,24 +42,24 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/bedtools2/bin/"
 Next, let's install `bowtie2`.
 ```console
 cd ../
-wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.4.1/bowtie2-2.3.4.1-source.zip
-unzip bowtie2-2.3.4.1-source.zip
-rm bowtie2-2.3.4.1-source.zip
-cd bowtie2-2.3.4.1
+wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.4.1/bowtie2-2.4.1-source.zip
+unzip bowtie2-2.4.1-source.zip
+rm bowtie2-2.4.1-source.zip
+cd bowtie2-2.4.1
 make
 ```
 
 Again, let's add `bowtie2` to our `PATH` environment variable:
 
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.3.4.1/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.4.1/"
 ```
 Great! On to the next one. Let's get `FastQC`.  Reminder, you will need to have `java` installed to use `FastQC`.  At the command prompt, you can type `java -version`, press enter, and if you don't see an error you should be alright.  You'll need a version greater than 1.6 to work with `FastQC`.  Read more from the [`FastQC` installation instructions](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/INSTALL.txt).
 ```console
 cd ../
-wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.7.zip
-unzip fastqc_v0.11.7.zip
-rm fastqc_v0.11.7.zip
+wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
+unzip fastqc_v0.11.9.zip
+rm fastqc_v0.11.9.zip
 ```
 We also need to make the `FastQC` wrapper executable. To learn more about this, check out this [introduction to `chmod`](https://www.howtoforge.com/tutorial/linux-chmod-command/).
 
@@ -93,10 +82,10 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/samblaster/"
 
 Next up, `samtools`.
 ```console
-wget https://sourceforge.net/projects/samtools../files/samtools/1.9/samtools-1.9.tar.bz2
-tar xvfj samtools-1.9.tar.bz2
-rm samtools-1.9.tar.bz2
-cd samtools-1.9
+wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2
+tar xvfj samtools-1.10.tar.bz2
+rm samtools-1.10.tar.bz2
+cd samtools-1.10
 /configure
 ```
 Alternatively, if you do not have the ability to install `samtools` to the default location, you can specify using the `--prefix=/install/destination/dir/` option.  [Learn more about the `--prefix` option here](http://samtools.github.io/bcftools/howtos/install.html).
@@ -107,7 +96,7 @@ make install
 
 As for our other tools, add `samtools` to our `PATH` environment variable:
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/samtools-1.9/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/samtools-1.10/"
 ```
 
 Time to add `skewer` to the collection.
@@ -119,11 +108,9 @@ chmod 755 skewer
 ```
 Finally, we need a few of the UCSC utilities.  You can install the [entire set of tools](https://github.com/ENCODE-DCC/kentUtils) should you choose, but here we'll just grab the subset that we need.
 ```console
-wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedGraphToBigWig
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bigWigCat
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/bedToBigBed
-chmod 755 bedGraphToBigWig
 chmod 755 wigToBigWig
 chmod 755 bigWigCat
 chmod 755 bedToBigBed
@@ -134,40 +121,27 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/"
 ```
 That should do it!  Now we'll [install some **optional** packages](tutorial.md#13-install-optional-software).  Of course, these are not required, but for the purposes of this tutorial we're going to be completionists.
 
-### 2.1: Optional software
+## 2. Install optional software
 
-`PEPATAC` uses `R` to generate quality control plots.  If you don't have [R installed, you can follow these instructions](https://cran.r-project.org/doc/manuals/r-release/R-admin.html).  We'll use and install the necessary packages in this example.  Here is the list of required packages:
+`PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/dev/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
 
- - [argparser (v0.4)](https://cran.r-project.org/package=argparser)
- - [data.table (v1.11.2)](https://cran.r-project.org/package=data.table)
- - [devtools (v1.13.6)](https://cran.r-project.org/package=devtools)
- - [GenomicRanges (v1.30.3)](https://bioconductor.org/packages/GenomicRanges/)
- - [GenomicDistributions (v0.5)](http://code.databio.org/GenomicDistributions/index.html)
- - [ggplot2 (v2.2.1)](https://cran.r-project.org/package=ggplot2)
- - [gplots (v3.0.1)](https://cran.r-project.org/package=gplots)
- - [gtable (v0.2.0)](https://cran.r-project.org/package=gtable)
- - [pepr (v0.0.2)](http://code.databio.org/pepr/)
- - [scales (v0.5.0)](https://cran.r-project.org/package=scales)
-
-<<<<<<< Updated upstream:docs/detailed-install.md
-To install the needed packages, enter the following command:
-```console
-Rscript -e "install.packages(c('argparser','devtools', 'data.table', \
-  'ggplot2', 'gplots', 'gtable', 'scales'), \
-  repos='http://cran.us.r-project.org/'); \
-  source('https://bioconductor.org/biocLite.R'); \
-  biocLite('GenomicRanges'); \
-  devtools::install_github(c('pepkit/pepr', 'databio/GenomicDistributions'))"
-=======
-To install the needed packages, from the `PEPATAC` pipeline directory, enter the following command:
 ```
-Rscript -e "install.packages('PEPATACr', repos=NULL, type='source')"
->>>>>>> Stashed changes:docs/howto/detailed-install.md
+Rscript -e 'install.packages("devtools")'
+Rscript -e 'devtools::install_github("pepkit/pepr")'
+Rscript -e 'install.packages("BiocManager")'
+Rscript -e 'BiocManager::install("GenomicRanges")'
+Rscript -e 'devtools::install_github("databio/GenomicDistributions")'
 ```
+
+Then, install the `PEPATAC` package.  From the `pepatac/` directory:
+```
+Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
+```
+
 To extract files quicker, `PEPATAC` can also utilize `pigz` in place of `gzip` if you have it installed.  Let's go ahead and do that now. It's not required, but it can help speed everything up when you have many samples to process.
 ```console
 cd /path/to/pepatac_tutorial/tools/
-wget http://zlib.net/pigz/pigz-2.4.tar.gz
+wget https://zlib.net/pigz/pigz-2.4.tar.gz
 tar xvfz pigz-2.4.tar.gz
 rm pigz-2.4.tar.gz
 cd pigz-2.4/
@@ -179,7 +153,7 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.4/"
 ```
 That's it! Everything we need to run `PEPATAC` to its full potential should be installed.  If you are interested and have experience using containers, you can check out the [alternate installation methods](run-container.md).
 
-### 2.2: Create environment variables
+## 3. Create environment variables
 
 We also need to create some environment variables to help point `looper` to where we keep our data files and our tools.  You may either set the environment variables up, like we're going to do now, or you may simply hard code the necessary locations in our configuration files.
 First, let's create a `PROCESSED` variable that represents the location where we want to save output.
@@ -190,40 +164,30 @@ Second, we'll create a variable representing the root path to all our tools name
 ```console
 export CODEBASE="/path/to/pepatac_tutorial/tools/"
 ```
-(Add these environment variables to your `.bashrc` or `.profile` so you don't have to always do this step).
+(Add these environment variables to your `.bashrc` or `.profile` so you don't have to always do this step).  
 Fantastic! Now that we have the pipeline and its requirements installed, we're ready to get our reference genome(s).
-<<<<<<< Updated upstream:docs/detailed-install.md
-=======
 
+## 4. Download a reference genome
 
-## 3: Download a reference genome
-
-Before we analyze anything, we also need a reference genome.  `PEPATAC` uses `refgenie` genomes.  For common genomes, we can just download pre-built versions.  Follow the `'refgenie` instructions if you'd like to [build your own reference genome](https://github.com/databio/refgenie).
+Before we analyze anything, we also need a reference genome.  `PEPATAC` uses [`refgenie`](http://refgenie.databio.org/) assets for alignment. If you haven't already, initialize a refgenie config file like this:
 
 ```console
-refgenie pull -g hg38 -a bowtie2
-refgenie pull -g rCRSd -a bowtie2
-refgenie pull -g human_repeats -a bowtie2
+pip install --user refgenie
+export REFGENIE=your_genome_folder/genome_config.yaml
+refgenie init -c $REFGENIE
 ```
 
-## 4: Point the pipeline to your `refgenie` assemblies
+Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
 
-Let's also create an environment variable that points to our `refgenie` configuration file.
-```
-export REFGENIE="/path/to/genome_config.yaml
-```
-(Don't forget to add this to your `.bashrc` or `.profile` to ensure it persists).
+Next, pull the assets you need. Replace `hg38` in the example below if you need to use a different genome assembly. If these assets are not available automatically for your genome of interest, then you'll need to [build them](annotation.md). Download these required assets with this command:
 
-
-## 5: Download or create annotation files
-
-To calculate TSS enrichments, you will need a [TSS annotation file](http://big.databio.org/refgenomes/) in your reference genome directory.  If a pre-built version for your genome of interest isn't present, you can quickly create that file yourself. In the reference genome directory, you can perform the following commands for in this example, `hg38`:
-```
-wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz \
-zcat hg38_TSS_full.txt.gz | \
-  awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
-  LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
+```console
+refgenie pull hg38/bowtie2_index refgene_anno feat_annotation
 ```
 
-We also have [downloadable pre-built genome annotation files](http://big.databio.org/pepatac/) for `hg38`, `hg19`, `mm10`, and `mm9` that you can use to annotate the reads and peaks.  These files annotate 3' and 5' UTR, Exonic, Intronic, Intergenic, Promoter, and Promoter Flanking Regions of the corresponding genome as indicated in Ensembl or UCSC.  Simply move the corresponding genome annotation file into the `pepatac/anno` folder.  Once present in the `pepatac/anno` folder you don't need to do anything else as the pipeline will look there automatically.   Alternatively, you can use the `--anno-name` pipeline option to directly point to this file when running.  You can also [learn how to create a custom annotation file](howto/create-annotation-file.md) to calculate coverage using your own features of interest.
->>>>>>> Stashed changes:docs/howto/detailed-install.md
+PEPATAC also requires `bowtie2_index` for any pre-alignment genomes:
+
+```console
+refgenie pull rCRSd/bowtie2_index
+refgenie pull human_repeats/bowtie2_index
+```

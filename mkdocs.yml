@@ -18,9 +18,9 @@ nav:
     - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
-    - Run PEPATAC directly: 'run-directly.md'
-    - Run on a cluster: 'run-cluster.md'
-    - Run in a container: 'run-container.md'
+    - Run directly: 'run-directly.md'
+    - Run on cluster: 'run-cluster.md'
+    - Run using containers: 'run-container.md'
     - Download SRA data: 'download.md'
     - Configure prealignments: 'prealignments.md'
     - Detailed install guide: 'detailed-install.md'
