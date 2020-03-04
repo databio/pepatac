@@ -17,10 +17,3 @@ When deciding whether or not to merge technical replicates, you should first fol
     - [PCR Bottleneck Coefficient 1 (PBC1)](glossary.md#qc-output): values &lt; 0.7 are considered concerning; values &gt; 0.9 are ideal
     - [PCR Bottleneck Coefficient 2 (PBC2)](glossary.md#qc-output): values &lt; 1.0 represent severe bottlenecking; values &gt; 3.0 are acceptable
 
-## What is the $GENOME variable?
-
-The `$GENOME` environment variable represents the `PATH` to where you have stored [`refgenie`](https://github.com/databio/refgenie) compatible genome builds. For example, if I have placed the [hg38 genome build](http://big.databio.org/refgenomes/hg38.tgz) in a `genomes/` directory in my `HOME` directory, I would execute the following command:
-
-```
-export GENOME="$HOME/genomes"
-```
