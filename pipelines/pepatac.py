@@ -521,19 +521,19 @@ def main():
     ]
     # If user specifies TSS file, use that instead of the refgenie asset
     if not (args.TSS_name):
-        check_list.append = [
+        check_list.append(
             {"asset_name":"refgene_anno", "seek_key":"refgene_tss",
              "tag_name":"default", "arg":"TSS_name", "user_arg":"TSS-name",
              "required":False}
-        ]
+        )
     # If user specifies feature annoation file,
     # use that instead of the refgenie asset
-    if not (args.feat_annotation):
-        check_list.append = [
+    if not (args.anno_name):
+        check_list.append(
             {"asset_name":"feat_annotation", "seek_key":"feat_annotation",
             "tag_name":"default", "arg":"anno_name", "user_arg":"anno-name",
             "required":False}
-        ]
+        )
     res, rgc = _add_resources(args, res, check_list)
 
     # If the user specifies optional files, add those to our resources
@@ -546,15 +546,11 @@ def main():
     if ((args.TSS_name) and os.path.isfile(args.TSS_name) and
             os.stat(args.TSS_name).st_size > 0):
         res.TSS_name = args.TSS_name
-    if ((args.feat_annotation) and os.path.isfile(args.feat_annotation) and
-            os.stat(args.feat_annotation).st_size > 0):
-        res.feat_annotation = args.feat_annotation
+    if ((args.anno_name) and os.path.isfile(args.anno_name) and
+            os.stat(args.anno_name).st_size > 0):
+        res.feat_annotation = args.anno_name
 
     # Adapter file can be set in the config; if left null, we use a default.
-    if ((args.adapters) and os.path.isfile(args.adapters) and
-            os.stat(args.adapters).st_size > 0):
-        res.adapters = args.adapters
-
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
 
     param.outfolder = outfolder
@@ -1369,7 +1365,7 @@ def main():
                              pipeline_manager=pm)
             pm.report_result("FRiP", round(frip, 2))
 
-        if res.frip_ref_peaks:
+        if args.frip_ref_peaks:
             # Use an external reference set of peaks instead of the peaks
             # called from this run
             frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
