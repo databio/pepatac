@@ -1,9 +1,21 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.8.9] -- 2020-03-
+
+### Added
+ - Optionally run `homer` to perform motif analysis
+ - Add option to calculate FRiF using prioritized list of features
+ - Custom R package to handle plots and corresponding calculations
+
+### Changed
+ - Updated handling of genome assets to use current `refgenie` mechanics
+ - Changed handling of command line asset use
+ - Update requirements
+ - Update docs
+
 ## Unreleased
 - Improve interaction with `BiocProject` auto-loading results in R.
-
 
 ## [0.8.7] -- 2019-06-18
 ### Fixed
