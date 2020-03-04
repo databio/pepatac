@@ -62,7 +62,7 @@ Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="
 
 ### Tools
 
-We will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/), [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml), [fastqc (v0.11.5+)](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/),  [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster), [samtools (v1.7+)](http://www.htslib.org/), [skewer (v0.1.126+)](https://github.com/relipmoc/skewer), [UCSC tools](http://hgdownload.soe.ucsc.edu/admin/exe/) (bedGraphToBigWig, wigToBigWig, bigWigCat, bedToBigBed), [pigz (v2.3.4+)](https://zlib.net/pigz/). You should follow instructions to install each individual program. If you need help installing these, see the [detailed installation instructions](detailed-install.md).
+We will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/), [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml), [fastqc (v0.11.5+)](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/),  [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster), [samtools (v1.7+)](http://www.htslib.org/), [skewer (v0.1.126+)](https://github.com/relipmoc/skewer), [UCSC tools](http://hgdownload.soe.ucsc.edu/admin/exe/) (wigToBigWig, bigWigCat, bedToBigBed), [pigz (v2.3.4+)](https://zlib.net/pigz/). You should follow instructions to install each individual program. If you need help installing these, see the [detailed installation instructions](detailed-install.md).
 
 ## 4: Run an example project through `PEPATAC`
 

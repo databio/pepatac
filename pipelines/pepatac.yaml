@@ -14,7 +14,6 @@ tools:  # absolute paths to required tools
   skewer: skewer
   perl: perl
   # ucsc tools
-  bedGraphToBigWig: bedGraphToBigWig
   wigToBigWig: wigToBigWig
   bigWigCat: bigWigCat
   bedToBigBed: bedToBigBed
@@ -22,6 +21,7 @@ tools:  # absolute paths to required tools
   fseq: fseq  
   trimmomatic: ${TRIMMOMATIC}
   picard: ${PICARD}
+  pigz: pigz
   Rscript: Rscript 
 
 # user configure 
