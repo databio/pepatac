@@ -27,7 +27,7 @@ nav:
     - Use custom reference data: 'annotation.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
-    - "Example summary: gold project": 'files/examples/gold/summary.html'
+    - "Example summary: gold project": 'files/examples/gold/gold_summary.html'
     - "Example summary: tutorial project": 'files/examples/tutorial/tutorial_summary.html'
     - Usage: 'usage.md'
     - FAQ: faq.md
