@@ -748,10 +748,9 @@ def main():
                         rgc.get_asset(reference, BT2_IDX_KEY), reference),
                     outfolder=param.outfolder, aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
+                to_compress.append(unmap_fq1)
                 if args.paired_end:
-                    to_compress.extend((unmap_fq1, unmap_fq2))
-                else:
-                    to_compress.extend(unmap_fq1)
+                    to_compress.append(unmap_fq2)
             else:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, True,
@@ -760,10 +759,9 @@ def main():
                         rgc.get_asset(reference, BT2_IDX_KEY), reference), 
                     outfolder=param.outfolder, aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
+                to_compress.append(unmap_fq1)
                 if args.paired_end:
-                    to_compress.extend((unmap_fq1, unmap_fq2))
-                else:
-                    to_compress.extend(unmap_fq1)
+                    to_compress.append(unmap_fq2)
 
     pm.timestamp("### Compress all unmapped read files")
     for unmapped_fq in to_compress:
