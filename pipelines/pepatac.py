@@ -769,9 +769,10 @@ def main():
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
         if not pypiper.is_gzipped_fastq(unmapped_fq) and not unmapped_fq == '':
-            cmd = (ngstk.ziptool + " " + unmapped_fq)
-            unmapped_fq = unmapped_fq + ".gz"
-            pm.run(cmd, unmapped_fq)
+            if os.path.exists(unmapped_fq):
+                cmd = (ngstk.ziptool + " " + unmapped_fq)
+                unmapped_fq = unmapped_fq + ".gz"
+                pm.run(cmd, unmapped_fq)
 
     ############################################################################
     #                           Map to primary genome                          #
