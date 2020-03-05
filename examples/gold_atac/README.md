@@ -1,27 +1,23 @@
-
 # Gold ATAC
 
 Testing ATAC-seq pipeline on gold standard public ATAC-seq data.
 
-## Grab data, project setup
+## Grab the data
 
-Download raw `fastq.gz` files (use `fastq-dump` from SRA. You may also use `get_geo.py` to download raw ATAC-seq reads from SRA and metadata from GEO:
+To download data from the Sequence Read Archive (SRA), we'll use some convenient companion software called [`geofetch`](https://geofetch.databio.org), which can be installed from PyPI:
 
+```console
+pip install --user --upgrade geofetch
 ```
-python get_geo.py -i ~/code/pepatac/examples/gold_atac/metadata/gold_atac_gse.csv -r --fastq
+
+This does require having the [`NCBI SRA Toolkit`](https://trace.ncbi.nlm.nih.gov/Traces/sra/?view=toolkit_doc&f=std) installed as well. Now let's get the data:
 ```
-
-I used resulting file [metadata/annocomb_gold_atac_gse.csv](metadata/annocomb_gold_atac_gse.csv) to create the looper metadata sheet, [metadata/gold_atac_annotation.csv](metadata/gold_atac_annotation.csv).
-
-I create project config file and sampled test data. The SRA fastq files should be stored in a folder pointed to by environment variable `SRAFQ`, and then this will run with `looper` with no additional changes.
+geofetch -i GSE94182 
+```
 
 ## Run pipeline
 
 ```
-looper run ${CODE}pepatac/examples/gold_atac/metadata/project_config.yaml -d
+looper run ${CODE}pepatac/examples/gold_atac/metadata/project_config.yaml
 ```
 
-
-## Test data
-
-There's a small test sample stored right here as `test1`

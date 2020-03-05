@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.7"
+__version__ = "0.8.9-dev"
 
 
 from argparse import ArgumentParser
@@ -13,15 +13,17 @@ import os
 import re
 import sys
 import tempfile
-import tarfile
 import pypiper
 from pypiper import build_command
+from refgenconf import RefGenConf as RGC, select_genome_config
 
 TOOLS_FOLDER = "tools"
-ANNO_FOLDER  = "anno"
+ANNO_FOLDER = "anno"
 PEAK_CALLERS = ["fseq", "macs2"]
+PEAK_TYPES = ["variable", "fixed"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
+BT2_IDX_KEY = "bowtie2_index"
 
 
 def parse_arguments():
@@ -41,7 +43,10 @@ def parse_arguments():
                         help="Name of peak caller")
 
     parser.add_argument("-gs", "--genome-size", default="hs", type=str,
-                        help="MACS2 genome size")
+                        help="MACS2 effective genome size. It can be 1.0e+9 "
+                        "or 1000000000 or shortcuts:'hs' for human (2.7e9), "
+                        "'mm' for mouse (1.87e9), 'ce' for C. elegans (9e7) "
+                        "or 'dm' for fruitfly (1.2e8), Default:hs")
 
     parser.add_argument("--trimmer", dest="trimmer",
                         default="skewer", choices=TRIMMERS,
@@ -57,23 +62,43 @@ def parse_arguments():
 
     parser.add_argument("--TSS-name", default=None,
                         dest="TSS_name", type=str,
-                        help="Name of TSS annotation file")
+                        help="Path to TSS annotation file.")
 
     parser.add_argument("--blacklist", default=None,
                         dest="blacklist", type=str,
-                        help="Name of peak blacklist file")
+                        help="Path to peak blacklist file")
+
+    parser.add_argument("--peak-type", default="variable",
+                        dest="peak_type", choices=PEAK_TYPES, type=str,
+                        help="Call variable or fixed width peaks.\n"
+                             "Fixed width requires MACS2.")
+
+    parser.add_argument("--extend", default=250,
+                        dest="extend", type=int,
+                        help="How far to extend fixed width peaks up and "
+                             "downstream.")
 
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
-                        help="Reference peak set for calculating FRiP")
+                        help="Path to reference peak set (BED format) for calculating FRiP")
+
+    parser.add_argument("--motif", action='store_true',
+                        dest="motif",
+                        help="Perform motif enrichment analysis")
 
     parser.add_argument("--anno-name", default=None,
                         dest="anno_name", type=str,
-                        help="Reference bed file for calculating FRiF")
+                        help="Path to reference annotation file (BED format) for calculating FRiF")
+
+    parser.add_argument("--prioritize", action='store_true', default=False,
+                        dest="prioritize",
+                        help="Plot cFRiF/FRiF using mutually exclusive priority"
+                             " ranked features based on the order of feature"
+                             " appearance in the feature annotation asset.")
 
     parser.add_argument("--keep", action='store_true',
                         dest="keep",
-                        help="Keep prealignment BAM files")
+                        help="Enable this flag to keep prealignment BAM files")
                     
     parser.add_argument("--noFIFO", action='store_true',
                         dest="no_fifo",
@@ -161,36 +186,29 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
         mapped_bam = os.path.join(sub_outdir, bamname)
         summary_name = "{}_{}_bt_aln_summary.log".format(args.sample_name,
-                                                          assembly_identifier)
+                                                         assembly_identifier)
         summary_file = os.path.join(sub_outdir, summary_name)
+
         out_fastq_pre = os.path.join(
             sub_outdir, args.sample_name + "_" + assembly_identifier)
-        # bowtie2 unmapped filename format
-        if paired:
-            out_fastq_bt2 = out_fastq_pre + '_unmap_R%.fq.gz'
-        else:
-            out_fastq_bt2 = out_fastq_pre + '_unmap_R1.fq.gz'
 
-        if not bt2_opts_txt:
-            # Default options
-            bt2_opts_txt = "-k 1"  # Return only 1 alignment
-            bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+        out_fastq_r1    = out_fastq_pre + '_unmap_R1.fq'
+        out_fastq_r1_gz = out_fastq_r1  + '.gz'
 
-        # samtools sort needs a temporary directory
-        tempdir = tempfile.mkdtemp(dir=sub_outdir)
-        pm.clean_add(tempdir)
-   
-        out_fastq_r1 = out_fastq_pre + '_unmap_R1.fq'
-        out_fastq_r2 = out_fastq_pre + '_unmap_R2.fq'
+        out_fastq_r2    = out_fastq_pre + '_unmap_R2.fq'
+        out_fastq_r2_gz = out_fastq_r2  + '.gz'
 
-        if useFIFO and not args.keep:
+        if useFIFO and paired and not args.keep:
             out_fastq_tmp = os.path.join(sub_outdir,
                     assembly_identifier + "_bt2")
             cmd = "mkfifo " + out_fastq_tmp
-            if not os.path.exists(out_fastq_tmp):
-                pm.run(cmd, out_fastq_tmp, container=pm.container)
+            
+            if os.path.exists(out_fastq_tmp):
+                os.remove(out_fastq_tmp)
+            pm.run(cmd, out_fastq_tmp)
         else:
-            out_fastq_tmp = out_fastq_pre + '_unmap.fq'
+            out_fastq_tmp    = out_fastq_pre + '_unmap.fq'
+            out_fastq_tmp_gz = out_fastq_tmp + ".gz"
 
         filter_pair = build_command([tools.perl,
             tool_path("filter_paired_fq.pl"), out_fastq_tmp,
@@ -201,6 +219,16 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
            # unmap_fq1, out_fastq_r1])
         # For now, revert to old method
 
+        if not bt2_opts_txt:
+            # Default options
+            bt2_opts_txt = "-k 1"  # Return only 1 alignment
+            bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
+
+        # samtools sort needs a temporary directory
+        tempdir = tempfile.mkdtemp(dir=sub_outdir)
+        os.chmod(tempdir, 0o771)
+        pm.clean_add(tempdir)  
+
         # Build bowtie2 command
         cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
         cmd += " " + bt2_opts_txt
@@ -209,13 +237,14 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         cmd += " -U " + unmap_fq1
         cmd += " --un " + out_fastq_tmp
         if args.keep: #  or not paired
-            #cmd += " --un-gz " + out_fastq_bt2 # TODO drop this for paired... because repair-ing with filter_paired_fq.pl
+            #cmd += " --un-gz " + out_fastq_bt2 
+            # Drop this for paired...repairing with filter_paired_fq.pl
             # In this samtools sort command we print to stdout and then use > to
             # redirect instead of  `+ " -o " + mapped_bam` because then samtools
             # uses a random temp file, so it won't choke if the job gets
             # interrupted and restarted at this step.
             cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
-            cmd += " | " + tools.samtools + " sort - -@ 1"  # sort output
+            cmd += " | " + tools.samtools + " sort - -@ 1"      # sort output
             cmd += " -T " + tempdir
             cmd += " -o " + mapped_bam
         else:
@@ -224,20 +253,23 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
 
         if paired:
             if args.keep or not useFIFO:
-                pm.run([cmd, filter_pair], mapped_bam, container=pm.container)
+                pm.run([cmd, filter_pair], mapped_bam)
             else:
                 pm.wait = False
-                pm.run(filter_pair, [summary_file, out_fastq_r2], container=pm.container)
+                pm.run(filter_pair, [summary_file, out_fastq_r2_gz],
+                       container=pm.container)
                 pm.wait = True
-                pm.run(cmd, [summary_file, out_fastq_r2], container=pm.container)
+                pm.run(cmd, [summary_file, out_fastq_r2_gz],
+                       container=pm.container)
         else:
             if args.keep:
-                pm.run(cmd, mapped_bam, container=pm.container)
+                pm.run(cmd, mapped_bam)
             else:
                 # TODO: switch to this once filter_paired_fq works with SE
-                #pm.run(cmd2, summary_file, container=pm.container)
-                #pm.run(cmd1, out_fastq_r1, container=pm.container)
-                pm.run(cmd, out_fastq_bt2, container=pm.container)
+                #pm.run(cmd2, summary_file)
+                #pm.run(cmd1, out_fastq_r1)
+                pm.run(cmd, out_fastq_tmp_gz,
+                       container=pm.container)
 
         pm.clean_add(out_fastq_tmp)
 
@@ -272,7 +304,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         else:
             # Use alternate once filter_paired_fq is working with SE
             #unmap_fq1 = out_fastq_r1
-            unmap_fq1 = out_fastq_bt2
+            unmap_fq1 = out_fastq_tmp
             unmap_fq2 = ""
 
         return unmap_fq1, unmap_fq2
@@ -282,117 +314,6 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         print(msg)
         return unmap_fq1, unmap_fq2
 
-
-def _get_bowtie2_index(genomes_folder, genome_assembly):
-    """
-    Create path to genome assembly folder with refgenie structure.
-
-    Convenience function that returns the bowtie2 index prefix (to be passed
-    to bowtie2) for a genome assembly that follows the folder structure
-    produced by the RefGenie reference builder.
-
-    :param str genomes_folder: path to central genomes directory, i.e. the
-        root for multiple assembly subdirectories
-    :param str genome_assembly: name of the specific assembly of interest,
-        e.g. 'mm10'
-    :return str: path to bowtie2 index subfolder within central assemblies
-        home, for assembly indicated
-    """   
-    return os.path.join(genomes_folder, genome_assembly,
-                        "indexed_bowtie2", genome_assembly)
-
-
-def _check_bowtie2_index(genomes_folder, genome_assembly):
-    """
-    Confirm bowtie2 index is present.
-
-    Checks by simple file count whether the bowtie2 index for a genome
-    assembly (as produced by the RefGenie reference builder) contains the
-    correct number of non-empty files.
-
-    :param str genomes_folder: path to central genomes directory, i.e. the
-        root for multiple assembly subdirectories
-    :param str genome_assembly: name of the specific assembly of interest,
-        e.g. 'mm10'
-    """
-    bt2_path = os.path.join(genomes_folder, genome_assembly, "indexed_bowtie2")
-    
-    if os.path.isdir(bt2_path):
-        if not os.listdir(bt2_path):
-            err_msg = "'{}' does not contain any files.\n{}\n{}"
-            loc_msg = ("Try updating/confirming the 'genomes' variable in "
-                       "'pipelines/pepatac.yaml'.")
-            typ_msg = ("Confirm that '{}' "
-                       "is the correct genome, and that you have successfully "
-                       "built a refgenie genome "
-                       "by that name.".format(genome_assembly))
-            pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
-        else:
-            path, dirs, files = next(os.walk(bt2_path))
-    elif os.path.isfile(os.path.join(genomes_folder, (genome_assembly + ".tar.gz"))):
-        print("Did you mean this: {}".format(os.path.join(
-            genomes_folder, (genome_assembly + ".tar.gz"))))
-        err_msg = "Extract {} before proceeding."
-        pm.fail_pipeline(IOError(err_msg.format(genome_assembly + ".tar.gz")))
-    else:
-        err_msg = "Could not find the '{}' index at: {}\n{}\n{}"
-        loc_msg = ("Try updating/confirming the 'genomes' variable in "
-                   "'pipelines/pepatac.yaml'.")
-        typ_msg = ("Confirm that '{}' "
-                   "is the correct genome.".format(genome_assembly))
-        pm.fail_pipeline(IOError(err_msg.format(genome_assembly, bt2_path,
-                                                loc_msg, typ_msg)))
-    # check for bowtie small index
-    if [bt for bt in files if bt.endswith('bt2')]:
-        bt = ['.1.bt2', '.2.bt2', '.3.bt2', '.4.bt2',
-              '.rev.1.bt2', '.rev.2.bt2']
-    # check for bowtie large index
-    elif [bt for bt in files if bt.endswith('bt2l')]:
-        bt = ['.1.bt2l', '.2.bt2l', '.3.bt2l', '.4.bt2l',
-              '.rev.1.bt2l', '.rev.2.bt2l']
-    # if neither file type present, fail
-    else:
-        err_msg = "'{}' does not contain any bowtie2 index files. \n{}\n{}"
-        loc_msg = ("Try updating/confirming the 'genomes' variable in "
-                   "'pipelines/pepatac.yaml'.")
-        typ_msg = ("Confirm that '{}' "
-                   "is the correct genome, and that you have successfully "
-                   "built a refgenie genome "
-                   "by that name.".format(genome_assembly))
-        pm.fail_pipeline(IOError(err_msg.format(bt2_path, loc_msg, typ_msg)))
-
-    bt_expected = [genome_assembly + s for s in bt]
-    bt_present  = [bt for bt in files if any(s in bt for s in bt_expected)]
-    bt_missing  = list(set(bt_expected) - set(bt_present))
-    # if there are any missing files (bowtie2 file naming is constant), fail
-    if bt_missing:
-        err_msg = "The {} bowtie2 index is missing the following file(s): {}"
-        pm.fail_pipeline(IOError(
-            err_msg.format(genome_assembly,
-                           ', '.join(str(s) for s in bt_missing))))
-    else:
-        for f in bt_present:
-            # If any bowtie2 files are empty, fail
-            if os.stat(os.path.join(bt2_path, f)).st_size == 0:
-                err_msg = ("The bowtie2 index file, '{}', located at '{}' "
-                           "is empty.\n{}")
-                typ_msg = ("Confirm that '{}' is the correct genome name, "
-                           "and that you have successfully built a refgenie "
-                           "genome by that name.".format(genome_assembly))
-                pm.fail_pipeline(IOError(err_msg.format(f, bt2_path, typ_msg)))
-
-    genome_file = genome_assembly + ".fa"
-    fa_files = [fa for fa in files if genome_file in fa]
-    if not fa_files:
-        # The fasta file does not exist
-        err_msg = "Could not find '{}.fa' in '{}'\n{}"
-        typ_msg = ("Confirm that you have successfully built a refgenie "
-                   "genome for '{}'.".format(genome_assembly))
-        pm.fail_pipeline(IOError(err_msg.format(
-            genome_assembly, (genomes_folder + genome_assembly), typ_msg)))
-    for f in fa_files:
-        if os.stat(os.path.join(bt2_path, f)).st_size == 0:
-            pm.fail_pipeline(IOError("{} is an empty file.".format(f)))
 
 def tool_path(tool_name):
     """
@@ -406,20 +327,7 @@ def tool_path(tool_name):
                         TOOLS_FOLDER, tool_name)
 
 
-def anno_path(anno_name):
-    """
-    Return the path to an annotation file used by this pipeline.
-
-    :param str anno_name: name of the annotation file 
-                          (e.g., a specific genome's annotations)
-    :return str: real, absolute path to tool (expansion and symlink resolution)
-    """
-
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                        ANNO_FOLDER, anno_name)
-
-
-def check_commands(commands, ignore):
+def check_commands(commands, ignore=''):
     """
     Check if command(s) can be called
 
@@ -432,17 +340,21 @@ def check_commands(commands, ignore):
     uncallable = []
     for name, command in commands.items():
         if command not in ignore:
+            # if an environment variable is not expanded it means it points to
+            # an uncallable command
+            if '$' in command:
+                # try to expand
+                command = os.path.expandvars(os.path.expanduser(command))
+                if not os.path.exists(command):
+                    uncallable.append(command)
+
             # if a command is a java file, modify the command
             if '.jar' in command:
                 command = "java -jar " + command
-            # if an environment variable is not expanded it means it points to
-            # an uncallable command
-            if '$' in command: 
-                uncallable.append(command)
 
             code = os.system("command -v {0} >/dev/null 2>&1 || {{ exit 1; }}".format(command))
             # If exit code is not 0, track which command failed
-            #print("{} code {}".format(command, code)) # DEBUG
+            #print("{} code {}".format(command, code))  # DEBUG
             if code != 0:
                 uncallable.append(command)
                 is_callable = False
@@ -450,9 +362,98 @@ def check_commands(commands, ignore):
         return True
     else:
         print("The following required tool(s) are not callable: {0}".format(' '.join(uncallable)))
-        return False  
+        return False
 
 
+def _add_resources(args, res, asset_dict=None):
+    """
+    Add additional resources needed for pipeline.
+
+    :param argparse.Namespace args: binding between option name and argument,
+        e.g. from parsing command-line options
+    :param pm.config.resources res: pipeline manager resources list
+    :param asset_dict list: list of dictionary of assets to add
+    """
+
+    rgc = RGC(select_genome_config(res.get("genome_config")))
+
+    key_errors = []
+    exist_errors = []
+    required_list = []
+
+    # Check that bowtie2 indicies exist for specified prealignments
+    for reference in args.prealignments:
+        for asset in [BT2_IDX_KEY]:
+            try:
+                res[asset] = rgc.get_asset(reference, asset)
+            except KeyError:
+                err_msg = "{} for {} is missing from REFGENIE config file."
+                pm.fail_pipeline(KeyError(err_msg.format(asset, reference)))
+            except:
+                err_msg = "{} for {} does not exist."
+                pm.fail_pipeline(IOError(err_msg.format(asset, reference)))
+
+    # Check specified assets
+    if not asset_dict:
+        return res, rgc
+    else:
+        for item in asset_dict:
+            pm.debug("item: {}".format(item))  # DEBUG
+            asset = item["asset_name"]
+            seek_key = item["seek_key"] or item["asset_name"]
+            tag = item["tag_name"] or "default"
+            arg = item["arg"]
+            user_arg = item["user_arg"]
+            req = item["required"]
+
+            if arg and hasattr(args, arg) and getattr(args, arg):
+                res[seek_key] = os.path.abspath(getattr(args, arg))
+            else:
+                try:
+                    pm.debug("{} - {}.{}:{}".format(args.genome_assembly,
+                                                    asset,
+                                                    seek_key,
+                                                    tag))  # DEBUG
+                    res[seek_key] = rgc.get_asset(args.genome_assembly,
+                                                  asset_name=str(asset),
+                                                  tag_name=str(tag),
+                                                  seek_key=str(seek_key))
+                except KeyError:
+                    key_errors.append(item)
+                    if req:
+                        required_list.append(item)
+                except:
+                    exist_errors.append(item)
+                    if req:
+                        required_list.append(item)
+
+        if len(key_errors) > 0 or len(exist_errors) > 0:
+            pm.info("Some assets are not found. You can update your REFGENIE "
+                    "config file or point directly to the file using the noted "
+                    "command-line arguments:")
+
+        if len(key_errors) > 0:
+            if required_list:
+                err_msg = "Required assets missing from REFGENIE config file: {}"
+                pm.fail_pipeline(IOError(err_msg.format(", ".join(["{asset_name}.{seek_key}:{tag_name}".format(**x) for x in required_list]))))
+            else:
+                warning_msg = "Optional assets missing from REFGENIE config file: {}"
+                pm.info(warning_msg.format(", ".join(["{asset_name}.{seek_key}:{tag_name}".format(**x) for x in key_errors])))
+
+        if len(exist_errors) > 0:
+            if required_list:
+                err_msg = "Required assets not existing: {}"
+                pm.fail_pipeline(IOError(err_msg.format(", ".join(["{asset_name}.{seek_key}:{tag_name} (--{user_arg})".format(**x) for x in required_list]))))
+            else:
+                warning_msg = "Optional assets not existing: {}"
+                pm.info(warning_msg.format(", ".join(["{asset_name}.{seek_key}:{tag_name} (--{user_arg})".format(**x) for x in exist_errors])))
+
+        return res, rgc
+
+
+################################################################################
+#                                 Pipeline MAIN                                #
+################################################################################
 def main():
     """
     Main pipeline process.
@@ -478,31 +479,76 @@ def main():
     res = pm.config.resources
 
     # Check that the required tools are callable by the pipeline
-    if not check_commands(tools, ["fseq", "${TRIMMOMATIC}", "${PICARD}", "Rscript"]):
-        err_msg = "Please install missing tools before continuing."
+    opt_tools = ["fseq", "${PICARD}", "${TRIMMOMATIC}", "pyadapt",
+                 "findMotifsGenome.pl"]
+
+    # If using optional tools, remove those from the skipped checks
+    if args.trimmer == "trimmomatic":
+        if 'trimmomatic' in opt_tools: opt_tools.remove('trimmomatic')
+
+    if args.trimmer == "pyadapt":
+        if 'pyadapt' in opt_tools: opt_tools.remove('pyadapt')
+
+    if args.deduplicator == "picard":
+        if '${PICARD}' in opt_tools: opt_tools.remove('${PICARD}')
+
+    if args.peak_caller == "fseq":
+        if 'fseq' in opt_tools: opt_tools.remove('fseq')
+
+    if args.motif:
+        if 'findMotifsGenome.pl' in opt_tools: opt_tools.remove('findMotifsGenome.pl')
+
+    # Confirm required tools are all callable
+    if not check_commands(tools, opt_tools):
+        err_msg = "Missing required tools. See message above."
+        pm.fail_pipeline(RuntimeError(err_msg))
+
+    if args.input2 and not args.paired_end:
+        err_msg = "Incompatible settings: You specified single-end, but provided --input2."
         pm.fail_pipeline(RuntimeError(err_msg))
 
     # Set up reference resource according to genome prefix.
-    gfolder = os.path.join(res.genomes, args.genome_assembly)
-    res.chrom_sizes = os.path.join(
-        gfolder, args.genome_assembly + ".chromSizes")
+    check_list = [
+        {"asset_name":"fasta", "seek_key":"chrom_sizes",
+         "tag_name":"default", "arg":None, "user_arg":None,
+         "required":True},
+        {"asset_name":"fasta", "seek_key":None,
+         "tag_name":"default", "arg":None, "user_arg":None,
+         "required":True},
+        {"asset_name":BT2_IDX_KEY, "seek_key":None,
+         "tag_name":"default", "arg":None, "user_arg":None,
+         "required":True}
+    ]
+    # If user specifies TSS file, use that instead of the refgenie asset
+    if not (args.TSS_name):
+        check_list.append(
+            {"asset_name":"refgene_anno", "seek_key":"refgene_tss",
+             "tag_name":"default", "arg":"TSS_name", "user_arg":"TSS-name",
+             "required":False}
+        )
+    # If user specifies feature annoation file,
+    # use that instead of the refgenie asset
+    if not (args.anno_name):
+        check_list.append(
+            {"asset_name":"feat_annotation", "seek_key":"feat_annotation",
+            "tag_name":"default", "arg":"anno_name", "user_arg":"anno-name",
+            "required":False}
+        )
+    res, rgc = _add_resources(args, res, check_list)
 
-    if args.TSS_name:
-        res.TSS_file = os.path.join(gfolder, args.TSS_name)
-    else:
-        res.TSS_file = os.path.join(gfolder, args.genome_assembly + "_TSS.tsv")
-
-    if args.blacklist:
-        res.blacklist = os.path.join(gfolder, args.blacklist)
-    else:
-        res.blacklist = os.path.join(
-            gfolder, args.genome_assembly + ".blacklist.bed")
-
-    # Get bowtie2 indexes
-    res.bt2_genome = _get_bowtie2_index(res.genomes, args.genome_assembly)
-    _check_bowtie2_index(res.genomes, args.genome_assembly)
-    for reference in args.prealignments:
-        _check_bowtie2_index(res.genomes, reference)
+    # If the user specifies optional files, add those to our resources
+    if ((args.blacklist) and os.path.isfile(args.blacklist) and
+            os.stat(args.blacklist).st_size > 0):
+        res.blacklist = args.blacklist
+    if ((args.frip_ref_peaks) and os.path.isfile(args.frip_ref_peaks) and
+            os.stat(args.frip_ref_peaks).st_size > 0):
+        res.frip_ref_peaks = args.frip_ref_peaks
+    if ((args.TSS_name) and os.path.isfile(args.TSS_name) and
+            os.stat(args.TSS_name).st_size > 0):
+        res.TSS_name = args.TSS_name
+    if ((args.anno_name) and os.path.isfile(args.anno_name) and
+            os.stat(args.anno_name).st_size > 0):
+        res.feat_annotation = args.anno_name
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
@@ -522,9 +568,11 @@ def main():
         pm.fail_pipeline(IOError(err_msg.format(args.input[0])))
 
     if args.input2:
-        if os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size > 0:
+        if (os.path.isfile(args.input2[0]) and
+                os.stat(args.input2[0]).st_size > 0):
             print("Local input file: " + args.input2[0])
-        elif os.path.isfile(args.input2[0]) and os.stat(args.input2[0]).st_size == 0:
+        elif (os.path.isfile(args.input2[0]) and
+                os.stat(args.input2[0]).st_size == 0):
             # The read1 file exists but is empty
             err_msg = "File exists but is empty: {}"
             pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
@@ -539,14 +587,13 @@ def main():
 
     pm.report_result(
         "File_mb",
-        ngstk.get_file_size(
-            [x for x in [args.input, args.input2] if x is not None]))
+        round(ngstk.get_file_size(
+              [x for x in [args.input, args.input2] if x is not None])), 2)
     pm.report_result("Read_type", args.single_or_paired)
     pm.report_result("Genome", args.genome_assembly)
 
     # ATACseq pipeline
     # Each (major) step should have its own subfolder
-
     raw_folder = os.path.join(param.outfolder, "raw")
     fastq_folder = os.path.join(param.outfolder, "fastq")
 
@@ -556,19 +603,32 @@ def main():
     local_input_files = ngstk.merge_or_link(
         [args.input, args.input2], raw_folder, args.sample_name)
     cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
-        local_input_files, args.sample_name, args.paired_end, fastq_folder)
+        local_input_files, args.sample_name, args.paired_end, fastq_folder,
+        zipmode=True)
+    print(cmd)
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
                local_input_files, unaligned_fastq, args.paired_end),
            container=pm.container)
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
-    print(local_input_files)
-    untrimmed_fastq1 = out_fastq_pre + "_R1.fastq"
-    untrimmed_fastq2 = out_fastq_pre + "_R2.fastq" if args.paired_end else None
 
-    ########################
-    # Begin adapter trimming
-    ########################
+    if args.paired_end:
+        untrimmed_fastq1 = unaligned_fastq[0]
+        untrimmed_fastq2 = unaligned_fastq[1]
+    else:
+        untrimmed_fastq1 = unaligned_fastq
+        untrimmed_fastq2 = None
+
+    # Prepare alignment output folder
+    map_genome_folder = os.path.join(param.outfolder,
+                                     "aligned_" + args.genome_assembly)
+    ngstk.make_dir(map_genome_folder)
+    rmdup_bam = os.path.join(map_genome_folder,
+                             args.sample_name + "_sort_dedup.bam")
+
+    ############################################################################
+    #                          Begin adapter trimming                          #
+    ############################################################################
     pm.timestamp("### Adapter trimming: ")
 
     # Create names for trimmed FASTQ files.
@@ -576,8 +636,8 @@ def main():
         trimming_prefix = os.path.join(fastq_folder, args.sample_name)
     else:
         trimming_prefix = out_fastq_pre
-    trimmed_fastq = trimming_prefix + "_R1.trim.fastq"
-    trimmed_fastq_R2 = trimming_prefix + "_R2.trim.fastq"
+    trimmed_fastq = trimming_prefix + "_R1_trim.fastq"
+    trimmed_fastq_R2 = trimming_prefix + "_R2_trim.fastq"
 
     # Create trimming command(s).
     if args.trimmer == "pyadapt":
@@ -587,8 +647,8 @@ def main():
         # TODO: make pyadapt give options for output file name.
         trim_cmd_chunks = [
             tool_path("pyadapter_trim.py"),
-            ("-a", local_input_files[0]),
-            ("-b", local_input_files[1]),
+            ("-a", untrimmed_fastq1),
+            ("-b", untrimmed_fastq2),
             ("-o", out_fastq_pre),
             "-u"
         ]
@@ -596,12 +656,15 @@ def main():
 
     elif args.trimmer == "skewer":
         # Create the primary skewer command.
+        # Don't compress output at this stage, because the pre-alignment mechanism
+        # requires unzipped fastq.
         trim_cmd_chunks = [
             tools.skewer,  # + " --quiet"
             ("-f", "sanger"),
             ("-t", str(args.cores)),
             ("-m", "pe" if args.paired_end else "any"),
             ("-x", res.adapters),
+            # "-z",  # compress output
             "--quiet",
             ("-o", out_fastq_pre),
             untrimmed_fastq1,
@@ -632,56 +695,40 @@ def main():
 
     else:
         # Default to trimmomatic.
-        if pm.container is not None:
-            trim_cmd_chunks = [
-                "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
-                    java=tools.java, mem=pm.mem,
-                    trim="/home/src/Trimmomatic-0.36/trimmomatic-0.36.jar",
-                    PE="PE" if args.paired_end else "",
-                    cores=pm.cores),
-                local_input_files[0],
-                local_input_files[1],
-                trimmed_fastq,
-                trimming_prefix + "_R1_unpaired.fq",
-                trimmed_fastq_R2 if args.paired_end else "",
-                trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
-                "ILLUMINACLIP:" + res.adapters + ":2:30:10"
-            ]
-        else:
-            trim_cmd_chunks = [
-                "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
-                    java=tools.java, mem=pm.mem,
-                    trim=tools.trimmo,
-                    PE="PE" if args.paired_end else "",
-                    cores=pm.cores),
-                local_input_files[0],
-                local_input_files[1],
-                trimmed_fastq,
-                trimming_prefix + "_R1_unpaired.fq",
-                trimmed_fastq_R2 if args.paired_end else "",
-                trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
-                "ILLUMINACLIP:" + res.adapters + ":2:30:10"
-            ]
+        trim_cmd_chunks = [
+            "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
+                java=tools.java, mem=pm.mem,
+                trim=tools.trimmomatic,
+                PE="PE" if args.paired_end else "",
+                cores=pm.cores),
+            local_input_files[0],
+            local_input_files[1],
+            trimmed_fastq,
+            trimming_prefix + "_R1_unpaired.fq",
+            trimmed_fastq_R2 if args.paired_end else "",
+            trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
+            "ILLUMINACLIP:" + res.adapters + ":2:30:10"
+        ]
         cmd = build_command(trim_cmd_chunks)
 
-    pm.run(cmd, trimmed_fastq,
-           follow=ngstk.check_trim(
-               trimmed_fastq, args.paired_end, trimmed_fastq_R2,
-               fastqc_folder=os.path.join(param.outfolder, "fastqc")),
-           container=pm.container)
-    
-    pm.clean_add(os.path.join(fastq_folder, "*.fq"), conditional=True)
+    if not os.path.exists(rmdup_bam) or args.new_start:
+        pm.run(cmd, trimmed_fastq,
+               follow=ngstk.check_trim(
+                   trimmed_fastq, args.paired_end, trimmed_fastq_R2,
+                   fastqc_folder=os.path.join(param.outfolder, "fastqc")))
+
+    pm.clean_add(os.path.join(fastq_folder, "*.fastq"), conditional=True)
     pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
-    #########################
-    # End adapter trimming
-    #########################
 
     # Prepare variables for alignment step
     unmap_fq1 = trimmed_fastq
     unmap_fq2 = trimmed_fastq_R2
 
-    # Map to any requested prealignments
-    # We recommend mapping to chrM (i.e. rCRSd) prior to primary genome alignment
+    ############################################################################
+    #                    Map to any requested prealignments                    #
+    ############################################################################
+
+    # We recommend mapping to chrM (i.e. rCRSd) before primary genome alignment
     pm.timestamp("### Prealignments")
     # Keep track of the unmapped files in order to compress them after final
     # alignment.
@@ -695,24 +742,42 @@ def main():
         for reference in args.prealignments:
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
-                args, tools, args.paired_end, False, unmap_fq1, unmap_fq2, reference,
-                assembly_bt2=_get_bowtie2_index(res.genomes, reference),
-                outfolder=param.outfolder, aligndir="prealignments",
-                bt2_opts_txt = param.bowtie2_pre.params)
-                to_compress.extend((unmap_fq1, unmap_fq2))
+                    args, tools, args.paired_end, False,
+                    unmap_fq1, unmap_fq2, reference,
+                    assembly_bt2=os.path.join(
+                        rgc.get_asset(reference, BT2_IDX_KEY), reference),
+                    outfolder=param.outfolder, aligndir="prealignments",
+                    bt2_opts_txt=param.bowtie2_pre.params)
+                if args.paired_end:
+                    to_compress.extend((unmap_fq1, unmap_fq2))
+                else:
+                    to_compress.extend(unmap_fq1)
             else:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
-                args, tools, args.paired_end, True, unmap_fq1, unmap_fq2, reference,
-                assembly_bt2=_get_bowtie2_index(res.genomes, reference),
-                outfolder=param.outfolder, aligndir="prealignments",
-                bt2_opts_txt = param.bowtie2_pre.params)
-                to_compress.extend((unmap_fq1, unmap_fq2))
+                    args, tools, args.paired_end, True,
+                    unmap_fq1, unmap_fq2, reference,
+                    assembly_bt2=os.path.join(
+                        rgc.get_asset(reference, BT2_IDX_KEY), reference), 
+                    outfolder=param.outfolder, aligndir="prealignments",
+                    bt2_opts_txt=param.bowtie2_pre.params)
+                if args.paired_end:
+                    to_compress.extend((unmap_fq1, unmap_fq2))
+                else:
+                    to_compress.extend(unmap_fq1)
+
+    pm.timestamp("### Compress all unmapped read files")
+    for unmapped_fq in to_compress:
+        # Compress unmapped fastq reads
+        if not pypiper.is_gzipped_fastq(unmapped_fq) and not unmapped_fq == '':
+            cmd = (ngstk.ziptool + " " + unmapped_fq)
+            unmapped_fq = unmapped_fq + ".gz"
+            pm.run(cmd, unmapped_fq)
+
+    ############################################################################
+    #                           Map to primary genome                          #
+    ############################################################################
 
     pm.timestamp("### Map to genome")
-    map_genome_folder = os.path.join(
-        param.outfolder, "aligned_" + args.genome_assembly)
-    ngstk.make_dir(map_genome_folder)
-
     mapping_genome_bam = os.path.join(
         map_genome_folder, args.sample_name + "_sort.bam")
     mapping_genome_bam_temp = os.path.join(
@@ -731,18 +796,23 @@ def main():
 
     # samtools sort needs a temporary directory
     tempdir = tempfile.mkdtemp(dir=map_genome_folder)
+    os.chmod(tempdir, 0o771)
     pm.clean_add(tempdir)
+
+    unmap_fq1 = unmap_fq1 + ".gz"
+    unmap_fq2 = unmap_fq2 + ".gz"
 
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
     cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
-    cmd += " -x " + res.bt2_genome
+    cmd += " -x " + os.path.join(
+        rgc.get_asset(args.genome_assembly, BT2_IDX_KEY),
+                      args.genome_assembly)
     if args.paired_end:
         cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
     else:
         cmd += " -U " + unmap_fq1
     cmd += " | " + tools.samtools + " view -bS - -@ 1 "
-    # cmd += " -f 2 -q 10"  # quality and pairing filter
     cmd += " | " + tools.samtools + " sort - -@ 1"
     cmd += " -T " + tempdir
     cmd += " -o " + mapping_genome_bam_temp
@@ -774,27 +844,16 @@ def main():
                          float(rr), 2))
 
     pm.run([cmd, cmd2], mapping_genome_bam,
-           follow=check_alignment_genome, container=pm.container)
-
-    # Compress all unmapped read files
-    for unmapped_fq in to_compress:
-        # Compress unmapped fastq reads
-        if not pypiper.is_gzipped_fastq(unmapped_fq):
-            cmd = (ngstk.ziptool + " " + unmapped_fq)
-            unmapped_fq = unmapped_fq + ".gz"
-            pm.run(cmd, unmapped_fq, container=pm.container)
+           follow=check_alignment_genome)
 
     # Index the temporary bam file and the sorted bam file
-    temp_mapping_index = os.path.join(mapping_genome_bam_temp + ".bai")
+    temp_mapping_index   = os.path.join(mapping_genome_bam_temp + ".bai")
     mapping_genome_index = os.path.join(mapping_genome_bam + ".bai")
     cmd1 = tools.samtools + " index " + mapping_genome_bam_temp
     cmd2 = tools.samtools + " index " + mapping_genome_bam
-    pm.run([cmd1, cmd2], mapping_genome_index, container=pm.container)
+    pm.run([cmd1, cmd2], mapping_genome_index)
     pm.clean_add(temp_mapping_index)
-    
-    # Determine mitochondrial read counts
-    mito_name = ["chrM", "chrMT", "M", "MT", "rCRSd"]
-    
+
     # If first run, use the temp bam file
     if os.path.isfile(mapping_genome_bam_temp) and os.stat(mapping_genome_bam_temp).st_size > 0:
         bam_file = mapping_genome_bam_temp
@@ -802,31 +861,40 @@ def main():
     else:
         bam_file = mapping_genome_bam
 
-    cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
-    for name in mito_name:
-        cmd += " -we '" + name + "'"
-    cmd += "| cut -f 3"
-    mr = pm.checkprint(cmd)
+    # Determine mitochondrial read counts
+    mito_name = ["chrM", "chrMT", "M", "MT", "rCRSd"]
 
-    # If there are mitochondrial reads, report and remove them
-    if mr and float(mr.strip()) != 0:
-        pm.report_result("Mitochondrial_reads", round(float(mr)))
-        noMT_mapping_genome_bam = os.path.join(
-            map_genome_folder, args.sample_name + "_noMT.bam")
-        cmd1 = (tools.samtools + " idxstats " + mapping_genome_bam +
-                " | cut -f 1 | grep")
+    if pm.get_stat("Mitochondrial_reads") is None:
+        cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
         for name in mito_name:
-            cmd1 += " -vwe '" + name + "'"
-        cmd1 += ("| xargs " + tools.samtools + " view -b -@ " +
-                 str(pm.cores) + " " + mapping_genome_bam + " > " +
-                 noMT_mapping_genome_bam)
-        cmd2 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
-        # Reindex the sorted bam file now that mito reads are removed
-        cmd3 = tools.samtools + " index " + mapping_genome_bam
-        pm.run([cmd1, cmd2, cmd3], noMT_mapping_genome_bam,
-               container=pm.container)
+            cmd += " -we '" + name + "'"
+        cmd += "| cut -f 3"
+        mr = pm.checkprint(cmd)
 
-    # Calculate quality control metrics for the alignment file
+        # If there are mitochondrial reads, report and remove them
+        if mr and float(mr.strip()) != 0:
+            pm.report_result("Mitochondrial_reads", round(float(mr)))
+            noMT_mapping_genome_bam = os.path.join(
+                map_genome_folder, args.sample_name + "_noMT.bam")
+            cmd1 = (tools.samtools + " idxstats " + mapping_genome_bam +
+                    " | cut -f 1 | grep")
+            for name in mito_name:
+                cmd1 += " -vwe '" + name + "'"
+            cmd1 += ("| xargs " + tools.samtools + " view -b -@ " +
+                     str(pm.cores) + " " + mapping_genome_bam + " > " +
+                     noMT_mapping_genome_bam)
+            cmd2 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
+            # Reindex the sorted bam file now that mito reads are removed
+            cmd3 = tools.samtools + " index " + mapping_genome_bam
+            pm.run([cmd1, cmd2, cmd3], noMT_mapping_genome_bam,
+                   container=pm.container)
+        else:
+            pm.report_result("Mitochondrial_reads", 0)
+
+    ############################################################################
+    #         Calculate quality control metrics for the alignment file         #
+    ############################################################################
+
     pm.timestamp("### Calculate NRF, PBC1, and PBC2")
     QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
     ngstk.make_dir(QC_folder)
@@ -888,7 +956,7 @@ def main():
     # Remove temporary bam file from unmapped file production
     pm.clean_add(mapping_genome_bam_temp)
 
-    pm.timestamp("### Remove dupes, build bigwig and bedgraph files")
+    pm.timestamp("### Remove duplicates and produce signal tracks")
 
     def estimate_lib_size(dedup_log):
         # In millions of reads; contributed by Ryan
@@ -938,8 +1006,6 @@ def main():
         pm.report_result("Dedup_alignment_rate", dar)
         pm.report_result("Dedup_total_efficiency", dte)
 
-    rmdup_bam = os.path.join(
-        map_genome_folder, args.sample_name + "_sort_dedup.bam")
     metrics_file = os.path.join(
         map_genome_folder, args.sample_name + "_dedup_metrics_bam.txt")
     dedup_log = os.path.join(
@@ -947,15 +1013,12 @@ def main():
 
     # samtools sort needs a temporary directory
     tempdir = tempfile.mkdtemp(dir=map_genome_folder)
+    os.chmod(tempdir, 0o771)
     pm.clean_add(tempdir)
 
     if args.deduplicator == "picard":
-        if pm.container is not None:
-            cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
-                    "/home/tools/bin/picard.jar" + " MarkDuplicates")
-        else:    
-            cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
-                    tools.picard + " MarkDuplicates")
+        cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+                tools.picard + " MarkDuplicates")
         cmd1 += " INPUT=" + mapping_genome_bam
         cmd1 += " OUTPUT=" + rmdup_bam
         cmd1 += " METRICS_FILE=" + metrics_file
@@ -963,18 +1026,19 @@ def main():
         cmd1 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " + dedup_log
         cmd2 = tools.samtools + " index " + rmdup_bam
     elif args.deduplicator == "samblaster":
+        nProc = max(int(pm.cores / 4), 1)
         samblaster_cmd_chunks = [
-            "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} sort -n -@ {}".format(tools.samtools, str(nProc)),
             ("-T", tempdir),
             mapping_genome_bam,
             "|",
-            "{} view -h - -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} view -h - -@ {}".format(tools.samtools, str(nProc)),
             "|",
             "{} -r 2> {}".format(tools.samblaster, dedup_log),
             "|",
-            "{} view -b - -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} view -b - -@ {}".format(tools.samtools, str(nProc)),
             "|",
-            "{} sort - -@ {}".format(tools.samtools, str(pm.cores)),
+            "{} sort - -@ {}".format(tools.samtools, str(nProc)),
             ("-T", tempdir),
             ("-o", rmdup_bam)
         ]
@@ -983,47 +1047,32 @@ def main():
         # no separate metrics file with samblaster
         metrics_file = dedup_log
     else:
-        # default to samblaster
-        samblaster_cmd_chunks = [
-            "{} sort -n -@ {}".format(tools.samtools, str(pm.cores)),
-            ("-T", tempdir),
-            mapping_genome_bam,
-            "|",
-            "{} view -h - -@ {}".format(tools.samtools, str(pm.cores)),
-            "|",
-            "{} -r 2> {}".format(tools.samblaster, dedup_log),
-            "|",
-            "{} view -b - -@ {}".format(tools.samtools, str(pm.cores)),
-            "|",
-            "{} sort - -@ {}".format(tools.samtools, str(pm.cores)),
-            ("-T", tempdir),
-            ("-o", rmdup_bam)
-        ]
-        cmd1 = build_command(samblaster_cmd_chunks)
-        cmd2 = tools.samtools + " index " + rmdup_bam
-        # no separate metrics file with samblaster
-        metrics_file = dedup_log
+        pm.info("PEPATAC could not determine a valid deduplicator tool")
+        pm.stop_pipeline()
 
     pm.run([cmd1, cmd2], rmdup_bam,
            follow=lambda: post_dup_aligned_reads(metrics_file),
            container=pm.container)
 
-    # "Exact cuts" are what I call nucleotide-resolution tracks of exact bases
+    ############################################################################
+    #                         Produce signal tracks                            #
+    ############################################################################
+    # "Exact cuts" are nucleotide-resolution tracks of exact bases
     # where the transposition (or DNAse cut) happened;
     # In the past I used wigToBigWig on a combined wig file, but this ends up
     # using a boatload of memory (more than 32GB); in contrast, running the
     # wig -> bw conversion on each chrom and then combining them with bigWigCat
     # requires much less memory. This was a memory bottleneck in the pipeline.
+
     pm.timestamp("### Produce smoothed and nucleotide-resolution tracks")
 
     exact_folder = os.path.join(map_genome_folder + "_exact")
     temp_exact_folder = os.path.join(exact_folder, "temp")
     ngstk.make_dir(exact_folder)
     ngstk.make_dir(temp_exact_folder)
-    temp_target = os.path.join(temp_exact_folder, "flag_completed")
     exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
-    smooth_target = os.path.join(
-                        map_genome_folder, args.sample_name + "_smooth.bw")
+    smooth_target = os.path.join(map_genome_folder,
+                                 args.sample_name + "_smooth.bw")
     shift_bed = os.path.join(exact_folder, args.sample_name + "_shift.bed")
 
     cmd = tool_path("bamSitesToWig.py")
@@ -1033,83 +1082,131 @@ def main():
     cmd += " -o " + exact_target
     cmd += " -w " + smooth_target
     cmd += " -m " + "atac"
-    cmd += " -p " + str(max(1, int(pm.cores) * 2/3))
-    cmd2 = "touch " + temp_target
-    pm.run([cmd, cmd2], temp_target, container=pm.container)
-    pm.clean_add(temp_target)
+    cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
+    pm.run(cmd, exact_target)
     pm.clean_add(temp_exact_folder)
 
-    # TSS enrichment
-    if not os.path.exists(res.TSS_file):
+    ############################################################################
+    #                          Determine TSS enrichment                        #
+    ############################################################################
+
+    if not os.path.exists(res.refgene_tss):
         print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}"
-              .format(res.TSS_file))
+              .format(res.refgene_tss))
     else:
         pm.timestamp("### Calculate TSS enrichment")
 
         Tss_enrich = os.path.join(QC_folder, args.sample_name +
-                                  "_TssEnrichment.txt")
+                                  "_TSS_enrichment.txt")
         cmd = tool_path("pyTssEnrichment.py")
-        cmd += " -a " + rmdup_bam + " -b " + res.TSS_file + " -p ends"
+        cmd += " -a " + rmdup_bam + " -b " + res.refgene_tss + " -p ends"
         cmd += " -c " + str(pm.cores)
-        cmd += " -e 2000 -u -v -s 4 -o " + Tss_enrich
-        pm.run(cmd, Tss_enrich, nofail=True, container=pm.container)
+        cmd += " -z -v -s 6 -o " + Tss_enrich
+        pm.run(cmd, Tss_enrich, nofail=True)
 
+        if not pm.get_stat('TSS_score') or args.new_start:
+            with open(Tss_enrich) as f:
+                floats = list(map(float, f))
+            try:
+                # If the TSS enrichment is 0, don't report
+                list_len = 0.05*float(len(floats))
+                normTSS = [x / (sum(floats[1:int(list_len)]) /
+                           len(floats[1:int(list_len)])) for x in floats]
+                max_index = normTSS.index(max(normTSS))
+
+                if (((normTSS[max_index]/normTSS[max_index-1]) > 1.5) and
+                    ((normTSS[max_index]/normTSS[max_index+1]) > 1.5)):
+                    tmpTSS = list(normTSS)
+                    del tmpTSS[max_index]
+                    max_index = tmpTSS.index(max(tmpTSS)) + 1
+
+                Tss_score = round(
+                    (sum(normTSS[int(max_index-50):int(max_index+50)])) /
+                    (len(normTSS[int(max_index-50):int(max_index+50)])), 1)
+
+                pm.report_result("TSS_score", round(Tss_score, 1))
+            except ZeroDivisionError:
+                pass
+        
         # Call Rscript to plot TSS Enrichment
         Tss_pdf = os.path.join(QC_folder,  args.sample_name +
-                                "_TssEnrichment.pdf")
-        cmd = ("Rscript " + tool_path("PEPATAC_TSSenrichmentPlot.R"))
-        cmd += " " + Tss_enrich + " pdf"
-        pm.run(cmd, Tss_pdf, nofail=True, container=pm.container)
-
-        # Always plot strand specific TSS enrichment.
-        # added by Ryan 2/10/17 to calculate TSS score as numeric and to
-        # include in summary stats. This could be done in prettier ways which
-        # I'm open to. Just adding for the idea.
-        with open(Tss_enrich) as f:
-            floats = map(float, f)
-        try:
-            # If the TSS enrichment is 0, don't report
-            Tss_score = ((sum(floats[1950:2050]) / 100) /
-                         (sum(floats[1:200]) / 200))
-            pm.report_result("TSS_Score", Tss_score)
-        except ZeroDivisionError:
-            #print("ZeroDivisionError: {0}".format(err))
-            pass
-
+                               "_TSS_enrichment.pdf")
         Tss_png = os.path.join(QC_folder,  args.sample_name +
-                               "_TssEnrichment.png")
+                               "_TSS_enrichment.png")
+        cmd = (tools.Rscript + " " + tool_path("PEPATAC.R") + 
+               " tss -i " + Tss_enrich)
+        pm.run(cmd, Tss_pdf, nofail=True)
+
         pm.report_object("TSS enrichment", Tss_pdf, anchor_image=Tss_png)
 
-        # Fragment distribution
-
+    ############################################################################
+    #                         Fragment distribution                            #
+    ############################################################################
+    if args.paired_end:
         pm.timestamp("### Plot fragment distribution")
+        frag_len = os.path.join(QC_folder,
+                                args.sample_name + "_fragLen.txt")
+        cmd1 = build_command([tools.perl,
+                              tool_path("fragment_length_dist.pl"),
+                              rmdup_bam,
+                              frag_len])
 
-        fragL = os.path.join(QC_folder, args.sample_name + "_fragLen.txt")
-        frag_dist_tool = tool_path("fragment_length_dist.pl")
-        cmd = build_command([tools.perl, frag_dist_tool, rmdup_bam, fragL])
-
-        frag_length_counts_file = args.sample_name + "_fragCount.txt"
-        fragL_count = os.path.join(QC_folder, frag_length_counts_file)
-        cmd1 = "sort -n  " + fragL + " | uniq -c  > " + fragL_count
+        fragL_count = os.path.join(QC_folder,
+                                   args.sample_name + "_fragCount.txt")
+        cmd2 = ("sort -n  " + frag_len + " | uniq -c  > " + fragL_count)
 
         fragL_dis1 = os.path.join(QC_folder, args.sample_name +
                                   "_fragLenDistribution.pdf")
-        fragL_dis2 = os.path.join(QC_folder, args.sample_name +
-                                  "_fragLenDistribution.txt")
-        cmd2 = build_command(
-            [tools.Rscript, tool_path("fragment_length_dist.R"),
-             fragL, fragL_count, fragL_dis1, fragL_dis2])
-
-        pm.run([cmd, cmd1, cmd2], fragL_dis1, nofail=True,
-               container=pm.container)
-
         fragL_png = os.path.join(QC_folder, args.sample_name +
                                  "_fragLenDistribution.png")
+        fragL_dis2 = os.path.join(QC_folder, args.sample_name +
+                                  "_fragLenDistribution.txt")
+
+        cmd3 = (tools.Rscript + " " + tool_path("PEPATAC.R") +
+                " frag -l " + frag_len + " -c " + fragL_count +
+                " -p " + fragL_dis1 + " -t " + fragL_dis2)
+
+        pm.run([cmd1, cmd2, cmd3], fragL_dis1, nofail=True,
+               container=pm.container)
         pm.report_object("Fragment distribution", fragL_dis1,
                          anchor_image=fragL_png)
+    else: 
+        print("Fragment distribution requires paired-end data")
 
-    # Peak calling
+    ############################################################################
+    #                        Extract genomic features                          #
+    ############################################################################
+    # Generate local unzipped annotation file
+    anno_local = os.path.join(raw_folder,
+                              args.genome_assembly + "_annotations.bed")
+    anno_zip = os.path.join(raw_folder,
+                            args.genome_assembly + "_annotations.bed.gz")
 
+    if (not os.path.exists(anno_local) and
+        not os.path.exists(anno_zip) and
+        os.path.exists(res.feat_annotation) or
+        args.new_start):
+
+        if res.feat_annotation.endswith(".gz"):
+            cmd1 = ("ln -sf " + res.feat_annotation + " " + anno_zip)
+            cmd2 = (ngstk.ziptool + " -d -c " + anno_zip +
+                    " > " + anno_local)
+            pm.run([cmd1, cmd2], anno_local)
+            pm.clean_add(anno_local)
+        elif res.feat_annotation.endswith(".bed"):
+            cmd = ("ln -sf " + res.feat_annotation + " " + anno_local)
+            pm.run(cmd, anno_local)
+            pm.clean_add(anno_local)
+        else:
+            print("Skipping read and peak annotation...")
+            print("This requires a {} annotation file."
+                  .format(args.genome_assembly))
+            print("Could not find {}.`"
+                  .format(str(os.path.dirname(res.feat_annotation))))
+
+    ############################################################################
+    #                               Peak calling                               #
+    ############################################################################
     pm.timestamp("### Call peaks")
 
     def report_peak_count():
@@ -1122,7 +1219,22 @@ def main():
     ngstk.make_dir(peak_folder)
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
+    fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
+                                    "_peaks_fixedWidth.narrowPeak")
+    norm_fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
+                                        "_peaks_fixedWidth_normalized.narrowPeak")
     peak_input_file = shift_bed
+    bigNarrowPeak = os.path.join(peak_folder,
+                                 args.sample_name + "_peaks.bigBed")
+    peak_bed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
+    chr_order = os.path.join(peak_folder, "chr_order.txt")
+    chr_keep = os.path.join(peak_folder, "chr_keep.txt")
+
+    # TODO: add chr_keep file and the same logic as in PEPPRO
+    sort_peak_bed = os.path.join(peak_folder, args.sample_name +
+                                 "_peaks_sort.bed")
+    peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                 "_peaks_coverage.bed")
 
     if not os.path.isfile(peak_input_file):
         print("Cannot call peaks, {} does not exist.".format(peak_input_file))
@@ -1134,284 +1246,532 @@ def main():
         pm.stop_pipeline()
     else:
         if args.peak_caller == "fseq":
-            fseq_cmd_chunks = [
-                tools.fseq,
-                ("-o", peak_folder),
-                param.fseq.params
-            ]
-            # Create the peak calling command
-            fseq_cmd_chunks.append(peak_input_file)
-            fseq_cmd = build_command(fseq_cmd_chunks)
+            if args.peak_type == "fixed":
+                err_msg = "Must use MACS2 when calling fixed width peaks."
+                pm.fail_pipeline(RuntimeError(err_msg))
+            else:
+                fseq_cmd_chunks = [
+                    tools.fseq,
+                    ("-o", peak_folder),
+                    param.fseq.params
+                ]
+                # Create the peak calling command
+                fseq_cmd_chunks.append(peak_input_file)
+                fseq_cmd = build_command(fseq_cmd_chunks)
 
-            # Create the file merge/delete commands.
-            chrom_peak_files = os.path.join(peak_folder, "*.npf")
-            merge_chrom_peaks_files = (
-                "cat {peakfiles} > {combined_peak_file}"
-                .format(peakfiles=chrom_peak_files,
-                        combined_peak_file=peak_output_file))
-            pm.clean_add(chrom_peak_files)
+                # Create the file merge/delete commands.
+                chrom_peak_files = os.path.join(peak_folder, "*.npf")
+                merge_chrom_peaks_files = (
+                    "cat {peakfiles} > {combined_peak_file}"
+                    .format(peakfiles=chrom_peak_files,
+                            combined_peak_file=peak_output_file))
+                pm.clean_add(chrom_peak_files)
 
-            # Pypiper serially executes the commands.
-            cmd = [fseq_cmd, merge_chrom_peaks_files]
-
+                # Pypiper serially executes the commands.
+                cmd = [fseq_cmd, merge_chrom_peaks_files]
         else:
             # MACS2
-            macs_cmd_chunks = [
+            # Note: required input file is non-positional ("treatment" file -t)
+            macs_cmd_base = [
                 "{} callpeak".format(tools.macs2),
                 ("-t", peak_input_file),
                 ("--outdir", peak_folder),
                 ("-n", args.sample_name),
-                ("-g", args.genome_size),
-                param.macs2.params
+                ("-g", args.genome_size)
             ]
-            # Note: required input file is non-positional ("treatment" file -t)
-            cmd = build_command(macs_cmd_chunks)
+            if args.peak_type == "variable":
+                macs_cmd_base.extend(param.macs2.params.split())
+            elif args.peak_type == "fixed":
+                fixed_width = ('--shift -75 --extsize 150 --nomodel '
+                               '--call-summits --nolambda --keep-dup all '
+                               '-p 0.01')
+                macs_cmd_base.extend(fixed_width.split())
+            else:  # default to variable
+                macs_cmd_base.extend(param.macs2.params.split())
 
         # Call peaks and report peak count.
+        cmd = build_command(macs_cmd_base)
         pm.run(cmd, peak_output_file, follow=report_peak_count,
                container=pm.container)
 
+        if args.peak_type == "fixed":
+            # extend peaks from summit by 'extend'
+            # start extend from center of peak
+            cmd = ("awk -v OFS='" + "\t" +
+                   "' '{$2 = int(($3 - $2)/2 + $2 - " +
+                   str(args.extend) + "); " +
+                   "$3 = int($2 + " + str(2*args.extend) +
+                   "); print}' " + peak_output_file + " > " + fixed_peak_file)
+            peak_output_file = fixed_peak_file
+            pm.run(cmd, peak_output_file)
+            # remove overlapping peaks
+            cmd = build_command([tools.Rscript,
+                                 (tool_path("PEPATAC.R"), "reduce"),
+                                 ("-i", fixed_peak_file),
+                                 ("-c", res.chrom_sizes)
+                                ])
+            pm.run(cmd, norm_fixed_peak_file, nofail=False)
+            peak_output_file = norm_fixed_peak_file
+            pm.clean_add(fixed_peak_file)
+
         # Filter peaks in blacklist.
+        # TODO: improve documentation of using a blacklist
         if os.path.exists(res.blacklist):
             filter_peak = os.path.join(peak_folder, args.sample_name +
                                        "_peaks_rmBlacklist.narrowPeak")
-            cmd = (tools.bedtools + " intersect " + " -a " + peak_output_file +
-                   " -b " + res.blacklist + " -v  >" + filter_peak)
 
-            pm.run(cmd, filter_peak, container=pm.container)
+            if not os.path.exists(filter_peak) or args.new_start:
+                black_local = ''
+                if res.blacklist.endswith(".gz"):
+                    black_zip = os.path.join(raw_folder,
+                                             args.genome_assembly +
+                                             "_blacklist.bed.gz")
+                    black_local = os.path.join(raw_folder,
+                                               args.genome_assembly +
+                                               "_blacklist.bed")
+                    cmd1 = ("ln -sf " + res.blacklist + " " + black_zip)
+                    cmd2 = (ngstk.ziptool + " -d -c " + black_zip +
+                            " > " + black_local)
+                    pm.run([cmd1, cmd2], black_local)
+                    pm.clean_add(black_local)
+                elif res.blacklist.endswith(".bed"):
+                    black_local = os.path.join(raw_folder,
+                                               args.genome_assembly +
+                                               "_blacklist.bed")
+                    cmd = ("ln -sf " + res.feat_annotation + " " + black_local)
+                    pm.run(cmd, black_local)
+                else:
+                    print("Skipping peak filtering...")
+                    print("This requires a {} blacklist file."
+                          .format(args.genome_assembly))
+                    print("Could not find {}.`"
+                          .format(str(os.path.dirname(res.blacklist))))
 
+                if os.path.exists(black_local):
+                    cmd = (tools.bedtools + " intersect " + " -a " +
+                           peak_output_file + " -b " + black_local +
+                           " -v  >" + filter_peak)
+                    peak_output_file = filter_peak
+                    pm.run(cmd, filter_peak)
+
+        ########################################################################
+        #                Determine the fraction of reads in peaks              #
+        ########################################################################
         pm.timestamp("### Calculate fraction of reads in peaks (FRiP)")
 
-        frip = calc_frip(rmdup_bam, peak_output_file,
-                         frip_func=ngstk.simple_frip,
-                         pipeline_manager=pm)
-        pm.report_result("FRiP", frip)
+        if pm.get_stat("FRiP") is None or args.new_start:
+            frip = calc_frip(rmdup_bam, peak_output_file,
+                             frip_func=ngstk.simple_frip,
+                             pipeline_manager=pm)
+            pm.report_result("FRiP", round(frip, 2))
 
-        if args.frip_ref_peaks and os.path.exists(args.frip_ref_peaks):
+        if  os.path.exists(res.frip_ref_peaks):
             # Use an external reference set of peaks instead of the peaks
             # called from this run
-            frip_ref = calc_frip(rmdup_bam, args.frip_ref_peaks,
+            frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
                                  frip_func=ngstk.simple_frip,
                                  pipeline_manager=pm)
-            pm.report_result("FRiP_ref", frip_ref)
+            pm.report_result("FRiP_ref", round(frip_ref, 2))
 
         # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
-
         pm.timestamp("### # Produce bigBed formatted narrowPeak file")
-
-        bigNarrowPeak = os.path.join(peak_folder, args.sample_name +
-                                     "_peaks.bigBed")
         cmd = build_command(
-                [tools.Rscript, tool_path("narrowPeakToBigBed.R"),
-                 peak_output_file, res.chrom_sizes, tools.bedToBigBed,
-                 bigNarrowPeak])
-        pm.run(cmd, bigNarrowPeak, nofail=False, container=pm.container)
+                [tools.Rscript, tool_path("PEPATAC.R"), "bigbed", 
+                 ("-i", peak_output_file),
+                 ("-c", res.chrom_sizes),
+                 ("-t", tools.bedToBigBed)
+                ])
+        pm.run(cmd, bigNarrowPeak, nofail=False)
         
-        # Calculate peak coverage
-
+        ########################################################################
+        #                        Calculate peak coverage                       #
+        ########################################################################
         pm.timestamp("### Calculate peak coverage")
 
-        peakBed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
-        chrOrder = os.path.join(peak_folder, "chr_order.txt")
-
-        cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peakBed)
-        cmd2 = (tools.samtools + " view -H " + rmdup_bam +
-                " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
-                "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chrOrder)
-
-        sortPeakBed = os.path.join(peak_folder, args.sample_name +
-                                   "_peaks_sort.bed")
-        cmd3 = (tools.bedtools + " sort -i " + peakBed + " -faidx " +
-                chrOrder + " > " + sortPeakBed)
-        pm.run([cmd1, cmd2, cmd3], sortPeakBed, nofail=True,
-               container=pm.container)
+        if not os.path.exists(peak_coverage) or args.new_start:
+            cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peak_bed)
+            cmd2 = (tools.samtools + " view -H " + rmdup_bam +
+                    " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+                    "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
+            cmd3 = ("cut -f 1 " + chr_order + " > " + chr_keep)
+            cmd4 = (tools.bedtools + " sort -i " + peak_bed + " -faidx " +
+                    chr_order + " > " + sort_peak_bed)
+            pm.run([cmd1, cmd2, cmd3, cmd4], sort_peak_bed, nofail=True,
+                   container=pm.container)
         
-        peakCoverage = os.path.join(peak_folder, args.sample_name +
-                                    "_peaks_coverage.bed")
         cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
-                sortPeakBed + " -b " + rmdup_bam + " -g " + chrOrder +
-                " > " + peakCoverage)
-        pm.run(cmd4, peakCoverage, nofail=True, container=pm.container)
+                sort_peak_bed + " -b " + rmdup_bam + " -g " + chr_order +
+                " > " + peak_coverage)
+        pm.run(cmd4, peak_coverage, nofail=True)
         
-        pm.clean_add(peakBed)
-        pm.clean_add(chrOrder)
-        pm.clean_add(sortPeakBed)
-        
-        # Calculate read coverage
+        pm.clean_add(peak_bed)
+        pm.clean_add(chr_order)
+        pm.clean_add(chr_keep)
+        pm.clean_add(sort_peak_bed)
 
-        pm.timestamp("### Calculate read coverage")
+        ########################################################################
+        #                             Annotate peaks                           #
+        ########################################################################
+        pm.timestamp("### Annotate peaks")
 
-        # Custom annotation file or direct path to annotation file is specified
-        anno_local = ''
+        chr_PDF  = os.path.join(QC_folder, 
+            args.sample_name + "_chromosome_distribution.pdf")
+        chr_PNG  = os.path.join(QC_folder,
+            args.sample_name + "_chromosome_distribution.png")
+        TSSdist_PDF = os.path.join(QC_folder,
+            args.sample_name + "_TSS_distribution.pdf")
+        TSSdist_PNG = os.path.join(QC_folder,
+            args.sample_name + "_TSS_distribution.png")
+        gd_PDF  = os.path.join(QC_folder,
+            args.sample_name + "_genomic_distribution.pdf")
+        gd_PNG  = os.path.join(QC_folder,
+            args.sample_name + "_genomic_distribution.png")
 
-        if args.anno_name:
-            anno_file  = os.path.abspath(args.anno_name)
-            anno_unzip = os.path.splitext(anno_file)[0]
-            anno_local = os.path.join(raw_folder, args.anno_name)
-            cmd = ("ln -sf " + anno_file + " " + anno_local)
-            pm.run(cmd, anno_local, container=pm.container)
-        else:
-            # Default annotation file
-            anno_file  = os.path.abspath(anno_path(args.genome_assembly +
-                                         "_annotations.bed.gz"))
-            anno_unzip = os.path.abspath(anno_path(args.genome_assembly +
-                                         "_annotations.bed"))
+        cmd1 = build_command(
+                [tools.Rscript,
+                 (tool_path("PEPATAC.R"), "anno"),
+                 ("-p", "chromosome"),
+                 ("-i", peak_output_file),
+                 ("-f", anno_local),
+                 ("-g", args.genome_assembly),
+                 ("-o", chr_PDF)
+                ])
+        cmd2 = build_command(
+                [tools.Rscript,
+                 (tool_path("PEPATAC.R"), "anno"),
+                 ("-p", "tss"),
+                 ("-i", peak_output_file),
+                 ("-f", anno_local),
+                 ("-g", args.genome_assembly),
+                 ("-o", TSSdist_PDF)
+                ])
+        cmd3 = build_command(
+                [tools.Rscript,
+                 (tool_path("PEPATAC.R"), "anno"),
+                 ("-p", "genomic"),
+                 ("-i", peak_output_file),
+                 ("-f", anno_local),
+                 ("-g", args.genome_assembly),
+                 ("-o", gd_PDF)
+                ])
 
-            if not os.path.exists(anno_file) and not os.path.exists(anno_unzip):
-                print("Skipping read annotation")
-                print("This requires a {} annotation file."
-                      .format(args.genome_assembly))
-                print("Confirm this file is present in {} or specify using `--anno-name`"
-                      .format(str(os.path.dirname(anno_file))))
+        if os.path.isfile(anno_local):
+            if not os.path.exists(chr_PDF):
+                pm.run(cmd1, chr_PDF)
+                pm.report_object("Peak chromosome distribution", chr_PDF,
+                                 anchor_image=chr_PNG)
+            if not os.path.exists(TSSdist_PDF):
+                pm.run(cmd2, TSSdist_PDF)
+                pm.report_object("TSS distance distribution", TSSdist_PDF,
+                                 anchor_image=TSSdist_PNG)
+            if not os.path.exists(gd_PDF):
+                pm.run(cmd3, gd_PDF)
+                pm.report_object("Peak partition distribution", gd_PDF,
+                                 anchor_image=gd_PNG)
+
+        ########################################################################
+        #                       Perform motif analysis                         #
+        ########################################################################
+        if args.motif:
+            pm.timestamp("### Motif analysis")
+
+            # convert narrowPeak to BED6
+            peak_bed_file = os.path.join(peak_folder,  args.sample_name +
+                                         "_peaks.bed")
+            if os.path.exists(peak_output_file) and os.stat(peak_output_file).st_size > 0:
+                cmd = ("cut -f 1-6 " + peak_output_file + " > " + peak_bed_file)
+                pm.run(cmd, peak_bed_file)
+                pm.clean_add(peak_bed_file) 
+                # create preparsed directory
+                tempdir = tempfile.mkdtemp(dir=peak_folder)
+                pm.clean_add(tempdir)
+                # perform motif analysis
+                motif_HTML  = os.path.join(peak_folder, "homerResults.html")
+                cmd = ("findMotifsGenome.pl " + peak_bed_file + " " +
+                       args.genome_assembly + " " + peak_folder +
+                       " -size given -mask -preparsedDir " + tempdir)
+                pm.run(cmd, motif_HTML)
+                pm.report_object("Motif analysis", motif_HTML)
+            elif not os.path.exists(peak_output_file):
+                print("Cannot perform motif enrichment.")
+                print("Could not find {}".format(peak_output_file))
+                pm.stop_pipeline()
+            elif os.stat(peak_output_file).st_size == 0:
+                print("Cannot perform motif enrichment.")
+                print("{} is empty.".format(peak_output_file))
+                pm.stop_pipeline()
             else:
-                anno_local = os.path.join(raw_folder,
-                                          args.genome_assembly +
-                                          "_annotations.bed.gz")
-                cmd = ("ln -sf " + anno_file + " " + anno_local)
-                pm.run(cmd, anno_local, container=pm.container)            
+                print("Cannot perform motif enrichment.")
+                print("Confirm peak calling was successful.")
+                pm.stop_pipeline()
 
-        annoList = list()
+    ############################################################################ 
+    #                  Determine genomic feature coverage                      #
+    ############################################################################
+    pm.timestamp("### Calculate read coverage")
+
+    #frif_PDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
+    #frif_PNG = os.path.join(QC_folder, args.sample_name + "_frif.png")
+
+    # Cummulative Fraction of Reads in Features (cFRiF)
+    cFRiF_PDF = os.path.join(QC_folder, args.sample_name + "_cFRiF.pdf")
+    cFRiF_PNG = os.path.join(QC_folder, args.sample_name + "_cFRiF.png")
+
+    # Fraction of Reads in Feature (FRiF)
+    FRiF_PDF = os.path.join(QC_folder, args.sample_name + "_FRiF.pdf")
+    FRiF_PNG = os.path.join(QC_folder, args.sample_name + "_FRiF.png")
+
+    if not os.path.exists(cFRiF_PDF) or args.new_start:
+        anno_list = list()
+        anno_files = list()
 
         if os.path.isfile(anno_local):
             # Get list of features
-            cmd1 = (ngstk.ziptool + " -d -c " + anno_local +
-                    " | cut -f 4 | sort -u")
-            ftList = pm.checkprint(cmd1)
-            ftList = str.splitlines(str(ftList))
+            if args.prioritize:
+                cmd1 = ("cut -f 4 " + anno_local + " | uniq")
+            else:
+                cmd1 = ("cut -f 4 " + anno_local + " | sort -u")
+            ft_list = pm.checkprint(cmd1, shell=True)
+            ft_list = ft_list.splitlines()
 
             # Split annotation file on features
-            cmd2 = (ngstk.ziptool + " -d -c " + anno_local +
-                    " | awk -F'\t' '{print>\"" + QC_folder + "/\"$4}'")
-            if len(ftList) >= 1:
-                for pos, anno in enumerate(ftList):
-                    annoFile = os.path.join(QC_folder, anno)
-                    pm.run(cmd2, annoFile, container=pm.container)
+            cmd2 = ("awk -F'\t' '{print>\"" + QC_folder + "/\"$4}' " +
+                    anno_local)
 
-                    # Rename files to valid filenames
-                    validName = re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_')
-                    fileName = os.path.join(QC_folder, validName)
-                    cmd = 'mv "{old}" "{new}"'.format(old=annoFile, new=fileName)
-                    pm.run(cmd, fileName,
-                           container=pm.container)
+            if args.prioritize:
+                if len(ft_list) >= 1:
+                    for pos, anno in enumerate(ft_list):
+                        # working files
+                        anno_file = os.path.join(QC_folder, str(anno))
+                        valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
+                        file_name = os.path.join(QC_folder, valid_name)
+                        anno_sort = os.path.join(QC_folder,
+                                                 valid_name + "_sort.bed")
+                        anno_cov = os.path.join(QC_folder,
+                                                args.sample_name + "_" +
+                                                valid_name + "_coverage.bed")
 
-                    annoSort = os.path.join(QC_folder, validName + "_sort.bed")
-                    cmd3 = ("cut -f 1-3 " + fileName +
-                            " | bedtools sort -i stdin -faidx " +
-                            chrOrder + " > " + annoSort)
-                    pm.run(cmd3, annoSort, container=pm.container)
+                        # Extract feature files
+                        pm.run(cmd2, anno_file)
 
-                    annoCov = os.path.join(QC_folder, args.sample_name + "_" +
-                                           validName + "_coverage.bed")
-                    annoList.append(annoCov)
+                        # Rename files to valid file_names
+                        # Avoid 'mv' "are the same file" error
+                        if not os.path.exists(file_name):
+                            cmd = 'mv "{old}" "{new}"'.format(old=anno_file,
+                                                              new=file_name)
+                            pm.run(cmd, file_name)
 
-                    cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
-                            annoSort + " -b " + rmdup_bam + " -g " + chrOrder +
-                            " > " + annoCov)
-                    pm.run(cmd4, annoCov, container=pm.container)
-                    pm.clean_add(fileName)
-                    pm.clean_add(annoSort)
-                    if args.lite:
-                        pm.clean_add(annoCov)
+                        # Sort files (ensure only aligned chromosomes are kept)
+                        # Need to cut -f 1-6 if you want strand information
+                        # Not all features are stranded
+                        # TODO: check for strandedness (*only works on some features)
+                        if not os.path.exists(chr_order):
+                            cmd = (tools.samtools + " view -H " + rmdup_bam +
+                                   " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+                                   "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
+                            pm.run(cmd, chr_order)
+                            pm.clean_add(chr_order)
 
-        # Plot FRiF or FRiP
 
-        pm.timestamp("### Plot FRiP/F")
+                        cmd3 = ("cut -f 1 " + chr_order + " | grep -wf - " +
+                                file_name + " | cut -f 1-3 | " +
+                                "bedtools sort -i stdin -faidx " +
+                                chr_order + " | bedtools merge -i stdin > " +                           
+                                anno_sort)
+                        # for future stranded possibilities include for merge
+                        # "-c 4,5,6 -o collapse,collapse,collapse > " +
+                        pm.run(cmd3, anno_sort)
+                
+                        anno_files.append(anno_sort)
+                        anno_list.append(anno_cov)
 
-        cmd = (tools.samtools + " view -@ " + str(pm.cores) + " " +
-               param.samtools.params + " -c -F4 " + rmdup_bam)
-        totalReads = pm.checkprint(cmd)
-        totalReads = str(totalReads).rstrip()
+                        pm.clean_add(file_name)
+                        pm.clean_add(anno_sort)
+                        pm.clean_add(anno_cov)
 
-        fripPDF = os.path.join(QC_folder, args.sample_name + "_frip.pdf")
-        fripPNG = os.path.join(QC_folder, args.sample_name + "_frip.png")
-        fripCmd = [tools.Rscript, tool_path("PEPATAC_frip.R"),
-                   args.sample_name, peakCoverage, totalReads]
+                    # Iteratively prioritize annotations by order presented
+                    anno_files.reverse()
+                    if len(anno_files) >= 1:
+                        idx = list(range(0,len(anno_files)))
+                        #idx.reverse()
+                        file_count = 1
+                        for annotation in anno_files:
+                            del idx[0]
+                            if file_count < len(anno_files):
+                                file_count += 1
+                                for i in idx:
+                                    if annotation is not anno_files[i]:
+                                        os.path.join(QC_folder)
+                                        temp = tempfile.NamedTemporaryFile(dir=QC_folder, delete=False)
+                                        #os.chmod(temp.name, 0o771)
+                                        cmd1 = ("bedtools subtract -a " +
+                                                annotation + " -b " +
+                                                anno_files[i] + " > " + 
+                                                temp.name)
+                                        cmd2 = ("mv " + temp.name +
+                                                " " + annotation)
+                                        pm.run([cmd1, cmd2], cFRiF_PDF)
+                                        temp.close()
 
-        if len(annoList) >= 1:
-            fripPDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
-            fripPNG = os.path.join(QC_folder, args.sample_name + "_frif.png")
-            fripCmd.append(fripPDF)
-            fripCmd.append("--bed")
-            for cov in annoList:
-                fripCmd.append(cov)
+                    anno_list.reverse()
+                    if len(anno_files) >= 1:
+                        for idx, annotation in enumerate(anno_files):
+                            # Identifies unstranded coverage
+                            # Would need to use '-s' flag to be stranded
+                            if os.path.isfile(annotation) and os.stat(annotation).st_size > 0:
+                                cmd3 = (tools.bedtools +
+                                        " coverage -sorted -a " +
+                                        annotation + " -b " + rmdup_bam +
+                                        " -g " + chr_order + " > " +
+                                        anno_list[idx])
+                                pm.run(cmd3, cFRiF_PDF)
+            else:
+                if len(ft_list) >= 1:
+                    for pos, anno in enumerate(ft_list):
+                        # working files
+                        anno_file = os.path.join(QC_folder, str(anno))
+                        valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
+                        file_name = os.path.join(QC_folder, valid_name)
+                        anno_sort = os.path.join(QC_folder,
+                                                 valid_name + "_sort.bed")
+                        anno_cov = os.path.join(QC_folder,
+                                                args.sample_name + "_" +
+                                                valid_name + "_coverage.bed")
+
+                        # Extract feature files
+                        pm.run(cmd2, anno_file)
+
+                        # Rename files to valid file_names
+                        # Avoid 'mv' "are the same file" error
+                        if not os.path.exists(file_name):
+                            cmd = 'mv "{old}" "{new}"'.format(old=anno_file,
+                                                              new=file_name)
+                            pm.run(cmd, file_name)
+
+                        # Sort files (ensure only aligned chromosomes are kept)
+                        # Need to cut -f 1-6 if you want strand information
+                        # Not all features are stranded
+                        # TODO: check for strandedness
+                        if not os.path.exists(chr_order):
+                            cmd = (tools.samtools + " view -H " + rmdup_bam +
+                                   " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+                                   "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
+                            pm.run(cmd, chr_order)
+                            pm.clean_add(chr_order)
+
+                        cmd3 = ("cut -f 1 " + chr_order + " | grep -wf - " +
+                                file_name + " | cut -f 1-3 | " +
+                                "bedtools sort -i stdin -faidx " +
+                                chr_order + " > " + anno_sort)
+                        pm.run(cmd3, anno_sort)
+                        
+                        anno_list.append(anno_cov)
+                        # Identifies unstranded coverage
+                        # Would need to use '-s' flag to be stranded
+                        cmd4 = (tools.bedtools + " coverage -sorted " +
+                                " -a " + anno_sort + " -b " + rmdup_bam +
+                                " -g " + chr_order + " > " + anno_cov)
+                        pm.run(cmd4, anno_cov)
+
+                        pm.clean_add(file_name)
+                        pm.clean_add(anno_sort)
+                        pm.clean_add(anno_cov)
+    
+
+    ############################################################################
+    #                             Plot FRiF or FRiP                            #
+    ############################################################################
+    pm.timestamp("### Calculate cumulative and terminal fraction of reads in features (cFRiF/FRiF)")
+
+    # Calculate size of genome
+    if not pm.get_stat("Genome_size") or args.new_start:
+        genome_size = int(pm.checkprint(
+            ("awk '{sum+=$2} END {printf \"%.0f\", sum}' " +
+             res.chrom_sizes)))
+        pm.report_result("Genome_size", genome_size)
+    else:
+        genome_size = int(pm.get_stat("Genome_size"))
+
+    if not os.path.exists(cFRiF_PDF) or args.new_start:
+        if args.prioritize:
+            # Count bases, not reads
+            # return to original priority ranked order
+            anno_list.reverse()
+            count_cmd = (tools.bedtools + " genomecov -ibam " + rmdup_bam +
+                         " -bg | awk '{sum+=($3-$2)}END{print sum}'")
         else:
-            fripCmd.append(fripPDF)
+            # Count reads
+            count_cmd = (tools.samtools + " view -@ " + str(pm.cores) + " " +
+                         param.samtools.params + " -c -F4 " + rmdup_bam)
 
-        print(fripCmd)
+        read_count = pm.checkprint(count_cmd)
+        read_count = str(read_count).rstrip()
 
-        cmd = build_command(fripCmd)
-        pm.run(cmd, fripPDF, nofail=False, container=pm.container)
+        # cfrif_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "cfrif",
+        #              "-n", args.sample_name, "-r", total_reads,
+        #              "-o", cFRiF_PDF, "--bed"]
+        # frif_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
+        #              "-n", args.sample_name, "-r", total_reads,
+        #              "-o", FRiF_PDF, "--bed"]
 
-        if len(annoList) >= 1:        
-            pm.report_object("Cumulative FRiF", fripPDF, anchor_image=fripPNG)
-        else:
-            pm.report_object("Cumulative FRiP", fripPDF, anchor_image=fripPNG)
+        cFRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
+                     "-s", args.sample_name, "-z", str(genome_size).rstrip(),
+                     "-n", read_count, "-y", "cfrif"]
 
-        # Annotate peaks
+        FRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
+                    "-s", args.sample_name, "-z", str(genome_size).rstrip(),
+                    "-n", read_count, "-y", "frif"]
 
-        pm.timestamp("### Annotate peaks")
+        if not args.prioritize:
+            # Use reads for calculation
+            cFRiF_cmd.append("--reads")
+            FRiF_cmd.append("--reads")
 
-        gaPDF  = os.path.join(QC_folder,
-                              args.sample_name + "_peaks_chr_dist.pdf")
-        gaPNG  = os.path.join(QC_folder,
-                              args.sample_name + "_peaks_chr_dist.png")
-        tssPDF = os.path.join(QC_folder,
-                              args.sample_name + "_peaks_TSS_dist.pdf")
-        tssPNG = os.path.join(QC_folder,
-                              args.sample_name + "_peaks_TSS_dist.png")
-        gpPDF  = os.path.join(QC_folder,
-                              args.sample_name + "_peaks_partition_dist.pdf")
-        gpPNG  = os.path.join(QC_folder,
-                              args.sample_name + "_peaks_partition_dist.png")
+        cFRiF_cmd.append("-o")
+        cFRiF_cmd.append(cFRiF_PDF)
+        cFRiF_cmd.append("--bed")
 
-        cmd = build_command(
-                [tools.Rscript, tool_path("PEPATAC_annotation.R"),
-                 anno_local,
-                 peak_output_file,
-                 args.sample_name,
-                 args.genome_assembly,
-                 QC_folder])
+        FRiF_cmd.append("-o")
+        FRiF_cmd.append(FRiF_PDF)
+        FRiF_cmd.append("--bed")
 
-        if os.path.isfile(anno_local):
-            pm.run(cmd, gpPDF, container=pm.container)            
-            pm.report_object("Peak chromosome distribution", gaPDF,
-                             anchor_image=gaPNG)
-            pm.report_object("TSS distance distribution", tssPDF,
-                             anchor_image=tssPNG)
-            pm.report_object("Peak partition distribution", gpPDF,
-                             anchor_image=gpPNG)            
-        elif os.path.isfile(anno_unzip) and os.stat(anno_unzip).st_size > 0:
-            anno_local = anno_unzip
-            pm.run(cmd, gpPDF, container=pm.container)            
-            pm.report_object("Peak chromosome distribution", gaPDF,
-                             anchor_image=gaPNG)
-            pm.report_object("TSS distance distribution", tssPDF,
-                             anchor_image=tssPNG)
-            pm.report_object("Peak partition distribution", gpPDF,
-                             anchor_image=gpPNG)
-        else:
-            print("Cannot annotate peaks without a {} annotation file"
-                  .format(args.genome_assembly))
-            print("Confirm this file is present in {} or specify using `--anno-name`"
-                  .format(str(os.path.dirname(anno_file))))
+        if anno_list:
+            for cov in anno_list:
+                if os.path.isfile(cov) and os.stat(cov).st_size > 0:
+                    cFRiF_cmd.append(cov)
+                    FRiF_cmd.append(cov)
+            cmd = build_command(cFRiF_cmd)
+            pm.run(cmd, cFRiF_PDF, nofail=False)
+            pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
 
-        if args.lite:
-            # Remove everything but ultimate outputs
-            pm.clean_add(fragL)
-            pm.clean_add(fragL_dis2)
-            pm.clean_add(fragL_count)
-            pm.clean_add(peakCoverage)
-            pm.clean_add(shift_bed)
-            pm.clean_add(Tss_enrich)
-            pm.clean_add(mapping_genome_bam)
-            pm.clean_add(mapping_genome_index)
-            pm.clean_add(failQC_genome_bam)
-            pm.clean_add(unmap_genome_bam)
-            for unmapped_fq in to_compress:
+            cmd = build_command(FRiF_cmd)
+            pm.run(cmd, FRiF_PDF, nofail=False)
+            pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+
+
+    ############################################################################
+    #            Remove all but final output files to save space               #
+    ############################################################################
+    if args.lite:
+        # Remove everything but ultimate outputs
+        pm.clean_add(fragL)
+        pm.clean_add(fragL_dis2)
+        pm.clean_add(fragL_count)
+        pm.clean_add(peak_coverage)
+        pm.clean_add(shift_bed)
+        pm.clean_add(Tss_enrich)
+        pm.clean_add(mapping_genome_bam)
+        pm.clean_add(mapping_genome_index)
+        pm.clean_add(failQC_genome_bam)
+        pm.clean_add(unmap_genome_bam)
+        for unmapped_fq in to_compress:
+            if not unmapped_fq:
                 pm.clean_add(unmapped_fq + ".gz")
 
-        # COMPLETE!
-        pm.stop_pipeline()
+    ############################################################################
+    #                            PIPELINE COMPLETE!                            #
+    ############################################################################
+    pm.stop_pipeline()
 
 
 if __name__ == '__main__':
@@ -1421,5 +1781,4 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("Pipeline aborted.")
-        sys.exit(1)
+        sys.exit("Pipeline aborted")

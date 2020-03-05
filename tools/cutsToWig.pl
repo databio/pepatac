@@ -2,6 +2,7 @@
 
 # By Nathan Sheffield, University of Virginia, 2017
 # Update 03.04.19 - Jason Smith - Add option to use variable or fixedStep
+# Update 05.14.19 - Jason Smith - Fix variableStep use
 
 # This is an incredibly fast Perl utility that converts cut sites
 # (coordinates) into a wiggle-like output.
@@ -29,9 +30,10 @@ $chrSize = shift;       # Size of chromosome is the first argument
 $variableStep = shift;  # Second argument is whether to use variable or fixed
 $countIndex = 1;
 $currentCount = 1;
-$header =  <>; # Discard the first line (fixedstep)
+$header =  <>;  # Grab the first line (e.g. the header)
 print $header;
 $cutSite = <>;  # Grab the first cut
+chomp($cutSite);
 
 if ($variableStep) {  # Use variableStep wiggle format
 	# Increment until the first cut
@@ -42,7 +44,7 @@ if ($variableStep) {  # Use variableStep wiggle format
 
 	# Loop through cuts, converting to wiggle format
 	while($cutSite = <>) {
-		chomp($cutSite);
+		chomp($cutSite);		
 		# if it's a duplicate read...
 		if ($cutSite == $previousCut) { # sum up all reads for this spot.
 			$currentCount++;
@@ -51,7 +53,7 @@ if ($variableStep) {  # Use variableStep wiggle format
 
 		# otherwise, it makes it past this loop;
 		# output the sum of counts for the previous spot
-		print $previousCut."\t".$currentCount."\n"; 
+		print "$previousCut\t$currentCount\n";
 		$countIndex++;
 		# reset for the current spot
 		$currentCount = 1;
@@ -65,6 +67,10 @@ if ($variableStep) {  # Use variableStep wiggle format
 	# Increment until we each the end.
 	while($countIndex <= $chrSize) {
 		$countIndex++;
+	}
+	# If there are no additional cutSites
+	if ($currentCount == 1) {
+		print "$chrSize\t0\n";
 	}
 } else {  # Use fixedStep wiggle format
 	# Print out 0s until the first cut

@@ -1,6 +1,9 @@
 protocol_mapping:
   ATAC: pepatac.py
+  atac: pepatac.py
   ATAC-SEQ: pepatac.py 
+  ATAC-seq: pepatac.py
+  atac-seq: pepatac.py
 
 pipelines:
   pepatac.py:
@@ -18,16 +21,22 @@ pipelines:
     optional_arguments:
       "--input2": read2
       "--peak-caller": peak_caller
-      "--frip-ref-peaks": FRIP_ref
+      "--genome-size": macs_genome_size
+      "--trimmer": trimmer
       "--prealignments": prealignments
       "--deduplicator": deduplicator
-      "--trimmer": trimmer
-      "--genome-size": macs_genome_size
-      "--anno-name": anno_name
       "--TSS-name": TSS_name
+      "--blacklist": blacklist
+      "--peak-type": peak_type
+      "--extend": extend
+      "--frip-ref-peaks": frip_ref_peaks
+      "--motif": motif
+      "--anno-name": anno_name
+      "--prioritize": prioritize
       "--keep": keep
       "--noFIFO": no_fifo
       "--lite": lite
+<<<<<<< HEAD
     command_template: >
       {pipeline.path}
       --sample-name {sample.sample_name}
@@ -46,12 +55,25 @@ pipelines:
       {% if sample.keep is defined %} --keep {sample.keep} {% endif %}
       {% if sample.no_fifo is defined %} --noFIFO {sample.no_fifo} {% endif %}
       {% if sample.lite is defined %} --lite {sample.lite} {% endif %}
+=======
+    outputs:
+      smooth_bw: "aligned_{sample.genome}/{sample.sample_name}_smooth.bw"
+      exact_bw:  "aligned_{sample.genome}_exact/{sample.sample_name}_exact.bw"
+      aligned_bam: "aligned_{sample.genome}/{sample.sample_name}_sort.bam"
+      # pre_smooth_bw: "aligned_{project.prealignments}/{sample.sample_name}_smooth.bw"
+      peaks_bed: "peak_calling_{sample.genome}/{sample.sample_name}_peaks.bed"
+      summits_bed: "peak_calling_{sample.genome}/{sample.sample_name}_summits.bed"
+>>>>>>> dev
     compute:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
       bulker_crate: databio/pepatac
     summarizers:
       - tools/PEPATAC_summarizer.R
+      - tools/PEPATAC_consensusPeaks.R
+    bioconductor:
+      readFunName: readPepatacPeakBeds
+      readFunPath: BiocProject/readPepatacPeakBeds.R
     summary_results:
       - alignment_percent_file:
         caption: "Alignment percent file"

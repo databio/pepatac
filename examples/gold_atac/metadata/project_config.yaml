@@ -1,9 +1,10 @@
 # This project config file describes your project. See looper docs for details.
+name: gold
 
 metadata:  # relative paths are relative to this config file
-  sample_annotation: gold_atac_annotation.csv  # sheet listing all samples in the project
-  output_dir: ${PROCESSED}gold_atac  # ABSOLUTE PATH to the parent, shared space where project results go
-  pipeline_interfaces: ${CODEBASE}pepatac/pipeline_interface.yaml
+  sample_table: gold_atac_annotation.csv    # sheet listing all samples in the project (relative to this file)
+  output_dir: ${PROCESSED}pepatac/gold_atac # ABSOLUTE PATH to the parent, shared space where project results go
+  pipeline_interfaces: ${CODE}pepatac/pipeline_interface.yaml
 
 # in your sample_annotation, columns with these names will be populated as described 
 # in the data_sources section below
@@ -19,16 +20,10 @@ data_sources:  # This section describes paths to your data
   SRA: "${SRABAM}{SRR}.bam"
   SRA_1: "${SRAFQ}{SRR}_1.fastq.gz"
   SRA_2: "${SRAFQ}{SRR}_2.fastq.gz"
-  TEST_1: "${CODEBASE}pepatac/examples/test_data/{sample_name}_r1.fastq.gz"
-  TEST_2: "${CODEBASE}pepatac/examples/test_data/{sample_name}_r2.fastq.gz"
 
 implied_columns:
   organism:
     human:
       genome: hg38
-      macs_genome_size: "hs"
-      prealignments: "rCRSd"
-    mouse:
-      genome: mm10
-      macs_genome_size: "mm"
-      prealignments: null
+      macs_genome_size: hs
+      prealignments: rCRSd

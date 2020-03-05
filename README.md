@@ -19,7 +19,7 @@ mkdocs serve -f mkdocs.yml
 Build and deploy with:
 
 ```
-mkdocs build -f mkdocs.yml -d $CODEBASE/code.databio.org/caravel/
+mkdocs build -f mkdocs.yml -d $CODEBASE/code.databio.org/pepatac/
 ```
 
 ## Contributing

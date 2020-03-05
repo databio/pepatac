@@ -4,9 +4,7 @@ Information regarding universal ATAC-seq [terms and definitions](https://www.enc
 
 Additional information relevant to `PEPATAC` output and interpretation includes:
 
----
-
-## **Peak calling output**
+## Peak calling output
 
 The pipeline's default peak caller is `MACS2`.  More [detailed descriptions regarding `MACS2` output](https://github.com/taoliu/MACS) may be discovered in the `MACS2` repository.
 
@@ -23,9 +21,7 @@ The following files are included in default `PEPATAC` analyses:
     4. read count
 - **&lt;sample_name&gt;_peaks.bigBed**: A bigNarrowPeak (bigBed) formatted version of the narrowPeak file produced by `MACS2`. Check out the [bigNarrowPeak track format](https://genome.ucsc.edu/goldenpath/help/bigNarrowPeak.html) page for more information.
 
----
-
-## **QC output**
+## QC output
 
 - **&lt;sample_name&gt;_bamQC.tsv**: A tabular file containing alignment statistics and library complexity measures.  
   Includes:
@@ -41,7 +37,7 @@ The following files are included in default `PEPATAC` analyses:
     - **PBC2 (PCR Bottleneck Coefficient 2)**: one read pairs / two read pairs.
 - **&lt;sample_name&gt;_peaks_chr_dist.[png/pdf]**: Plot(s) of the chromosomal distribution of called peaks.
 - **&lt;sample_name&gt;_&lt;feature&gt;_coverage.bed**: A BED format file containing the number of overlapping reads in each &lt;feature&gt;.
-- **&lt;sample_name&gt;_frif.[png/pdf]**: Plot(s) of the fractions of reads in each &lt;feature&gt;. The cumulative sum of reads in a feature is plotted against the log of the number of bases covered by that feature.  Therefore, it takes fewer total bases covered to visualize an enriched feature compared to others.  Because peaks are called specifically on the data (i.e. enriched specifically for the data), the cumulative fraction of reads in peaks should generally be the first (left-most) curve. The number following the feature name is the fraction of reads in that feature. [Features may be customized](/howto/custom-features.md) by specifying the `--anno_name` argument to the pipeline along with the corresponding BED file containing defined features.
+- **&lt;sample_name&gt;_frif.[png/pdf]**: Plot(s) of the fractions of reads in each &lt;feature&gt;. The cumulative sum of reads in a feature is plotted against the log of the number of bases covered by that feature.  Therefore, it takes fewer total bases covered to visualize an enriched feature compared to others.  Because peaks are called specifically on the data (i.e. enriched specifically for the data), the cumulative fraction of reads in peaks should generally be the first (left-most) curve. The number following the feature name is the fraction of reads in that feature. [Features may be customized](custom-features.md) by specifying the `--anno_name` argument to the pipeline along with the corresponding BED file containing defined features.
 - **&lt;sample_name&gt;_fragLen.txt**: A text file containing a single column of all fragment lengths.
 - **&lt;sample_name&gt;_fragCount.txt**: A tabular file containing the number of read fragments at each fragment length.
 - **&lt;sample_name&gt;_fragLenDistribution.txt**: A tabular file containing fragment length distribution summary statistics.
@@ -51,9 +47,8 @@ The following files are included in default `PEPATAC` analyses:
 - **&lt;sample_name&gt;_TssEnrichment.txt**: A text file containing a single column of read counts at each position flanking transcription start sites (-2000 - TSS - +2000).
 - **&lt;sample_name&gt;_TssEnrichment.[png/pdf]**: Global TSS enrichment plot(s). Illustrates the aggregate enrichment around *all* transcription start sites.
 
----
 
-## **Signal tracks**
+## Signal tracks
 
 The tool to produce these tracks, `bamSitesToWig.py`, is included in the `PEPATAC` repository and may be called indpendently with parameters like the `--smooth-length` further customized.
 
