@@ -28,6 +28,24 @@ pipelines:
       "--keep": keep
       "--noFIFO": no_fifo
       "--lite": lite
+    command_template: >
+      {pipeline.path}
+      --sample-name {sample.sample_name}
+      --genome {sample.genome}
+      --input {sample.read1}
+      --single-or-paired {sample.read_type}
+      {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
+      {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
+      {% if sample.FRIP_ref is defined %} --frip-ref-peaks {sample.FRIP_ref} {% endif %}
+      {% if sample.prealignments is defined %} --prealignments {sample.prealignments} {% endif %}
+      {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
+      {% if sample.trimmer is defined %} --trimmer {sample.trimmer} {% endif %}
+      {% if sample.macs_genome_size is defined %} --genome-size {sample.macs_genome_size} {% endif %}
+      {% if sample.TSS_name is defined %} --TSS-name {sample.TSS_name} {% endif %}
+      {% if sample.anno_name is defined %} --anno_name {sample.anno_name} {% endif %}
+      {% if sample.keep is defined %} --keep {sample.keep} {% endif %}
+      {% if sample.no_fifo is defined %} --noFIFO {sample.no_fifo} {% endif %}
+      {% if sample.lite is defined %} --lite {sample.lite} {% endif %}
     compute:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
