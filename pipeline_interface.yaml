@@ -49,6 +49,7 @@ pipelines:
     compute:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
+      bulker_crate: databio/pepatac
     summarizers:
       - tools/PEPATAC_summarizer.R
     summary_results:
