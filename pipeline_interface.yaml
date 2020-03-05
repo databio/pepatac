@@ -36,7 +36,6 @@ pipelines:
       "--keep": keep
       "--noFIFO": no_fifo
       "--lite": lite
-<<<<<<< HEAD
     command_template: >
       {pipeline.path}
       --sample-name {sample.sample_name}
@@ -55,7 +54,6 @@ pipelines:
       {% if sample.keep is defined %} --keep {sample.keep} {% endif %}
       {% if sample.no_fifo is defined %} --noFIFO {sample.no_fifo} {% endif %}
       {% if sample.lite is defined %} --lite {sample.lite} {% endif %}
-=======
     outputs:
       smooth_bw: "aligned_{sample.genome}/{sample.sample_name}_smooth.bw"
       exact_bw:  "aligned_{sample.genome}_exact/{sample.sample_name}_exact.bw"
@@ -63,7 +61,6 @@ pipelines:
       # pre_smooth_bw: "aligned_{project.prealignments}/{sample.sample_name}_smooth.bw"
       peaks_bed: "peak_calling_{sample.genome}/{sample.sample_name}_peaks.bed"
       summits_bed: "peak_calling_{sample.genome}/{sample.sample_name}_summits.bed"
->>>>>>> dev
     compute:
       singularity_image: ${SIMAGES}pepatac
       docker_image: databio/pepatac
