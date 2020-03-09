@@ -9,33 +9,11 @@ pipelines:
   pepatac.py:
     name: PEPATAC
     path: pipelines/pepatac.py
+    schema: https://schema.databio.org/pipelines/pepatac.yaml
     looper_args: True
     required_input_files: [read1]
     all_input_files: [read1, read2]
     ngs_input_files: [read1, read2]
-    arguments:
-      "--sample-name": sample_name
-      "--genome": genome
-      "--input": read1
-      "--single-or-paired": read_type
-    optional_arguments:
-      "--input2": read2
-      "--peak-caller": peak_caller
-      "--genome-size": macs_genome_size
-      "--trimmer": trimmer
-      "--prealignments": prealignments
-      "--deduplicator": deduplicator
-      "--TSS-name": TSS_name
-      "--blacklist": blacklist
-      "--peak-type": peak_type
-      "--extend": extend
-      "--frip-ref-peaks": frip_ref_peaks
-      "--motif": motif
-      "--anno-name": anno_name
-      "--prioritize": prioritize
-      "--keep": keep
-      "--noFIFO": no_fifo
-      "--lite": lite
     command_template: >
       {pipeline.path}
       --sample-name {sample.sample_name}
