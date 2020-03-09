@@ -66,7 +66,7 @@ def parse_arguments():
 
     parser.add_argument("--blacklist", default=None,
                         dest="blacklist", type=str,
-                        help="Path to peak blacklist file")
+                        help="Path to genomic region blacklist file")
 
     parser.add_argument("--peak-type", default="variable",
                         dest="peak_type", choices=PEAK_TYPES, type=str,
@@ -526,12 +526,20 @@ def main():
              "tag_name":"default", "arg":"TSS_name", "user_arg":"TSS-name",
              "required":False}
         )
-    # If user specifies feature annoation file,
-    # use that instead of the refgenie asset
+    # If user specifies feature annotation file,
+    # use that instead of the refgenie managed asset
     if not (args.anno_name):
         check_list.append(
             {"asset_name":"feat_annotation", "seek_key":"feat_annotation",
             "tag_name":"default", "arg":"anno_name", "user_arg":"anno-name",
+            "required":False}
+        )
+    # If user specifies blacklist file,
+    # use that instead of the refgenie managed asset
+    if not (args.blacklist):
+        check_list.append(
+            {"asset_name":"blacklist", "seek_key":"blacklist",
+            "tag_name":"default", "arg":"blacklist", "user_arg":"blacklist",
             "required":False}
         )
     res, rgc = _add_resources(args, res, check_list)
