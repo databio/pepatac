@@ -16,6 +16,8 @@ import tempfile
 import pypiper
 from pypiper import build_command
 from refgenconf import RefGenConf as RGC, select_genome_config
+from pandas import merge, read_csv, to_numeric
+from numpy import array, log, where
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
@@ -748,13 +750,17 @@ def main():
         print("Prealignment assemblies: " + str(args.prealignments))
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
+            bt2_index = os.path.join(rgc.get_asset(reference, BT2_IDX_KEY))
+            if not bt2_index.endswith(reference):
+                bt2_index = os.path.join(
+                    rgc.get_asset(reference, BT2_IDX_KEY), reference)
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, False,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=os.path.join(
-                        rgc.get_asset(reference, BT2_IDX_KEY), reference),
-                    outfolder=param.outfolder, aligndir="prealignments",
+                    assembly_bt2=bt2_index,
+                    outfolder=param.outfolder,
+                    aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
                 to_compress.append(unmap_fq1)
                 if args.paired_end:
@@ -763,9 +769,9 @@ def main():
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, True,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=os.path.join(
-                        rgc.get_asset(reference, BT2_IDX_KEY), reference), 
-                    outfolder=param.outfolder, aligndir="prealignments",
+                    assembly_bt2=bt2_index, 
+                    outfolder=param.outfolder,
+                    aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
                 to_compress.append(unmap_fq1)
                 if args.paired_end:
@@ -871,7 +877,7 @@ def main():
     # Determine mitochondrial read counts
     mito_name = ["chrM", "chrMT", "M", "MT", "rCRSd"]
 
-    if pm.get_stat("Mitochondrial_reads") is None:
+    if not pm.get_stat("Mitochondrial_reads") or args.new_start:
         cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
         for name in mito_name:
             cmd += " -we '" + name + "'"
@@ -1380,16 +1386,7 @@ def main():
                                  pipeline_manager=pm)
             pm.report_result("FRiP_ref", round(frip_ref, 2))
 
-        # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
-        pm.timestamp("### # Produce bigBed formatted narrowPeak file")
-        cmd = build_command(
-                [tools.Rscript, tool_path("PEPATAC.R"), "bigbed", 
-                 ("-i", peak_output_file),
-                 ("-c", res.chrom_sizes),
-                 ("-t", tools.bedToBigBed)
-                ])
-        pm.run(cmd, bigNarrowPeak, nofail=False)
-        
+
         ########################################################################
         #                        Calculate peak coverage                       #
         ########################################################################
@@ -1415,6 +1412,62 @@ def main():
         pm.clean_add(chr_order)
         pm.clean_add(chr_keep)
         pm.clean_add(sort_peak_bed)
+
+
+        ########################################################################
+        #           Produce bigBed (bigNarrowPeak) file from peak file         #
+        ########################################################################
+        pm.timestamp("### # Produce bigBed formatted narrowPeak file")
+
+        if not os.path.exists(bigNarrowPeak) or args.new_start:
+            df = read_csv('tutorial_peaks.narrowPeak', sep='\t', header=None,
+                          names=("V1","V2","V3","V4","V5","V6",
+                                 "V7","V8","V9","V10"))
+            nineNine = df['V5'].quantile(q=0.99)
+            df.loc[df['V5'] > nineNine, 'V5'] = nineNine
+
+            def rescale(n, after=[0,1], before=[]):
+                if not before:
+                    before=[min(n), max(n)]
+                return (((after[1] - after[0]) * (n - before[0]) / 
+                         (before[1] - before[0])) + after[0])
+
+            df['V5'] = rescale(log(df['V5']), [0, 1000])
+
+            cs = read_csv(res.chrom_sizes, sep='\t', header=None,
+                          names=("V1","V2"))
+            df = merge(cs, on="V1")
+            df.columns = ["V1","V2","V3","V4","V5","V6",
+                          "V7","V8","V9","V10","V11"]
+            # make sure 'chromEnd' positions are not greater than the max chrom_size
+            n = array(df['V3'].values.tolist())
+            df['V3'] = where(n > df['V11'], df['V11'], n).tolist()
+
+            df = df.drop(columns=["V11"])
+            # ensure score is a whole integer value
+            df['V5'] = to_numeric(df['V5'].round(), downcast='integer')
+
+            as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
+            cmd = ("echo -e '" + "table bigNarrowPeak\n" + 
+                   "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n" +
+                   "(\n" +
+                   "     string chrom;        \"Reference sequence chromosome or scaffold\"\n" +
+                   "     uint   chromStart;   \"Start position in chromosome\"\n" +
+                   "     uint   chromEnd;     \"End position in chromosome\"\n" +
+                   "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n" +
+                   "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n" +
+                   "     char[1]  strand;     \"+ or - or . for unknown\"\n" +
+                   "     float  signalValue;  \"Measurement of average enrichment for the region\"\n" +
+                   "     float  pValue;       \"Statistical significance of signal value (-log10). Set to -1 if not used.\"\n" +
+                   "     float  qValue;       \"Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used.\"\n" +
+                   "     int   peak;          \"Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called.\"\n" +
+                   ")' > " + as_file)
+            pm.run(cmd, as_file, clean=True)
+
+            cmd = (tools.bedToBigBed + "-as=" + as_file + "-type=bed6+4" +
+                   peak_bed + " " + res.chrom_sizes + " " +  bigNarrowPeak)
+            pm.run(cmd, bigNarrowPeak)
+
 
         ########################################################################
         #                             Annotate peaks                           #
@@ -1463,15 +1516,15 @@ def main():
                 ])
 
         if os.path.isfile(anno_local):
-            if not os.path.exists(chr_PDF):
+            if not os.path.exists(chr_PDF) or args.new_start:
                 pm.run(cmd1, chr_PDF)
                 pm.report_object("Peak chromosome distribution", chr_PDF,
                                  anchor_image=chr_PNG)
-            if not os.path.exists(TSSdist_PDF):
+            if not os.path.exists(TSSdist_PDF) or args.new_start:
                 pm.run(cmd2, TSSdist_PDF)
                 pm.report_object("TSS distance distribution", TSSdist_PDF,
                                  anchor_image=TSSdist_PNG)
-            if not os.path.exists(gd_PDF):
+            if not os.path.exists(gd_PDF) or args.new_start:
                 pm.run(cmd3, gd_PDF)
                 pm.report_object("Peak partition distribution", gd_PDF,
                                  anchor_image=gd_PNG)
