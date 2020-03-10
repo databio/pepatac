@@ -889,18 +889,22 @@ def main():
             pm.report_result("Mitochondrial_reads", round(float(mr)))
             noMT_mapping_genome_bam = os.path.join(
                 map_genome_folder, args.sample_name + "_noMT.bam")
+            chr_bed = os.path.join(map_genome_folder, "chr_sizes.bed")
+
             cmd1 = (tools.samtools + " idxstats " + mapping_genome_bam +
                     " | cut -f 1 | grep")
             for name in mito_name:
                 cmd1 += " -vwe '" + name + "'"
-            cmd1 += ("| xargs " + tools.samtools + " view -b -@ " +
-                     str(pm.cores) + " " + mapping_genome_bam + " > " +
-                     noMT_mapping_genome_bam)
-            cmd2 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
+            cmd1 += (" > " + chr_bed)
+            cmd2 = (tools.samtools + " view -L " + chr_bed + " -b -@ " +
+                    str(pm.cores) + " " + mapping_genome_bam + " > " +
+                    noMT_mapping_genome_bam)
+            cmd3 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
             # Reindex the sorted bam file now that mito reads are removed
-            cmd3 = tools.samtools + " index " + mapping_genome_bam
-            pm.run([cmd1, cmd2, cmd3], noMT_mapping_genome_bam,
-                   container=pm.container)
+            cmd4 = tools.samtools + " index " + mapping_genome_bam
+
+            pm.run([cmd1, cmd2, cmd3, cmd4], noMT_mapping_genome_bam)
+            pm.clean_add(chr_bed)
         else:
             pm.report_result("Mitochondrial_reads", 0)
 
