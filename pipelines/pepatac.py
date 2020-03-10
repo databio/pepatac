@@ -892,7 +892,7 @@ def main():
             chr_bed = os.path.join(map_genome_folder, "chr_sizes.bed")
 
             cmd1 = (tools.samtools + " idxstats " + mapping_genome_bam +
-                    " | cut -f 1 | grep")
+                    " | cut -f 1-2 | awk '{print $1, 0, $2}' | grep")
             for name in mito_name:
                 cmd1 += " -vwe '" + name + "'"
             cmd1 += (" > " + chr_bed)
