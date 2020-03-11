@@ -10,7 +10,6 @@ pipelines:
     name: PEPATAC
     path: pipelines/pepatac.py
     schema: https://schema.databio.org/pipelines/pepatac.yaml
-    looper_args: True
     required_input_files: [read1]
     all_input_files: [read1, read2]
     ngs_input_files: [read1, read2]
@@ -20,6 +19,7 @@ pipelines:
       --genome {sample.genome}
       --input {sample.read1}
       --single-or-paired {sample.read_type}
+      -O { looper.output_folder }
       {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
       {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
       {% if sample.FRIP_ref is defined %} --frip-ref-peaks {sample.FRIP_ref} {% endif %}
