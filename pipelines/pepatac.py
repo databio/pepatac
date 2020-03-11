@@ -1424,7 +1424,7 @@ def main():
         pm.timestamp("### # Produce bigBed formatted narrowPeak file")
 
         if not os.path.exists(bigNarrowPeak) or args.new_start:
-            df = read_csv('tutorial_peaks.narrowPeak', sep='\t', header=None,
+            df = read_csv(peak_output_file, sep='\t', header=None,
                           names=("V1","V2","V3","V4","V5","V6",
                                  "V7","V8","V9","V10"))
             nineNine = df['V5'].quantile(q=0.99)
