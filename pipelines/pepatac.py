@@ -14,10 +14,10 @@ import re
 import sys
 import tempfile
 import pypiper
+import pandas as pd
+import numpy as np
 from pypiper import build_command
 from refgenconf import RefGenConf as RGC, select_genome_config
-from pandas import merge, read_csv, to_numeric
-from numpy import array, log, where
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
@@ -1424,9 +1424,9 @@ def main():
         pm.timestamp("### # Produce bigBed formatted narrowPeak file")
 
         if not os.path.exists(bigNarrowPeak) or args.new_start:
-            df = read_csv(peak_output_file, sep='\t', header=None,
-                          names=("V1","V2","V3","V4","V5","V6",
-                                 "V7","V8","V9","V10"))
+            df = pd.read_csv(peak_output_file, sep='\t', header=None,
+                             names=("V1","V2","V3","V4","V5","V6",
+                                    "V7","V8","V9","V10"))
             nineNine = df['V5'].quantile(q=0.99)
             df.loc[df['V5'] > nineNine, 'V5'] = nineNine
 
@@ -1435,24 +1435,24 @@ def main():
                     before=[min(n), max(n)]
                 return (((after[1] - after[0]) * (n - before[0]) / 
                          (before[1] - before[0])) + after[0])
+            # rescale score to be between 0 and 1000
+            df['V5'] = rescale(np.log(df['V5']), [0, 1000])
 
-            df['V5'] = rescale(log(df['V5']), [0, 1000])
-
-            cs = read_csv(res.chrom_sizes, sep='\t', header=None,
-                          names=("V1","V2"))
-            df = merge(cs, on="V1")
+            cs = pd.read_csv(res.chrom_sizes, sep='\t', header=None,
+                             names=("V1","V2"))
+            df = df.merge(cs, on="V1")
             df.columns = ["V1","V2","V3","V4","V5","V6",
                           "V7","V8","V9","V10","V11"]
             # make sure 'chromEnd' positions are not greater than the max chrom_size
-            n = array(df['V3'].values.tolist())
-            df['V3'] = where(n > df['V11'], df['V11'], n).tolist()
+            n = np.array(df['V3'].values.tolist())
+            df['V3'] = np.where(n > df['V11'], df['V11'], n).tolist()
 
             df = df.drop(columns=["V11"])
             # ensure score is a whole integer value
-            df['V5'] = to_numeric(df['V5'].round(), downcast='integer')
+            df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
 
             as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
-            cmd = ("echo -e '" + "table bigNarrowPeak\n" + 
+            cmd = ("echo 'table bigNarrowPeak\n" + 
                    "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n" +
                    "(\n" +
                    "     string chrom;        \"Reference sequence chromosome or scaffold\"\n" +
@@ -1468,9 +1468,10 @@ def main():
                    ")' > " + as_file)
             pm.run(cmd, as_file, clean=True)
 
-            cmd = (tools.bedToBigBed + "-as=" + as_file + "-type=bed6+4" +
-                   peak_bed + " " + res.chrom_sizes + " " +  bigNarrowPeak)
-            pm.run(cmd, bigNarrowPeak)
+            cmd = (tools.bedToBigBed + " -as=" + as_file + " -type=bed6+4 " +
+                   peak_output_file + " " + res.chrom_sizes + " " +
+                   bigNarrowPeak)
+            pm.run(cmd, bigNarrowPeak, nofail=True)
 
 
         ########################################################################
