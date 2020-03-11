@@ -258,11 +258,9 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 pm.run([cmd, filter_pair], mapped_bam)
             else:
                 pm.wait = False
-                pm.run(filter_pair, [summary_file, out_fastq_r2_gz],
-                       container=pm.container)
+                pm.run(filter_pair, [summary_file, out_fastq_r2_gz])
                 pm.wait = True
-                pm.run(cmd, [summary_file, out_fastq_r2_gz],
-                       container=pm.container)
+                pm.run(cmd, [summary_file, out_fastq_r2_gz])
         else:
             if args.keep:
                 pm.run(cmd, mapped_bam)
@@ -270,8 +268,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 # TODO: switch to this once filter_paired_fq works with SE
                 #pm.run(cmd2, summary_file)
                 #pm.run(cmd1, out_fastq_r1)
-                pm.run(cmd, out_fastq_tmp_gz,
-                       container=pm.container)
+                pm.run(cmd, out_fastq_tmp_gz)
 
         pm.clean_add(out_fastq_tmp)
 
@@ -618,8 +615,7 @@ def main():
     print(cmd)
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
-               local_input_files, unaligned_fastq, args.paired_end),
-           container=pm.container)
+               local_input_files, unaligned_fastq, args.paired_end))
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 
     if args.paired_end:
@@ -947,8 +943,7 @@ def main():
         pm.report_result("PBC1", round(float(pbc1),2))
         pm.report_result("PBC2", round(float(pbc2), 2))
 
-    pm.run(cmd, bamQC, follow=lambda: report_bam_qc(bamQC),
-           container=pm.container)
+    pm.run(cmd, bamQC, follow=lambda: report_bam_qc(bamQC))
 
     # Now produce the unmapped file
     def count_unmapped_reads():
@@ -967,8 +962,7 @@ def main():
         unmap_cmd += " -f 4 "
 
     unmap_cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
-    pm.run(unmap_cmd, unmap_genome_bam, follow=count_unmapped_reads,
-           container=pm.container)
+    pm.run(unmap_cmd, unmap_genome_bam, follow=count_unmapped_reads)
 
     # Remove temporary bam file from unmapped file production
     pm.clean_add(mapping_genome_bam_temp)
@@ -1068,8 +1062,7 @@ def main():
         pm.stop_pipeline()
 
     pm.run([cmd1, cmd2], rmdup_bam,
-           follow=lambda: post_dup_aligned_reads(metrics_file),
-           container=pm.container)
+           follow=lambda: post_dup_aligned_reads(metrics_file))
 
     ############################################################################
     #                         Produce signal tracks                            #
@@ -1183,8 +1176,7 @@ def main():
                 " frag -l " + frag_len + " -c " + fragL_count +
                 " -p " + fragL_dis1 + " -t " + fragL_dis2)
 
-        pm.run([cmd1, cmd2, cmd3], fragL_dis1, nofail=True,
-               container=pm.container)
+        pm.run([cmd1, cmd2, cmd3], fragL_dis1, nofail=True)
         pm.report_object("Fragment distribution", fragL_dis1,
                          anchor_image=fragL_png)
     else: 
@@ -1308,8 +1300,7 @@ def main():
 
         # Call peaks and report peak count.
         cmd = build_command(macs_cmd_base)
-        pm.run(cmd, peak_output_file, follow=report_peak_count,
-               container=pm.container)
+        pm.run(cmd, peak_output_file, follow=report_peak_count)
 
         if args.peak_type == "fixed":
             # extend peaks from summit by 'extend'
@@ -1404,8 +1395,7 @@ def main():
             cmd3 = ("cut -f 1 " + chr_order + " > " + chr_keep)
             cmd4 = (tools.bedtools + " sort -i " + peak_bed + " -faidx " +
                     chr_order + " > " + sort_peak_bed)
-            pm.run([cmd1, cmd2, cmd3, cmd4], sort_peak_bed, nofail=True,
-                   container=pm.container)
+            pm.run([cmd1, cmd2, cmd3, cmd4], sort_peak_bed, nofail=True)
         
         cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
                 sort_peak_bed + " -b " + rmdup_bam + " -g " + chr_order +
