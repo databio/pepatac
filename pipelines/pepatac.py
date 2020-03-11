@@ -1093,7 +1093,8 @@ def main():
     cmd += " -w " + smooth_target
     cmd += " -m " + "atac"
     cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
-    pm.run(cmd, exact_target)
+    cmd += " --variable-step"
+    pm.run(cmd, [exact_target, smooth_target])
     pm.clean_add(temp_exact_folder)
 
     ############################################################################
