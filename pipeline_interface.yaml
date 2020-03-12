@@ -19,7 +19,10 @@ pipelines:
       --genome {sample.genome}
       --input {sample.read1}
       --single-or-paired {sample.read_type}
-      -O { looper.output_folder }
+      -O {looper.output_folder}
+      {% if looper.job_name is defined %} -J {looper.job_name} {% endif %}
+      {% if looper.cores is defined %} -P {looper.cores} {% endif %}
+      {% if looper.mem is defined %} -M {looper.mem} {% endif %}
       {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
       {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
       {% if sample.FRIP_ref is defined %} --frip-ref-peaks {sample.FRIP_ref} {% endif %}
