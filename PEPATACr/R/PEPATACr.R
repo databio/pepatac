@@ -1551,8 +1551,8 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
     TSS_score <- tryCatch(
         {
             cbind.data.frame(sample=stats$sample_name, 
-                             TSS=round(stats$TSS_Score, digits=2),
-                             QCcolor=(TSS_colors[round(stats$TSS_Score+0.01,
+                             TSS=round(stats$TSS_score, digits=2),
+                             QCcolor=(TSS_colors[round(stats$TSS_score+0.01,
                                                       digits=2)*100]))
         },
         error=function(e) {
@@ -1573,7 +1573,7 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
         quit()
     }
 
-    max_TSS      <- max(stats$TSS_Score, na.rm=TRUE)
+    max_TSS      <- max(stats$TSS_score, na.rm=TRUE)
     upper_limit  <- roundUpNice(max_TSS)
     chart_height <- (length(unique(TSS_score$sample))) * 0.75
 
