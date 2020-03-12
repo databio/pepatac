@@ -578,7 +578,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
             name       <- basename(tools::file_path_sans_ext(bedFile[1]))
             name       <- gsub(sample_name, "", name)
             name       <- gsub("^.*?_", "", name)
-            numFields  <- 2
+            numFields  <- 1
             for(i in 1:numFields) name <- gsub("_[^_]*$", "", name)
             labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
                             name, round(max(bedCov$frip),2), "#FF0703")
