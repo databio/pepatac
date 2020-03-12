@@ -93,7 +93,7 @@ consensusPath  <- consensusPeaks(pep)
 
 if (!is.null(consensusPath)) {
     if (file.exists(consensusPath)) {
-        message("Consensus peak set: ", consensusFlag, "\n")
+        message("Consensus peak set: ", consensusPath, "\n")
     }
 }
 
