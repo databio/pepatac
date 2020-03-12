@@ -1725,8 +1725,8 @@ summarizer <- function(pep) {
                                         header=TRUE,
                                         check.names=FALSE))
     } else {
-        message("PEPATAC.R summarizer was unable to locate the summary file.")
-        quit()
+        warning("PEPATAC.R summarizer was unable to locate the summary file.")
+        return(NULL)
     }
 
     message("Generating plots (png/pdf) using ", summary_file)
@@ -1781,9 +1781,9 @@ consensusPeaks <- function(pep) {
       cSize  <- fread(cPath)
       colnames(cSize) <- c("chrom", "size")
   } else {
-      message("PEPATAC_consensusPeaks.R was unable to load the chromosome sizes file.")
+      warning("PEPATAC_consensusPeaks.R was unable to load the chromosome sizes file.")
       message(paste0("Confirm that ", cPath, " is present before continuing."))
-      quit()
+      return(NULL)
   }
 
   # generate paths to peak files
@@ -1816,13 +1816,13 @@ consensusPeaks <- function(pep) {
           }
       }
   } else if (length(fileList) == 1 ) {
-      message("PEPATAC_consensusPeaks.R found only a single peak file.")
+      warning("PEPATAC_consensusPeaks.R found only a single peak file.")
       message("Does your project include more than one sample?")
-      quit()
+      return(NULL)
   } else {
-      message("PEPATAC_consensusPeaks.R was unable to find any peak files.")
+      warning("PEPATAC_consensusPeaks.R was unable to find any peak files.")
       message("Confirm peak files exist for your samples.")
-      quit()
+      return(NULL)
   }
 
   if (length(finalList) >= 1) {
@@ -1892,15 +1892,15 @@ consensusPeaks <- function(pep) {
           fwrite(final, buildFilePath("_consensusPeaks.narrowPeak", prj),
                  sep="\t", col.names=FALSE)
       } else {
-          message("PEPATAC_consensusPeaks.R failed to produce a consensus peak file.")
+          warning("PEPATAC_consensusPeaks.R failed to produce a consensus peak file.")
           message("Check that individual peak files exist for your samples.")
-          quit()
+          return(NULL)
       }
   } else {
-      message("PEPATAC_consensusPeaks.R was unable to produce a consensus peak file.")
+      warning("PEPATAC_consensusPeaks.R was unable to produce a consensus peak file.")
       message("Consensus peak generation requires the '--peak-type fixed' parameter.")
       message("Confirm peak files exist for your samples.")
-      quit()
+      return(NULL)
   }
 }
 ################################################################################
