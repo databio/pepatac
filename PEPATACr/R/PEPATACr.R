@@ -1780,8 +1780,8 @@ consensusPeaks <- function(pep) {
       cSize  <- fread(cPath)
       colnames(cSize) <- c("chrom", "size")
   } else {
-      warning("PEPATAC_consensusPeaks.R was unable to load the chromosome sizes file.")
-      message(paste0("Confirm that ", cPath, " is present before continuing."))
+      warning("Unable to load the chromosome sizes file.")
+      warning(paste0("Confirm that ", cPath, " is present before continuing."))
       return(NULL)
   }
 
@@ -1815,12 +1815,12 @@ consensusPeaks <- function(pep) {
           }
       }
   } else if (length(fileList) == 1 ) {
-      warning("PEPATAC_consensusPeaks.R found only a single peak file.")
-      message("Does your project include more than one sample?")
+      warning("Found only a single peak file.")
+      warning("Does your project include more than one sample?")
       return(NULL)
   } else {
-      warning("PEPATAC_consensusPeaks.R was unable to find any peak files.")
-      message("Confirm peak files exist for your samples.")
+      warning("Unable to find any peak files.")
+      warning("Confirm peak files exist for your samples.")
       return(NULL)
   }
 
@@ -1891,13 +1891,13 @@ consensusPeaks <- function(pep) {
           fwrite(final, buildFilePath("_consensusPeaks.narrowPeak", prj),
                  sep="\t", col.names=FALSE)
       } else {
-          warning("PEPATAC_consensusPeaks.R failed to produce a consensus peak file.")
-          message("Check that individual peak files exist for your samples.")
+          warning("Unable to produce a consensus peak file.")
+          warning("Check that individual peak files exist for your samples.")
           return(NULL)
       }
   } else {
-      warning("PEPATAC_consensusPeaks.R was unable to produce a consensus peak file.")
-      message("Consensus peak generation requires the '--peak-type fixed' parameter.")
+      warning("Unable to produce a consensus peak file.")
+      warning("Consensus peak generation requires the '--peak-type fixed' parameter.")
       return(NULL)
   }
   return(buildFilePath("_consensusPeaks.narrowPeak", prj))

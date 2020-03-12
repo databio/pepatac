@@ -85,14 +85,16 @@ pep  <- argv$config
 summarizerFlag <- summarizer(pep)
 
 if (summarizerFlag) {
-    message("Successfully produced project summary plots.")
+    message("Successfully produced project summary plots.\n")
 }
 
 # Calculate consensus peaks
 consensusPath  <- consensusPeaks(pep)
 
-if (file.exists(consensusPath)) {
-    message("Consensus peak set: ", consensusFlag)
+if (!is.null(consensusPath)) {
+    if (file.exists(consensusPath)) {
+        message("Consensus peak set: ", consensusFlag, "\n")
+    }
 }
 
 ################################################################################
