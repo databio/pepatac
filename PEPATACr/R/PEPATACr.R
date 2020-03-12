@@ -1729,8 +1729,6 @@ summarizer <- function(pep) {
         return(NULL)
     }
 
-    message("Generating plots (png/pdf) using ", summary_file)
-
     # Set absent values in table to zero
     stats[is.na(stats)]   <- 0
     stats[is.null(stats)] <- 0
@@ -1750,6 +1748,7 @@ summarizer <- function(pep) {
     if (any(!is.na(stats$Picard_est_lib_size))) {
         plotLibSize(prj, stats)
     }
+    return(TRUE)
 }
 
 
@@ -1763,9 +1762,9 @@ consensusPeaks <- function(pep) {
   prj <- suppressWarnings(Project(pep))
 
   # warn about calling on variable width peaks
-  message("WARNING: PEPATAC_consensusPeaks is designed to produce a consensus peak
-           set from *fixed* width peaks generated using the --peak_type fixed
-           argument.")
+  #warning("PEPATAC_consensusPeaks is designed to produce a consensus peak
+  #        set from *fixed* width peaks generated using the --peak_type fixed
+  #        argument.")
 
   # generate initial peak set
   info <- capture.output({ 
@@ -1899,8 +1898,8 @@ consensusPeaks <- function(pep) {
   } else {
       warning("PEPATAC_consensusPeaks.R was unable to produce a consensus peak file.")
       message("Consensus peak generation requires the '--peak-type fixed' parameter.")
-      message("Confirm peak files exist for your samples.")
       return(NULL)
   }
+  return(buildFilePath("_consensusPeaks.narrowPeak", prj))
 }
 ################################################################################

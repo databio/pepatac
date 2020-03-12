@@ -82,9 +82,17 @@ for (i in required_libraries) {
 pep  <- argv$config
 
 # Produce project summary plots
-summarizer(pep)
+summarizerFlag <- summarizer(pep)
 
 # Calculate consensus peaks
-consensusPeaks(pep)
+consensusPath  <- consensusPeaks(pep)
+
+if (summarizerFlag) {
+    message("Successfully generated summary plots (png/pdf) using ", summary_file)
+}
+
+if (file.exists(consensusPath)) {
+    message("Consensus peak set: ", consensusFlag)
+}
 
 ################################################################################
