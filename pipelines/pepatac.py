@@ -1064,6 +1064,7 @@ def main():
     pm.run([cmd1, cmd2], rmdup_bam,
            follow=lambda: post_dup_aligned_reads(metrics_file))
 
+
     ############################################################################
     #                         Produce signal tracks                            #
     ############################################################################
@@ -1077,9 +1078,7 @@ def main():
     pm.timestamp("### Produce smoothed and nucleotide-resolution tracks")
 
     exact_folder = os.path.join(map_genome_folder + "_exact")
-    temp_exact_folder = os.path.join(exact_folder, "temp")
     ngstk.make_dir(exact_folder)
-    ngstk.make_dir(temp_exact_folder)
     exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
     smooth_target = os.path.join(map_genome_folder,
                                  args.sample_name + "_smooth.bw")
@@ -1095,7 +1094,7 @@ def main():
     cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
     cmd += " --variable-step"
     pm.run(cmd, [exact_target, smooth_target])
-    pm.clean_add(temp_exact_folder)
+
 
     ############################################################################
     #                          Determine TSS enrichment                        #
@@ -1150,6 +1149,7 @@ def main():
 
         pm.report_object("TSS enrichment", Tss_pdf, anchor_image=Tss_png)
 
+
     ############################################################################
     #                         Fragment distribution                            #
     ############################################################################
@@ -1183,6 +1183,7 @@ def main():
     else: 
         print("Fragment distribution requires paired-end data")
 
+
     ############################################################################
     #                        Extract genomic features                          #
     ############################################################################
@@ -1213,6 +1214,7 @@ def main():
                   .format(args.genome_assembly))
             print("Could not find {}.`"
                   .format(str(os.path.dirname(res.feat_annotation))))
+
 
     ############################################################################
     #                               Peak calling                               #
@@ -1362,6 +1364,7 @@ def main():
                            " -v  >" + filter_peak)
                     peak_output_file = filter_peak
                     pm.run(cmd, filter_peak)
+
 
         ########################################################################
         #                Determine the fraction of reads in peaks              #
