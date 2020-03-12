@@ -1314,14 +1314,29 @@ def main():
         # merge stranded bigWigs
         exact_bedgraph = os.path.join(
             exact_folder, args.sample_name + "_exact.bedGraph")
-        merge_cmd_chunks = [
+        merge_cmd_chunks1 = [
             tools.bigWigMerge,
             plus_exact_bw,
             minus_exact_bw,
             exact_bedgraph
         ]
-        merge_cmd = build_command(merge_cmd_chunks)
-        pm.run(merge_cmd, exact_bedgraph, clean=true)
+        merge_cmd1 = build_command(merge_cmd_chunks1)
+        pm.run(merge_cmd1, exact_bedgraph, clean=true)
+
+        # merge beds
+        merge_cmd_chunks2 = [
+            "cat",
+            shift_plus_bed,
+            shift_minus_bed,
+            "|",
+            "sort -k1,1 -k2,2n |",
+            (tools.bedtools, "merge"),
+            "-s",
+            ("-i",  "stdin"),
+            (">", shift_bed)
+        ]
+        merge_cmd2 = build_command(merge_cmd_chunks2)
+        pm.run(merge_cmd2, shift_bed)
 
         # sort merged bedGraph
         sort_bedgraph = os.path.join(
@@ -1352,7 +1367,6 @@ def main():
             cmd = tool_path("bamSitesToWig.py")
             cmd += " -i " + rmdup_bam
             cmd += " -c " + res.chrom_sizes
-            cmd += " -b " + shift_bed # request bed output
             cmd += " -w " + smooth_target
             cmd += " -m " + "atac"
             cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
