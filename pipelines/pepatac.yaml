@@ -24,6 +24,9 @@ tools:  # absolute paths to required tools
   picard: ${PICARD}
   pigz: pigz
   Rscript: Rscript 
+  seqOutBias: seqOutBias
+  bigWigMerge: bigWigMerge
+  bedGraphToBigWig: bedGraphToBigWig
 
 # user configure 
 resources:
