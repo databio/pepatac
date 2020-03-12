@@ -1337,7 +1337,7 @@ plotAlignedPct <- function(prj, stats) {
     )
 
     unaligned <- 100 - stats$Alignment_rate
-    
+
     # Get prealignments if they exist
     prealignments <- getPrealignments(stats)
 
@@ -1749,7 +1749,7 @@ summarizer <- function(pep) {
     # plot library sizes if that was calculated
     if (any(!is.na(stats$Picard_est_lib_size))) {
         plotLibSize(prj, stats)
-    } else {quit()}
+    }
 }
 
 
