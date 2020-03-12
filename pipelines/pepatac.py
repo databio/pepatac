@@ -1540,6 +1540,7 @@ def main():
                 pm.clean_add(peak_bed_file) 
                 # create preparsed directory
                 tempdir = tempfile.mkdtemp(dir=peak_folder)
+                os.chmod(tempdir, 0o771)
                 pm.clean_add(tempdir)
                 # perform motif analysis
                 motif_HTML  = os.path.join(peak_folder, "homerResults.html")
