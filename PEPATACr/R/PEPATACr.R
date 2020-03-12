@@ -37,6 +37,441 @@ theme_PEPATAC <- function(base_family = "sans", ...){
   )
 }
 
+
+#' Plot library complexity curves
+#'
+#' This function plots library complexity curves using data from
+#' preseq and produces pdf/png output files.
+#' Adapted from preseq_complexity_curves.py from
+#' https://github.com/ewels/ngi_visualizations/tree/master/ngi_visualizations/preseq_complexity_curves
+#'
+#' @param ccurves A single preseq output file from one sample.
+#' @param more_ccurves A list of additional preseq output files from more samples
+#' @param coverage Use coverage on axes instead of read counts. Enter the number
+#'                 of base pairs of your reference genome.
+#' @param read_length Sequence read length, for use in coverage calculations.
+#' @param real_counts_path File name for a file with three columns -
+#'                         preseq filename, total number of reads, number of
+#'                         unique reads
+#'                         (unique is optional, file is whitespace delimited)
+#' @param ignore_unique If FALSE, ignore information about unique read counts
+#'                   found in real_counts_path file.
+#' @param x_min Lower x-limit (default 0)
+#' @param x_max Upper x-limit (default 500 million)
+#' @keywords preseq library complexity
+#' @export
+#' @examples
+#' data("ccurve")
+#' data("counts")
+#' plotComplexityCurves(ccurves = "ccurve", coverage=3099922541, read_length=30,
+#'                      real_counts_path="counts")
+plotComplexityCurves <- function(ccurves,
+                                 coverage=0, read_length=0,
+                                 real_counts_path=NA, ignore_unique=FALSE,
+                                 x_min=0, x_max=500000000) {
+
+    if (x_min < 0 || x_max <= x_min) {
+        message(paste0("problem with x-min or x-max (", x_min, " ", x_max,
+                       "). x-min must be >= 0 and < x-max"))
+        quit(save = "no", status = 1, runLast = FALSE)
+    }
+
+    # Convert limit counts to coverage
+    if (coverage > 0) {
+        if (read_length == 0) {
+            message("Error: --coverage specified but not --read_length")
+            quit(save = "no", status = 1, runLast = FALSE)
+        } else {
+            coverage <- as.numeric(coverage) / as.numeric(read_length)
+        }
+        x_max    <- as.numeric(x_max) / coverage
+        x_min    <- as.numeric(x_min) / coverage
+    }
+
+    # Get the real counts if we have them
+    rcDT <- data.table(name = character(length(real_counts_path)),
+                       total = integer(length(real_counts_path)),
+                       unique = integer(length(real_counts_path)))
+
+    if (exists(real_counts_path[1])) {
+        rc_file    <- data.table(get(real_counts_path[1]))
+        rcDT$name  <- basename(rc_file$V1)
+        rcDT$total <- as.integer(rc_file$V2)
+        if (ncol(rc_file) == 3 && !ignore_unique) {
+            rcDT$unique <- as.integer(rc_file$V2)
+        } else {
+            rcDT$unique <- NA
+        }
+
+        if (length(real_counts_path) > 1) {
+            for (rc in 2:length(real_counts_path)) {
+                rc_file <- real_counts_path[rc]
+                rcDT$name[rc]  <- basename(rc_file$V1)
+                rcDT$total[rc] <- as.integer(rc_file$V3)
+                if (ncol(rc_file) == 3 && !ignore_unique) {
+                    rcDT$unique[rc] <- as.integer(rc_file$V2)
+                } else {
+                    rcDT$unique[rc] <- NA
+                }
+            }
+        }
+    } else if (!is.na(real_counts_path[1])) {
+        for (rc in 1:length(real_counts_path)) {
+            info <- file.info(file.path(real_counts_path[rc]))
+            if (file.exists(real_counts_path[rc]) && info$size != 0) {
+                rc_file        <- fread(real_counts_path[rc])
+                rcDT$name[rc]  <- basename(rc_file$V1)
+                rcDT$total[rc] <- as.integer(rc_file$V3)
+                if (ncol(rc_file) == 3 && !ignore_unique) {
+                    rcDT$unique[rc] <- as.integer(rc_file$V2)
+                } else {
+                    rcDT$unique[rc] <- NA
+                }
+            } else {
+                message(paste0("Error loading real counts file: ",
+                               real_counts_path[rc]))
+                if (!file.exists(real_counts_path[rc])) {
+                    message("File could not be found.")
+                } else if (info$size == 0) {
+                    message("File is empty.")
+                }
+                quit(save = "no", status = 1, runLast = FALSE)
+            }
+        }
+    }
+
+    # Convert real counts to coverage
+    if (coverage > 0) {
+        rcDT[,total  := as.numeric(total)  / coverage]
+        rcDT[,unique := as.numeric(unique) / coverage]
+    }
+
+    # Set up plot params
+    global_x_max_ccurve_limit <- 0
+    global_y_max_ccurve_limit <- 0
+    max_label_length          <- 0
+
+    # Each ccurve will get a different color
+    palette <- colorRampPalette(c("#999999", "#FFC107", "#27C6AB", "#004D40",
+                                  "#B97BC8", "#009E73", "#C92404", "#E3E550",
+                                  "#372B4C", "#E3DAC7", "#27CAE6", "#B361BC",
+                                  "#897779", "#6114F8", "#19C42B", "#56B4E9"))
+
+    clist <- data.table(TOTAL_READS = list(), EXPECTED_DISTINCT = list())
+    ccurves  <- as.list(ccurves)
+    colormap <- palette(length(ccurves))
+    for (c in 1:length(ccurves)) {
+        name        <- basename(tools::file_path_sans_ext(ccurves[[c]]))
+        numFields   <- 2
+        for(j in 1:numFields) name <- gsub("_[^_]*$", "", name)
+        sample_name <- name
+        message(paste0("Processing ", sample_name))
+
+        if (exists(ccurves[[c]])) {
+            ctable <- data.table(get(ccurves[[c]]))
+        } else if (file.exists(ccurves[[c]])) {
+            ctable <- fread(ccurves[[c]])
+        } else {
+            stop(paste0("FileExistsError: ", ccurves[[c]],
+                        " could not be found."))
+            quit(save = "no", status = 1, runLast = FALSE)
+        }
+
+        if (coverage > 0) {
+            if ("TOTAL_READS" %in% colnames(ctable)) {
+                ccurve_TOTAL_READS <- as.numeric(ctable$TOTAL_READS) / coverage
+            } else if ("total_reads" %in% colnames(ctable)) {
+                ccurve_TOTAL_READS <- as.numeric(ctable$total_reads) / coverage
+            }
+            if ("EXPECTED_DISTINCT" %in% colnames(ctable)) {
+                ccurve_EXPECTED_DISTINCT <- (
+                    as.numeric(ctable$EXPECTED_DISTINCT) / coverage)
+            } else if ("distinct_reads" %in% colnames(ctable)) {
+                ccurve_EXPECTED_DISTINCT <- (
+                    as.numeric(ctable$distinct_reads) / coverage)
+            } else {
+                messsage(paste0("Error, table ", c, " is not in the expected "))
+                message("format... has it been generated with preseq?")
+                quit(save = "no", status = 1, runLast = FALSE)
+            }
+        } else {
+            if ("TOTAL_READS" %in% colnames(ctable)) {
+                ccurve_TOTAL_READS <- ctable$TOTAL_READS
+            } else if ("total_reads" %in% colnames(ctable)) {
+                ccurve_TOTAL_READS <- ctable$total_reads
+            }
+            if ("EXPECTED_DISTINCT" %in% colnames(ctable)) {
+                ccurve_EXPECTED_DISTINCT <- ctable$EXPECTED_DISTINCT
+            } else if ("distinct_reads" %in% colnames(ctable)) {
+                ccurve_EXPECTED_DISTINCT <- ctable$distinct_reads
+            } else {
+                messsage(paste0("Error, table ", c, " is not in the expected "))
+                message("format... has it been generated with preseq?")
+                quit(save = "no", status = 1, runLast = FALSE)
+            }
+        }
+        if (c == 1) {
+            clist <- data.table(
+                SAMPLE_NAME = list(rep(sample_name,
+                                   length(ccurve_TOTAL_READS))),
+                TOTAL_READS = list(ccurve_TOTAL_READS),
+                EXPECTED_DISTINCT = list(ccurve_EXPECTED_DISTINCT),
+                COLOR = list(rep(colormap[c], length(ccurve_TOTAL_READS)))
+            )
+        } else {
+            clist <- rbindlist(list(clist,
+                data.table(SAMPLE_NAME = list(rep(sample_name,
+                                              length(ccurve_TOTAL_READS))),
+                           TOTAL_READS = list(ccurve_TOTAL_READS),
+                           EXPECTED_DISTINCT = list(ccurve_EXPECTED_DISTINCT),
+                           COLOR = list(rep(colormap[c],
+                                        length(ccurve_TOTAL_READS))))),
+                use.names=TRUE)
+        }
+    }
+
+    x_min_ccurve_limit <- computeLimit(x_min, unlist(clist$TOTAL_READS))
+    x_max_ccurve_limit <- computeLimit(x_max, unlist(clist$TOTAL_READS))
+    if (x_max_ccurve_limit > global_x_max_ccurve_limit) {
+        global_x_max_ccurve_limit <- x_max_ccurve_limit
+    }
+    if (unlist(clist$EXPECTED_DISTINCT)[x_max_ccurve_limit] > global_y_max_ccurve_limit) {
+        if (x_max_ccurve_limit <= length(unlist(clist$EXPECTED_DISTINCT))) {
+            global_y_max_ccurve_limit <- unlist(clist$EXPECTED_DISTINCT)[x_max_ccurve_limit]
+        } else {
+            x_max_ccurve_limit <- length(unlist(clist$EXPECTED_DISTINCT))
+        }
+    }
+    # Add a few points to be sure
+    x_max_ccurve_limit <- x_max_ccurve_limit + 3
+
+    sn <- clist$SAMPLE_NAME[[1]][x_min_ccurve_limit:x_max_ccurve_limit]
+    tr <- clist$TOTAL_READS[[1]][x_min_ccurve_limit:x_max_ccurve_limit]
+    ed <- clist$EXPECTED_DISTINCT[[1]][x_min_ccurve_limit:x_max_ccurve_limit]
+    co <- clist$COLOR[[1]][x_min_ccurve_limit:x_max_ccurve_limit]
+    df <- data.frame(sample_name = sn,
+                     total_reads = tr,
+                     expected_distinct = ed,
+                     color = co)
+    if (nrow(clist) > 1) {
+        for (i in 2:nrow(clist)) {
+            sn <- clist$SAMPLE_NAME[[i]][x_min_ccurve_limit:x_max_ccurve_limit]
+            tr <- clist$TOTAL_READS[[i]][x_min_ccurve_limit:x_max_ccurve_limit]
+            ed <- clist$EXPECTED_DISTINCT[[i]][x_min_ccurve_limit:x_max_ccurve_limit]
+            co <- clist$COLOR[[i]][x_min_ccurve_limit:x_max_ccurve_limit]
+            df <- rbind(df, data.frame(sample_name = sn,
+                                       total_reads = tr,
+                                       expected_distinct = ed,
+                                       color = co))
+        }
+    }
+
+    # Plot by millions of reads
+    plottingFactor <- 1000000
+
+    df$total_reads       <- df$total_reads/plottingFactor
+    df$expected_distinct <- df$expected_distinct/plottingFactor
+    rcDT$total  <- rcDT$total/plottingFactor
+    rcDT$unique <- rcDT$unique/plottingFactor
+    x_max       <- x_max/plottingFactor
+
+    # Plot the curve
+    fig <- ggplot(df, aes(total_reads,
+                          expected_distinct,
+                          group = sample_name,
+                          col=color)) + geom_line()
+
+    # Plot the real data if we have it
+    numFields   <- 2
+    for(j in 1:numFields) rcDT$name <- gsub("_[^_]*$", "", rcDT$name)
+    rcDT$color <- colormap
+
+    if (any(rcDT$total > 0) && !any(is.na(rcDT$unique)) && !ignore_unique) {
+        fig <- fig + geom_point(data=rcDT,
+                                aes(total, unique, col=color),
+                                shape=23, size=3)
+        message(paste0("INFO: Found real counts for ",
+                       paste(rcDT$name, sep=","), " - Total (M): ",
+                       rcDT$total, " Unique (M): ",
+                       rcDT$unique, "\n"))
+    } else if (any(rcDT$total > 0)) {
+        if (max(rcDT$total) > max(df$total_reads)) {
+            message(paste0("WARNING: Max total reads (", max(rcDT$total),
+                           ") > ", "max preseq value (", max(df$total_reads),
+                           ") - skipping..."))
+        } else {
+            interp <- approx(df$total_reads, df$expected_distinct, rcDT$total)$y
+            fig <- fig + geom_point(data=rcDT,
+                                    aes(total, interp, col=color),
+                                    shape=23, size=3)
+            message(paste0("INFO: Found real counts for ",
+                           paste(rcDT$name, sep=","), " - Total (M): ",
+                           rcDT$total, " (preseq unique reads (M): ",
+                           interp, ")\n"))
+        }
+    } else {
+        message(paste0("INFO: No real counts provided."))
+    }
+
+    fig <- fig + geom_abline(intercept = 0, slope = 1, linetype="dashed") 
+
+    # Set the axis limits
+    max_total <- 0
+    if (any(rcDT$total > 0)) {
+        max_total <- as.numeric(max(rcDT$total))
+    }
+
+    if (x_max < max_total) {
+        message(paste0("WARNING: x-max value ", x_max,
+                       " is less than max real data ", max_total))
+    }
+
+    max_unique <- 0
+    if (!any(is.na(rcDT$unique)) && any(rcDT$unique > 0)) {
+        max_unique <- as.numeric(max(rcDT$unique))
+        max_unique <- max_unique + (max_unique * 0.1)
+    }
+    preseq_ymax <- global_y_max_ccurve_limit
+    preseq_ymax <- preseq_ymax + (global_y_max_ccurve_limit * 0.1)
+
+    default_ylim <- 100000
+    if (coverage > 0) {
+        default_ylim <- as.numeric(default_ylim) / coverage
+    }
+
+    # Adjust limits by plottingFactor
+    default_ylim <- default_ylim/plottingFactor
+    preseq_ymax  <- preseq_ymax/plottingFactor
+
+    fig <- fig +
+        coord_cartesian(xlim=c(x_min, x_max),
+                        ylim = c(default_ylim,
+                                 max(preseq_ymax, max_unique)))
+
+    if (preseq_ymax < max_unique) {
+        message(paste0("WARNING: y-max value changed from default ",
+                       preseq_ymax, " to the max real data ",
+                       max_unique))
+    }
+
+    # label the axis
+    # Change labels if we're using coverage
+    if (coverage > 0) {
+        if (!any(is.na(rcDT$unique)) && any(rcDT$unique > 0)) {
+            fig <- fig +
+                labs(x = paste0("Total coverage (incl. duplicates)"),
+                     caption = paste0("Points show read count versus ",
+                                      "deduplicated read counts ",
+                                      "(externally calculated)"))
+        } else if (any(rcDT$total > 0)) {
+            fig <- fig +
+                labs(x = "Total coverage (incl. duplicates)",
+                     caption = paste0("Points show read count versus projected ",
+                                      "unique read counts on the curves"))
+        } else {
+            fig <- fig +
+                labs(x = "Total coverage (incl. duplicates)")
+        }
+        fig <- fig +
+            labs = (y = "Unique coverage")
+    } else {
+        if (!any(is.na(rcDT$unique)) && any(rcDT$unique > 0)) {
+            fig <- fig +
+                labs(x = "Total reads (M) (incl. duplicates)",
+                     caption = paste0("Points show read count versus deduplicated ",
+                                      "read counts (externally calculated)"))
+        } else if (any(rcDT$total > 0)) {
+            fig <- fig +
+                labs(x = "Total reads (M) (incl. duplicates)",
+                     caption = paste0("Points show externally calculated read ",
+                                      "counts on the curves"))
+        } else {
+            fig <- fig +
+                labs(x = "Total reads (M) (incl. duplicates)")
+        }
+        fig <- fig +
+            labs(y = "Unique reads (M)")
+    }
+
+    fig <- fig +
+        labs(col = "") +
+        scale_color_discrete(labels=c(clist$SAMPLE_NAME)) +
+        theme_PEPPRO() +
+        theme(legend.position = "right",
+              plot.caption = element_text(size = 8, face = "italic"))
+
+    # inset zoom plot
+    zoom_theme <- theme(legend.position = "none",
+                        axis.line = element_blank(),
+                        axis.text.x = element_blank(),
+                        axis.text.y = element_blank(),
+                        axis.ticks = element_blank(),
+                        axis.title.x = element_blank(),
+                        axis.title.y = element_blank(),
+                        aspect.ratio = 1,
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_rect(color='black'),
+                        plot.margin = unit(c(0.1,0.1,-6,-6),"mm"))
+
+    if (!any(is.na(rcDT$unique)) && any(rcDT$unique > 0)) {
+        zoom_fig <- ggplot(df, aes(total_reads,
+                       expected_distinct,
+                       group = sample_name,
+                       col=color)) +
+            geom_line() +
+            geom_abline(intercept = 0, slope = 1, linetype="dashed") +
+            coord_cartesian(xlim = c(0,max(rcDT$unique)*2),
+                            ylim = c(0,max(rcDT$unique)*2)) +
+            geom_point(data=rcDT,
+                       aes(total, unique, col=color),
+                       shape=23, size=3) +
+            theme_classic(base_size=14) +
+            zoom_theme
+        g   <- ggplotGrob(zoom_fig)
+        fig <- fig +
+            annotation_custom(grob = g,
+                              xmin = x_max / 2,
+                              xmax = x_max,
+                              ymin = 10,
+                              ymax = max(preseq_ymax, max_unique)/2)
+    } else if (any(rcDT$total > 0)) {
+        interp <- approx(df$total_reads, df$expected_distinct, rcDT$total)$y
+        zoom_fig <- ggplot(df, aes(total_reads,
+                                   expected_distinct,
+                                   group = sample_name,
+                                   col=color)) +
+            geom_line() +
+            geom_abline(intercept = 0, slope = 1, linetype="dashed") +
+            coord_cartesian(xlim = c(0,max(rcDT$total)*2),
+                            ylim = c(0,max(rcDT$total)*2)) +
+            # geom_hline(data=rcDT, aes(yintercept=total, col=color),
+            #            linetype="dotted") +
+            # geom_vline(data=rcDT, aes(xintercept=total, col=color),
+            #            linetype="dotted") +
+            geom_point(data=rcDT,
+                       aes(total, interp, col=color),
+                       shape=23, size=3) +
+            theme_classic(base_size=14) +
+            zoom_theme
+        g   <- ggplotGrob(zoom_fig)
+        fig <- fig +
+            annotation_custom(grob = g,
+                              xmin = x_max / 2,
+                              xmax = x_max,
+                              ymin = 10,
+                              ymax = max(preseq_ymax, max_unique)/2)
+    }
+
+    # Don't include legend for single sample plots
+    if (length(ccurves) == 1) {
+        fig <- fig + theme(legend.position = "none")
+    }
+
+    return(fig)
+}
+
+
 #' Calculate the Fraction of Reads in Features (FRiF)
 #'
 #' This function calculates the fraction of reads in a feature and returns

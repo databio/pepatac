@@ -1533,6 +1533,7 @@ def main():
                 pm.report_object("Peak partition distribution", gd_PDF,
                                  anchor_image=gd_PNG)
 
+
         ########################################################################
         #                       Perform motif analysis                         #
         ########################################################################
