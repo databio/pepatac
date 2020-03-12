@@ -475,9 +475,12 @@ def main():
     # Convenience alias
     tools = pm.config.tools
     param = pm.config.parameters
+    param.outfolder = outfolder
     res = pm.config.resources
 
-    # Check that the required tools are callable by the pipeline
+    ############################################################################
+    #                Confirm required tools are all callable                   #
+    ############################################################################
     opt_tools = ["fseq", "${PICARD}", "${TRIMMOMATIC}", "pyadapt",
                  "findMotifsGenome.pl"]
 
@@ -497,7 +500,6 @@ def main():
     if args.motif:
         if 'findMotifsGenome.pl' in opt_tools: opt_tools.remove('findMotifsGenome.pl')
 
-    # Confirm required tools are all callable
     if not check_commands(tools, opt_tools):
         err_msg = "Missing required tools. See message above."
         pm.fail_pipeline(RuntimeError(err_msg))
@@ -506,7 +508,10 @@ def main():
         err_msg = "Incompatible settings: You specified single-end, but provided --input2."
         pm.fail_pipeline(RuntimeError(err_msg))
 
-    # Set up reference resource according to genome prefix.
+ 
+    ############################################################################
+    #          Set up reference resources according to primary genome.         #
+    ############################################################################
     check_list = [
         {"asset_name":"fasta", "seek_key":"chrom_sizes",
          "tag_name":"default", "arg":None, "user_arg":None,
@@ -560,9 +565,10 @@ def main():
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
 
-    param.outfolder = outfolder
 
-    # Check that the input file(s) exist before continuing
+    ############################################################################
+    #          Check that the input file(s) exist before continuing            #
+    ############################################################################
     if os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size > 0:
         print("Local input file: " + args.input[0])
     elif os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size == 0:
@@ -588,10 +594,12 @@ def main():
             err_msg = "Could not find: {}"
             pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
 
-    container = None
+    container = None  # legacy
 
-    ###########################################################################
 
+    ############################################################################
+    #                      Grab and prepare input files                        #
+    ############################################################################
     pm.report_result(
         "File_mb",
         round(ngstk.get_file_size(
@@ -631,6 +639,7 @@ def main():
     ngstk.make_dir(map_genome_folder)
     rmdup_bam = os.path.join(map_genome_folder,
                              args.sample_name + "_sort_dedup.bam")
+
 
     ############################################################################
     #                          Begin adapter trimming                          #
@@ -692,9 +701,6 @@ def main():
 
         trimming_renaming_commands = [build_command(["mv", old, new])
                                       for old, new in skewer_filename_pairs]
-        # Rename the logfile.
-        # skewer_filename_pairs.append(
-        #    ("{}-trimmed.log".format(out_fastq_pre), trimLog))
 
         # Pypiper submits the commands serially.
         cmd = [trimming_command] + trimming_renaming_commands
@@ -729,6 +735,7 @@ def main():
     # Prepare variables for alignment step
     unmap_fq1 = trimmed_fastq
     unmap_fq2 = trimmed_fastq_R2
+
 
     ############################################################################
     #                    Map to any requested prealignments                    #
@@ -782,10 +789,10 @@ def main():
                 unmapped_fq = unmapped_fq + ".gz"
                 pm.run(cmd, unmapped_fq)
 
+
     ############################################################################
     #                           Map to primary genome                          #
     ############################################################################
-
     pm.timestamp("### Map to genome")
     mapping_genome_bam = os.path.join(
         map_genome_folder, args.sample_name + "_sort.bam")
@@ -904,10 +911,10 @@ def main():
         else:
             pm.report_result("Mitochondrial_reads", 0)
 
+
     ############################################################################
     #         Calculate quality control metrics for the alignment file         #
     ############################################################################
-
     pm.timestamp("### Calculate NRF, PBC1, and PBC2")
     QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
     ngstk.make_dir(QC_folder)
@@ -1074,7 +1081,6 @@ def main():
     # using a boatload of memory (more than 32GB); in contrast, running the
     # wig -> bw conversion on each chrom and then combining them with bigWigCat
     # requires much less memory. This was a memory bottleneck in the pipeline.
-
     pm.timestamp("### Produce smoothed and nucleotide-resolution tracks")
 
     exact_folder = os.path.join(map_genome_folder + "_exact")
@@ -1099,7 +1105,6 @@ def main():
     ############################################################################
     #                          Determine TSS enrichment                        #
     ############################################################################
-
     if not os.path.exists(res.refgene_tss):
         print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}"
               .format(res.refgene_tss))
@@ -1565,13 +1570,11 @@ def main():
                 print("Confirm peak calling was successful.")
                 pm.stop_pipeline()
 
+
     ############################################################################ 
     #                  Determine genomic feature coverage                      #
     ############################################################################
     pm.timestamp("### Calculate read coverage")
-
-    #frif_PDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
-    #frif_PNG = os.path.join(QC_folder, args.sample_name + "_frif.png")
 
     # Cummulative Fraction of Reads in Features (cFRiF)
     cFRiF_PDF = os.path.join(QC_folder, args.sample_name + "_cFRiF.pdf")
@@ -1767,13 +1770,6 @@ def main():
         read_count = pm.checkprint(count_cmd)
         read_count = str(read_count).rstrip()
 
-        # cfrif_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "cfrif",
-        #              "-n", args.sample_name, "-r", total_reads,
-        #              "-o", cFRiF_PDF, "--bed"]
-        # frif_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
-        #              "-n", args.sample_name, "-r", total_reads,
-        #              "-o", FRiF_PDF, "--bed"]
-
         cFRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
                      "-s", args.sample_name, "-z", str(genome_size).rstrip(),
                      "-n", read_count, "-y", "cfrif"]
@@ -1827,6 +1823,7 @@ def main():
         for unmapped_fq in to_compress:
             if not unmapped_fq:
                 pm.clean_add(unmapped_fq + ".gz")
+
 
     ############################################################################
     #                            PIPELINE COMPLETE!                            #
