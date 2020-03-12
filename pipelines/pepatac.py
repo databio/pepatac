@@ -70,6 +70,10 @@ def parse_arguments():
                         dest="blacklist", type=str,
                         help="Path to genomic region blacklist file")
 
+    parser.add_argument("--anno-name", default=None,
+                        dest="anno_name", type=str,
+                        help="Path to reference annotation file (BED format) for calculating FRiF")
+
     parser.add_argument("--peak-type", default="variable",
                         dest="peak_type", choices=PEAK_TYPES, type=str,
                         help="Call variable or fixed width peaks.\n"
@@ -88,9 +92,11 @@ def parse_arguments():
                         dest="motif",
                         help="Perform motif enrichment analysis")
 
-    parser.add_argument("--anno-name", default=None,
-                        dest="anno_name", type=str,
-                        help="Path to reference annotation file (BED format) for calculating FRiF")
+    parser.add_argument("--sob", action='store_true',
+                        dest="sob", default=False,
+                        help="Use seqOutBias to produce signal tracks, "
+                             "incorporate mappability information, "
+                             "and account for Tn5 bias.")
 
     parser.add_argument("--prioritize", action='store_true', default=False,
                         dest="prioritize",
@@ -482,7 +488,8 @@ def main():
     #                Confirm required tools are all callable                   #
     ############################################################################
     opt_tools = ["fseq", "${PICARD}", "${TRIMMOMATIC}", "pyadapt",
-                 "findMotifsGenome.pl"]
+                 "findMotifsGenome.pl", "seqOutBias", "bigWigMerge",
+                 "bedGraphToBigWig"]
 
     # If using optional tools, remove those from the skipped checks
     if args.trimmer == "trimmomatic":
@@ -496,6 +503,11 @@ def main():
 
     if args.peak_caller == "fseq":
         if 'fseq' in opt_tools: opt_tools.remove('fseq')
+
+    if args.sob:
+        if 'seqOutBias' in opt_tools: opt_tools.remove('seqOutBias')
+        if 'bigWigMerge' in opt_tools: opt_tools.remove('bigWigMerge')
+        if 'bedGraphToBigWig' in opt_tools: opt_tools.remove('bedGraphToBigWig')
 
     if args.motif:
         if 'findMotifsGenome.pl' in opt_tools: opt_tools.remove('findMotifsGenome.pl')
@@ -1073,6 +1085,105 @@ def main():
 
 
     ############################################################################
+    #       Determine maximum read length and add seqOutBias resource          #
+    ############################################################################
+    if not pm.get_stat("Read_length") or args.new_start:
+        if _itsa_file(mapping_genome_bam):
+            cmd = (tools.samtools + " stats " + mapping_genome_bam +
+                   " | grep '^SN' | cut -f 2- | grep 'maximum length:' | cut -f 2-")
+            read_len = int(pm.checkprint(cmd))
+        else:
+            pm.warning("{} could not be found.".format(mapping_genome_bam))
+            pm.stop_pipeline()
+        pm.report_result("Read_length", read_len)
+    else:
+        read_len = int(pm.get_stat("Read_length"))
+
+    # At this point we can check for seqOutBias required indicies.
+    # Can't do it earlier because we haven't determined the read_length of 
+    # interest for mappability purposes.
+    if args.sob:
+        pm.debug("read_len: {}".format(read_len))  # DEBUG
+        search_asset = [{"asset_name":"tallymer_index",
+                         "seek_key":"search_file",
+                         "tag_name":read_len,
+                         "arg":"search_file",
+                         "user_arg":"search-file",
+                         "required":True}]
+        res, rgc = _add_resources(args, res, search_asset)
+
+    # Calculate size of genome
+    if not pm.get_stat("Genome_size") or args.new_start:
+        genome_size = int(pm.checkprint(
+            ("awk '{sum+=$2} END {printf \"%.0f\", sum}' " +
+             res.chrom_sizes)))
+        pm.report_result("Genome_size", genome_size)
+    else:
+        genome_size = int(pm.get_stat("Genome_size"))
+
+
+    ############################################################################
+    #                     Calculate library complexity                         #
+    ############################################################################
+    preseq_output = os.path.join(
+        QC_folder, args.sample_name + "_preseq_out.txt")
+    preseq_yield = os.path.join(
+        QC_folder, args.sample_name + "_preseq_yield.txt")
+    preseq_counts = os.path.join(
+        QC_folder, args.sample_name + "_preseq_counts.txt")
+    preseq_plot = os.path.join(
+        QC_folder, args.sample_name + "_preseq_plot")
+    preseq_png = os.path.join(
+        QC_folder, args.sample_name + "_preseq_plot.png")
+
+    if not _itsa_file(preseq_pdf) or args.new_start:
+        if not os.path.exists(mapping_genome_index):
+            cmd = tools.samtools + " index " + mapping_genome_bam
+            pm.run(cmd, mapping_genome_index)
+            pm.clean_add(mapping_genome_index)
+
+        pm.timestamp("### Calculate library complexity")
+
+        cmd1 = (tools.preseq + " c_curve -v -o " + preseq_output +
+                " -B " + mapping_genome_bam_dups)
+        pm.run(cmd1, preseq_output)
+
+        cmd2 = (tools.preseq + " lc_extrap -v -o " + preseq_yield +
+                " -B " + mapping_genome_bam_dups)
+        pm.run(cmd2, preseq_yield, nofail=True)
+
+        if os.path.exists(preseq_yield):
+            cmd3 = ("echo '" + preseq_yield +
+                    " '$(" + tools.samtools + " view -c -F 4 " + 
+                    mapping_genome_bam + ")" + "' '" +
+                    "$(" + tools.samtools + " view -c -F 4 " +
+                    rmdup_bam + ") > " + preseq_counts)
+
+            pm.run(cmd3, preseq_counts)
+
+            cmd = (tools.Rscript + " " + tool_path("PEPATAC.R") +
+                   " preseq " + "-i " + preseq_yield)
+            cmd += (" -r " + preseq_counts + " -o " + preseq_plot)
+
+            pm.run(cmd, [preseq_pdf, preseq_png])
+
+            pm.report_object("Library complexity", preseq_pdf,
+                             anchor_image=preseq_png)
+
+            if not pm.get_stat('Frac_exp_unique_at_10M') or args.new_start:
+                # Report the expected unique at 10M reads
+                cmd = ("grep -w '10000000' " + preseq_yield +
+                       " | awk '{print $2}'")
+                expected_unique = pm.checkprint(cmd)
+                if expected_unique:
+                    fraction_unique = float(expected_unique)/float(10000000)
+                    pm.report_result("Frac_exp_unique_at_10M",
+                                     round(fraction_unique, 4))
+        else:
+            print("Unable to calculate library complexity.")
+
+
+    ############################################################################
     #                         Produce signal tracks                            #
     ############################################################################
     # "Exact cuts" are nucleotide-resolution tracks of exact bases
@@ -1081,7 +1192,7 @@ def main():
     # using a boatload of memory (more than 32GB); in contrast, running the
     # wig -> bw conversion on each chrom and then combining them with bigWigCat
     # requires much less memory. This was a memory bottleneck in the pipeline.
-    pm.timestamp("### Produce smoothed and nucleotide-resolution tracks")
+    pm.timestamp("### Produce signal tracks")
 
     exact_folder = os.path.join(map_genome_folder + "_exact")
     ngstk.make_dir(exact_folder)
@@ -1090,16 +1201,167 @@ def main():
                                  args.sample_name + "_smooth.bw")
     shift_bed = os.path.join(exact_folder, args.sample_name + "_shift.bed")
 
-    cmd = tool_path("bamSitesToWig.py")
-    cmd += " -i " + rmdup_bam
-    cmd += " -c " + res.chrom_sizes
-    cmd += " -b " + shift_bed # request bed output
-    cmd += " -o " + exact_target
-    cmd += " -w " + smooth_target
-    cmd += " -m " + "atac"
-    cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
-    cmd += " --variable-step"
-    pm.run(cmd, [exact_target, smooth_target])
+    if not args.sob:
+        wig_cmd_callable = ngstk.check_command("wigToBigWig")
+
+        if wig_cmd_callable:
+            cmd = tool_path("bamSitesToWig.py")
+            cmd += " -i " + rmdup_bam
+            cmd += " -c " + res.chrom_sizes
+            cmd += " -b " + shift_bed # request bed output
+            cmd += " -o " + exact_target
+            cmd += " -w " + smooth_target
+            cmd += " -m " + "atac"
+            cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
+            cmd += " --variable-step"
+            pm.run(cmd, [exact_target, smooth_target])
+        else:
+            pm.warning("Skipping signal track production:"
+                       "Could not call \'wigToBigWig\'."
+                       "Confirm the required UCSC tools are in your PATH.")
+    else:
+        # seqOutBias needs a working directory, we'll make that temporary
+        tempdir = tempfile.mkdtemp(dir=map_genome_folder)
+        os.chmod(tempdir, 0o771)
+        pm.clean_add(tempdir)
+
+        # Tn5 correction requires separating by strand
+        pm.timestamp("### Split BAM by strand")
+        plus_bam = os.path.join(
+            map_genome_folder, args.sample_name + "_plus.bam")
+        minus_bam = os.path.join(
+            map_genome_folder, args.sample_name + "_minus.bam")
+        
+        cmd1 = build_command([
+            tools.samtools,
+            "view",
+            "-bh",
+            ("-F", 20),
+            rmdup_bam,
+            (">", plus_bam)
+        ])
+
+        cmd2 = build_command([
+            tools.samtools,
+            "view",
+            "-bh",
+            ("-f", 16),
+            rmdup_bam,
+            (">", minus_bam)
+        ])
+        
+        pm.run([cmd1, cmd2], [plus_bam, minus_bam], clean=true)
+
+        plus_exact_bw = os.path.join(
+            exact_folder, args.sample_name + "_plus_exact.bw")
+        minus_exact_bw = os.path.join(
+            exact_folder, args.sample_name + "_minus_exact.bw")
+        shift_plus_bed = os.path.join(
+            map_genome_folder, args.sample_name + "_shift_plus.bed")
+        shift_minus_bed = os.path.join(
+            map_genome_folder, args.sample_name + "_shift_minus.bed")
+        plus_table = os.path.join(
+            map_genome_folder, (args.genome_assembly + "_plus.tbl"))
+        minus_table = os.path.join(
+            map_genome_folder, (args.genome_assembly + "_minus.tbl"))
+
+        plus_seqtable_cmd = build_command([
+            (tools.seqoutbias, "seqtable"),
+            res.fasta,
+            str("--tallymer=" + res.search_file),
+            str("--gt-workdir=" + tempdir),
+            str("--read-size=" + str(read_len)),
+            "--kmer-mask=NXNXXXCXXNNXNNNXXN",
+            str("--out=" + plus_table)
+        ])
+        pm.run(plus_seqtable_cmd, plus_table, clean=true)
+
+        minus_seqtable_cmd = build_command([
+            (tools.seqoutbias, "seqtable"),
+            res.fasta,
+            str("--tallymer=" + res.search_file),
+            str("--gt-workdir=" + tempdir),
+            str("--read-size=" + str(read_len)),
+            "--kmer-mask=NXXNNNXNNXXCXXXNXN",
+            str("--out=" + minus_table)
+        ])
+        pm.run(minus_seqtable_cmd, minus_table, clean=true)
+
+        scale_plus_chunks = [
+            (tools.seqoutbias, "scale"),
+            plus_table,
+            plus_bam,
+            str("--bed=" + shift_plus_bed),
+            "--shift-counts",
+            str("--bw=" + plus_exact_bw)
+        ]
+        scale_plus_cmd = build_command(scale_plus_chunks)
+
+        scale_minus_chunks = [
+            (tools.seqoutbias, "scale"),
+            minus_table,
+            minus_bam,
+            str("--bed=" + shift_minus_bed),
+            "--shift-counts",
+            str("--bw=" + minus_exact_bw),
+        ]
+        scale_minus_cmd = build_command(scale_minus_chunks)
+
+        pm.run([scale_plus_cmd, scale_minus_cmd],
+               [plus_exact_bw, minus_exact_bw],
+               clean=true)
+
+        # merge stranded bigWigs
+        exact_bedgraph = os.path.join(
+            exact_folder, args.sample_name + "_exact.bedGraph")
+        merge_cmd_chunks = [
+            tools.bigWigMerge,
+            plus_exact_bw,
+            minus_exact_bw,
+            exact_bedgraph
+        ]
+        merge_cmd = build_command(merge_cmd_chunks)
+        pm.run(merge_cmd, exact_bedgraph, clean=true)
+
+        # sort merged bedGraph
+        sort_bedgraph = os.path.join(
+            exact_folder, args.sample_name + "_exact_sorted.bedGraph")
+        sort_cmd_chunks = [
+            "sort -k1,1 -k2,2n",
+            exact_bedgraph,
+            ">",
+            sort_bedgraph
+        ]
+        sort_cmd = build_command(sort_cmd_chunks)
+        pm.run(sort_cmd, sort_bedgraph, clean=true)
+
+        # convert bedGraph to bigWig
+        convert_cmd_chunks = [
+            tools.bedGraphToBigWig,
+            sort_bedgraph,
+            res.chrom_sizes,
+            exact_target
+        ]
+        convert_cmd = build_command(convert_cmd_chunks)
+        pm.run(convert_cmd, exact_target)
+
+        # Generate smooth signal track
+        wig_cmd_callable = ngstk.check_command("wigToBigWig")
+
+        if wig_cmd_callable:
+            cmd = tool_path("bamSitesToWig.py")
+            cmd += " -i " + rmdup_bam
+            cmd += " -c " + res.chrom_sizes
+            cmd += " -b " + shift_bed # request bed output
+            cmd += " -w " + smooth_target
+            cmd += " -m " + "atac"
+            cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
+            cmd += " --variable-step"
+            pm.run(cmd, smooth_target)
+        else:
+            pm.warning("Skipping signal track production:"
+                       "Could not call \'wigToBigWig\'."
+                       "Confirm the required UCSC tools are in your PATH.")
 
 
     ############################################################################
