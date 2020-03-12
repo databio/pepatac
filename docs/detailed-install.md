@@ -16,6 +16,7 @@ The following tools are used by the pipeline:
 * [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/)
 * [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 * [fastqc (v0.11.5+)](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+* [preseq (v2.0+)](http://smithlabresearch.org/software/preseq/)
 * [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster)
 * [samtools (v1.7)](http://www.htslib.org/)
 * [skewer (v0.1.126+)](https://github.com/relipmoc/skewer)
@@ -24,6 +25,7 @@ The following tools are used by the pipeline:
     * [bigWigCat (v4)](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
     * [bedToBigBed](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
 
+#### bedtools
 We'll install each of these pieces of software before moving forward.  Let's start right at the beginning and install `bedtools`.  We're going to install from source, but if you would prefer to install from a package manager, you can follow the instructions in the [bedtools' installation guide](http://bedtools.readthedocs.io/en/latest/content/installation.html).
 ```console
 cd tools/
@@ -39,6 +41,7 @@ Now, let's add `bedtools` to our `PATH` environment variable.  Look here to [lea
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/bedtools2/bin/"
 ```
 
+#### bowtie2
 Next, let's install `bowtie2`.
 ```console
 cd ../
@@ -54,6 +57,8 @@ Again, let's add `bowtie2` to our `PATH` environment variable:
 ```console
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.4.1/"
 ```
+
+#### fastqc
 Great! On to the next one. Let's get `FastQC`.  Reminder, you will need to have `java` installed to use `FastQC`.  At the command prompt, you can type `java -version`, press enter, and if you don't see an error you should be alright.  You'll need a version greater than 1.6 to work with `FastQC`.  Read more from the [`FastQC` installation instructions](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/INSTALL.txt).
 ```console
 cd ../
@@ -72,6 +77,18 @@ Add `FastQC` to our `PATH` environment variable:
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/FastQC/"
 ```
 
+#### preseq
+The pipeline uses `preseq` to calculate library complexity. Check out the author's [page for more instruction](https://github.com/smithlabcode/preseq).
+```console
+wget http://smithlabresearch.org/downloads/preseq_linux_v2.0.tar.bz2
+tar xvfj preseq_linux_v2.0.tar.bz2
+```
+Add to `PATH`!
+```console
+export PATH="$PATH:/path/to/peppro_tutorial/tools/preseq_v2.0/"
+```
+
+#### samblaster
 Now we'll get `samblaster`.  For a full guide, check out the [`samblaster` installation instructions](https://github.com/GregoryFaust/samblaster/).
 ```console
 git clone git://github.com/GregoryFaust/samblaster.git
@@ -80,6 +97,7 @@ make
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/samblaster/"
 ```
 
+#### samtools
 Next up, `samtools`.
 ```console
 wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2
@@ -99,6 +117,7 @@ As for our other tools, add `samtools` to our `PATH` environment variable:
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/samtools-1.10/"
 ```
 
+#### skewer
 Time to add `skewer` to the collection.
 ```console
 cd ../
@@ -106,6 +125,8 @@ wget https://downloads.sourceforge.net/project/skewer/Binaries/skewer-0.2.2-linu
 mv skewer-0.2.2-linux-x86_64 skewer
 chmod 755 skewer
 ```
+
+#### UCSC utilities
 Finally, we need a few of the UCSC utilities.  You can install the [entire set of tools](https://github.com/ENCODE-DCC/kentUtils) should you choose, but here we'll just grab the subset that we need.
 ```console
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
@@ -138,6 +159,7 @@ Then, install the `PEPATAC` package.  From the `pepatac/` directory:
 Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
 ```
 
+#### pigz
 To extract files quicker, `PEPATAC` can also utilize `pigz` in place of `gzip` if you have it installed.  Let's go ahead and do that now. It's not required, but it can help speed everything up when you have many samples to process.
 ```console
 cd /path/to/pepatac_tutorial/tools/
