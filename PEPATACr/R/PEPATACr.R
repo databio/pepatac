@@ -1337,6 +1337,10 @@ plotAlignedPct <- function(prj, stats) {
     )
 
     unaligned <- 100 - stats$Alignment_rate
+    
+    # Get prealignments if they exist
+    prealignments <- getPrealignments(stats)
+
     if (!is.null(prealignments)) {
         for (i in 1:length(unlist(prealignments))) {
             unaligned <- unaligned - stats[, (paste("Alignment_rate",
