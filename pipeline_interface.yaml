@@ -48,7 +48,6 @@ pipelines:
       docker_image: databio/pepatac
     summarizers:
       - tools/PEPATAC_summarizer.R
-      - tools/PEPATAC_consensusPeaks.R
     bioconductor:
       readFunName: readPepatacPeakBeds
       readFunPath: BiocProject/readPepatacPeakBeds.R

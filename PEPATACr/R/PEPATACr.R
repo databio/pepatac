@@ -394,13 +394,14 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
 #' This function plots the global TSS enrichment.
 #'
 #' @param TSSfile TSS enrichment file
+#' @param cutoff A TSS enrichment score cutoff value for low quality samples
 #' @keywords TSS enrichment
 #' @export
 #' @examples
 #' data("tss")
 #' plotTSS(TSSfile = "tss")
 #' @export
-plotTSS <- function(TSSfile) {
+plotTSS <- function(TSSfile, cutoff=6) {
     if (length(TSSfile) == 1) {
         write(paste0("\nGenerating TSS plot with ", TSSfile), stdout())
     } else {
@@ -508,7 +509,7 @@ plotTSS <- function(TSSfile) {
     }
     
     lineColor <- "red2"
-    if (TSSscore > TSS_CUTOFF)
+    if (TSSscore > cutoff)
     {
         lineColor <- "springgreen4"
     }
@@ -1045,18 +1046,30 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
 #'
 #' From:
 #' https://stackoverflow.com/questions/6461209/how-to-round-up-to-the-nearest-10-or-100-or-x
+#' @param x A vector of numbers
+#' @param nice Values to round up to
+#' @export
 roundUpNice <- function(x, nice=c(1,2,3,4,5,6,7,8,9,10)) {
     if(length(x) != 1) stop("'x' must be of length 1")
     10^floor(log10(x)) * nice[[which(x <= 10^floor(log10(x)) * nice)[[1]]]]
 }
 
 
+#' Set the panel width/height of a ggplot to a fixed value. 
+#'
 #' From:
 #' https://github.com/baptiste/egg/blob/master/R/setPanelSize.r
+#'
+#' @param p a ggplot object
+#' @param g a ggplot grob
+#' @param file filepath
+#' @param margin plot margins
+#' @param width plot width
+#' @param height plot height
+#' @export
 setPanelSize <- function(p=NULL, g=ggplotGrob(p), file=NULL, 
-                           margin=unit(1, "in"),
-                           width=unit(4, "in"), 
-                           height=unit(4, "in")){
+                         margin=unit(1, "in"), width=unit(4, "in"), 
+                         height=unit(4, "in")){
     
     panels        <- grep("panel", g$layout$name)
     panel_index_w <- unique(g$layout$l[panels])
@@ -1092,6 +1105,7 @@ setPanelSize <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 #'
 #' @param suffix A file suffix identifier
 #' @param pep A PEP project configuration file
+#' @export
 buildFilePath <- function(suffix, pep=prj) {
     file.path(config(pep)$metadata$output_dir, "summary",
               paste0(config(pep)$name, suffix))
@@ -1101,6 +1115,7 @@ buildFilePath <- function(suffix, pep=prj) {
 #' Return a list of prealignments from a stats_summary.tsv file if they exist
 #'
 #' @param stats_file A looper derived stats_summary.tsv file
+#' @export
 getPrealignments <- function(stats_file) {
     pre <- gsub("Aligned_reads_","",
                 unique(grep("Aligned_reads_.*",
@@ -1487,9 +1502,10 @@ plotAlignedPct <- function(prj, stats) {
 #'
 #' @param prj A PEPr Project object
 #' @param stats A looper derived stats_summary.tsv file
+#' @param cutoff A TSS enrichment cutoff score for low quality scores
 #' @keywords TSS scores
 #' @export
-plotTSSscores <- function(prj, stats) {
+plotTSSscores <- function(prj, stats, cutoff=6) {
     align_theme <- theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
@@ -1516,11 +1532,11 @@ plotTSSscores <- function(prj, stats) {
 
     # Establish red/green color scheme
     red_min      <- 0
-    red_max      <- TSS_CUTOFF-0.01
+    red_max      <- cutoff-0.01
     red_breaks   <- seq(red_min,red_max,0.01)
     red_colors   <- colorpanel(length(red_breaks),
                                "#AF0000","#E40E00","#FF7A6A")
-    green_min    <- TSS_CUTOFF
+    green_min    <- cutoff
     green_max    <- 30
     green_breaks <- seq(green_min,green_max,0.01)
     green_colors <- colorpanel(length(green_breaks)-1,
@@ -1616,7 +1632,7 @@ plotTSSscores <- function(prj, stats) {
 #' @param stats A looper derived stats_summary.tsv file
 #' @keywords library size
 #' @export
-plotTSSscores <- function(prj, stats) {
+plotLibSizes <- function(prj, stats) {
     align_theme <- theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
@@ -1681,7 +1697,6 @@ plotTSSscores <- function(prj, stats) {
 
 #' This function is meant to plot multiple summary graphs from the summary table 
 #' made by the Looper summarize command
-#' **Unimplemented** Looper can't take arguments...
 #'
 #' @param pep A PEP configuration file
 #' @keywords summarize PEPATAC
@@ -1735,12 +1750,153 @@ summarizer <- function(pep) {
 
 
 #' This function is meant to identify a project level set of consensus peaks.
-#' **Unimplemented** Looper can't take arguments...
 #'
 #' @param pep A PEP configuration file
 #' @keywords consensus peaks
 #' @export
 consensusPeaks <- function(pep) {
+  # Identify the project configuration file
+  prj <- suppressWarnings(Project(pep))
 
+  # warn about calling on variable width peaks
+  message("WARNING: PEPATAC_consensusPeaks is designed to produce a consensus peak
+           set from *fixed* width peaks generated using the --peak_type fixed
+           argument.")
+
+  # generate initial peak set
+  info <- capture.output({ 
+    numSamples <- length(samples(prj)$sample_name)
+  })
+  peakList   <- data.table(peakFiles = list(numSamples))
+  genome     <- invisible(config(prj)$implied_attributes[[1]][[1]]$genome)
+
+  cPath <- system2(paste0("refgenie"), args=c(paste(" seek "),
+                   paste0(genome, "/fasta.chrom_sizes")), stdout=TRUE)
+
+  if (file.exists(cPath)) {
+      cSize  <- fread(cPath)
+      colnames(cSize) <- c("chrom", "size")
+  } else {
+      message("PEPATAC_consensusPeaks.R was unable to load the chromosome sizes file.")
+      message(paste0("Confirm that ", cPath, " is present before continuing."))
+      quit()
+  }
+
+  # generate paths to peak files
+  info <- capture.output({ 
+    peakList[,peakFiles:=.(list(unique(file.path(config(prj)$metadata$output_dir,
+              paste0("results_pipeline/", samples(prj)$sample_name),
+              paste0("peak_calling_", genome),
+              paste0(samples(prj)$sample_name,
+              "_peaks_fixedWidth_normalized.narrowPeak")))))]
+  })
+
+  final <- data.table(chrom=character(),
+                      chromStart=integer(),
+                      chromEnd=integer(),
+                      name=character(),
+                      score=numeric(),
+                      strand=character(),
+                      signalValue=numeric(),
+                      pValue=numeric(),
+                      qValue=numeric(),
+                      peak=integer())
+
+  fileList  <- peakList$peakFiles[[1]]
+
+  if (length(fileList) > 1) {
+      finalList <- character()
+      for (i in 1:length(fileList)) {
+          if(file.exists(file.path(fileList[i]))) {
+              finalList <- append(finalList,fileList[i])
+          }
+      }
+  } else if (length(fileList) == 1 ) {
+      message("PEPATAC_consensusPeaks.R found only a single peak file.")
+      message("Does your project include more than one sample?")
+      quit()
+  } else {
+      message("PEPATAC_consensusPeaks.R was unable to find any peak files.")
+      message("Confirm peak files exist for your samples.")
+      quit()
+  }
+
+  if (length(finalList) >= 1) {
+      # create combined peaks
+      peaks           <- rbindlist(lapply(finalList, fread))
+      colnames(peaks) <- c("chrom", "chromStart", "chromEnd", "name", "score",
+                           "strand", "signalValue", "pValue", "qValue", "peak")
+      setkey(peaks, chrom, chromStart, chromEnd)
+      # keep highest scored peaks
+      hits    <- foverlaps(peaks, peaks,
+                           by.x=c("chrom", "chromStart", "chromEnd"),
+                           type="any", which=TRUE, nomatch=0)
+      scores  <- data.table(index=rep(1:nrow(peaks)), score=peaks$score)
+      setkey(hits, xid)
+      setkey(scores, index)
+      out     <- hits[scores, nomatch=0]
+      keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
+      indices <- unique(keep$xid)
+      final   <- peaks[indices,]
+      # trim any bad peaks (extend beyond chromosome)
+      # can't be negative
+      final[chromStart < 0, chromStart := 0]
+      # can't extend past chromosome
+      for (i in nrow(cSize)) {
+          final[chrom == cSize$chrom[i] & chromEnd > cSize$size[i], chromEnd := cSize$size[i]]
+      }
+
+      # identify reproducible peaks
+      peakSet <- copy(peaks)
+      peakSet[,group := gsub("_peak.*","",name)]
+      peakList <- splitDataTable(peakSet, "group")
+      original <- copy(final)
+
+      #' Count the number of times a peak appears across a list of peak files
+      #'
+      #' @param peakList A list of data.table objects representing narrowPeak files
+      #' @param peakDT A single data.table of peaks
+      countReproduciblePeaks <- function(peakList, peakDT) {
+          setkey(peakDT, chrom, chromStart, chromEnd)
+          setkey(peakList, chrom, chromStart, chromEnd)
+          hits <- foverlaps(peakList, peakDT,
+                            by.x=c("chrom", "chromStart", "chromEnd"),
+                            type="any", which=TRUE, nomatch=0)
+          # track the number of overlaps of final peak set peaks
+          if (!"count" %in% colnames(peakDT)) {
+              peakDT[hits$yid, count := 1]
+              peakDT[is.na(get("count")), ("count") := 0]
+          } else {
+              peakDT[hits$yid, count := get("count") + 1] 
+          }
+      }
+
+      invisible(sapply(peakList, countReproduciblePeaks, peakDT=final))
+
+      # keep peaks present in 2 or more individual peak sets
+      # keep peaks with score per million >= 5
+      final <- final[count >= 2 & score >= 5,]
+      final[,count := NULL]
+
+      # Produce output directory
+      dir.create(
+          suppressMessages(file.path(config(prj)$metadata$output_dir, "summary")),
+          showWarnings = FALSE)
+
+      if (exists("final")) {
+          # save consensus peak set
+          fwrite(final, buildFilePath("_consensusPeaks.narrowPeak", prj),
+                 sep="\t", col.names=FALSE)
+      } else {
+          message("PEPATAC_consensusPeaks.R failed to produce a consensus peak file.")
+          message("Check that individual peak files exist for your samples.")
+          quit()
+      }
+  } else {
+      message("PEPATAC_consensusPeaks.R was unable to produce a consensus peak file.")
+      message("Consensus peak generation requires the '--peak-type fixed' parameter.")
+      message("Confirm peak files exist for your samples.")
+      quit()
+  }
 }
 ################################################################################
