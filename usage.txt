@@ -7,10 +7,10 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [-gs GENOME_SIZE] [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]]
                   [--deduplicator {picard,samblaster}] [--TSS-name TSS_NAME]
-                  [--blacklist BLACKLIST] [--peak-type {variable,fixed}]
-                  [--extend EXTEND] [--frip-ref-peaks FRIP_REF_PEAKS]
-                  [--motif] [--anno-name ANNO_NAME] [--prioritize] [--keep]
-                  [--noFIFO] [--lite] [-V]
+                  [--blacklist BLACKLIST] [--anno-name ANNO_NAME]
+                  [--peak-type {variable,fixed}] [--extend EXTEND]
+                  [--frip-ref-peaks FRIP_REF_PEAKS] [--motif] [--sob]
+                  [--prioritize] [--keep] [--noFIFO] [--lite] [-V]
 
 PEPATAC version 0.8.9-dev
 
@@ -51,19 +51,22 @@ optional arguments:
                         before primary alignment.
   --deduplicator {picard,samblaster}
                         Name of deduplicator program
-  --TSS-name TSS_NAME   Filename of TSS annotation file.
+  --TSS-name TSS_NAME   Path to TSS annotation file.
   --blacklist BLACKLIST
-                        Name of peak blacklist file
+                        Path to genomic region blacklist file
+  --anno-name ANNO_NAME
+                        Path to reference annotation file (BED format) for
+                        calculating FRiF
   --peak-type {variable,fixed}
                         Call variable or fixed width peaks. Fixed width
                         requires MACS2.
   --extend EXTEND       How far to extend fixed width peaks up and downstream.
   --frip-ref-peaks FRIP_REF_PEAKS
-                        Reference peak set (BED format) for calculating FRiP
+                        Path to reference peak set (BED format) for
+                        calculating FRiP
   --motif               Perform motif enrichment analysis
-  --anno-name ANNO_NAME
-                        Reference annotation file (BED format) for calculating
-                        FRiF
+  --sob                 Use seqOutBias to produce signal tracks, incorporate
+                        mappability information, and account for Tn5 bias.
   --prioritize          Plot cFRiF/FRiF using mutually exclusive priority
                         ranked features based on the order of feature
                         appearance in the feature annotation asset.
