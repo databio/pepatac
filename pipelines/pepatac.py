@@ -1088,9 +1088,11 @@ def main():
     #       Determine maximum read length and add seqOutBias resource          #
     ############################################################################
     if not pm.get_stat("Read_length") or args.new_start:
-        if _itsa_file(mapping_genome_bam):
+        if (os.path.isfile(mapping_genome_bam)
+            and os.stat(mapping_genome_bam).st_size > 0):
             cmd = (tools.samtools + " stats " + mapping_genome_bam +
-                   " | grep '^SN' | cut -f 2- | grep 'maximum length:' | cut -f 2-")
+                   " | grep '^SN' | cut -f 2- | grep 'maximum length:' " +
+                   "| cut -f 2-")
             read_len = int(pm.checkprint(cmd))
         else:
             pm.warning("{} could not be found.".format(mapping_genome_bam))
@@ -1136,7 +1138,7 @@ def main():
     preseq_png = os.path.join(
         QC_folder, args.sample_name + "_preseq_plot.png")
 
-    if not _itsa_file(preseq_pdf) or args.new_start:
+    if not os.path.isfile(preseq_pdf) and not os.stat(preseq_pdf).st_size > 0 or args.new_start:
         if not os.path.exists(mapping_genome_index):
             cmd = tools.samtools + " index " + mapping_genome_bam
             pm.run(cmd, mapping_genome_index)
