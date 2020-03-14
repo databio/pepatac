@@ -512,7 +512,12 @@ def main():
     if args.motif:
         if 'findMotifsGenome.pl' in opt_tools: opt_tools.remove('findMotifsGenome.pl')
 
-    if not check_commands(tools, opt_tools):
+    # Check that the required tools are callable by the pipeline
+    tool_list = [v for k,v in tools.items()]    # extract tool list
+    tool_list = [t.replace('seqoutbias', 'seqOutBias') for t in tool_list]
+    tool_list = dict((t,t) for t in tool_list)  # convert back to dict
+
+    if not check_commands(tool_list, opt_tools):
         err_msg = "Missing required tools. See message above."
         pm.fail_pipeline(RuntimeError(err_msg))
 
@@ -1133,12 +1138,14 @@ def main():
         QC_folder, args.sample_name + "_preseq_yield.txt")
     preseq_counts = os.path.join(
         QC_folder, args.sample_name + "_preseq_counts.txt")
+    preseq_pdf = os.path.join(
+        QC_folder, args.sample_name + "_preseq_plot.pdf")
     preseq_plot = os.path.join(
         QC_folder, args.sample_name + "_preseq_plot")
     preseq_png = os.path.join(
         QC_folder, args.sample_name + "_preseq_plot.png")
 
-    if not os.path.isfile(preseq_pdf) and not os.stat(preseq_pdf).st_size > 0 or args.new_start:
+    if not os.path.exists(preseq_pdf) or args.new_start:
         if not os.path.exists(mapping_genome_index):
             cmd = tools.samtools + " index " + mapping_genome_bam
             pm.run(cmd, mapping_genome_index)
@@ -1147,11 +1154,11 @@ def main():
         pm.timestamp("### Calculate library complexity")
 
         cmd1 = (tools.preseq + " c_curve -v -o " + preseq_output +
-                " -B " + mapping_genome_bam_dups)
+                " -B " + mapping_genome_bam)
         pm.run(cmd1, preseq_output)
 
         cmd2 = (tools.preseq + " lc_extrap -v -o " + preseq_yield +
-                " -B " + mapping_genome_bam_dups)
+                " -B " + mapping_genome_bam)
         pm.run(cmd2, preseq_yield, nofail=True)
 
         if os.path.exists(preseq_yield):
@@ -1252,7 +1259,7 @@ def main():
             (">", minus_bam)
         ])
         
-        pm.run([cmd1, cmd2], [plus_bam, minus_bam], clean=true)
+        pm.run([cmd1, cmd2], [plus_bam, minus_bam], clean=True)
 
         plus_exact_bw = os.path.join(
             exact_folder, args.sample_name + "_plus_exact.bw")
@@ -1268,7 +1275,7 @@ def main():
             map_genome_folder, (args.genome_assembly + "_minus.tbl"))
 
         plus_seqtable_cmd = build_command([
-            (tools.seqoutbias, "seqtable"),
+            (tools.seqOutBias, "seqtable"),
             res.fasta,
             str("--tallymer=" + res.search_file),
             str("--gt-workdir=" + tempdir),
@@ -1276,10 +1283,10 @@ def main():
             "--kmer-mask=NXNXXXCXXNNXNNNXXN",
             str("--out=" + plus_table)
         ])
-        pm.run(plus_seqtable_cmd, plus_table, clean=true)
+        pm.run(plus_seqtable_cmd, plus_table, clean=True)
 
         minus_seqtable_cmd = build_command([
-            (tools.seqoutbias, "seqtable"),
+            (tools.seqOutBias, "seqtable"),
             res.fasta,
             str("--tallymer=" + res.search_file),
             str("--gt-workdir=" + tempdir),
@@ -1287,10 +1294,10 @@ def main():
             "--kmer-mask=NXXNNNXNNXXCXXXNXN",
             str("--out=" + minus_table)
         ])
-        pm.run(minus_seqtable_cmd, minus_table, clean=true)
+        pm.run(minus_seqtable_cmd, minus_table, clean=True)
 
         scale_plus_chunks = [
-            (tools.seqoutbias, "scale"),
+            (tools.seqOutBias, "scale"),
             plus_table,
             plus_bam,
             str("--bed=" + shift_plus_bed),
@@ -1300,7 +1307,7 @@ def main():
         scale_plus_cmd = build_command(scale_plus_chunks)
 
         scale_minus_chunks = [
-            (tools.seqoutbias, "scale"),
+            (tools.seqOutBias, "scale"),
             minus_table,
             minus_bam,
             str("--bed=" + shift_minus_bed),
@@ -1311,7 +1318,7 @@ def main():
 
         pm.run([scale_plus_cmd, scale_minus_cmd],
                [plus_exact_bw, minus_exact_bw],
-               clean=true)
+               clean=True)
 
         # merge stranded bigWigs
         exact_bedgraph = os.path.join(
@@ -1323,7 +1330,7 @@ def main():
             exact_bedgraph
         ]
         merge_cmd1 = build_command(merge_cmd_chunks1)
-        pm.run(merge_cmd1, exact_bedgraph, clean=true)
+        pm.run(merge_cmd1, exact_bedgraph, clean=True)
 
         # merge beds
         merge_cmd_chunks2 = [
@@ -1350,7 +1357,7 @@ def main():
             sort_bedgraph
         ]
         sort_cmd = build_command(sort_cmd_chunks)
-        pm.run(sort_cmd, sort_bedgraph, clean=true)
+        pm.run(sort_cmd, sort_bedgraph, clean=True)
 
         # convert bedGraph to bigWig
         convert_cmd_chunks = [

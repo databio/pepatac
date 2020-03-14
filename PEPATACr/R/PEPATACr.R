@@ -38,6 +38,46 @@ theme_PEPATAC <- function(base_family = "sans", ...){
 }
 
 
+#' Compute the axis value limit
+#'
+#' This function returns the index of ccurve_TOTAL_READS containing the
+#' closest value to x_max
+#' @param value An axis limit value.
+#' @param ccurve_TOTAL_READS A vector of read counts from a sample.
+#' @keywords preseq limit
+#' @examples
+#' computeLimit()
+computeLimit <- function(value, ccurve_TOTAL_READS) {
+    # This function returns the index of ccurve_TOTAL_READS containing the
+    # closest value to x_max
+
+    if (max(ccurve_TOTAL_READS) < value) {
+        message(paste0("WARNING: ", value, " is set higher than the highest ",
+                       "extrapolated point by preseq (value=",
+                       max(ccurve_TOTAL_READS)))
+    }
+    first_point  <- 0
+    middle_point <- 0
+    last_point   <- length(ccurve_TOTAL_READS)
+    iterations   <- 0
+    while (first_point != last_point) {
+        middle_point <- as.numeric((first_point + last_point)/2)
+        middle_value <- as.numeric(ccurve_TOTAL_READS[middle_point])
+        if (length(middle_value)==0) {
+            return(middle_point)
+        } else if (middle_value == value || iterations >= 10000) {
+            return(middle_point)
+        } else if (middle_value >= value) {
+            last_point  <- middle_point - 1
+        } else {
+            first_point <- middle_point + 1
+        }
+        iterations <- iterations + 1
+    }
+    return(first_point)
+}
+
+
 #' Plot library complexity curves
 #'
 #' This function plots library complexity curves using data from
@@ -396,7 +436,7 @@ plotComplexityCurves <- function(ccurves,
     fig <- fig +
         labs(col = "") +
         scale_color_discrete(labels=c(clist$SAMPLE_NAME)) +
-        theme_PEPPRO() +
+        theme_PEPATAC() +
         theme(legend.position = "right",
               plot.caption = element_text(size = 8, face = "italic"))
 
