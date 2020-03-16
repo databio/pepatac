@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.9-dev"
+__version__ = "0.8.10-dev"
 
 
 from argparse import ArgumentParser
@@ -489,7 +489,7 @@ def main():
     ############################################################################
     opt_tools = ["fseq", "${PICARD}", "${TRIMMOMATIC}", "pyadapt",
                  "findMotifsGenome.pl", "seqOutBias", "bigWigMerge",
-                 "bedGraphToBigWig"]
+                 "bedGraphToBigWig", "pigz"]
 
     # If using optional tools, remove those from the skipped checks
     if args.trimmer == "trimmomatic":
@@ -1261,19 +1261,25 @@ def main():
         
         pm.run([cmd1, cmd2], [plus_bam, minus_bam], clean=True)
 
+        # set up output files
         plus_exact_bw = os.path.join(
             exact_folder, args.sample_name + "_plus_exact.bw")
         minus_exact_bw = os.path.join(
             exact_folder, args.sample_name + "_minus_exact.bw")
         shift_plus_bed = os.path.join(
             map_genome_folder, args.sample_name + "_shift_plus.bed")
+        fixed_plus_bed = os.path.join(
+            map_genome_folder, args.sample_name + "_shift_plus_fixed.bed")
         shift_minus_bed = os.path.join(
             map_genome_folder, args.sample_name + "_shift_minus.bed")
+        fixed_minus_bed = os.path.join(
+            map_genome_folder, args.sample_name + "_shift_minus_fixed.bed")
         plus_table = os.path.join(
             map_genome_folder, (args.genome_assembly + "_plus.tbl"))
         minus_table = os.path.join(
             map_genome_folder, (args.genome_assembly + "_minus.tbl"))
 
+        pm.timestamp("### Create mappability tables")
         plus_seqtable_cmd = build_command([
             (tools.seqOutBias, "seqtable"),
             res.fasta,
@@ -1283,7 +1289,6 @@ def main():
             "--kmer-mask=NXNXXXCXXNNXNNNXXN",
             str("--out=" + plus_table)
         ])
-        pm.run(plus_seqtable_cmd, plus_table, clean=True)
 
         minus_seqtable_cmd = build_command([
             (tools.seqOutBias, "seqtable"),
@@ -1294,28 +1299,27 @@ def main():
             "--kmer-mask=NXXNNNXNNXXCXXXNXN",
             str("--out=" + minus_table)
         ])
-        pm.run(minus_seqtable_cmd, minus_table, clean=True)
+        pm.run([plus_seqtable_cmd, minus_seqtable_cmd],
+               [plus_table, minus_table], clean=True)
 
-        scale_plus_chunks = [
+        pm.timestamp("### Scale and produce signal tracks")
+        scale_plus_cmd = build_command([
             (tools.seqOutBias, "scale"),
             plus_table,
             plus_bam,
             str("--bed=" + shift_plus_bed),
             "--shift-counts",
             str("--bw=" + plus_exact_bw)
-        ]
-        scale_plus_cmd = build_command(scale_plus_chunks)
+        ])
 
-        scale_minus_chunks = [
+        scale_minus_cmd = build_command([
             (tools.seqOutBias, "scale"),
             minus_table,
             minus_bam,
             str("--bed=" + shift_minus_bed),
             "--shift-counts",
             str("--bw=" + minus_exact_bw),
-        ]
-        scale_minus_cmd = build_command(scale_minus_chunks)
-
+        ])
         pm.run([scale_plus_cmd, scale_minus_cmd],
                [plus_exact_bw, minus_exact_bw],
                clean=True)
@@ -1323,50 +1327,61 @@ def main():
         # merge stranded bigWigs
         exact_bedgraph = os.path.join(
             exact_folder, args.sample_name + "_exact.bedGraph")
-        merge_cmd_chunks1 = [
+        merge_cmd1 = build_command([
             tools.bigWigMerge,
             plus_exact_bw,
             minus_exact_bw,
             exact_bedgraph
-        ]
-        merge_cmd1 = build_command(merge_cmd_chunks1)
+        ])
         pm.run(merge_cmd1, exact_bedgraph, clean=True)
 
-        # merge beds
-        merge_cmd_chunks2 = [
-            "cat",
+        #fix bed
+        fix_cmd1 = build_command([
+            "awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, \"+\"}' ",
             shift_plus_bed,
+            (" > ", fixed_plus_bed) 
+        ])
+        fix_cmd2 = build_command([
+            "awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, \"-\"}' ",
             shift_minus_bed,
+            (" > ", fixed_minus_bed) 
+        ])
+        pm.run([fix_cmd1, fix_cmd2],
+               [fixed_plus_bed, fixed_minus_bed], clean=True)
+
+        # merge beds
+        merge_cmd2 = build_command([
+            "cat",
+            fixed_plus_bed,
+            fixed_minus_bed,
             "|",
             "sort -k1,1 -k2,2n |",
             (tools.bedtools, "merge"),
-            "-s",
+            "-s -c 5 -o sum -prec 10 -delim \"\\t\"",
             ("-i",  "stdin"),
+            " | awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, $4}' ",
             (">", shift_bed)
-        ]
-        merge_cmd2 = build_command(merge_cmd_chunks2)
+        ])
         pm.run(merge_cmd2, shift_bed)
 
         # sort merged bedGraph
         sort_bedgraph = os.path.join(
             exact_folder, args.sample_name + "_exact_sorted.bedGraph")
-        sort_cmd_chunks = [
+        sort_cmd = build_command([
             "sort -k1,1 -k2,2n",
             exact_bedgraph,
             ">",
             sort_bedgraph
-        ]
-        sort_cmd = build_command(sort_cmd_chunks)
+        ])
         pm.run(sort_cmd, sort_bedgraph, clean=True)
 
         # convert bedGraph to bigWig
-        convert_cmd_chunks = [
+        convert_cmd = build_command([
             tools.bedGraphToBigWig,
             sort_bedgraph,
             res.chrom_sizes,
             exact_target
-        ]
-        convert_cmd = build_command(convert_cmd_chunks)
+        ])
         pm.run(convert_cmd, exact_target)
 
         # Generate smooth signal track
@@ -1382,7 +1397,7 @@ def main():
             cmd += " --variable-step"
             pm.run(cmd, smooth_target)
         else:
-            pm.warning("Skipping signal track production:"
+            pm.warning("Skipping smooth signal track production:"
                        "Could not call \'wigToBigWig\'."
                        "Confirm the required UCSC tools are in your PATH.")
 
@@ -1577,6 +1592,7 @@ def main():
             macs_cmd_base = [
                 "{} callpeak".format(tools.macs2),
                 ("-t", peak_input_file),
+                ("-f", "BED"),
                 ("--outdir", peak_folder),
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
