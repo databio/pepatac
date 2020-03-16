@@ -1536,10 +1536,6 @@ def main():
     ngstk.make_dir(peak_folder)
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
-    fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
-                                    "_peaks_fixedWidth.narrowPeak")
-    norm_fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
-                                        "_peaks_fixedWidth_normalized.narrowPeak")
     peak_input_file = shift_bed
     bigNarrowPeak = os.path.join(peak_folder,
                                  args.sample_name + "_peaks.bigBed")
@@ -1611,6 +1607,9 @@ def main():
         cmd = build_command(macs_cmd_base)
         pm.run(cmd, peak_output_file, follow=report_peak_count)
 
+        fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
+            "_peaks_fixedWidth.narrowPeak")
+        # If using fixed peaks, extend from summit
         if args.peak_type == "fixed":
             # extend peaks from summit by 'extend'
             # start extend from center of peak
@@ -1621,15 +1620,6 @@ def main():
                    "); print}' " + peak_output_file + " > " + fixed_peak_file)
             peak_output_file = fixed_peak_file
             pm.run(cmd, peak_output_file)
-            # remove overlapping peaks
-            cmd = build_command([tools.Rscript,
-                                 (tool_path("PEPATAC.R"), "reduce"),
-                                 ("-i", fixed_peak_file),
-                                 ("-c", res.chrom_sizes)
-                                ])
-            pm.run(cmd, norm_fixed_peak_file, nofail=False)
-            peak_output_file = norm_fixed_peak_file
-            pm.clean_add(fixed_peak_file)
 
         # Filter peaks in blacklist.
         # TODO: improve documentation of using a blacklist
@@ -1670,6 +1660,19 @@ def main():
                            " -v  >" + filter_peak)
                     peak_output_file = filter_peak
                     pm.run(cmd, filter_peak)
+
+        # remove overlapping peaks and peaks extending beyond chromosomes
+        norm_fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
+            "_peaks_fixedWidth_normalized.narrowPeak")
+        if args.peak_type == "fixed":
+            cmd = build_command([tools.Rscript,
+                                 (tool_path("PEPATAC.R"), "reduce"),
+                                 ("-i", peak_output_file),
+                                 ("-c", res.chrom_sizes)
+                                ])
+            pm.run(cmd, norm_fixed_peak_file, nofail=False)
+            peak_output_file = norm_fixed_peak_file
+            pm.clean_add(fixed_peak_file)      
 
 
         ########################################################################
