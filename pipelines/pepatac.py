@@ -22,7 +22,7 @@ from refgenconf import RefGenConf as RGC, select_genome_config
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
 PEAK_CALLERS = ["fseq", "macs2"]
-PEAK_TYPES = ["variable", "fixed"]
+PEAK_TYPES = [ "fixed", "variable"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 BT2_IDX_KEY = "bowtie2_index"
@@ -74,7 +74,7 @@ def parse_arguments():
                         dest="anno_name", type=str,
                         help="Path to reference annotation file (BED format) for calculating FRiF")
 
-    parser.add_argument("--peak-type", default="variable",
+    parser.add_argument("--peak-type", default="fixed",
                         dest="peak_type", choices=PEAK_TYPES, type=str,
                         help="Call variable or fixed width peaks.\n"
                              "Fixed width requires MACS2.")
@@ -1321,7 +1321,7 @@ def main():
             str("--bw=" + minus_exact_bw),
         ])
         pm.run([scale_plus_cmd, scale_minus_cmd],
-               [plus_exact_bw, minus_exact_bw],
+               [plus_exact_bw, minus_exact_bw, shift_plus_bed, shift_minus_bed],
                clean=True)
 
         # merge stranded bigWigs
@@ -1546,8 +1546,6 @@ def main():
     # TODO: add chr_keep file and the same logic as in PEPPRO
     sort_peak_bed = os.path.join(peak_folder, args.sample_name +
                                  "_peaks_sort.bed")
-    peak_coverage = os.path.join(peak_folder, args.sample_name +
-                                 "_peaks_coverage.bed")
 
     if not os.path.isfile(peak_input_file):
         print("Cannot call peaks, {} does not exist.".format(peak_input_file))
@@ -1621,12 +1619,25 @@ def main():
             peak_output_file = fixed_peak_file
             pm.run(cmd, peak_output_file)
 
+        # remove overlapping peaks, peaks extending beyond chromosomes,
+        # and normalize score
+        norm_peak_file = os.path.join(peak_folder,  args.sample_name +
+            "_peaks_normalized.narrowPeak")
+        cmd = build_command([tools.Rscript,
+                             (tool_path("PEPATAC.R"), "reduce"),
+                             ("-i", peak_output_file),
+                             ("-c", res.chrom_sizes),
+                             "--normalize"
+                            ])
+        pm.run(cmd, norm_peak_file, nofail=False)
+        peak_output_file = norm_peak_file
+        pm.clean_add(fixed_peak_file)
+        
         # Filter peaks in blacklist.
         # TODO: improve documentation of using a blacklist
         if os.path.exists(res.blacklist):
             filter_peak = os.path.join(peak_folder, args.sample_name +
                                        "_peaks_rmBlacklist.narrowPeak")
-
             if not os.path.exists(filter_peak) or args.new_start:
                 black_local = ''
                 if res.blacklist.endswith(".gz"):
@@ -1655,24 +1666,23 @@ def main():
                           .format(str(os.path.dirname(res.blacklist))))
 
                 if os.path.exists(black_local):
-                    cmd = (tools.bedtools + " intersect " + " -a " +
-                           peak_output_file + " -b " + black_local +
-                           " -v  >" + filter_peak)
-                    peak_output_file = filter_peak
+                    cmd = build_command([
+                        (tools.bedtools, "intersect"),
+                        ("-a", peak_output_file),
+                        ("-b", black_local),
+                        ("-v", ">"),
+                        filter_peak
+                    ])
                     pm.run(cmd, filter_peak)
-
-        # remove overlapping peaks and peaks extending beyond chromosomes
-        norm_fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
-            "_peaks_fixedWidth_normalized.narrowPeak")
-        if args.peak_type == "fixed":
-            cmd = build_command([tools.Rscript,
-                                 (tool_path("PEPATAC.R"), "reduce"),
-                                 ("-i", peak_output_file),
-                                 ("-c", res.chrom_sizes)
-                                ])
-            pm.run(cmd, norm_fixed_peak_file, nofail=False)
-            peak_output_file = norm_fixed_peak_file
-            pm.clean_add(fixed_peak_file)      
+                # rename file
+                blacklist_target = os.path.join(peak_folder, "blacklist.flag")
+                cmd1 = build_command([tools.Rscript,
+                             (tool_path("PEPATAC.R"), "reduce"),
+                             ("-i", filter_peak),
+                             ("-c", res.chrom_sizes)
+                            ])
+                cmd2 = ("touch " + blacklist_target)
+                pm.run([cmd1, cmd2], blacklist_target)
 
 
         ########################################################################
@@ -1686,7 +1696,7 @@ def main():
                              pipeline_manager=pm)
             pm.report_result("FRiP", round(frip, 2))
 
-        if  os.path.exists(res.frip_ref_peaks):
+        if os.path.exists(res.frip_ref_peaks):
             # Use an external reference set of peaks instead of the peaks
             # called from this run
             frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
@@ -1700,6 +1710,10 @@ def main():
         ########################################################################
         pm.timestamp("### Calculate peak coverage")
 
+        peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                     "_peaks_coverage.bed")
+        ref_peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                         "_ref_peaks_coverage.bed")
         if not os.path.exists(peak_coverage) or args.new_start:
             cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peak_bed)
             cmd2 = (tools.samtools + " view -H " + rmdup_bam +
@@ -1708,17 +1722,27 @@ def main():
             cmd3 = ("cut -f 1 " + chr_order + " > " + chr_keep)
             cmd4 = (tools.bedtools + " sort -i " + peak_bed + " -faidx " +
                     chr_order + " > " + sort_peak_bed)
-            pm.run([cmd1, cmd2, cmd3, cmd4], sort_peak_bed, nofail=True)
+            pm.run([cmd1, cmd2, cmd3, cmd4], sort_peak_bed,
+                   nofail=True, clean=True)
         
-        cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
-                sort_peak_bed + " -b " + rmdup_bam + " -g " + chr_order +
-                " > " + peak_coverage)
-        pm.run(cmd4, peak_coverage, nofail=True)
+        # If you include reference peaks, calculate coverage using those
+        # TODO: normalize to base counts (fraction)
+        #       normalize to 1M tags/reads: (base_counts/sum(base_counts))*1000000)
+        #       sum(base_counts) is just the total number of bases in peaks
+        if os.path.exists(res.frip_ref_peaks):
+            cmd = (tools.bedtools + " coverage -sorted -a " +
+                   res.frip_ref_peaks + " -b " + rmdup_bam + " -g " +
+                   chr_order + " | uniq > " + ref_peak_coverage)
+            pm.run(cmd, ref_peak_coverage, nofail=True)
+
+        cmd = (tools.bedtools + " coverage -sorted -a " +
+               sort_peak_bed + " -b " + rmdup_bam + " -g " + chr_order +
+               " | uniq > " + peak_coverage)
+        pm.run(cmd, peak_coverage, nofail=True)
         
         pm.clean_add(peak_bed)
         pm.clean_add(chr_order)
         pm.clean_add(chr_keep)
-        pm.clean_add(sort_peak_bed)
 
 
         ########################################################################
