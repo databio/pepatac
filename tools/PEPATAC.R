@@ -503,7 +503,8 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         "Command: reduce \t reduce overlapping peaks\n\n",
         " -i, --input\t\t Path to narrowPeak file.\n",
         " -c, --chr_sizes\t Genome chromosome sizes file. <Chr> <Size>.\n",
-        " -o, --output\t\t Output file (optional).\n"
+        " -o, --output\t\t Output file (optional).\n",
+        " -n, --normalize\t\t Normalize scores.\n"
     )
 
     help <- opt_get(name = c("help", "?", "h"), required=FALSE,
@@ -523,10 +524,14 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
                              description="Genome chromosome sizes file. <Chr> <Size>.")
         output    <- opt_get(name = c("output", "o"), required=FALSE,
                              default=NULL, description="Output file.")
+        normalize <- opt_get(name = c("normalize", "n"), required=FALSE,
+                             default=FALSE,
+                             description="Normalize scores.")
 
         reducePeaks(input=input,
                     chr_sizes=chr_sizes,
-                    output=output)
+                    output=output,
+                    normalize=normalize)
     }
 } else if (!is.na(subcmd) && tolower(subcmd) == "summarize") {
     usage <- paste0(
