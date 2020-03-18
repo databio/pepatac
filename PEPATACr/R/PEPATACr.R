@@ -38,6 +38,68 @@ theme_PEPATAC <- function(base_family = "sans", ...){
 }
 
 
+#' Create and return a file icon
+#'
+#' @keywords file icon
+#' @param x Range of x-axis dimensions
+#' @param y Range of y-axis dimensions
+#' @export
+fileIcon <- function(x=seq(0:275), y=seq(0:275)) {
+    df    <- data.frame(x=x, y=y)
+    minX  <- min(df$x)
+    maxX  <- max(df$x)
+    minY  <- min(df$y)
+    maxY  <- max(df$y)
+    pg    <- data.frame(x=c(225,225,255), y=c(265,235,235), group=c(1,1,1))
+    image <- ggplot(df, aes(x, y)) +
+        geom_rect(aes(xmin=(60/275*maxX), xmax=(225/275*maxX),
+                      ymin=(10/275*maxY), ymax=(265/275*maxY)),
+                  color=NA, fill="white") +
+        geom_rect(aes(xmin=(225/275*maxX), xmax=(255/275*maxX),
+                      ymin=(10/275*maxY), ymax=(235/275*maxY)),
+                  color=NA, fill="white") +
+        geom_polygon(data=pg, aes(x=x, y=y, group=group),
+                     color="gray", fill="white", size=3) +
+        # Outline the overall shape
+        geom_line(data=data.frame(x=c((60/275*maxX),(255/275*maxX)),
+                                  y=c((10/275*maxY),(10/275*maxY))),
+                  aes(x=x,y=y), color="gray", size=3,
+                  lineend="round", linejoin="bevel") +
+        geom_line(data=data.frame(x=c((60/275*maxX),(60/275*maxX)),
+                                  y=c((10/275*maxY),(265/275*maxY))),
+                  aes(x=x,y=y), color="gray", size=3,
+                  lineend="round", linejoin="bevel") +
+        geom_line(data=data.frame(x=c((60/275*maxX),(222.5/275*maxX)),
+                                  y=c((265/275*maxY),(265/275*maxY))),
+                  aes(x=x,y=y), color="gray", size=3,
+                  lineend="round", linejoin="bevel") +
+        geom_line(data=data.frame(x=c((255/275*maxX),(255/275*maxX)),
+                                  y=c((10/275*maxY),(232.5/275*maxY))),
+                  aes(x=x,y=y), color="gray", size=3,
+                  lineend="round", linejoin="bevel") +
+        # Add page lines
+        geom_line(data=data.frame(x=c(100/275*maxX,215/275*maxX),
+                                  y=c(117.5/275*maxY,117.5/275*maxY)),
+                  aes(x=x,y=y), color="gray", size=4, lineend="round") +
+        geom_line(data=data.frame(x=c(100/275*maxX,215/275*maxX),
+                                  y=c(137.5/275*maxY,137.5/275*maxY)),
+                  aes(x=x,y=y), color="gray", size=4, lineend="round") +
+        geom_line(data=data.frame(x=c(100/275*maxX,215/275*maxX),
+                                  y=c(157.5/275*maxY,157.5/275*maxY)),
+                  aes(x=x,y=y), color="gray", size=4, lineend="round") +
+        theme_PEPATAC() +
+        theme(panel.border = element_blank(),
+              axis.line = element_blank(),
+              axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank())
+    return(image)
+}
+
+
 #' Compute the axis value limit
 #'
 #' This function returns the index of ccurve_TOTAL_READS containing the
@@ -1450,9 +1512,11 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 #' @param input Path to narrowPeak file
 #' @param chr_sizes Genome chromosome sizes file. <Chr> <Size>
 #' @param output Output file.
+#' @param normalize Remove overlaps and normalize the score.
 #' @keywords reduce fixed peaks
 #' @export
-reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
+reducePeaks <- function(input=input, chr_sizes=chr_sizes,
+                        output=NULL, normalize=FALSE) {
     info <- file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
         peaks           <- fread(file.path(input))
@@ -1481,7 +1545,7 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
             message(paste0("reducePeaks(): ", chr_sizes, " is missing."))
         }
     }
-        
+
     if (exists("peaks") & exists("c_size")) {
         hits  <- foverlaps(peaks, peaks,
                            by.x=c("chrom", "chromStart", "chromEnd"),
@@ -1498,15 +1562,18 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
         final[chromStart < 0, chromStart := 0]
         # can't extend past chromosome
         for (i in nrow(c_size)) {
-            final[chrom == c_size$chrom[i] & chromEnd > c_size$size[i], chromEnd := c_size$size[i]]
+            final[chrom == c_size$chrom[i] & chromEnd > c_size$size[i],
+                  chromEnd := c_size$size[i]]
         }
-        # normalize peak scores for cross sample comparison
-        final[, score := .(score/(sum(score)/1000000))]
+        if (normalize) {
+            # normalize peak scores for cross sample comparison
+            final[, score := .(score/(sum(score)/1000000))]
+        }
         final[score < 0, score := 0]
         # save final peak set
         if (is.null(output)) {
             fwrite(final, paste0(sampleName(input),
-                                 "_peaks_fixedWidth_normalized.narrowPeak"),
+                                 "_peaks_normalized.narrowPeak"),
                    sep="\t", col.names=FALSE)
         } else {
             fwrite(final, output, sep="\t", col.names=FALSE)
@@ -2233,148 +2300,390 @@ summarizer <- function(pep) {
 #' @keywords consensus peaks
 #' @export
 consensusPeaks <- function(pep) {
-  # Identify the project configuration file
-  prj <- suppressWarnings(Project(pep))
+    # Identify the project configuration file
+    prj <- suppressWarnings(Project(pep))
 
-  # warn about calling on variable width peaks
-  #warning("PEPATAC_consensusPeaks is designed to produce a consensus peak
-  #        set from *fixed* width peaks generated using the --peak_type fixed
-  #        argument.")
+    # generate initial peak set
+    info <- capture.output({ 
+      numSamples <- length(samples(prj)$sample_name)
+    })
+    peakList   <- data.table(peakFiles = list(numSamples))
+    genome     <- invisible(config(prj)$implied_attributes[[1]][[1]]$genome)
 
-  # generate initial peak set
-  info <- capture.output({ 
-    numSamples <- length(samples(prj)$sample_name)
-  })
-  peakList   <- data.table(peakFiles = list(numSamples))
-  genome     <- invisible(config(prj)$implied_attributes[[1]][[1]]$genome)
+    cPath <- system2(paste0("refgenie"), args=c(paste(" seek "),
+                     paste0(genome, "/fasta.chrom_sizes")), stdout=TRUE)
 
-  cPath <- system2(paste0("refgenie"), args=c(paste(" seek "),
-                   paste0(genome, "/fasta.chrom_sizes")), stdout=TRUE)
+    if (file.exists(cPath)) {
+        cSize  <- fread(cPath)
+        colnames(cSize) <- c("chrom", "size")
+    } else {
+        warning("Unable to load the chromosome sizes file.")
+        warning(paste0("Confirm that ", cPath,
+                       " is present before continuing."))
+        return(NULL)
+    }
 
-  if (file.exists(cPath)) {
-      cSize  <- fread(cPath)
-      colnames(cSize) <- c("chrom", "size")
-  } else {
-      warning("Unable to load the chromosome sizes file.")
-      warning(paste0("Confirm that ", cPath, " is present before continuing."))
-      return(NULL)
-  }
+    # generate paths to peak files
+    info <- capture.output({ 
+      peakList[,peakFiles:=.(list(unique(file.path(config(prj)$metadata$output_dir,
+                paste0("results_pipeline/", samples(prj)$sample_name),
+                paste0("peak_calling_", genome),
+                paste0(samples(prj)$sample_name,
+                "_peaks_normalized.narrowPeak")))))]
+    })
 
-  # generate paths to peak files
-  info <- capture.output({ 
-    peakList[,peakFiles:=.(list(unique(file.path(config(prj)$metadata$output_dir,
-              paste0("results_pipeline/", samples(prj)$sample_name),
-              paste0("peak_calling_", genome),
-              paste0(samples(prj)$sample_name,
-              "_peaks_fixedWidth_normalized.narrowPeak")))))]
-  })
+    final <- data.table(chrom=character(),
+                        chromStart=integer(),
+                        chromEnd=integer(),
+                        name=character(),
+                        score=numeric(),
+                        strand=character(),
+                        signalValue=numeric(),
+                        pValue=numeric(),
+                        qValue=numeric(),
+                        peak=integer())
 
-  final <- data.table(chrom=character(),
-                      chromStart=integer(),
-                      chromEnd=integer(),
-                      name=character(),
-                      score=numeric(),
-                      strand=character(),
-                      signalValue=numeric(),
-                      pValue=numeric(),
-                      qValue=numeric(),
-                      peak=integer())
+    fileList  <- peakList$peakFiles[[1]]
 
-  fileList  <- peakList$peakFiles[[1]]
+    if (length(fileList) > 1) {
+        finalList <- character()
+        for (i in 1:length(fileList)) {
+            if(file.exists(file.path(fileList[i]))) {
+                finalList <- append(finalList,fileList[i])
+            }
+        }
+    } else if (length(fileList) == 1 ) {
+        warning("Found only a single peak file.")
+        warning("Does your project include more than one sample?")
+        return(NULL)
+    } else {
+        warning("Unable to find any peak files.")
+        warning("Confirm peak files exist for your samples.")
+        return(NULL)
+    }
 
-  if (length(fileList) > 1) {
-      finalList <- character()
-      for (i in 1:length(fileList)) {
-          if(file.exists(file.path(fileList[i]))) {
-              finalList <- append(finalList,fileList[i])
-          }
-      }
-  } else if (length(fileList) == 1 ) {
-      warning("Found only a single peak file.")
-      warning("Does your project include more than one sample?")
-      return(NULL)
-  } else {
-      warning("Unable to find any peak files.")
-      warning("Confirm peak files exist for your samples.")
-      return(NULL)
-  }
+    if (length(finalList) >= 1) {
+        # create combined peaks
+        peaks           <- rbindlist(lapply(finalList, fread))
+        colnames(peaks) <- c("chrom", "chromStart", "chromEnd", "name", "score",
+                             "strand", "signalValue", "pValue", "qValue",
+                             "peak")
+        setkey(peaks, chrom, chromStart, chromEnd)
+        # keep highest scored peaks
+        hits    <- foverlaps(peaks, peaks,
+                             by.x=c("chrom", "chromStart", "chromEnd"),
+                             type="any", which=TRUE, nomatch=0)
+        scores  <- data.table(index=rep(1:nrow(peaks)), score=peaks$score)
+        setkey(hits, xid)
+        setkey(scores, index)
+        out     <- hits[scores, nomatch=0]
+        keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
+        indices <- unique(keep$xid)
+        final   <- peaks[indices,]
+        # trim any bad peaks (extend beyond chromosome)
+        # can't be negative
+        final[chromStart < 0, chromStart := 0]
+        # can't extend past chromosome
+        for (i in nrow(cSize)) {
+            final[chrom == cSize$chrom[i] & chromEnd > cSize$size[i],
+                  chromEnd := cSize$size[i]]
+        }
 
-  if (length(finalList) >= 1) {
-      # create combined peaks
-      peaks           <- rbindlist(lapply(finalList, fread))
-      colnames(peaks) <- c("chrom", "chromStart", "chromEnd", "name", "score",
-                           "strand", "signalValue", "pValue", "qValue", "peak")
-      setkey(peaks, chrom, chromStart, chromEnd)
-      # keep highest scored peaks
-      hits    <- foverlaps(peaks, peaks,
-                           by.x=c("chrom", "chromStart", "chromEnd"),
-                           type="any", which=TRUE, nomatch=0)
-      scores  <- data.table(index=rep(1:nrow(peaks)), score=peaks$score)
-      setkey(hits, xid)
-      setkey(scores, index)
-      out     <- hits[scores, nomatch=0]
-      keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
-      indices <- unique(keep$xid)
-      final   <- peaks[indices,]
-      # trim any bad peaks (extend beyond chromosome)
-      # can't be negative
-      final[chromStart < 0, chromStart := 0]
-      # can't extend past chromosome
-      for (i in nrow(cSize)) {
-          final[chrom == cSize$chrom[i] & chromEnd > cSize$size[i], chromEnd := cSize$size[i]]
-      }
+        # identify reproducible peaks
+        peakSet <- copy(peaks)
+        peakSet[,group := gsub("_peak.*","",name)]
+        peakList <- splitDataTable(peakSet, "group")
+        original <- copy(final)
 
-      # identify reproducible peaks
-      peakSet <- copy(peaks)
-      peakSet[,group := gsub("_peak.*","",name)]
-      peakList <- splitDataTable(peakSet, "group")
-      original <- copy(final)
+        #' Count the number of times a peak appears across a list of peak files
+        #'
+        #' @param peakList A list of data.table objects representing
+        #'                 narrowPeak files
+        #' @param peakDT A single data.table of peaks
+        countReproduciblePeaks <- function(peakList, peakDT) {
+            setkey(peakDT, chrom, chromStart, chromEnd)
+            setkey(peakList, chrom, chromStart, chromEnd)
+            hits <- foverlaps(peakList, peakDT,
+                              by.x=c("chrom", "chromStart", "chromEnd"),
+                              type="any", which=TRUE, nomatch=0)
+            # track the number of overlaps of final peak set peaks
+            if (!"count" %in% colnames(peakDT)) {
+                peakDT[hits$yid, count := 1]
+                peakDT[is.na(get("count")), ("count") := 0]
+            } else {
+                peakDT[hits$yid, count := get("count") + 1] 
+            }
+        }
 
-      #' Count the number of times a peak appears across a list of peak files
-      #'
-      #' @param peakList A list of data.table objects representing narrowPeak files
-      #' @param peakDT A single data.table of peaks
-      countReproduciblePeaks <- function(peakList, peakDT) {
-          setkey(peakDT, chrom, chromStart, chromEnd)
-          setkey(peakList, chrom, chromStart, chromEnd)
-          hits <- foverlaps(peakList, peakDT,
-                            by.x=c("chrom", "chromStart", "chromEnd"),
-                            type="any", which=TRUE, nomatch=0)
-          # track the number of overlaps of final peak set peaks
-          if (!"count" %in% colnames(peakDT)) {
-              peakDT[hits$yid, count := 1]
-              peakDT[is.na(get("count")), ("count") := 0]
-          } else {
-              peakDT[hits$yid, count := get("count") + 1] 
-          }
-      }
+        invisible(sapply(peakList, countReproduciblePeaks, peakDT=final))
 
-      invisible(sapply(peakList, countReproduciblePeaks, peakDT=final))
+        # keep peaks present in 2 or more individual peak sets
+        # keep peaks with score per million >= 5
+        final <- final[count >= 2 & score >= 5,]
+        final[,count := NULL]
 
-      # keep peaks present in 2 or more individual peak sets
-      # keep peaks with score per million >= 5
-      final <- final[count >= 2 & score >= 5,]
-      final[,count := NULL]
+        # Produce output directory
+        dir.create(
+            suppressMessages(file.path(config(prj)$metadata$output_dir,
+                             "summary")),
+            showWarnings = FALSE)
 
-      # Produce output directory
-      dir.create(
-          suppressMessages(file.path(config(prj)$metadata$output_dir, "summary")),
-          showWarnings = FALSE)
+        if (exists("final")) {
+            # save consensus peak set
+            fwrite(final, buildFilePath("_consensusPeaks.narrowPeak", prj),
+                   sep="\t", col.names=FALSE)
+        } else {
+            warning("Unable to produce a consensus peak file.")
+            warning("Check that individual peak files exist for your samples.")
+            return(NULL)
+        }
+    } else {
+        warning("Unable to produce a consensus peak file.")
+        return(NULL)
+    }
+    return(buildFilePath("_consensusPeaks.narrowPeak", prj))
+}
 
-      if (exists("final")) {
-          # save consensus peak set
-          fwrite(final, buildFilePath("_consensusPeaks.narrowPeak", prj),
-                 sep="\t", col.names=FALSE)
-      } else {
-          warning("Unable to produce a consensus peak file.")
-          warning("Check that individual peak files exist for your samples.")
-          return(NULL)
-      }
-  } else {
-      warning("Unable to produce a consensus peak file.")
-      warning("Consensus peak generation requires the '--peak-type fixed' parameter.")
-      return(NULL)
-  }
-  return(buildFilePath("_consensusPeaks.narrowPeak", prj))
+
+#' Read PEPATAC peak coverage files
+#'
+#' @param pep A PEPr project object
+#' @keywords project peak coverage
+#' @export
+readPepatacPeakCounts = function(prj) {
+    project_dir    <- pepr::config(prj)$metadata$output_dir
+    sample_names   <- pepr::samples(prj)$sample_name
+    genomes        <- as.list(pepr::samples(prj)$genome)
+    names(genomes) <- sample_names
+    paths          <- vector("list", length(sample_names))
+    names(paths)   <- sample_names
+
+    # Use reference peak coverage file if available
+    if (any(file.exists(file.path(project_dir, "results_pipeline",
+                        sample_names, paste0("peak_calling_", genomes),
+                        paste0(sample_names, "_ref_peaks_coverage.bed"))))) {
+        peak_file = "_ref_peaks_coverage.bed"
+    } else {
+        warning("Peak coverage files are not derived from a singular reference peak set.")
+        peak_file = "_peaks_coverage.bed"
+    }
+
+    for (sample in sample_names) {
+        paths[[sample]] <- paste(project_dir, 'results_pipeline', sample,
+                                 paste0('peak_calling_', genomes[[sample]]),
+                                 paste0(sample, peak_file),
+                                 sep="/")
+    }
+
+    result <- lapply(paths, function(x){
+        info <- file.info(file.path(x))
+        if (file.exists(x) && info$size != 0) {
+            df <- fread(x)
+            colnames(df) <- c("chr", "start", "end", "read_count",
+                              "base_count", "width", "frac", "norm")
+            gr <- GenomicRanges::GRanges(df) 
+        } else {
+            gr <- GenomicRanges::GRanges() 
+        }
+    })
+    return(GenomicRanges::GRangesList(Filter(length, result)))
+}
+
+
+#' Produce a project level peak counts table
+#'
+#' @param pep A PEP configuration file
+#' @keywords project peak counts
+#' @export
+peakCounts <- function(pep) {
+    # Identify the project configuration file
+    prj <- suppressWarnings(Project(pep))
+
+    project_dir    <- pepr::config(prj)$metadata$output_dir
+    sample_names   <- pepr::samples(prj)$sample_name
+    genomes        <- as.list(pepr::samples(prj)$genome)
+    names(genomes) <- sample_names
+    sample_names   <- as.character(pepr::samples(prj)$sample_name)
+    
+    cPath <- system2(paste0("refgenie"), args=c(paste(" seek "),
+                     paste0(unique(genomes), "/fasta.chrom_sizes")), stdout=TRUE)
+
+    if (file.exists(cPath)) {
+        cSize  <- fread(cPath)
+        colnames(cSize) <- c("chrom", "size")
+    } else {
+        warning("Unable to load the chromosome sizes file.")
+        warning(paste0("Confirm that ", cPath,
+                       " is present before continuing."))
+        return(NULL)
+    }
+    
+    # Use reference peak coverage file if available
+    if (any(file.exists(file.path(project_dir, "results_pipeline",
+                        sample_names, paste0("peak_calling_", genomes),
+                        paste0(sample_names, "_ref_peaks_coverage.bed"))))) {
+        peak_file_name = "_ref_peaks_coverage.bed"
+        reference = TRUE
+    } else {
+        warning("Peak coverage files are not derived from a singular reference peak set.")
+        reference = FALSE
+        peak_file_name = "_peaks_coverage.bed"
+    }
+    
+    peak_files <- file.path(project_dir, "results_pipeline",
+                         sample_names, paste0("peak_calling_", genomes),
+                         paste0(sample_names, peak_file_name))
+
+    if (reference) {
+        peaks_dt = data.table(chr=as.character(),
+                              start=as.numeric(),
+                              end=as.numeric(),
+                              name=as.character(),
+                              score=as.numeric(),
+                              strand=as.character(),
+                              signalValue=as.numeric(),
+                              pValue=as.numeric(),
+                              qValue=as.numeric(),
+                              peak=as.numeric(),
+                              read_count=as.numeric(),
+                              base_count=as.numeric(),
+                              width=as.numeric(),
+                              frac=as.numeric(),
+                              norm=as.numeric(),
+                              group=as.character())
+
+        # Load peak files
+        num_files <- 0
+        name_list <- as.character()
+        for (file in peak_files) {
+            info <- file.info(file.path(file))
+            if (file.exists(file.path(file)) && info$size != 0) {
+                num_files <- num_files + 1
+                peaks     <- fread(file)
+                name      <- gsub(peak_file_name, "", basename(file))
+                name_list <- append(name_list, name)
+                colnames(peaks) <- c("chr", "start", "end", "name", "score",
+                                     "strand", "signalValue", "pValue",
+                                     "qValue", "peak", "read_count",
+                                     "base_count", "width", "frac", "norm")
+                peaks$group <- name
+                setkey(peaks, chr, start, end)
+                peaks_dt <- rbind(peaks_dt, peaks)
+            }
+        }
+        peak_list  <- splitDataTable(peaks_dt, "group")
+        # confirm identical chr, start, end coordinates exist in all peak files
+        same <- all(sapply(lapply(peak_list, function(x) {x[,c(1:3)]}),
+                    identical,
+                    lapply(peak_list, function(x) {x[,c(1:3)]})[[1]]))
+        if (same) {
+            new_list <- lapply(names(peak_list), function(x){
+                colnames(peak_list[[x]]) <- c("chr", "start", "end", "name",
+                                              "score", "strand", "signalValue",
+                                              "pValue", "qValue", "peak",
+                                              "read_count", "base_count",
+                                              "width", "frac", x, "group")
+                peak_list[[x]]
+            })
+            names(new_list) <- names(peak_list)
+            reduce_dt <- Reduce(function(...) merge(..., all=F),
+                                lapply(new_list, function(x) {x[,c(1:3,15)]}))
+        } else {
+            warning("Reference peak set is inconsistent between samples")
+            warning("Confirm the same reference peak set was passed to `--frip-ref-peaks`")
+            return(NULL)
+        }
+    } else {
+        peaks_dt = data.table(chr=as.character(),
+                              start=as.numeric(),
+                              end=as.numeric(),
+                              read_count=as.numeric(),
+                              base_count=as.numeric(),
+                              width=as.numeric(),
+                              frac=as.numeric(),
+                              norm=as.numeric())
+        # Concatenate peak files
+        for (file in peak_files) {
+            info <- file.info(file.path(file))
+            if (file.exists(file.path(file)) && info$size != 0) {
+                peaks <- fread(file)
+                colnames(peaks) <- c("chr", "start", "end", "read_count",
+                                     "base_count", "width", "frac", "norm")
+                setkey(peaks, chr, start, end)
+                peaks_dt <- rbind(peaks_dt, peaks)
+            }
+        }
+        
+        peaksGR   <- makeGRangesFromDataFrame(peaks_dt, keep.extra.columns=T)
+        reduceGR  <- reduce(peaksGR)
+        
+        # instead, different column for each sample is the counts columns, plural
+        reduce_dt <- data.table(chr=as.character(seqnames(reduceGR)),
+                                start=start(reduceGR),
+                                end=end(reduceGR))
+        f <- function(x) {list(0)}
+        reduce_dt[, (sample_names) := f()]
+       
+        # for each peak file
+        for (file in peak_files) {
+            info <- file.info(file.path(file))
+            if (file.exists(file.path(file)) && info$size != 0) {
+                peaks   <- fread(file)
+                name    <- gsub("_peaks_coverage.bed","", basename(file))
+                colnames(peaks) <- c("chr", "start", "end", "read_count",
+                                     "base_count", "width", "frac", "norm")
+                setkey(peaks, chr, start, end)
+                
+                reduceGR <- makeGRangesFromDataFrame(reduce_dt)
+                peaksGR  <- makeGRangesFromDataFrame(peaks)
+                
+                hitsGR <- findOverlaps(query=reduceGR, subject=peaksGR)
+                reducedPeakCoverage<- length(unique(subjectHits(hitsGR)))
+
+                # Weight counts by the percent overlap with the reduced peak region
+                olap   <- pintersect(reduceGR[queryHits(hitsGR)],
+                                     peaksGR[subjectHits(hitsGR)])
+                polap  <- width(olap) / width(peaksGR[subjectHits(hitsGR)])
+                counts <- data.table(index=rep(1:nrow(peaks)),
+                                     counts=peaks$norm*polap)
+                hits  <- data.table(xid=queryHits(hitsGR), yid=subjectHits(hitsGR))
+                setkey(hits, yid)
+                setkey(counts, index)
+                out     <- hits[counts, nomatch=0]
+                keep    <- out[out[,.I[which.max(counts)],by=yid]$V1]
+                reduce_dt[keep$xid][[name]] <- keep$counts
+            }
+        }
+
+        # trim any bad peaks (extend beyond chromosome)
+        # can't be negative
+        reduce_dt[start < 0, start := 0]
+        # can't extend past chromosome
+        for (i in nrow(c_size)) {
+            reduce_dt[chr == c_size$chrom[i] & end > c_size$size[i],
+                      end := c_size$size[i]]
+        }
+        columnIndices  <- c(4:ncol(reduce_dt))
+        keepRows       <- rowMeans(reduce_dt[, ..columnIndices]) > 0
+        reduce_dt      <- reduce_dt[keepRows] 
+    }
+    # Create matrix rownames
+    reduce_dt <- cbind(name=paste(reduce_dt$chr,
+                                  reduce_dt$start,
+                                  reduce_dt$end, sep="_"),
+                       reduce_dt)
+    reduce_dt <- reduce_dt[,-c("chr","start","end")]
+
+    # save counts table
+    if (exists("reduce_dt")) {
+            countsPath <- buildFilePath("_peaks_coverage.tsv", prj)
+            # save consensus peak set
+            fwrite(reduce_dt, countsPath, sep="\t", col.names=TRUE)
+            return(countsPath)
+    } else {
+        warning("Unable to produce a peak coverage file.")
+        warning("Check that individual peak coverage files exist for your samples.")
+        return(NULL)
+    }
 }
 ################################################################################
