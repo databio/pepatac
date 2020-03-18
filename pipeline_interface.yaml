@@ -67,6 +67,16 @@ pipelines:
         description: "Plots TSS scores for each sample."
         thumbnail_path: "summary/{name}_TSSEnrichment.png"
         path: "summary/{name}_TSSEnrichment.pdf"
+      - consensus_peaks_file:
+        caption: "Consensus peaks file"
+        description: "A set of consensus peaks across samples."
+        thumbnail_path: "summary/{name}_consensusPeaks.png"
+        path: "summary/{name}_consensusPeaks.narrowPeak"
+      - counts_table:
+        caption: "Project peak coverage file"
+        description: "Project peak coverages: chr_start_end X sample"
+        thumbnail_path: "summary/{name}_peaks_coverage.png"
+        path: "summary/{name}_peaks_coverage.tsv"
     resources:
       default:
         file_size: "0"
