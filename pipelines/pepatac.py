@@ -1299,8 +1299,9 @@ def main():
             "--kmer-mask=NXXNNNXNNXXCXXXNXN",
             str("--out=" + minus_table)
         ])
-        pm.run([plus_seqtable_cmd, minus_seqtable_cmd],
-               [plus_table, minus_table], clean=True)
+        pm.run([plus_seqtable_cmd, minus_seqtable_cmd], exact_target)
+        pm.clean_add(plus_table)
+        pm.clean_add(minus_table)
 
         pm.timestamp("### Scale and produce signal tracks")
         scale_plus_cmd = build_command([
@@ -1320,9 +1321,11 @@ def main():
             "--shift-counts",
             str("--bw=" + minus_exact_bw),
         ])
-        pm.run([scale_plus_cmd, scale_minus_cmd],
-               [plus_exact_bw, minus_exact_bw, shift_plus_bed, shift_minus_bed],
-               clean=True)
+        pm.run([scale_plus_cmd, scale_minus_cmd], exact_target)
+        pm.clean_add(plus_exact_bw)
+        pm.clean_add(minus_exact_bw)
+        pm.clean_add(shift_plus_bed)
+        pm.clean_add(shift_minus_bed)
 
         # merge stranded bigWigs
         exact_bedgraph = os.path.join(
@@ -1333,7 +1336,8 @@ def main():
             minus_exact_bw,
             exact_bedgraph
         ])
-        pm.run(merge_cmd1, exact_bedgraph, clean=True)
+        pm.run(merge_cmd1, exact_target)
+        pm.clean_add(exact_bedgraph)
 
         #fix bed
         fix_cmd1 = build_command([
@@ -1346,8 +1350,9 @@ def main():
             shift_minus_bed,
             (" > ", fixed_minus_bed) 
         ])
-        pm.run([fix_cmd1, fix_cmd2],
-               [fixed_plus_bed, fixed_minus_bed], clean=True)
+        pm.run([fix_cmd1, fix_cmd2], shift_bed)
+        pm.clean_add(fixed_plus_bed)
+        pm.clean_add(fixed_minus_bed)
 
         # merge beds
         merge_cmd2 = build_command([
@@ -1373,7 +1378,8 @@ def main():
             ">",
             sort_bedgraph
         ])
-        pm.run(sort_cmd, sort_bedgraph, clean=True)
+        pm.run(sort_cmd, exact_target)
+        pm.clean_add(sort_bedgraph)
 
         # convert bedGraph to bigWig
         convert_cmd = build_command([
@@ -1712,9 +1718,24 @@ def main():
 
         peak_coverage = os.path.join(peak_folder, args.sample_name +
                                      "_peaks_coverage.bed")
+        norm_peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                          "_norm_peaks_coverage.bed")
+        coverage_flag = os.path.join(peak_folder, "coverage.flag")
+
         ref_peak_coverage = os.path.join(peak_folder, args.sample_name +
                                          "_ref_peaks_coverage.bed")
-        if not os.path.exists(peak_coverage) or args.new_start:
+        norm_ref_peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                              "_norm_ref_peaks_coverage.bed")
+        ref_coverage_flag = os.path.join(peak_folder, "ref_coverage.flag")
+
+        if not os.path.exists(chr_order) or args.new_start:
+            cmd = (tools.samtools + " view -H " + rmdup_bam +
+                   " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+                   "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
+            pm.run(cmd, chr_order)
+            pm.clean_add(chr_order)        
+
+        if not os.path.exists(coverage_flag) or args.new_start:
             cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peak_bed)
             cmd2 = (tools.samtools + " view -H " + rmdup_bam +
                     " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
@@ -1726,22 +1747,40 @@ def main():
                    nofail=True, clean=True)
         
         # If you include reference peaks, calculate coverage using those
-        # TODO: normalize to base counts (fraction)
-        #       normalize to 1M tags/reads: (base_counts/sum(base_counts))*1000000)
-        #       sum(base_counts) is just the total number of bases in peaks
+        # normalize to 1M tags/reads: (base_counts/sum(base_counts))*1000000)
+        # sum(base_counts) is just the total number of bases in peaks
         if os.path.exists(res.frip_ref_peaks):
-            cmd = (tools.bedtools + " coverage -sorted -a " +
-                   res.frip_ref_peaks + " -b " + rmdup_bam + " -g " +
-                   chr_order + " | uniq > " + ref_peak_coverage)
-            pm.run(cmd, ref_peak_coverage, nofail=True)
+            sort_frip_ref_peaks = os.path.join(peak_folder, 
+                "sorted_reference_peaks.narrowPeak")
+            cmd1 = (tools.bedtools + " sort -i " + res.frip_ref_peaks +
+                    " -faidx " + chr_order + " > " + sort_frip_ref_peaks)
+            cmd2 = (tools.bedtools + " coverage -sorted -a " +
+                    sort_frip_ref_peaks + " -b " + rmdup_bam + " -g " +
+                    chr_order + " | uniq > " + ref_peak_coverage)
+            cmd3 = ("awk 'BEGIN{OFS=\"\\t\";} " +
+                    "NR==FNR{sum += $12; next}{if (sum <= 0){sum = 1} " +
+                    "print $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, " +
+                    "$12, $13, $14, ($12/sum*1000000)}' " +
+                    ref_peak_coverage + " " + ref_peak_coverage +
+                    " > " + norm_ref_peak_coverage)
+            cmd4 = ("mv " + norm_ref_peak_coverage + " " + ref_peak_coverage)
+            cmd5 = ("touch " + ref_coverage_flag)
+            pm.run([cmd1, cmd2, cmd3, cmd4, cmd5],
+                   ref_coverage_flag, nofail=True)
+            pm.clean_add(sort_frip_ref_peaks)
 
-        cmd = (tools.bedtools + " coverage -sorted -a " +
-               sort_peak_bed + " -b " + rmdup_bam + " -g " + chr_order +
-               " | uniq > " + peak_coverage)
-        pm.run(cmd, peak_coverage, nofail=True)
-        
+        cmd1 = (tools.bedtools + " coverage -sorted -a " +
+                sort_peak_bed + " -b " + rmdup_bam + " -g " + chr_order +
+                " | uniq > " + peak_coverage)
+        cmd2 = ("awk 'BEGIN{OFS=\"\\t\";} " +
+                "NR==FNR{sum += $5; next}{if (sum <= 0){sum = 1} " +
+                "print $1, $2, $3, $4, $5, $6, $7, ($5/sum*1000000)}' " +
+                peak_coverage + " " + peak_coverage + " > " +
+                norm_peak_coverage)
+        cmd3 = ("mv " + norm_peak_coverage + " " + peak_coverage)
+        cmd4 = ("touch " + coverage_flag)
+        pm.run([cmd1, cmd2, cmd3, cmd4], coverage_flag, nofail=True)
         pm.clean_add(peak_bed)
-        pm.clean_add(chr_order)
         pm.clean_add(chr_keep)
 
 
