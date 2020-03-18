@@ -79,22 +79,56 @@ for (i in required_libraries) {
 ##### MAIN #####
 
 # Identify the project configuration file
-pep  <- argv$config
+pep <- argv$config
+prj <- suppressWarnings(pepr::Project(pep))
+
+# Produce output directory (if needed)
+dir.create(
+    suppressMessages(
+        file.path(pepr::config(prj)$metadata$output_dir, "summary")),
+    showWarnings = FALSE)
 
 # Produce project summary plots
-summarizerFlag <- summarizer(pep)
+summarizerFlag <- PEPATACr::summarizer(pep)
 
 if (summarizerFlag) {
     message("Successfully produced project summary plots.\n")
 }
 
 # Calculate consensus peaks
-consensusPath  <- consensusPeaks(pep)
-
-if (!is.null(consensusPath)) {
-    if (file.exists(consensusPath)) {
-        message("Consensus peak set: ", consensusPath, "\n")
+consensusPath <- PEPATACr::buildFilePath("_consensusPeaks.narrowPeak", prj)
+if (!file.exists(consensusPath)) {
+    consensusPath  <- PEPATACr::consensusPeaks(pep)
+    if (!is.null(consensusPath)) {
+        if (file.exists(consensusPath)) {
+            message("Consensus peak set: ", consensusPath, "\n")
+        }
     }
+    icon <- PEPATACr::fileIcon()
+    png(filename = PEPATACr::buildFilePath("_consensusPeaks.png", prj),
+        height = 275, width=275, bg="transparent")
+    suppressWarnings(print(icon))
+    invisible(dev.off())
+} else {
+    message("Consensus peak set: ", consensusPath, "\n")
+}
+
+# Create count matrix
+countsPath <- PEPATACr::buildFilePath("_peaks_coverage.tsv", prj)
+if (!file.exists(countsPath)) {
+    countsPath  <- PEPATACr::peakCounts(pep)
+    if (!is.null(countsPath)) {
+        if (file.exists(countsPath)) {
+            message("Counts table: ", countsPath, "\n")
+        }
+    }
+    icon <- PEPATACr::fileIcon()
+    png(filename = PEPATACr::buildFilePath("_peaks_coverage.png", prj),
+        height = 275, width=275, bg="transparent")
+    suppressWarnings(print(icon))
+    invisible(dev.off())
+} else {
+   message("Counts table: ", countsPath, "\n")
 }
 
 ################################################################################
