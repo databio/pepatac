@@ -200,7 +200,7 @@ plotComplexityCurves <- function(ccurves,
         rcDT$name  <- basename(rc_file$V1)
         rcDT$total <- as.integer(rc_file$V2)
         if (ncol(rc_file) == 3 && !ignore_unique) {
-            rcDT$unique <- as.integer(rc_file$V2)
+            rcDT$unique <- as.integer(rc_file$V3)
         } else {
             rcDT$unique <- NA
         }
@@ -209,9 +209,9 @@ plotComplexityCurves <- function(ccurves,
             for (rc in 2:length(real_counts_path)) {
                 rc_file <- real_counts_path[rc]
                 rcDT$name[rc]  <- basename(rc_file$V1)
-                rcDT$total[rc] <- as.integer(rc_file$V3)
+                rcDT$total[rc] <- as.integer(rc_file$V2)
                 if (ncol(rc_file) == 3 && !ignore_unique) {
-                    rcDT$unique[rc] <- as.integer(rc_file$V2)
+                    rcDT$unique[rc] <- as.integer(rc_file$V3)
                 } else {
                     rcDT$unique[rc] <- NA
                 }
@@ -223,9 +223,9 @@ plotComplexityCurves <- function(ccurves,
             if (file.exists(real_counts_path[rc]) && info$size != 0) {
                 rc_file        <- fread(real_counts_path[rc])
                 rcDT$name[rc]  <- basename(rc_file$V1)
-                rcDT$total[rc] <- as.integer(rc_file$V3)
+                rcDT$total[rc] <- as.integer(rc_file$V2)
                 if (ncol(rc_file) == 3 && !ignore_unique) {
-                    rcDT$unique[rc] <- as.integer(rc_file$V2)
+                    rcDT$unique[rc] <- as.integer(rc_file$V3)
                 } else {
                     rcDT$unique[rc] <- NA
                 }
@@ -547,10 +547,6 @@ plotComplexityCurves <- function(ccurves,
             geom_abline(intercept = 0, slope = 1, linetype="dashed") +
             coord_cartesian(xlim = c(0,max(rcDT$total)*2),
                             ylim = c(0,max(rcDT$total)*2)) +
-            # geom_hline(data=rcDT, aes(yintercept=total, col=color),
-            #            linetype="dotted") +
-            # geom_vline(data=rcDT, aes(xintercept=total, col=color),
-            #            linetype="dotted") +
             geom_point(data=rcDT,
                        aes(total, interp, col=color),
                        shape=23, size=3) +
