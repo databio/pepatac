@@ -80,7 +80,7 @@ for (i in required_libraries) {
 
 # Identify the project configuration file
 pep <- argv$config
-prj <- suppressWarnings(pepr::Project(pep))
+prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
 # Produce output directory (if needed)
 dir.create(
@@ -102,13 +102,13 @@ if (!file.exists(consensusPath)) {
     if (!is.null(consensusPath)) {
         if (file.exists(consensusPath)) {
             message("Consensus peak set: ", consensusPath, "\n")
+            icon <- PEPATACr::fileIcon()
+            png(filename = PEPATACr::buildFilePath("_consensusPeaks.png", prj),
+                height = 275, width=275, bg="transparent")
+            suppressWarnings(print(icon))
+            invisible(dev.off())
         }
     }
-    icon <- PEPATACr::fileIcon()
-    png(filename = PEPATACr::buildFilePath("_consensusPeaks.png", prj),
-        height = 275, width=275, bg="transparent")
-    suppressWarnings(print(icon))
-    invisible(dev.off())
 } else {
     message("Consensus peak set: ", consensusPath, "\n")
 }
@@ -120,13 +120,13 @@ if (!file.exists(countsPath)) {
     if (!is.null(countsPath)) {
         if (file.exists(countsPath)) {
             message("Counts table: ", countsPath, "\n")
+            icon <- PEPATACr::fileIcon()
+            png(filename = PEPATACr::buildFilePath("_peaks_coverage.png", prj),
+                height = 275, width=275, bg="transparent")
+            suppressWarnings(print(icon))
+            invisible(dev.off())
         }
     }
-    icon <- PEPATACr::fileIcon()
-    png(filename = PEPATACr::buildFilePath("_peaks_coverage.png", prj),
-        height = 275, width=275, bg="transparent")
-    suppressWarnings(print(icon))
-    invisible(dev.off())
 } else {
    message("Counts table: ", countsPath, "\n")
 }
