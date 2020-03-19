@@ -136,6 +136,8 @@ if (!file.exists(complexity_path)) {
             complexity_flag <- TRUE
         }
     }
+} else {
+    complexity_flag <- TRUE
 }
 
 if (summarizer_flag & complexity_flag) {
