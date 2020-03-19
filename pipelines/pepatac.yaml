@@ -10,6 +10,7 @@ tools:  # absolute paths to required tools
   bowtie2: bowtie2
   fastqc: fastqc
   macs2: macs2
+  preseq: preseq
   samblaster: samblaster
   skewer: skewer
   perl: perl
@@ -23,6 +24,9 @@ tools:  # absolute paths to required tools
   picard: ${PICARD}
   pigz: pigz
   Rscript: Rscript 
+  seqOutBias: seqOutBias
+  bigWigMerge: bigWigMerge
+  bedGraphToBigWig: bedGraphToBigWig
 
 # user configure 
 resources:

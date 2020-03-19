@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.9-dev"
+__version__ = "0.8.10-dev"
 
 
 from argparse import ArgumentParser
@@ -14,13 +14,15 @@ import re
 import sys
 import tempfile
 import pypiper
+import pandas as pd
+import numpy as np
 from pypiper import build_command
 from refgenconf import RefGenConf as RGC, select_genome_config
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
 PEAK_CALLERS = ["fseq", "macs2"]
-PEAK_TYPES = ["variable", "fixed"]
+PEAK_TYPES = [ "fixed", "variable"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 BT2_IDX_KEY = "bowtie2_index"
@@ -66,9 +68,13 @@ def parse_arguments():
 
     parser.add_argument("--blacklist", default=None,
                         dest="blacklist", type=str,
-                        help="Path to peak blacklist file")
+                        help="Path to genomic region blacklist file")
 
-    parser.add_argument("--peak-type", default="variable",
+    parser.add_argument("--anno-name", default=None,
+                        dest="anno_name", type=str,
+                        help="Path to reference annotation file (BED format) for calculating FRiF")
+
+    parser.add_argument("--peak-type", default="fixed",
                         dest="peak_type", choices=PEAK_TYPES, type=str,
                         help="Call variable or fixed width peaks.\n"
                              "Fixed width requires MACS2.")
@@ -86,9 +92,11 @@ def parse_arguments():
                         dest="motif",
                         help="Perform motif enrichment analysis")
 
-    parser.add_argument("--anno-name", default=None,
-                        dest="anno_name", type=str,
-                        help="Path to reference annotation file (BED format) for calculating FRiF")
+    parser.add_argument("--sob", action='store_true',
+                        dest="sob", default=False,
+                        help="Use seqOutBias to produce signal tracks, "
+                             "incorporate mappability information, "
+                             "and account for Tn5 bias.")
 
     parser.add_argument("--prioritize", action='store_true', default=False,
                         dest="prioritize",
@@ -256,11 +264,9 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 pm.run([cmd, filter_pair], mapped_bam)
             else:
                 pm.wait = False
-                pm.run(filter_pair, [summary_file, out_fastq_r2_gz],
-                       container=pm.container)
+                pm.run(filter_pair, [summary_file, out_fastq_r2_gz])
                 pm.wait = True
-                pm.run(cmd, [summary_file, out_fastq_r2_gz],
-                       container=pm.container)
+                pm.run(cmd, [summary_file, out_fastq_r2_gz])
         else:
             if args.keep:
                 pm.run(cmd, mapped_bam)
@@ -268,8 +274,7 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 # TODO: switch to this once filter_paired_fq works with SE
                 #pm.run(cmd2, summary_file)
                 #pm.run(cmd1, out_fastq_r1)
-                pm.run(cmd, out_fastq_tmp_gz,
-                       container=pm.container)
+                pm.run(cmd, out_fastq_tmp_gz)
 
         pm.clean_add(out_fastq_tmp)
 
@@ -476,11 +481,15 @@ def main():
     # Convenience alias
     tools = pm.config.tools
     param = pm.config.parameters
+    param.outfolder = outfolder
     res = pm.config.resources
 
-    # Check that the required tools are callable by the pipeline
+    ############################################################################
+    #                Confirm required tools are all callable                   #
+    ############################################################################
     opt_tools = ["fseq", "${PICARD}", "${TRIMMOMATIC}", "pyadapt",
-                 "findMotifsGenome.pl"]
+                 "findMotifsGenome.pl", "seqOutBias", "bigWigMerge",
+                 "bedGraphToBigWig", "pigz"]
 
     # If using optional tools, remove those from the skipped checks
     if args.trimmer == "trimmomatic":
@@ -495,11 +504,20 @@ def main():
     if args.peak_caller == "fseq":
         if 'fseq' in opt_tools: opt_tools.remove('fseq')
 
+    if args.sob:
+        if 'seqOutBias' in opt_tools: opt_tools.remove('seqOutBias')
+        if 'bigWigMerge' in opt_tools: opt_tools.remove('bigWigMerge')
+        if 'bedGraphToBigWig' in opt_tools: opt_tools.remove('bedGraphToBigWig')
+
     if args.motif:
         if 'findMotifsGenome.pl' in opt_tools: opt_tools.remove('findMotifsGenome.pl')
 
-    # Confirm required tools are all callable
-    if not check_commands(tools, opt_tools):
+    # Check that the required tools are callable by the pipeline
+    tool_list = [v for k,v in tools.items()]    # extract tool list
+    tool_list = [t.replace('seqoutbias', 'seqOutBias') for t in tool_list]
+    tool_list = dict((t,t) for t in tool_list)  # convert back to dict
+
+    if not check_commands(tool_list, opt_tools):
         err_msg = "Missing required tools. See message above."
         pm.fail_pipeline(RuntimeError(err_msg))
 
@@ -507,7 +525,10 @@ def main():
         err_msg = "Incompatible settings: You specified single-end, but provided --input2."
         pm.fail_pipeline(RuntimeError(err_msg))
 
-    # Set up reference resource according to genome prefix.
+ 
+    ############################################################################
+    #          Set up reference resources according to primary genome.         #
+    ############################################################################
     check_list = [
         {"asset_name":"fasta", "seek_key":"chrom_sizes",
          "tag_name":"default", "arg":None, "user_arg":None,
@@ -526,12 +547,20 @@ def main():
              "tag_name":"default", "arg":"TSS_name", "user_arg":"TSS-name",
              "required":False}
         )
-    # If user specifies feature annoation file,
-    # use that instead of the refgenie asset
+    # If user specifies feature annotation file,
+    # use that instead of the refgenie managed asset
     if not (args.anno_name):
         check_list.append(
             {"asset_name":"feat_annotation", "seek_key":"feat_annotation",
             "tag_name":"default", "arg":"anno_name", "user_arg":"anno-name",
+            "required":False}
+        )
+    # If user specifies blacklist file,
+    # use that instead of the refgenie managed asset
+    if not (args.blacklist):
+        check_list.append(
+            {"asset_name":"blacklist", "seek_key":"blacklist",
+            "tag_name":"default", "arg":"blacklist", "user_arg":"blacklist",
             "required":False}
         )
     res, rgc = _add_resources(args, res, check_list)
@@ -553,9 +582,10 @@ def main():
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
 
-    param.outfolder = outfolder
 
-    # Check that the input file(s) exist before continuing
+    ############################################################################
+    #          Check that the input file(s) exist before continuing            #
+    ############################################################################
     if os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size > 0:
         print("Local input file: " + args.input[0])
     elif os.path.isfile(args.input[0]) and os.stat(args.input[0]).st_size == 0:
@@ -581,10 +611,12 @@ def main():
             err_msg = "Could not find: {}"
             pm.fail_pipeline(IOError(err_msg.format(args.input2[0])))
 
-    container = None
+    container = None  # legacy
 
-    ###########################################################################
 
+    ############################################################################
+    #                      Grab and prepare input files                        #
+    ############################################################################
     pm.report_result(
         "File_mb",
         round(ngstk.get_file_size(
@@ -608,8 +640,7 @@ def main():
     print(cmd)
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
-               local_input_files, unaligned_fastq, args.paired_end),
-           container=pm.container)
+               local_input_files, unaligned_fastq, args.paired_end))
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 
     if args.paired_end:
@@ -625,6 +656,7 @@ def main():
     ngstk.make_dir(map_genome_folder)
     rmdup_bam = os.path.join(map_genome_folder,
                              args.sample_name + "_sort_dedup.bam")
+
 
     ############################################################################
     #                          Begin adapter trimming                          #
@@ -686,9 +718,6 @@ def main():
 
         trimming_renaming_commands = [build_command(["mv", old, new])
                                       for old, new in skewer_filename_pairs]
-        # Rename the logfile.
-        # skewer_filename_pairs.append(
-        #    ("{}-trimmed.log".format(out_fastq_pre), trimLog))
 
         # Pypiper submits the commands serially.
         cmd = [trimming_command] + trimming_renaming_commands
@@ -724,6 +753,7 @@ def main():
     unmap_fq1 = trimmed_fastq
     unmap_fq2 = trimmed_fastq_R2
 
+
     ############################################################################
     #                    Map to any requested prealignments                    #
     ############################################################################
@@ -740,30 +770,32 @@ def main():
         print("Prealignment assemblies: " + str(args.prealignments))
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
+            bt2_index = os.path.join(rgc.get_asset(reference, BT2_IDX_KEY))
+            if not bt2_index.endswith(reference):
+                bt2_index = os.path.join(
+                    rgc.get_asset(reference, BT2_IDX_KEY), reference)
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, False,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=os.path.join(
-                        rgc.get_asset(reference, BT2_IDX_KEY), reference),
-                    outfolder=param.outfolder, aligndir="prealignments",
+                    assembly_bt2=bt2_index,
+                    outfolder=param.outfolder,
+                    aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
+                to_compress.append(unmap_fq1)
                 if args.paired_end:
-                    to_compress.extend((unmap_fq1, unmap_fq2))
-                else:
-                    to_compress.extend(unmap_fq1)
+                    to_compress.append(unmap_fq2)
             else:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, True,
                     unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=os.path.join(
-                        rgc.get_asset(reference, BT2_IDX_KEY), reference), 
-                    outfolder=param.outfolder, aligndir="prealignments",
+                    assembly_bt2=bt2_index, 
+                    outfolder=param.outfolder,
+                    aligndir="prealignments",
                     bt2_opts_txt=param.bowtie2_pre.params)
+                to_compress.append(unmap_fq1)
                 if args.paired_end:
-                    to_compress.extend((unmap_fq1, unmap_fq2))
-                else:
-                    to_compress.extend(unmap_fq1)
+                    to_compress.append(unmap_fq2)
 
     pm.timestamp("### Compress all unmapped read files")
     for unmapped_fq in to_compress:
@@ -774,10 +806,10 @@ def main():
                 unmapped_fq = unmapped_fq + ".gz"
                 pm.run(cmd, unmapped_fq)
 
+
     ############################################################################
     #                           Map to primary genome                          #
     ############################################################################
-
     pm.timestamp("### Map to genome")
     mapping_genome_bam = os.path.join(
         map_genome_folder, args.sample_name + "_sort.bam")
@@ -865,7 +897,7 @@ def main():
     # Determine mitochondrial read counts
     mito_name = ["chrM", "chrMT", "M", "MT", "rCRSd"]
 
-    if pm.get_stat("Mitochondrial_reads") is None:
+    if not pm.get_stat("Mitochondrial_reads") or args.new_start:
         cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
         for name in mito_name:
             cmd += " -we '" + name + "'"
@@ -877,25 +909,29 @@ def main():
             pm.report_result("Mitochondrial_reads", round(float(mr)))
             noMT_mapping_genome_bam = os.path.join(
                 map_genome_folder, args.sample_name + "_noMT.bam")
+            chr_bed = os.path.join(map_genome_folder, "chr_sizes.bed")
+
             cmd1 = (tools.samtools + " idxstats " + mapping_genome_bam +
-                    " | cut -f 1 | grep")
+                    " | cut -f 1-2 | awk '{print $1, 0, $2}' | grep")
             for name in mito_name:
                 cmd1 += " -vwe '" + name + "'"
-            cmd1 += ("| xargs " + tools.samtools + " view -b -@ " +
-                     str(pm.cores) + " " + mapping_genome_bam + " > " +
-                     noMT_mapping_genome_bam)
-            cmd2 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
+            cmd1 += (" > " + chr_bed)
+            cmd2 = (tools.samtools + " view -L " + chr_bed + " -b -@ " +
+                    str(pm.cores) + " " + mapping_genome_bam + " > " +
+                    noMT_mapping_genome_bam)
+            cmd3 = ("mv " + noMT_mapping_genome_bam + " " + mapping_genome_bam)
             # Reindex the sorted bam file now that mito reads are removed
-            cmd3 = tools.samtools + " index " + mapping_genome_bam
-            pm.run([cmd1, cmd2, cmd3], noMT_mapping_genome_bam,
-                   container=pm.container)
+            cmd4 = tools.samtools + " index " + mapping_genome_bam
+
+            pm.run([cmd1, cmd2, cmd3, cmd4], noMT_mapping_genome_bam)
+            pm.clean_add(chr_bed)
         else:
             pm.report_result("Mitochondrial_reads", 0)
+
 
     ############################################################################
     #         Calculate quality control metrics for the alignment file         #
     ############################################################################
-
     pm.timestamp("### Calculate NRF, PBC1, and PBC2")
     QC_folder = os.path.join(param.outfolder, "QC_" + args.genome_assembly)
     ngstk.make_dir(QC_folder)
@@ -931,8 +967,7 @@ def main():
         pm.report_result("PBC1", round(float(pbc1),2))
         pm.report_result("PBC2", round(float(pbc2), 2))
 
-    pm.run(cmd, bamQC, follow=lambda: report_bam_qc(bamQC),
-           container=pm.container)
+    pm.run(cmd, bamQC, follow=lambda: report_bam_qc(bamQC))
 
     # Now produce the unmapped file
     def count_unmapped_reads():
@@ -951,8 +986,7 @@ def main():
         unmap_cmd += " -f 4 "
 
     unmap_cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
-    pm.run(unmap_cmd, unmap_genome_bam, follow=count_unmapped_reads,
-           container=pm.container)
+    pm.run(unmap_cmd, unmap_genome_bam, follow=count_unmapped_reads)
 
     # Remove temporary bam file from unmapped file production
     pm.clean_add(mapping_genome_bam_temp)
@@ -1052,8 +1086,111 @@ def main():
         pm.stop_pipeline()
 
     pm.run([cmd1, cmd2], rmdup_bam,
-           follow=lambda: post_dup_aligned_reads(metrics_file),
-           container=pm.container)
+           follow=lambda: post_dup_aligned_reads(metrics_file))
+
+
+    ############################################################################
+    #       Determine maximum read length and add seqOutBias resource          #
+    ############################################################################
+    if not pm.get_stat("Read_length") or args.new_start:
+        if (os.path.isfile(mapping_genome_bam)
+            and os.stat(mapping_genome_bam).st_size > 0):
+            cmd = (tools.samtools + " stats " + mapping_genome_bam +
+                   " | grep '^SN' | cut -f 2- | grep 'maximum length:' " +
+                   "| cut -f 2-")
+            read_len = int(pm.checkprint(cmd))
+        else:
+            pm.warning("{} could not be found.".format(mapping_genome_bam))
+            pm.stop_pipeline()
+        pm.report_result("Read_length", read_len)
+    else:
+        read_len = int(pm.get_stat("Read_length"))
+
+    # At this point we can check for seqOutBias required indicies.
+    # Can't do it earlier because we haven't determined the read_length of 
+    # interest for mappability purposes.
+    if args.sob:
+        pm.debug("read_len: {}".format(read_len))  # DEBUG
+        search_asset = [{"asset_name":"tallymer_index",
+                         "seek_key":"search_file",
+                         "tag_name":read_len,
+                         "arg":"search_file",
+                         "user_arg":"search-file",
+                         "required":True}]
+        res, rgc = _add_resources(args, res, search_asset)
+
+    # Calculate size of genome
+    if not pm.get_stat("Genome_size") or args.new_start:
+        genome_size = int(pm.checkprint(
+            ("awk '{sum+=$2} END {printf \"%.0f\", sum}' " +
+             res.chrom_sizes)))
+        pm.report_result("Genome_size", genome_size)
+    else:
+        genome_size = int(pm.get_stat("Genome_size"))
+
+
+    ############################################################################
+    #                     Calculate library complexity                         #
+    ############################################################################
+    preseq_output = os.path.join(
+        QC_folder, args.sample_name + "_preseq_out.txt")
+    preseq_yield = os.path.join(
+        QC_folder, args.sample_name + "_preseq_yield.txt")
+    preseq_counts = os.path.join(
+        QC_folder, args.sample_name + "_preseq_counts.txt")
+    preseq_pdf = os.path.join(
+        QC_folder, args.sample_name + "_preseq_plot.pdf")
+    preseq_plot = os.path.join(
+        QC_folder, args.sample_name + "_preseq_plot")
+    preseq_png = os.path.join(
+        QC_folder, args.sample_name + "_preseq_plot.png")
+
+    if not os.path.exists(preseq_pdf) or args.new_start:
+        if not os.path.exists(mapping_genome_index):
+            cmd = tools.samtools + " index " + mapping_genome_bam
+            pm.run(cmd, mapping_genome_index)
+            pm.clean_add(mapping_genome_index)
+
+        pm.timestamp("### Calculate library complexity")
+
+        cmd1 = (tools.preseq + " c_curve -v -o " + preseq_output +
+                " -B " + mapping_genome_bam)
+        pm.run(cmd1, preseq_output)
+
+        cmd2 = (tools.preseq + " lc_extrap -v -o " + preseq_yield +
+                " -B " + mapping_genome_bam)
+        pm.run(cmd2, preseq_yield, nofail=True)
+
+        if os.path.exists(preseq_yield):
+            cmd3 = ("echo '" + preseq_yield +
+                    " '$(" + tools.samtools + " view -c -F 4 " + 
+                    mapping_genome_bam + ")" + "' '" +
+                    "$(" + tools.samtools + " view -c -F 4 " +
+                    rmdup_bam + ") > " + preseq_counts)
+
+            pm.run(cmd3, preseq_counts)
+
+            cmd = (tools.Rscript + " " + tool_path("PEPATAC.R") +
+                   " preseq " + "-i " + preseq_yield)
+            cmd += (" -r " + preseq_counts + " -o " + preseq_plot)
+
+            pm.run(cmd, [preseq_pdf, preseq_png])
+
+            pm.report_object("Library complexity", preseq_pdf,
+                             anchor_image=preseq_png)
+
+            if not pm.get_stat('Frac_exp_unique_at_10M') or args.new_start:
+                # Report the expected unique at 10M reads
+                cmd = ("grep -w '10000000' " + preseq_yield +
+                       " | awk '{print $2}'")
+                expected_unique = pm.checkprint(cmd)
+                if expected_unique:
+                    fraction_unique = float(expected_unique)/float(10000000)
+                    pm.report_result("Frac_exp_unique_at_10M",
+                                     round(fraction_unique, 4))
+        else:
+            print("Unable to calculate library complexity.")
+
 
     ############################################################################
     #                         Produce signal tracks                            #
@@ -1064,33 +1201,216 @@ def main():
     # using a boatload of memory (more than 32GB); in contrast, running the
     # wig -> bw conversion on each chrom and then combining them with bigWigCat
     # requires much less memory. This was a memory bottleneck in the pipeline.
-
-    pm.timestamp("### Produce smoothed and nucleotide-resolution tracks")
+    pm.timestamp("### Produce signal tracks")
 
     exact_folder = os.path.join(map_genome_folder + "_exact")
-    temp_exact_folder = os.path.join(exact_folder, "temp")
     ngstk.make_dir(exact_folder)
-    ngstk.make_dir(temp_exact_folder)
     exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
     smooth_target = os.path.join(map_genome_folder,
                                  args.sample_name + "_smooth.bw")
     shift_bed = os.path.join(exact_folder, args.sample_name + "_shift.bed")
 
-    cmd = tool_path("bamSitesToWig.py")
-    cmd += " -i " + rmdup_bam
-    cmd += " -c " + res.chrom_sizes
-    cmd += " -b " + shift_bed # request bed output
-    cmd += " -o " + exact_target
-    cmd += " -w " + smooth_target
-    cmd += " -m " + "atac"
-    cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
-    pm.run(cmd, exact_target)
-    pm.clean_add(temp_exact_folder)
+    if not args.sob:
+        wig_cmd_callable = ngstk.check_command("wigToBigWig")
+
+        if wig_cmd_callable:
+            cmd = tool_path("bamSitesToWig.py")
+            cmd += " -i " + rmdup_bam
+            cmd += " -c " + res.chrom_sizes
+            cmd += " -b " + shift_bed # request bed output
+            cmd += " -o " + exact_target
+            cmd += " -w " + smooth_target
+            cmd += " -m " + "atac"
+            cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
+            cmd += " --variable-step"
+            pm.run(cmd, [exact_target, smooth_target])
+        else:
+            pm.warning("Skipping signal track production:"
+                       "Could not call \'wigToBigWig\'."
+                       "Confirm the required UCSC tools are in your PATH.")
+    else:
+        # seqOutBias needs a working directory, we'll make that temporary
+        tempdir = tempfile.mkdtemp(dir=map_genome_folder)
+        os.chmod(tempdir, 0o771)
+        pm.clean_add(tempdir)
+
+        # Tn5 correction requires separating by strand
+        pm.timestamp("### Split BAM by strand")
+        plus_bam = os.path.join(
+            map_genome_folder, args.sample_name + "_plus.bam")
+        minus_bam = os.path.join(
+            map_genome_folder, args.sample_name + "_minus.bam")
+        
+        cmd1 = build_command([
+            tools.samtools,
+            "view",
+            "-bh",
+            ("-F", 20),
+            rmdup_bam,
+            (">", plus_bam)
+        ])
+
+        cmd2 = build_command([
+            tools.samtools,
+            "view",
+            "-bh",
+            ("-f", 16),
+            rmdup_bam,
+            (">", minus_bam)
+        ])
+        
+        pm.run([cmd1, cmd2], [plus_bam, minus_bam], clean=True)
+
+        # set up output files
+        plus_exact_bw = os.path.join(
+            exact_folder, args.sample_name + "_plus_exact.bw")
+        minus_exact_bw = os.path.join(
+            exact_folder, args.sample_name + "_minus_exact.bw")
+        shift_plus_bed = os.path.join(
+            map_genome_folder, args.sample_name + "_shift_plus.bed")
+        fixed_plus_bed = os.path.join(
+            map_genome_folder, args.sample_name + "_shift_plus_fixed.bed")
+        shift_minus_bed = os.path.join(
+            map_genome_folder, args.sample_name + "_shift_minus.bed")
+        fixed_minus_bed = os.path.join(
+            map_genome_folder, args.sample_name + "_shift_minus_fixed.bed")
+        plus_table = os.path.join(
+            map_genome_folder, (args.genome_assembly + "_plus.tbl"))
+        minus_table = os.path.join(
+            map_genome_folder, (args.genome_assembly + "_minus.tbl"))
+
+        pm.timestamp("### Create mappability tables")
+        plus_seqtable_cmd = build_command([
+            (tools.seqOutBias, "seqtable"),
+            res.fasta,
+            str("--tallymer=" + res.search_file),
+            str("--gt-workdir=" + tempdir),
+            str("--read-size=" + str(read_len)),
+            "--kmer-mask=NXNXXXCXXNNXNNNXXN",
+            str("--out=" + plus_table)
+        ])
+
+        minus_seqtable_cmd = build_command([
+            (tools.seqOutBias, "seqtable"),
+            res.fasta,
+            str("--tallymer=" + res.search_file),
+            str("--gt-workdir=" + tempdir),
+            str("--read-size=" + str(read_len)),
+            "--kmer-mask=NXXNNNXNNXXCXXXNXN",
+            str("--out=" + minus_table)
+        ])
+        pm.run([plus_seqtable_cmd, minus_seqtable_cmd], exact_target)
+        pm.clean_add(plus_table)
+        pm.clean_add(minus_table)
+
+        pm.timestamp("### Scale and produce signal tracks")
+        scale_plus_cmd = build_command([
+            (tools.seqOutBias, "scale"),
+            plus_table,
+            plus_bam,
+            str("--bed=" + shift_plus_bed),
+            "--shift-counts",
+            str("--bw=" + plus_exact_bw)
+        ])
+
+        scale_minus_cmd = build_command([
+            (tools.seqOutBias, "scale"),
+            minus_table,
+            minus_bam,
+            str("--bed=" + shift_minus_bed),
+            "--shift-counts",
+            str("--bw=" + minus_exact_bw),
+        ])
+        pm.run([scale_plus_cmd, scale_minus_cmd], exact_target)
+        pm.clean_add(plus_exact_bw)
+        pm.clean_add(minus_exact_bw)
+        pm.clean_add(shift_plus_bed)
+        pm.clean_add(shift_minus_bed)
+
+        # merge stranded bigWigs
+        exact_bedgraph = os.path.join(
+            exact_folder, args.sample_name + "_exact.bedGraph")
+        merge_cmd1 = build_command([
+            tools.bigWigMerge,
+            plus_exact_bw,
+            minus_exact_bw,
+            exact_bedgraph
+        ])
+        pm.run(merge_cmd1, exact_target)
+        pm.clean_add(exact_bedgraph)
+
+        #fix bed
+        fix_cmd1 = build_command([
+            "awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, \"+\"}' ",
+            shift_plus_bed,
+            (" > ", fixed_plus_bed) 
+        ])
+        fix_cmd2 = build_command([
+            "awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, \"-\"}' ",
+            shift_minus_bed,
+            (" > ", fixed_minus_bed) 
+        ])
+        pm.run([fix_cmd1, fix_cmd2], shift_bed)
+        pm.clean_add(fixed_plus_bed)
+        pm.clean_add(fixed_minus_bed)
+
+        # merge beds
+        merge_cmd2 = build_command([
+            "cat",
+            fixed_plus_bed,
+            fixed_minus_bed,
+            "|",
+            "sort -k1,1 -k2,2n |",
+            (tools.bedtools, "merge"),
+            "-s -c 5 -o sum -prec 10 -delim \"\\t\"",
+            ("-i",  "stdin"),
+            " | awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, $4}' ",
+            (">", shift_bed)
+        ])
+        pm.run(merge_cmd2, shift_bed)
+
+        # sort merged bedGraph
+        sort_bedgraph = os.path.join(
+            exact_folder, args.sample_name + "_exact_sorted.bedGraph")
+        sort_cmd = build_command([
+            "sort -k1,1 -k2,2n",
+            exact_bedgraph,
+            ">",
+            sort_bedgraph
+        ])
+        pm.run(sort_cmd, exact_target)
+        pm.clean_add(sort_bedgraph)
+
+        # convert bedGraph to bigWig
+        convert_cmd = build_command([
+            tools.bedGraphToBigWig,
+            sort_bedgraph,
+            res.chrom_sizes,
+            exact_target
+        ])
+        pm.run(convert_cmd, exact_target)
+
+        # Generate smooth signal track
+        wig_cmd_callable = ngstk.check_command("wigToBigWig")
+
+        if wig_cmd_callable:
+            cmd = tool_path("bamSitesToWig.py")
+            cmd += " -i " + rmdup_bam
+            cmd += " -c " + res.chrom_sizes
+            cmd += " -w " + smooth_target
+            cmd += " -m " + "atac"
+            cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
+            cmd += " --variable-step"
+            pm.run(cmd, smooth_target)
+        else:
+            pm.warning("Skipping smooth signal track production:"
+                       "Could not call \'wigToBigWig\'."
+                       "Confirm the required UCSC tools are in your PATH.")
+
 
     ############################################################################
     #                          Determine TSS enrichment                        #
     ############################################################################
-
     if not os.path.exists(res.refgene_tss):
         print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}"
               .format(res.refgene_tss))
@@ -1140,6 +1460,7 @@ def main():
 
         pm.report_object("TSS enrichment", Tss_pdf, anchor_image=Tss_png)
 
+
     ############################################################################
     #                         Fragment distribution                            #
     ############################################################################
@@ -1167,12 +1488,12 @@ def main():
                 " frag -l " + frag_len + " -c " + fragL_count +
                 " -p " + fragL_dis1 + " -t " + fragL_dis2)
 
-        pm.run([cmd1, cmd2, cmd3], fragL_dis1, nofail=True,
-               container=pm.container)
+        pm.run([cmd1, cmd2, cmd3], fragL_dis1, nofail=True)
         pm.report_object("Fragment distribution", fragL_dis1,
                          anchor_image=fragL_png)
     else: 
         print("Fragment distribution requires paired-end data")
+
 
     ############################################################################
     #                        Extract genomic features                          #
@@ -1205,6 +1526,7 @@ def main():
             print("Could not find {}.`"
                   .format(str(os.path.dirname(res.feat_annotation))))
 
+
     ############################################################################
     #                               Peak calling                               #
     ############################################################################
@@ -1220,10 +1542,6 @@ def main():
     ngstk.make_dir(peak_folder)
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
-    fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
-                                    "_peaks_fixedWidth.narrowPeak")
-    norm_fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
-                                        "_peaks_fixedWidth_normalized.narrowPeak")
     peak_input_file = shift_bed
     bigNarrowPeak = os.path.join(peak_folder,
                                  args.sample_name + "_peaks.bigBed")
@@ -1234,8 +1552,6 @@ def main():
     # TODO: add chr_keep file and the same logic as in PEPPRO
     sort_peak_bed = os.path.join(peak_folder, args.sample_name +
                                  "_peaks_sort.bed")
-    peak_coverage = os.path.join(peak_folder, args.sample_name +
-                                 "_peaks_coverage.bed")
 
     if not os.path.isfile(peak_input_file):
         print("Cannot call peaks, {} does not exist.".format(peak_input_file))
@@ -1276,6 +1592,7 @@ def main():
             macs_cmd_base = [
                 "{} callpeak".format(tools.macs2),
                 ("-t", peak_input_file),
+                ("-f", "BED"),
                 ("--outdir", peak_folder),
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
@@ -1292,9 +1609,11 @@ def main():
 
         # Call peaks and report peak count.
         cmd = build_command(macs_cmd_base)
-        pm.run(cmd, peak_output_file, follow=report_peak_count,
-               container=pm.container)
+        pm.run(cmd, peak_output_file, follow=report_peak_count)
 
+        fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
+            "_peaks_fixedWidth.narrowPeak")
+        # If using fixed peaks, extend from summit
         if args.peak_type == "fixed":
             # extend peaks from summit by 'extend'
             # start extend from center of peak
@@ -1305,22 +1624,26 @@ def main():
                    "); print}' " + peak_output_file + " > " + fixed_peak_file)
             peak_output_file = fixed_peak_file
             pm.run(cmd, peak_output_file)
-            # remove overlapping peaks
-            cmd = build_command([tools.Rscript,
-                                 (tool_path("PEPATAC.R"), "reduce"),
-                                 ("-i", fixed_peak_file),
-                                 ("-c", res.chrom_sizes)
-                                ])
-            pm.run(cmd, norm_fixed_peak_file, nofail=False)
-            peak_output_file = norm_fixed_peak_file
-            pm.clean_add(fixed_peak_file)
 
+        # remove overlapping peaks, peaks extending beyond chromosomes,
+        # and normalize score
+        norm_peak_file = os.path.join(peak_folder,  args.sample_name +
+            "_peaks_normalized.narrowPeak")
+        cmd = build_command([tools.Rscript,
+                             (tool_path("PEPATAC.R"), "reduce"),
+                             ("-i", peak_output_file),
+                             ("-c", res.chrom_sizes),
+                             "--normalize"
+                            ])
+        pm.run(cmd, norm_peak_file, nofail=False)
+        peak_output_file = norm_peak_file
+        pm.clean_add(fixed_peak_file)
+        
         # Filter peaks in blacklist.
         # TODO: improve documentation of using a blacklist
         if os.path.exists(res.blacklist):
             filter_peak = os.path.join(peak_folder, args.sample_name +
                                        "_peaks_rmBlacklist.narrowPeak")
-
             if not os.path.exists(filter_peak) or args.new_start:
                 black_local = ''
                 if res.blacklist.endswith(".gz"):
@@ -1349,11 +1672,24 @@ def main():
                           .format(str(os.path.dirname(res.blacklist))))
 
                 if os.path.exists(black_local):
-                    cmd = (tools.bedtools + " intersect " + " -a " +
-                           peak_output_file + " -b " + black_local +
-                           " -v  >" + filter_peak)
-                    peak_output_file = filter_peak
+                    cmd = build_command([
+                        (tools.bedtools, "intersect"),
+                        ("-a", peak_output_file),
+                        ("-b", black_local),
+                        ("-v", ">"),
+                        filter_peak
+                    ])
                     pm.run(cmd, filter_peak)
+                # rename file
+                blacklist_target = os.path.join(peak_folder, "blacklist.flag")
+                cmd1 = build_command([tools.Rscript,
+                             (tool_path("PEPATAC.R"), "reduce"),
+                             ("-i", filter_peak),
+                             ("-c", res.chrom_sizes)
+                            ])
+                cmd2 = ("touch " + blacklist_target)
+                pm.run([cmd1, cmd2], blacklist_target)
+
 
         ########################################################################
         #                Determine the fraction of reads in peaks              #
@@ -1366,7 +1702,7 @@ def main():
                              pipeline_manager=pm)
             pm.report_result("FRiP", round(frip, 2))
 
-        if  os.path.exists(res.frip_ref_peaks):
+        if os.path.exists(res.frip_ref_peaks):
             # Use an external reference set of peaks instead of the peaks
             # called from this run
             frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
@@ -1374,22 +1710,32 @@ def main():
                                  pipeline_manager=pm)
             pm.report_result("FRiP_ref", round(frip_ref, 2))
 
-        # Produce bigBed (bigNarrowPeak) file from MACS/Fseq narrowPeak file
-        pm.timestamp("### # Produce bigBed formatted narrowPeak file")
-        cmd = build_command(
-                [tools.Rscript, tool_path("PEPATAC.R"), "bigbed", 
-                 ("-i", peak_output_file),
-                 ("-c", res.chrom_sizes),
-                 ("-t", tools.bedToBigBed)
-                ])
-        pm.run(cmd, bigNarrowPeak, nofail=False)
-        
+
         ########################################################################
         #                        Calculate peak coverage                       #
         ########################################################################
         pm.timestamp("### Calculate peak coverage")
 
-        if not os.path.exists(peak_coverage) or args.new_start:
+        peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                     "_peaks_coverage.bed")
+        norm_peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                          "_norm_peaks_coverage.bed")
+        coverage_flag = os.path.join(peak_folder, "coverage.flag")
+
+        ref_peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                         "_ref_peaks_coverage.bed")
+        norm_ref_peak_coverage = os.path.join(peak_folder, args.sample_name +
+                                              "_norm_ref_peaks_coverage.bed")
+        ref_coverage_flag = os.path.join(peak_folder, "ref_coverage.flag")
+
+        if not os.path.exists(chr_order) or args.new_start:
+            cmd = (tools.samtools + " view -H " + rmdup_bam +
+                   " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+                   "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
+            pm.run(cmd, chr_order)
+            pm.clean_add(chr_order)        
+
+        if not os.path.exists(coverage_flag) or args.new_start:
             cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peak_bed)
             cmd2 = (tools.samtools + " view -H " + rmdup_bam +
                     " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
@@ -1397,18 +1743,102 @@ def main():
             cmd3 = ("cut -f 1 " + chr_order + " > " + chr_keep)
             cmd4 = (tools.bedtools + " sort -i " + peak_bed + " -faidx " +
                     chr_order + " > " + sort_peak_bed)
-            pm.run([cmd1, cmd2, cmd3, cmd4], sort_peak_bed, nofail=True,
-                   container=pm.container)
+            pm.run([cmd1, cmd2, cmd3, cmd4], sort_peak_bed,
+                   nofail=True, clean=True)
         
-        cmd4 = (tools.bedtools + " coverage -sorted -counts -a " +
+        # If you include reference peaks, calculate coverage using those
+        # normalize to 1M tags/reads: (base_counts/sum(base_counts))*1000000)
+        # sum(base_counts) is just the total number of bases in peaks
+        if os.path.exists(res.frip_ref_peaks):
+            sort_frip_ref_peaks = os.path.join(peak_folder, 
+                "sorted_reference_peaks.narrowPeak")
+            cmd1 = (tools.bedtools + " sort -i " + res.frip_ref_peaks +
+                    " -faidx " + chr_order + " > " + sort_frip_ref_peaks)
+            cmd2 = (tools.bedtools + " coverage -sorted -a " +
+                    sort_frip_ref_peaks + " -b " + rmdup_bam + " -g " +
+                    chr_order + " | uniq > " + ref_peak_coverage)
+            cmd3 = ("awk 'BEGIN{OFS=\"\\t\";} " +
+                    "NR==FNR{sum += $12; next}{if (sum <= 0){sum = 1} " +
+                    "print $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, " +
+                    "$12, $13, $14, ($12/sum*1000000)}' " +
+                    ref_peak_coverage + " " + ref_peak_coverage +
+                    " > " + norm_ref_peak_coverage)
+            cmd4 = ("mv " + norm_ref_peak_coverage + " " + ref_peak_coverage)
+            cmd5 = ("touch " + ref_coverage_flag)
+            pm.run([cmd1, cmd2, cmd3, cmd4, cmd5],
+                   ref_coverage_flag, nofail=True)
+            pm.clean_add(sort_frip_ref_peaks)
+
+        cmd1 = (tools.bedtools + " coverage -sorted -a " +
                 sort_peak_bed + " -b " + rmdup_bam + " -g " + chr_order +
-                " > " + peak_coverage)
-        pm.run(cmd4, peak_coverage, nofail=True)
-        
+                " | uniq > " + peak_coverage)
+        cmd2 = ("awk 'BEGIN{OFS=\"\\t\";} " +
+                "NR==FNR{sum += $5; next}{if (sum <= 0){sum = 1} " +
+                "print $1, $2, $3, $4, $5, $6, $7, ($5/sum*1000000)}' " +
+                peak_coverage + " " + peak_coverage + " > " +
+                norm_peak_coverage)
+        cmd3 = ("mv " + norm_peak_coverage + " " + peak_coverage)
+        cmd4 = ("touch " + coverage_flag)
+        pm.run([cmd1, cmd2, cmd3, cmd4], coverage_flag, nofail=True)
         pm.clean_add(peak_bed)
-        pm.clean_add(chr_order)
         pm.clean_add(chr_keep)
-        pm.clean_add(sort_peak_bed)
+
+
+        ########################################################################
+        #           Produce bigBed (bigNarrowPeak) file from peak file         #
+        ########################################################################
+        pm.timestamp("### # Produce bigBed formatted narrowPeak file")
+
+        if not os.path.exists(bigNarrowPeak) or args.new_start:
+            df = pd.read_csv(peak_output_file, sep='\t', header=None,
+                             names=("V1","V2","V3","V4","V5","V6",
+                                    "V7","V8","V9","V10"))
+            nineNine = df['V5'].quantile(q=0.99)
+            df.loc[df['V5'] > nineNine, 'V5'] = nineNine
+
+            def rescale(n, after=[0,1], before=[]):
+                if not before:
+                    before=[min(n), max(n)]
+                return (((after[1] - after[0]) * (n - before[0]) / 
+                         (before[1] - before[0])) + after[0])
+            # rescale score to be between 0 and 1000
+            df['V5'] = rescale(np.log(df['V5']), [0, 1000])
+
+            cs = pd.read_csv(res.chrom_sizes, sep='\t', header=None,
+                             names=("V1","V2"))
+            df = df.merge(cs, on="V1")
+            df.columns = ["V1","V2","V3","V4","V5","V6",
+                          "V7","V8","V9","V10","V11"]
+            # make sure 'chromEnd' positions are not greater than the max chrom_size
+            n = np.array(df['V3'].values.tolist())
+            df['V3'] = np.where(n > df['V11'], df['V11'], n).tolist()
+
+            df = df.drop(columns=["V11"])
+            # ensure score is a whole integer value
+            df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
+
+            as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
+            cmd = ("echo 'table bigNarrowPeak\n" + 
+                   "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n" +
+                   "(\n" +
+                   "     string chrom;        \"Reference sequence chromosome or scaffold\"\n" +
+                   "     uint   chromStart;   \"Start position in chromosome\"\n" +
+                   "     uint   chromEnd;     \"End position in chromosome\"\n" +
+                   "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n" +
+                   "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n" +
+                   "     char[1]  strand;     \"+ or - or . for unknown\"\n" +
+                   "     float  signalValue;  \"Measurement of average enrichment for the region\"\n" +
+                   "     float  pValue;       \"Statistical significance of signal value (-log10). Set to -1 if not used.\"\n" +
+                   "     float  qValue;       \"Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used.\"\n" +
+                   "     int   peak;          \"Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called.\"\n" +
+                   ")' > " + as_file)
+            pm.run(cmd, as_file, clean=True)
+
+            cmd = (tools.bedToBigBed + " -as=" + as_file + " -type=bed6+4 " +
+                   peak_output_file + " " + res.chrom_sizes + " " +
+                   bigNarrowPeak)
+            pm.run(cmd, bigNarrowPeak, nofail=True)
+
 
         ########################################################################
         #                             Annotate peaks                           #
@@ -1457,18 +1887,19 @@ def main():
                 ])
 
         if os.path.isfile(anno_local):
-            if not os.path.exists(chr_PDF):
+            if not os.path.exists(chr_PDF) or args.new_start:
                 pm.run(cmd1, chr_PDF)
                 pm.report_object("Peak chromosome distribution", chr_PDF,
                                  anchor_image=chr_PNG)
-            if not os.path.exists(TSSdist_PDF):
+            if not os.path.exists(TSSdist_PDF) or args.new_start:
                 pm.run(cmd2, TSSdist_PDF)
                 pm.report_object("TSS distance distribution", TSSdist_PDF,
                                  anchor_image=TSSdist_PNG)
-            if not os.path.exists(gd_PDF):
+            if not os.path.exists(gd_PDF) or args.new_start:
                 pm.run(cmd3, gd_PDF)
                 pm.report_object("Peak partition distribution", gd_PDF,
                                  anchor_image=gd_PNG)
+
 
         ########################################################################
         #                       Perform motif analysis                         #
@@ -1485,6 +1916,7 @@ def main():
                 pm.clean_add(peak_bed_file) 
                 # create preparsed directory
                 tempdir = tempfile.mkdtemp(dir=peak_folder)
+                os.chmod(tempdir, 0o771)
                 pm.clean_add(tempdir)
                 # perform motif analysis
                 motif_HTML  = os.path.join(peak_folder, "homerResults.html")
@@ -1506,13 +1938,11 @@ def main():
                 print("Confirm peak calling was successful.")
                 pm.stop_pipeline()
 
+
     ############################################################################ 
     #                  Determine genomic feature coverage                      #
     ############################################################################
     pm.timestamp("### Calculate read coverage")
-
-    #frif_PDF = os.path.join(QC_folder, args.sample_name + "_frif.pdf")
-    #frif_PNG = os.path.join(QC_folder, args.sample_name + "_frif.png")
 
     # Cummulative Fraction of Reads in Features (cFRiF)
     cFRiF_PDF = os.path.join(QC_folder, args.sample_name + "_cFRiF.pdf")
@@ -1708,13 +2138,6 @@ def main():
         read_count = pm.checkprint(count_cmd)
         read_count = str(read_count).rstrip()
 
-        # cfrif_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "cfrif",
-        #              "-n", args.sample_name, "-r", total_reads,
-        #              "-o", cFRiF_PDF, "--bed"]
-        # frif_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
-        #              "-n", args.sample_name, "-r", total_reads,
-        #              "-o", FRiF_PDF, "--bed"]
-
         cFRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
                      "-s", args.sample_name, "-z", str(genome_size).rstrip(),
                      "-n", read_count, "-y", "cfrif"]
@@ -1768,6 +2191,7 @@ def main():
         for unmapped_fq in to_compress:
             if not unmapped_fq:
                 pm.clean_add(unmapped_fq + ".gz")
+
 
     ############################################################################
     #                            PIPELINE COMPLETE!                            #

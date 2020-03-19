@@ -48,7 +48,6 @@ pipelines:
       bulker_crate: databio/pepatac
     summarizers:
       - tools/PEPATAC_summarizer.R
-      - tools/PEPATAC_consensusPeaks.R
     bioconductor:
       readFunName: readPepatacPeakBeds
       readFunPath: BiocProject/readPepatacPeakBeds.R
@@ -68,6 +67,21 @@ pipelines:
         description: "Plots TSS scores for each sample."
         thumbnail_path: "summary/{name}_TSSEnrichment.png"
         path: "summary/{name}_TSSEnrichment.pdf"
+      - library_complexity_file:
+        caption: "Library complexity file"
+        description: "Plots each sample's library complexity on a single plot."
+        thumbnail_path: "summary/{name}_libComplexity.png"
+        path: "summary/{name}_libComplexity.pdf"
+      - consensus_peaks_file:
+        caption: "Consensus peaks file"
+        description: "A set of consensus peaks across samples."
+        thumbnail_path: "summary/{name}_consensusPeaks.png"
+        path: "summary/{name}_consensusPeaks.narrowPeak"
+      - counts_table:
+        caption: "Project peak coverage file"
+        description: "Project peak coverages: chr_start_end X sample"
+        thumbnail_path: "summary/{name}_peaks_coverage.png"
+        path: "summary/{name}_peaks_coverage.tsv"
     resources:
       default:
         file_size: "0"

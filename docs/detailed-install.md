@@ -15,7 +15,7 @@ The following tools are used by the pipeline:
 
 * [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/)
 * [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
-* [fastqc (v0.11.5+)](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+* [preseq (v2.0+)](http://smithlabresearch.org/software/preseq/)
 * [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster)
 * [samtools (v1.7)](http://www.htslib.org/)
 * [skewer (v0.1.126+)](https://github.com/relipmoc/skewer)
@@ -24,6 +24,7 @@ The following tools are used by the pipeline:
     * [bigWigCat (v4)](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
     * [bedToBigBed](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
 
+#### bedtools
 We'll install each of these pieces of software before moving forward.  Let's start right at the beginning and install `bedtools`.  We're going to install from source, but if you would prefer to install from a package manager, you can follow the instructions in the [bedtools' installation guide](http://bedtools.readthedocs.io/en/latest/content/installation.html).
 ```console
 cd tools/
@@ -39,6 +40,7 @@ Now, let's add `bedtools` to our `PATH` environment variable.  Look here to [lea
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/bedtools2/bin/"
 ```
 
+#### bowtie2
 Next, let's install `bowtie2`.
 ```console
 cd ../
@@ -54,24 +56,19 @@ Again, let's add `bowtie2` to our `PATH` environment variable:
 ```console
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.4.1/"
 ```
-Great! On to the next one. Let's get `FastQC`.  Reminder, you will need to have `java` installed to use `FastQC`.  At the command prompt, you can type `java -version`, press enter, and if you don't see an error you should be alright.  You'll need a version greater than 1.6 to work with `FastQC`.  Read more from the [`FastQC` installation instructions](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/INSTALL.txt).
-```console
-cd ../
-wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
-unzip fastqc_v0.11.9.zip
-rm fastqc_v0.11.9.zip
-```
-We also need to make the `FastQC` wrapper executable. To learn more about this, check out this [introduction to `chmod`](https://www.howtoforge.com/tutorial/linux-chmod-command/).
 
+#### preseq
+The pipeline uses `preseq` to calculate library complexity. Check out the author's [page for more instruction](https://github.com/smithlabcode/preseq).
 ```console
-chmod 755 FastQC/fastqc
+wget http://smithlabresearch.org/downloads/preseq_linux_v2.0.tar.bz2
+tar xvfj preseq_linux_v2.0.tar.bz2
 ```
-
-Add `FastQC` to our `PATH` environment variable:
+Add to `PATH`!
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/FastQC/"
+export PATH="$PATH:/path/to/peppro_tutorial/tools/preseq_v2.0/"
 ```
 
+#### samblaster
 Now we'll get `samblaster`.  For a full guide, check out the [`samblaster` installation instructions](https://github.com/GregoryFaust/samblaster/).
 ```console
 git clone git://github.com/GregoryFaust/samblaster.git
@@ -80,6 +77,7 @@ make
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/samblaster/"
 ```
 
+#### samtools
 Next up, `samtools`.
 ```console
 wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2
@@ -99,6 +97,7 @@ As for our other tools, add `samtools` to our `PATH` environment variable:
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/samtools-1.10/"
 ```
 
+#### skewer
 Time to add `skewer` to the collection.
 ```console
 cd ../
@@ -106,6 +105,8 @@ wget https://downloads.sourceforge.net/project/skewer/Binaries/skewer-0.2.2-linu
 mv skewer-0.2.2-linux-x86_64 skewer
 chmod 755 skewer
 ```
+
+#### UCSC utilities
 Finally, we need a few of the UCSC utilities.  You can install the [entire set of tools](https://github.com/ENCODE-DCC/kentUtils) should you choose, but here we'll just grab the subset that we need.
 ```console
 wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
@@ -138,6 +139,49 @@ Then, install the `PEPATAC` package.  From the `pepatac/` directory:
 Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
 ```
 
+Optionally, `PEPATAC` can mix and match tools for adapter removal, deduplication, and signal track generation. `FastQC`, if present, will be automatically run on input fastq files. `seqOutBias` can be used with the `--sob` argument to take into account mappability at a given read length, the Tn5 sequence bias, and to scale the sample signal tracks by the expected over observed cut frequency.
+
+*Optional tools:*
+
+* [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/download.html#fastqc)
+* [picard](https://broadinstitute.github.io/picard/)
+* [pigz (v2.3.4+)](https://zlib.net/pigz/)
+* [seqOutBias](https://github.com/guertinlab/seqOutBias): necessitates the following UCSC tools
+    * [bedGraphToBigWig](http://hgdownload.soe.ucsc.edu/admin/exe/)
+    * [bigWigMerge](http://hgdownload.soe.ucsc.edu/admin/exe/)
+* [trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+
+#### fastqc
+You will need to have `java` installed to use `FastQC`.  At the command prompt, you can type `java -version`, press enter, and if you don't see an error you should be alright.  You'll need a version greater than 1.6 to work with `FastQC`.  Read more from the [`FastQC` installation instructions](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/INSTALL.txt).
+```console
+cd /path/to/pepatac_tutorial/tools/
+wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
+unzip fastqc_v0.11.9.zip
+rm fastqc_v0.11.9.zip
+```
+We also need to make the `FastQC` wrapper executable. To learn more about this, check out this [introduction to `chmod`](https://www.howtoforge.com/tutorial/linux-chmod-command/).
+
+```console
+chmod 755 FastQC/fastqc
+```
+
+Add `FastQC` to our `PATH` environment variable:
+```console
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/FastQC/"
+```
+
+#### picard
+`PEPATAC` can alternatively use `picard MarkDuplicates` for duplicate identification and removal.  [Read the `picard` installation guide](http://broadinstitute.github.io/picard/) for more assistance.
+```console
+wget https://github.com/broadinstitute/picard/releases/download/2.20.3/picard.jar
+chmod +x picard.jar
+```
+Create an environmental variable pointing to the `picard.jar` file called `$PICARD`.  Alternatively, [update the `pepatac.yaml` file](https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml) with the full PATH to the `picard.jar` file.
+```
+export PICARD="/path/to/peppro_tutorial/tools/picard.jar"
+```
+
+#### pigz
 To extract files quicker, `PEPATAC` can also utilize `pigz` in place of `gzip` if you have it installed.  Let's go ahead and do that now. It's not required, but it can help speed everything up when you have many samples to process.
 ```console
 cd /path/to/pepatac_tutorial/tools/
@@ -151,6 +195,7 @@ Don't forget to add this to your `PATH` too!
 ```console
 export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.4/"
 ```
+
 That's it! Everything we need to run `PEPATAC` to its full potential should be installed.  If you are interested and have experience using containers, you can check out the [alternate installation methods](run-container.md).
 
 ## 3. Create environment variables
