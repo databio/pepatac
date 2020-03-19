@@ -67,6 +67,11 @@ pipelines:
         description: "Plots TSS scores for each sample."
         thumbnail_path: "summary/{name}_TSSEnrichment.png"
         path: "summary/{name}_TSSEnrichment.pdf"
+      - library_complexity_file:
+        caption: "Library complexity file"
+        description: "Plots each sample's library complexity on a single plot."
+        thumbnail_path: "summary/{name}_libComplexity.png"
+        path: "summary/{name}_libComplexity.pdf"
       - consensus_peaks_file:
         caption: "Consensus peaks file"
         description: "A set of consensus peaks across samples."
