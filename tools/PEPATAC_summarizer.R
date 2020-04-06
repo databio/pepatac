@@ -85,7 +85,7 @@ prj <- invisible(suppressWarnings(pepr::Project(pep)))
 # Produce output directory (if needed)
 dir.create(
     suppressMessages(
-        file.path(pepr::config(prj)$metadata$output_dir, "summary")),
+        file.path(pepr::config(prj)$looper$output_dir, "summary")),
     showWarnings = FALSE)
 
 # Produce project summary plots
@@ -94,14 +94,14 @@ summarizer_flag <- PEPATACr::summarizer(pep)
 # Produce library complexity summary plots
 complexity_path <- PEPATACr::buildFilePath("_libComplexity.pdf", prj)
 if (!file.exists(complexity_path)) {
-    cc <- paste(suppressMessages(pepr::config(prj)$metadata$output_dir),
+    cc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
                 "results_pipeline",
-                suppressMessages(pepr::samples(prj)$sample_name),
-                paste0("QC_", suppressMessages(pepr::samples(prj)$genome)),
-                paste0(suppressMessages(pepr::samples(prj)$sample_name),
+                suppressMessages(pepr::sampleTable(prj)$sample_name),
+                paste0("QC_", suppressMessages(pepr::sampleTable(prj)$genome)),
+                paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_yield.txt"),
                 sep="/")
-    rc <- paste(suppressMessages(pepr::config(prj)$metadata$output_dir),
+    rc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
                 "results_pipeline",
                 suppressMessages(pepr::samples(prj)$sample_name),
                 paste0("QC_", suppressMessages(pepr::samples(prj)$genome)),
