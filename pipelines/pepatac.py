@@ -390,7 +390,7 @@ def _add_resources(args, res, asset_dict=None):
     for reference in args.prealignments:
         for asset in [BT2_IDX_KEY]:
             try:
-                res[asset] = rgc.get_asset(reference, asset)
+                res[asset] = rgc.seek(reference, asset)
             except KeyError:
                 err_msg = "{} for {} is missing from REFGENIE config file."
                 pm.fail_pipeline(KeyError(err_msg.format(asset, reference)))
@@ -419,7 +419,7 @@ def _add_resources(args, res, asset_dict=None):
                                                     asset,
                                                     seek_key,
                                                     tag))  # DEBUG
-                    res[seek_key] = rgc.get_asset(args.genome_assembly,
+                    res[seek_key] = rgc.seek(args.genome_assembly,
                                                   asset_name=str(asset),
                                                   tag_name=str(tag),
                                                   seek_key=str(seek_key))
@@ -770,10 +770,10 @@ def main():
         print("Prealignment assemblies: " + str(args.prealignments))
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
-            bt2_index = os.path.join(rgc.get_asset(reference, BT2_IDX_KEY))
+            bt2_index = os.path.join(rgc.seek(reference, BT2_IDX_KEY))
             if not bt2_index.endswith(reference):
                 bt2_index = os.path.join(
-                    rgc.get_asset(reference, BT2_IDX_KEY), reference)
+                    rgc.seek(reference, BT2_IDX_KEY), reference)
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, False,
@@ -839,7 +839,7 @@ def main():
     cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
     cmd += " -x " + os.path.join(
-        rgc.get_asset(args.genome_assembly, BT2_IDX_KEY),
+        rgc.seek(args.genome_assembly, BT2_IDX_KEY),
                       args.genome_assembly)
     if args.paired_end:
         cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2

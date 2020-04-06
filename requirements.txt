@@ -4,5 +4,5 @@ numpy
 pararead
 pandas
 piper
-refgenconf
+refgenconf>=0.7.0
 refgenie
