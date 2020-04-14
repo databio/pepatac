@@ -29,17 +29,17 @@ sample_pipeline:
     singularity_image: ${SIMAGES}pepatac
     docker_image: databio/pepatac
     bulker_crate: databio/pepatac
-    size_dependent_variables: resources.tsv
+    size_dependent_variables: resources-sample.tsv
 
 project_pipeline:
   name: PEPATAC_collator1
-  path: pipelines/pepatac_collator.py
+  path: tools/PEPATAC_summarizer.R
   command_template: >
-    {pipeline.path} -c {looper.pep_config} -o {looper.output_folder} -n {project.name}
+    {pipeline.path} {looper.pep_config}
   compute:
     singularity_image: ${SIMAGES}pepatac
     bulker_crate: databio/pepatac
-    size_dependent_variables: resources.tsv
+    size_dependent_variables: resources-project.tsv
 
 bioconductor:
   readFunName: readPepatacPeakBeds
