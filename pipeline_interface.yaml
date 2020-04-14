@@ -1,3 +1,4 @@
+pipeline_name: PEPATAC
 sample_pipeline:
   name: PEPATAC
   path: pipelines/pepatac.py
@@ -31,7 +32,7 @@ sample_pipeline:
     size_dependent_variables: resources.tsv
 
 project_pipeline:
-  name: PEPATAC_collator1
+  name: PEPATAC_collator
   path: pipelines/pepatac_collator.py
   command_template: >
     {pipeline.path} -c {looper.pep_config} -o {looper.output_folder} -n {project.name}
