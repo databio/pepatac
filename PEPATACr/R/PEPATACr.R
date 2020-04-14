@@ -37,6 +37,539 @@ theme_PEPATAC <- function(base_family = "sans", ...){
   )
 }
 
+
+#' Create and return a file icon
+#'
+#' @keywords file icon
+#' @param x Range of x-axis dimensions
+#' @param y Range of y-axis dimensions
+#' @export
+fileIcon <- function(x=seq(0:275), y=seq(0:275)) {
+    df    <- data.frame(x=x, y=y)
+    minX  <- min(df$x)
+    maxX  <- max(df$x)
+    minY  <- min(df$y)
+    maxY  <- max(df$y)
+    pg    <- data.frame(x=c(225,225,255), y=c(265,235,235), group=c(1,1,1))
+    image <- ggplot(df, aes(x, y)) +
+        geom_rect(aes(xmin=(60/275*maxX), xmax=(225/275*maxX),
+                      ymin=(10/275*maxY), ymax=(265/275*maxY)),
+                  color=NA, fill="white") +
+        geom_rect(aes(xmin=(225/275*maxX), xmax=(255/275*maxX),
+                      ymin=(10/275*maxY), ymax=(235/275*maxY)),
+                  color=NA, fill="white") +
+        geom_polygon(data=pg, aes(x=x, y=y, group=group),
+                     color="gray", fill="white", size=3) +
+        # Outline the overall shape
+        geom_line(data=data.frame(x=c((60/275*maxX),(255/275*maxX)),
+                                  y=c((10/275*maxY),(10/275*maxY))),
+                  aes(x=x,y=y), color="gray", size=3,
+                  lineend="round", linejoin="bevel") +
+        geom_line(data=data.frame(x=c((60/275*maxX),(60/275*maxX)),
+                                  y=c((10/275*maxY),(265/275*maxY))),
+                  aes(x=x,y=y), color="gray", size=3,
+                  lineend="round", linejoin="bevel") +
+        geom_line(data=data.frame(x=c((60/275*maxX),(222.5/275*maxX)),
+                                  y=c((265/275*maxY),(265/275*maxY))),
+                  aes(x=x,y=y), color="gray", size=3,
+                  lineend="round", linejoin="bevel") +
+        geom_line(data=data.frame(x=c((255/275*maxX),(255/275*maxX)),
+                                  y=c((10/275*maxY),(232.5/275*maxY))),
+                  aes(x=x,y=y), color="gray", size=3,
+                  lineend="round", linejoin="bevel") +
+        # Add page lines
+        geom_line(data=data.frame(x=c(100/275*maxX,215/275*maxX),
+                                  y=c(117.5/275*maxY,117.5/275*maxY)),
+                  aes(x=x,y=y), color="gray", size=4, lineend="round") +
+        geom_line(data=data.frame(x=c(100/275*maxX,215/275*maxX),
+                                  y=c(137.5/275*maxY,137.5/275*maxY)),
+                  aes(x=x,y=y), color="gray", size=4, lineend="round") +
+        geom_line(data=data.frame(x=c(100/275*maxX,215/275*maxX),
+                                  y=c(157.5/275*maxY,157.5/275*maxY)),
+                  aes(x=x,y=y), color="gray", size=4, lineend="round") +
+        theme_PEPATAC() +
+        theme(panel.border = element_blank(),
+              axis.line = element_blank(),
+              axis.title.x=element_blank(),
+              axis.text.x=element_blank(),
+              axis.ticks.x=element_blank(),
+              axis.title.y=element_blank(),
+              axis.text.y=element_blank(),
+              axis.ticks.y=element_blank())
+    return(image)
+}
+
+
+#' Compute the axis value limit
+#'
+#' This function returns the index of ccurve_TOTAL_READS containing the
+#' closest value to x_max
+#' @param value An axis limit value.
+#' @param ccurve_TOTAL_READS A vector of read counts from a sample.
+#' @keywords preseq limit
+#' @examples
+#' computeLimit()
+computeLimit <- function(value, ccurve_TOTAL_READS) {
+    # This function returns the index of ccurve_TOTAL_READS containing the
+    # closest value to x_max
+
+    if (max(ccurve_TOTAL_READS) < value) {
+        message(paste0("WARNING: ", value, " is set higher than the highest ",
+                       "extrapolated point by preseq (value=",
+                       max(ccurve_TOTAL_READS)))
+    }
+    first_point  <- 0
+    middle_point <- 0
+    last_point   <- length(ccurve_TOTAL_READS)
+    iterations   <- 0
+    while (first_point != last_point) {
+        middle_point <- as.numeric((first_point + last_point)/2)
+        middle_value <- as.numeric(ccurve_TOTAL_READS[middle_point])
+        if (length(middle_value)==0) {
+            return(middle_point)
+        } else if (middle_value == value || iterations >= 10000) {
+            return(middle_point)
+        } else if (middle_value >= value) {
+            last_point  <- middle_point - 1
+        } else {
+            first_point <- middle_point + 1
+        }
+        iterations <- iterations + 1
+    }
+    return(first_point)
+}
+
+
+#' Plot library complexity curves
+#'
+#' This function plots library complexity curves using data from
+#' preseq and produces pdf/png output files.
+#' Adapted from preseq_complexity_curves.py from
+#' https://github.com/ewels/ngi_visualizations/tree/master/ngi_visualizations/preseq_complexity_curves
+#'
+#' @param ccurves A single preseq output file from one sample.
+#' @param more_ccurves A list of additional preseq output files from more samples
+#' @param coverage Use coverage on axes instead of read counts. Enter the number
+#'                 of base pairs of your reference genome.
+#' @param read_length Sequence read length, for use in coverage calculations.
+#' @param real_counts_path File name for a file with three columns -
+#'                         preseq filename, total number of reads, number of
+#'                         unique reads
+#'                         (unique is optional, file is whitespace delimited)
+#' @param ignore_unique If FALSE, ignore information about unique read counts
+#'                   found in real_counts_path file.
+#' @param x_min Lower x-limit (default 0)
+#' @param x_max Upper x-limit (default 500 million)
+#' @keywords preseq library complexity
+#' @export
+#' @examples
+#' data("ccurve")
+#' data("counts")
+#' plotComplexityCurves(ccurves = "ccurve", coverage=3099922541, read_length=30,
+#'                      real_counts_path="counts")
+plotComplexityCurves <- function(ccurves,
+                                 coverage=0, read_length=0,
+                                 real_counts_path=NA, ignore_unique=FALSE,
+                                 x_min=0, x_max=500000000) {
+
+    if (x_min < 0 || x_max <= x_min) {
+        message(paste0("problem with x-min or x-max (", x_min, " ", x_max,
+                       "). x-min must be >= 0 and < x-max"))
+        quit(save = "no", status = 1, runLast = FALSE)
+    }
+
+    # Convert limit counts to coverage
+    if (coverage > 0) {
+        if (read_length == 0) {
+            message("Error: --coverage specified but not --read_length")
+            quit(save = "no", status = 1, runLast = FALSE)
+        } else {
+            coverage <- as.numeric(coverage) / as.numeric(read_length)
+        }
+        x_max    <- as.numeric(x_max) / coverage
+        x_min    <- as.numeric(x_min) / coverage
+    }
+
+    # Get the real counts if we have them
+    rcDT <- data.table(name = character(length(real_counts_path)),
+                       total = integer(length(real_counts_path)),
+                       unique = integer(length(real_counts_path)))
+
+    if (exists(real_counts_path[1])) {
+        rc_file    <- data.table(get(real_counts_path[1]))
+        rcDT$name  <- basename(rc_file$V1)
+        rcDT$total <- as.integer(rc_file$V2)
+        if (ncol(rc_file) == 3 && !ignore_unique) {
+            rcDT$unique <- as.integer(rc_file$V3)
+        } else {
+            rcDT$unique <- NA
+        }
+
+        if (length(real_counts_path) > 1) {
+            for (rc in 2:length(real_counts_path)) {
+                rc_file <- real_counts_path[rc]
+                rcDT$name[rc]  <- basename(rc_file$V1)
+                rcDT$total[rc] <- as.integer(rc_file$V2)
+                if (ncol(rc_file) == 3 && !ignore_unique) {
+                    rcDT$unique[rc] <- as.integer(rc_file$V3)
+                } else {
+                    rcDT$unique[rc] <- NA
+                }
+            }
+        }
+    } else if (!is.na(real_counts_path[1])) {
+        for (rc in 1:length(real_counts_path)) {
+            info <- file.info(file.path(real_counts_path[rc]))
+            if (file.exists(real_counts_path[rc]) && info$size != 0) {
+                rc_file        <- fread(real_counts_path[rc])
+                rcDT$name[rc]  <- basename(rc_file$V1)
+                rcDT$total[rc] <- as.integer(rc_file$V2)
+                if (ncol(rc_file) == 3 && !ignore_unique) {
+                    rcDT$unique[rc] <- as.integer(rc_file$V3)
+                } else {
+                    rcDT$unique[rc] <- NA
+                }
+            } else {
+                message(paste0("Error loading real counts file: ",
+                               real_counts_path[rc]))
+                if (!file.exists(real_counts_path[rc])) {
+                    message("File could not be found.")
+                } else if (info$size == 0) {
+                    message("File is empty.")
+                }
+                quit(save = "no", status = 1, runLast = FALSE)
+            }
+        }
+    }
+
+    # Convert real counts to coverage
+    if (coverage > 0) {
+        rcDT[,total  := as.numeric(total)  / coverage]
+        rcDT[,unique := as.numeric(unique) / coverage]
+    }
+
+    # Set up plot params
+    global_x_max_ccurve_limit <- 0
+    global_y_max_ccurve_limit <- 0
+    max_label_length          <- 0
+
+    # Each ccurve will get a different color
+    palette <- colorRampPalette(c("#999999", "#FFC107", "#27C6AB", "#004D40",
+                                  "#B97BC8", "#009E73", "#C92404", "#E3E550",
+                                  "#372B4C", "#E3DAC7", "#27CAE6", "#B361BC",
+                                  "#897779", "#6114F8", "#19C42B", "#56B4E9"))
+
+    clist <- data.table(TOTAL_READS = list(), EXPECTED_DISTINCT = list())
+    ccurves  <- as.list(ccurves)
+    colormap <- palette(length(ccurves))
+    for (c in 1:length(ccurves)) {
+        name        <- basename(tools::file_path_sans_ext(ccurves[[c]]))
+        numFields   <- 2
+        for(j in 1:numFields) name <- gsub("_[^_]*$", "", name)
+        sample_name <- name
+        message(paste0("Processing ", sample_name))
+
+        if (exists(ccurves[[c]])) {
+            ctable <- data.table(get(ccurves[[c]]))
+        } else if (file.exists(ccurves[[c]])) {
+            ctable <- fread(ccurves[[c]])
+        } else {
+            stop(paste0("FileExistsError: ", ccurves[[c]],
+                        " could not be found."))
+            quit(save = "no", status = 1, runLast = FALSE)
+        }
+
+        if (coverage > 0) {
+            if ("TOTAL_READS" %in% colnames(ctable)) {
+                ccurve_TOTAL_READS <- as.numeric(ctable$TOTAL_READS) / coverage
+            } else if ("total_reads" %in% colnames(ctable)) {
+                ccurve_TOTAL_READS <- as.numeric(ctable$total_reads) / coverage
+            }
+            if ("EXPECTED_DISTINCT" %in% colnames(ctable)) {
+                ccurve_EXPECTED_DISTINCT <- (
+                    as.numeric(ctable$EXPECTED_DISTINCT) / coverage)
+            } else if ("distinct_reads" %in% colnames(ctable)) {
+                ccurve_EXPECTED_DISTINCT <- (
+                    as.numeric(ctable$distinct_reads) / coverage)
+            } else {
+                messsage(paste0("Error, table ", c, " is not in the expected "))
+                message("format... has it been generated with preseq?")
+                quit(save = "no", status = 1, runLast = FALSE)
+            }
+        } else {
+            if ("TOTAL_READS" %in% colnames(ctable)) {
+                ccurve_TOTAL_READS <- ctable$TOTAL_READS
+            } else if ("total_reads" %in% colnames(ctable)) {
+                ccurve_TOTAL_READS <- ctable$total_reads
+            }
+            if ("EXPECTED_DISTINCT" %in% colnames(ctable)) {
+                ccurve_EXPECTED_DISTINCT <- ctable$EXPECTED_DISTINCT
+            } else if ("distinct_reads" %in% colnames(ctable)) {
+                ccurve_EXPECTED_DISTINCT <- ctable$distinct_reads
+            } else {
+                messsage(paste0("Error, table ", c, " is not in the expected "))
+                message("format... has it been generated with preseq?")
+                quit(save = "no", status = 1, runLast = FALSE)
+            }
+        }
+        if (c == 1) {
+            clist <- data.table(
+                SAMPLE_NAME = list(rep(sample_name,
+                                   length(ccurve_TOTAL_READS))),
+                TOTAL_READS = list(ccurve_TOTAL_READS),
+                EXPECTED_DISTINCT = list(ccurve_EXPECTED_DISTINCT),
+                COLOR = list(rep(colormap[c], length(ccurve_TOTAL_READS)))
+            )
+        } else {
+            clist <- rbindlist(list(clist,
+                data.table(SAMPLE_NAME = list(rep(sample_name,
+                                              length(ccurve_TOTAL_READS))),
+                           TOTAL_READS = list(ccurve_TOTAL_READS),
+                           EXPECTED_DISTINCT = list(ccurve_EXPECTED_DISTINCT),
+                           COLOR = list(rep(colormap[c],
+                                        length(ccurve_TOTAL_READS))))),
+                use.names=TRUE)
+        }
+    }
+
+    x_min_ccurve_limit <- computeLimit(x_min, unlist(clist$TOTAL_READS))
+    x_max_ccurve_limit <- computeLimit(x_max, unlist(clist$TOTAL_READS))
+    if (x_max_ccurve_limit > global_x_max_ccurve_limit) {
+        global_x_max_ccurve_limit <- x_max_ccurve_limit
+    }
+    if (unlist(clist$EXPECTED_DISTINCT)[x_max_ccurve_limit] > global_y_max_ccurve_limit) {
+        if (x_max_ccurve_limit <= length(unlist(clist$EXPECTED_DISTINCT))) {
+            global_y_max_ccurve_limit <- unlist(clist$EXPECTED_DISTINCT)[x_max_ccurve_limit]
+        } else {
+            x_max_ccurve_limit <- length(unlist(clist$EXPECTED_DISTINCT))
+        }
+    }
+    # Add a few points to be sure
+    x_max_ccurve_limit <- x_max_ccurve_limit + 3
+
+    sn <- clist$SAMPLE_NAME[[1]][x_min_ccurve_limit:x_max_ccurve_limit]
+    tr <- clist$TOTAL_READS[[1]][x_min_ccurve_limit:x_max_ccurve_limit]
+    ed <- clist$EXPECTED_DISTINCT[[1]][x_min_ccurve_limit:x_max_ccurve_limit]
+    co <- clist$COLOR[[1]][x_min_ccurve_limit:x_max_ccurve_limit]
+    df <- data.frame(sample_name = sn,
+                     total_reads = tr,
+                     expected_distinct = ed,
+                     color = co)
+    if (nrow(clist) > 1) {
+        for (i in 2:nrow(clist)) {
+            sn <- clist$SAMPLE_NAME[[i]][x_min_ccurve_limit:x_max_ccurve_limit]
+            tr <- clist$TOTAL_READS[[i]][x_min_ccurve_limit:x_max_ccurve_limit]
+            ed <- clist$EXPECTED_DISTINCT[[i]][x_min_ccurve_limit:x_max_ccurve_limit]
+            co <- clist$COLOR[[i]][x_min_ccurve_limit:x_max_ccurve_limit]
+            df <- rbind(df, data.frame(sample_name = sn,
+                                       total_reads = tr,
+                                       expected_distinct = ed,
+                                       color = co))
+        }
+    }
+
+    # Plot by millions of reads
+    plottingFactor <- 1000000
+
+    df$total_reads       <- df$total_reads/plottingFactor
+    df$expected_distinct <- df$expected_distinct/plottingFactor
+    rcDT$total  <- rcDT$total/plottingFactor
+    rcDT$unique <- rcDT$unique/plottingFactor
+    x_max       <- x_max/plottingFactor
+
+    # Plot the curve
+    fig <- ggplot(df, aes(total_reads,
+                          expected_distinct,
+                          group = sample_name,
+                          col=color)) + geom_line()
+
+    # Plot the real data if we have it
+    numFields   <- 2
+    for(j in 1:numFields) rcDT$name <- gsub("_[^_]*$", "", rcDT$name)
+    rcDT$color <- colormap
+
+    if (any(rcDT$total > 0) && !any(is.na(rcDT$unique)) && !ignore_unique) {
+        fig <- fig + geom_point(data=rcDT,
+                                aes(total, unique, col=color),
+                                shape=23, size=3)
+        message(paste0("INFO: Found real counts for ",
+                       paste(rcDT$name, sep=","), " - Total (M): ",
+                       rcDT$total, " Unique (M): ",
+                       rcDT$unique, "\n"))
+    } else if (any(rcDT$total > 0)) {
+        if (max(rcDT$total) > max(df$total_reads)) {
+            message(paste0("WARNING: Max total reads (", max(rcDT$total),
+                           ") > ", "max preseq value (", max(df$total_reads),
+                           ") - skipping..."))
+        } else {
+            interp <- approx(df$total_reads, df$expected_distinct, rcDT$total)$y
+            fig <- fig + geom_point(data=rcDT,
+                                    aes(total, interp, col=color),
+                                    shape=23, size=3)
+            message(paste0("INFO: Found real counts for ",
+                           paste(rcDT$name, sep=","), " - Total (M): ",
+                           rcDT$total, " (preseq unique reads (M): ",
+                           interp, ")\n"))
+        }
+    } else {
+        message(paste0("INFO: No real counts provided."))
+    }
+
+    fig <- fig + geom_abline(intercept = 0, slope = 1, linetype="dashed") 
+
+    # Set the axis limits
+    max_total <- 0
+    if (any(rcDT$total > 0)) {
+        max_total <- as.numeric(max(rcDT$total))
+    }
+
+    if (x_max < max_total) {
+        message(paste0("WARNING: x-max value ", x_max,
+                       " is less than max real data ", max_total))
+    }
+
+    max_unique <- 0
+    if (!any(is.na(rcDT$unique)) && any(rcDT$unique > 0)) {
+        max_unique <- as.numeric(max(rcDT$unique))
+        max_unique <- max_unique + (max_unique * 0.1)
+    }
+    preseq_ymax <- global_y_max_ccurve_limit
+    preseq_ymax <- preseq_ymax + (global_y_max_ccurve_limit * 0.1)
+
+    default_ylim <- 100000
+    if (coverage > 0) {
+        default_ylim <- as.numeric(default_ylim) / coverage
+    }
+
+    # Adjust limits by plottingFactor
+    default_ylim <- default_ylim/plottingFactor
+    preseq_ymax  <- preseq_ymax/plottingFactor
+
+    fig <- fig +
+        coord_cartesian(xlim=c(x_min, x_max),
+                        ylim = c(default_ylim,
+                                 max(preseq_ymax, max_unique)))
+
+    if (preseq_ymax < max_unique) {
+        message(paste0("WARNING: y-max value changed from default ",
+                       preseq_ymax, " to the max real data ",
+                       max_unique))
+    }
+
+    # label the axis
+    # Change labels if we're using coverage
+    if (coverage > 0) {
+        if (!any(is.na(rcDT$unique)) && any(rcDT$unique > 0)) {
+            fig <- fig +
+                labs(x = paste0("Total coverage (incl. duplicates)"),
+                     caption = paste0("Points show read count versus ",
+                                      "deduplicated read counts ",
+                                      "(externally calculated)"))
+        } else if (any(rcDT$total > 0)) {
+            fig <- fig +
+                labs(x = "Total coverage (incl. duplicates)",
+                     caption = paste0("Points show read count versus projected ",
+                                      "unique read counts on the curves"))
+        } else {
+            fig <- fig +
+                labs(x = "Total coverage (incl. duplicates)")
+        }
+        fig <- fig +
+            labs = (y = "Unique coverage")
+    } else {
+        if (!any(is.na(rcDT$unique)) && any(rcDT$unique > 0)) {
+            fig <- fig +
+                labs(x = "Total reads (M) (incl. duplicates)",
+                     caption = paste0("Points show read count versus deduplicated ",
+                                      "read counts (externally calculated)"))
+        } else if (any(rcDT$total > 0)) {
+            fig <- fig +
+                labs(x = "Total reads (M) (incl. duplicates)",
+                     caption = paste0("Points show externally calculated read ",
+                                      "counts on the curves"))
+        } else {
+            fig <- fig +
+                labs(x = "Total reads (M) (incl. duplicates)")
+        }
+        fig <- fig +
+            labs(y = "Unique reads (M)")
+    }
+
+    fig <- fig +
+        labs(col = "") +
+        scale_color_discrete(labels=c(clist$SAMPLE_NAME)) +
+        theme_PEPATAC() +
+        theme(legend.position = "right",
+              plot.caption = element_text(size = 8, face = "italic"))
+
+    # inset zoom plot
+    zoom_theme <- theme(legend.position = "none",
+                        axis.line = element_blank(),
+                        axis.text.x = element_blank(),
+                        axis.text.y = element_blank(),
+                        axis.ticks = element_blank(),
+                        axis.title.x = element_blank(),
+                        axis.title.y = element_blank(),
+                        aspect.ratio = 1,
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_rect(color='black'),
+                        plot.margin = unit(c(0.1,0.1,-6,-6),"mm"))
+
+    if (!any(is.na(rcDT$unique)) && any(rcDT$unique > 0)) {
+        zoom_fig <- ggplot(df, aes(total_reads,
+                       expected_distinct,
+                       group = sample_name,
+                       col=color)) +
+            geom_line() +
+            geom_abline(intercept = 0, slope = 1, linetype="dashed") +
+            coord_cartesian(xlim = c(0,max(rcDT$unique)*2),
+                            ylim = c(0,max(rcDT$unique)*2)) +
+            geom_point(data=rcDT,
+                       aes(total, unique, col=color),
+                       shape=23, size=3) +
+            theme_classic(base_size=14) +
+            zoom_theme
+        g   <- ggplotGrob(zoom_fig)
+        fig <- fig +
+            annotation_custom(grob = g,
+                              xmin = x_max / 2,
+                              xmax = x_max,
+                              ymin = 10,
+                              ymax = max(preseq_ymax, max_unique)/2)
+    } else if (any(rcDT$total > 0)) {
+        interp <- approx(df$total_reads, df$expected_distinct, rcDT$total)$y
+        zoom_fig <- ggplot(df, aes(total_reads,
+                                   expected_distinct,
+                                   group = sample_name,
+                                   col=color)) +
+            geom_line() +
+            geom_abline(intercept = 0, slope = 1, linetype="dashed") +
+            coord_cartesian(xlim = c(0,max(rcDT$total)*2),
+                            ylim = c(0,max(rcDT$total)*2)) +
+            geom_point(data=rcDT,
+                       aes(total, interp, col=color),
+                       shape=23, size=3) +
+            theme_classic(base_size=14) +
+            zoom_theme
+        g   <- ggplotGrob(zoom_fig)
+        fig <- fig +
+            annotation_custom(grob = g,
+                              xmin = x_max / 2,
+                              xmax = x_max,
+                              ymin = 10,
+                              ymax = max(preseq_ymax, max_unique)/2)
+    }
+
+    # Don't include legend for single sample plots
+    if (length(ccurves) == 1) {
+        fig <- fig + theme(legend.position = "none")
+    }
+
+    return(fig)
+}
+
+
 #' Calculate the Fraction of Reads in Features (FRiF)
 #'
 #' This function calculates the fraction of reads in a feature and returns
@@ -143,7 +676,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
             name       <- basename(tools::file_path_sans_ext(bedFile[1]))
             name       <- gsub(sample_name, "", name)
             name       <- gsub("^.*?_", "", name)
-            numFields  <- 2
+            numFields  <- 1
             for(i in 1:numFields) name <- gsub("_[^_]*$", "", name)
             labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
                             name, round(max(bedCov$frip),2), "#FF0703")
@@ -394,13 +927,14 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
 #' This function plots the global TSS enrichment.
 #'
 #' @param TSSfile TSS enrichment file
+#' @param cutoff A TSS enrichment score cutoff value for low quality samples
 #' @keywords TSS enrichment
 #' @export
 #' @examples
 #' data("tss")
 #' plotTSS(TSSfile = "tss")
 #' @export
-plotTSS <- function(TSSfile) {
+plotTSS <- function(TSSfile, cutoff=6) {
     if (length(TSSfile) == 1) {
         write(paste0("\nGenerating TSS plot with ", TSSfile), stdout())
     } else {
@@ -508,7 +1042,7 @@ plotTSS <- function(TSSfile) {
     }
     
     lineColor <- "red2"
-    if (TSSscore > TSS_CUTOFF)
+    if (TSSscore > cutoff)
     {
         lineColor <- "springgreen4"
     }
@@ -974,9 +1508,11 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 #' @param input Path to narrowPeak file
 #' @param chr_sizes Genome chromosome sizes file. <Chr> <Size>
 #' @param output Output file.
+#' @param normalize Remove overlaps and normalize the score.
 #' @keywords reduce fixed peaks
 #' @export
-reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
+reducePeaks <- function(input=input, chr_sizes=chr_sizes,
+                        output=NULL, normalize=FALSE) {
     info <- file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
         peaks           <- fread(file.path(input))
@@ -1005,7 +1541,7 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
             message(paste0("reducePeaks(): ", chr_sizes, " is missing."))
         }
     }
-        
+
     if (exists("peaks") & exists("c_size")) {
         hits  <- foverlaps(peaks, peaks,
                            by.x=c("chrom", "chromStart", "chromEnd"),
@@ -1020,17 +1556,22 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
         # trim any bad peaks (extend beyond chromosome)
         # can't be negative
         final[chromStart < 0, chromStart := 0]
+        # ensure sorted
+        setorderv(final, cols = c("chr", "start"))
         # can't extend past chromosome
         for (i in nrow(c_size)) {
-            final[chrom == c_size$chrom[i] & chromEnd > c_size$size[i], chromEnd := c_size$size[i]]
+            final[chrom == c_size$chrom[i] & chromEnd > c_size$size[i],
+                  chromEnd := c_size$size[i]]
         }
-        # normalize peak scores for cross sample comparison
-        final[, score := .(score/(sum(score)/1000000))]
+        if (normalize) {
+            # normalize peak scores for cross sample comparison
+            final[, score := .(score/(sum(score)/1000000))]
+        }
         final[score < 0, score := 0]
         # save final peak set
         if (is.null(output)) {
             fwrite(final, paste0(sampleName(input),
-                                 "_peaks_fixedWidth_normalized.narrowPeak"),
+                                 "_peaks_normalized.narrowPeak"),
                    sep="\t", col.names=FALSE)
         } else {
             fwrite(final, output, sep="\t", col.names=FALSE)
@@ -1045,18 +1586,30 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes, output=NULL) {
 #'
 #' From:
 #' https://stackoverflow.com/questions/6461209/how-to-round-up-to-the-nearest-10-or-100-or-x
+#' @param x A vector of numbers
+#' @param nice Values to round up to
+#' @export
 roundUpNice <- function(x, nice=c(1,2,3,4,5,6,7,8,9,10)) {
     if(length(x) != 1) stop("'x' must be of length 1")
     10^floor(log10(x)) * nice[[which(x <= 10^floor(log10(x)) * nice)[[1]]]]
 }
 
 
+#' Set the panel width/height of a ggplot to a fixed value. 
+#'
 #' From:
 #' https://github.com/baptiste/egg/blob/master/R/setPanelSize.r
+#'
+#' @param p a ggplot object
+#' @param g a ggplot grob
+#' @param file filepath
+#' @param margin plot margins
+#' @param width plot width
+#' @param height plot height
+#' @export
 setPanelSize <- function(p=NULL, g=ggplotGrob(p), file=NULL, 
-                           margin=unit(1, "in"),
-                           width=unit(4, "in"), 
-                           height=unit(4, "in")){
+                         margin=unit(1, "in"), width=unit(4, "in"), 
+                         height=unit(4, "in")){
     
     panels        <- grep("panel", g$layout$name)
     panel_index_w <- unique(g$layout$l[panels])
@@ -1092,6 +1645,7 @@ setPanelSize <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 #'
 #' @param suffix A file suffix identifier
 #' @param pep A PEP project configuration file
+#' @export
 buildFilePath <- function(suffix, pep=prj) {
     file.path(config(pep)$metadata$output_dir, "summary",
               paste0(config(pep)$name, suffix))
@@ -1101,6 +1655,7 @@ buildFilePath <- function(suffix, pep=prj) {
 #' Return a list of prealignments from a stats_summary.tsv file if they exist
 #'
 #' @param stats_file A looper derived stats_summary.tsv file
+#' @export
 getPrealignments <- function(stats_file) {
     pre <- gsub("Aligned_reads_","",
                 unique(grep("Aligned_reads_.*",
@@ -1322,6 +1877,10 @@ plotAlignedPct <- function(prj, stats) {
     )
 
     unaligned <- 100 - stats$Alignment_rate
+
+    # Get prealignments if they exist
+    prealignments <- getPrealignments(stats)
+
     if (!is.null(prealignments)) {
         for (i in 1:length(unlist(prealignments))) {
             unaligned <- unaligned - stats[, (paste("Alignment_rate",
@@ -1487,9 +2046,10 @@ plotAlignedPct <- function(prj, stats) {
 #'
 #' @param prj A PEPr Project object
 #' @param stats A looper derived stats_summary.tsv file
+#' @param cutoff A TSS enrichment cutoff score for low quality scores
 #' @keywords TSS scores
 #' @export
-plotTSSscores <- function(prj, stats) {
+plotTSSscores <- function(prj, stats, cutoff=6) {
     align_theme <- theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
@@ -1516,11 +2076,11 @@ plotTSSscores <- function(prj, stats) {
 
     # Establish red/green color scheme
     red_min      <- 0
-    red_max      <- TSS_CUTOFF-0.01
+    red_max      <- cutoff-0.01
     red_breaks   <- seq(red_min,red_max,0.01)
     red_colors   <- colorpanel(length(red_breaks),
                                "#AF0000","#E40E00","#FF7A6A")
-    green_min    <- TSS_CUTOFF
+    green_min    <- cutoff
     green_max    <- 30
     green_breaks <- seq(green_min,green_max,0.01)
     green_colors <- colorpanel(length(green_breaks)-1,
@@ -1531,8 +2091,8 @@ plotTSSscores <- function(prj, stats) {
     TSS_score <- tryCatch(
         {
             cbind.data.frame(sample=stats$sample_name, 
-                             TSS=round(stats$TSS_Score, digits=2),
-                             QCcolor=(TSS_colors[round(stats$TSS_Score+0.01,
+                             TSS=round(stats$TSS_score, digits=2),
+                             QCcolor=(TSS_colors[round(stats$TSS_score+0.01,
                                                       digits=2)*100]))
         },
         error=function(e) {
@@ -1553,7 +2113,7 @@ plotTSSscores <- function(prj, stats) {
         quit()
     }
 
-    max_TSS      <- max(stats$TSS_Score, na.rm=TRUE)
+    max_TSS      <- max(stats$TSS_score, na.rm=TRUE)
     upper_limit  <- roundUpNice(max_TSS)
     chart_height <- (length(unique(TSS_score$sample))) * 0.75
 
@@ -1616,7 +2176,7 @@ plotTSSscores <- function(prj, stats) {
 #' @param stats A looper derived stats_summary.tsv file
 #' @keywords library size
 #' @export
-plotTSSscores <- function(prj, stats) {
+plotLibSizes <- function(prj, stats) {
     align_theme <- theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
@@ -1681,14 +2241,13 @@ plotTSSscores <- function(prj, stats) {
 
 #' This function is meant to plot multiple summary graphs from the summary table 
 #' made by the Looper summarize command
-#' **Unimplemented** Looper can't take arguments...
 #'
 #' @param pep A PEP configuration file
 #' @keywords summarize PEPATAC
 #' @export
 summarizer <- function(pep) {
     # Load PEP configuration file
-    prj <- suppressWarnings(Project(pep))
+    prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
     # Build the stats summary file path
     summary_file <- file.path(config(prj)$metadata$output_dir,
@@ -1706,11 +2265,9 @@ summarizer <- function(pep) {
                                         header=TRUE,
                                         check.names=FALSE))
     } else {
-        message("PEPATAC.R summarizer was unable to locate the summary file.")
-        quit()
+        warning("PEPATAC.R summarizer was unable to locate the summary file.")
+        return(NULL)
     }
-
-    message("Generating plots (png/pdf) using ", summary_file)
 
     # Set absent values in table to zero
     stats[is.na(stats)]   <- 0
@@ -1730,17 +2287,410 @@ summarizer <- function(pep) {
     # plot library sizes if that was calculated
     if (any(!is.na(stats$Picard_est_lib_size))) {
         plotLibSize(prj, stats)
-    } else {quit()}
+    }
+    return(TRUE)
+}
+
+
+#' Count the number of times a peak appears across a list of peak files
+#'
+#' @param peakList A list of data.table objects representing
+#'                 narrowPeak files
+#' @param peakDT A single data.table of peaks
+countReproduciblePeaks <- function(peakList, peakDT) {
+    setkey(peakDT, chr, start, end)
+    setkey(peakList, chr, start, end)
+    hits <- foverlaps(peakList, peakDT,
+                      by.x=c("chr", "start", "end"),
+                      type="any", which=TRUE, nomatch=0)
+    # track the number of overlaps of final peak set peaks
+    if (!"count" %in% colnames(peakDT)) {
+        peakDT[hits$yid, count := 1]
+        peakDT[is.na(get("count")), ("count") := 0]
+    } else {
+        peakDT[hits$yid, count := get("count") + 1] 
+    }
 }
 
 
 #' This function is meant to identify a project level set of consensus peaks.
-#' **Unimplemented** Looper can't take arguments...
 #'
 #' @param pep A PEP configuration file
 #' @keywords consensus peaks
 #' @export
 consensusPeaks <- function(pep) {
+    # Identify the project configuration file
+    prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
+    # generate initial peak set
+    info <- capture.output({ 
+        numSamples <- length(samples(prj)$sample_name)
+    })
+    peakList <- data.table(peakFiles = list(numSamples))
+    genome   <- invisible(config(prj)$implied_attributes[[1]][[1]]$genome)
+
+    c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
+                      paste0(genome, "/fasta.chrom_sizes")), stdout=TRUE)
+
+    if (file.exists(c_path)) {
+        c_size <- fread(c_path)
+        colnames(c_size) <- c("chr", "size")
+    } else {
+        warning("Unable to load the chromosome sizes file.")
+        warning(paste0("Confirm that ", c_path,
+                       " is present before continuing."))
+        return(NULL)
+    }
+
+    # generate paths to peak files
+    info <- capture.output({ 
+      peakList[,peakFiles:=.(list(unique(file.path(config(prj)$metadata$output_dir,
+               paste0("results_pipeline/", samples(prj)$sample_name),
+               paste0("peak_calling_", genome),
+               paste0(samples(prj)$sample_name,
+               "_peaks_normalized.narrowPeak")))))]
+    })
+
+    final <- data.table(chr=character(),
+                        start=integer(),
+                        end=integer(),
+                        name=character(),
+                        score=numeric(),
+                        strand=character(),
+                        signalValue=numeric(),
+                        pValue=numeric(),
+                        qValue=numeric(),
+                        peak=integer())
+
+    fileList  <- peakList$peakFiles[[1]]
+
+    if (length(fileList) > 1) {
+        finalList <- character()
+        for (i in 1:length(fileList)) {
+            if(file.exists(file.path(fileList[i]))) {
+                finalList <- append(finalList,fileList[i])
+            }
+        }
+    } else if (length(fileList) == 1 ) {
+        warning("Found only a single peak file.")
+        warning("Does your project include more than one sample?")
+        return(NULL)
+    } else {
+        warning("Unable to find any peak files.")
+        warning("Confirm peak files exist for your samples.")
+        return(NULL)
+    }
+
+    if (length(finalList) >= 1) {
+        # create combined peaks
+        peaks           <- rbindlist(lapply(finalList, fread))
+        colnames(peaks) <- c("chr", "start", "end", "name", "score",
+                             "strand", "signalValue", "pValue", "qValue",
+                             "peak")
+        setkey(peaks, chr, start, end)
+        # keep highest scored peaks
+        hits    <- foverlaps(peaks, peaks,
+                             by.x=c("chr", "start", "end"),
+                             type="any", which=TRUE, nomatch=0)
+        scores  <- data.table(index=rep(1:nrow(peaks)), score=peaks$score)
+        setkey(hits, xid)
+        setkey(scores, index)
+        out     <- hits[scores, nomatch=0]
+        keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
+        indices <- unique(keep$xid)
+        final   <- peaks[indices,]
+        # trim any bad peaks (extend beyond chromosome)
+        # can't be negative
+        final[start < 0, start := 0]
+        # can't extend past chromosome
+        for (i in nrow(c_size)) {
+            final[chr == c_size$chr[i] & end > c_size$size[i],
+                  end := c_size$size[i]]
+        }
+
+        # identify reproducible peaks
+        peakSet <- copy(peaks)
+        peakSet[,group := gsub("_peak.*","",name)]
+        peakList <- splitDataTable(peakSet, "group")
+        original <- copy(final)
+
+        invisible(sapply(peakList, countReproduciblePeaks, peakDT=final))
+
+        # keep peaks present in 2 or more individual peak sets
+        # keep peaks with score per million >= 5
+        final <- final[count >= 2 & score >= 5,]
+        final[,count := NULL]
+
+        # Produce output directory
+        dir.create(
+            suppressMessages(file.path(config(prj)$metadata$output_dir,
+                             "summary")),
+            showWarnings = FALSE)
+
+        if (exists("final")) {
+            # save consensus peak set
+            fwrite(final, buildFilePath("_consensusPeaks.narrowPeak", prj),
+                   sep="\t", col.names=FALSE)
+        } else {
+            warning("Unable to produce a consensus peak file.")
+            warning("Check that individual peak files exist for your samples.")
+            return(NULL)
+        }
+    } else {
+        warning("Unable to produce a consensus peak file.")
+        return(NULL)
+    }
+    return(buildFilePath("_consensusPeaks.narrowPeak", prj))
+}
+
+
+#' Read PEPATAC peak coverage files
+#'
+#' @param pep A PEPr project object
+#' @keywords project peak coverage
+#' @export
+readPepatacPeakCounts = function(prj) {
+    project_dir    <- pepr::config(prj)$metadata$output_dir
+    sample_names   <- pepr::samples(prj)$sample_name
+    genomes        <- as.list(pepr::samples(prj)$genome)
+    names(genomes) <- sample_names
+    paths          <- vector("list", length(sample_names))
+    names(paths)   <- sample_names
+
+    # Use reference peak coverage file if available
+    if (any(file.exists(file.path(project_dir, "results_pipeline",
+                        sample_names, paste0("peak_calling_", genomes),
+                        paste0(sample_names, "_ref_peaks_coverage.bed"))))) {
+        peak_file = "_ref_peaks_coverage.bed"
+    } else {
+        warning("Peak coverage files are not derived from a singular reference peak set.")
+        peak_file = "_peaks_coverage.bed"
+    }
+
+    for (sample in sample_names) {
+        paths[[sample]] <- paste(project_dir, 'results_pipeline', sample,
+                                 paste0('peak_calling_', genomes[[sample]]),
+                                 paste0(sample, peak_file),
+                                 sep="/")
+    }
+
+    result <- lapply(paths, function(x){
+        info <- file.info(file.path(x))
+        if (file.exists(x) && info$size != 0) {
+            df <- fread(x)
+            colnames(df) <- c("chr", "start", "end", "read_count",
+                              "base_count", "width", "frac", "norm")
+            gr <- GenomicRanges::GRanges(df) 
+        } else {
+            gr <- GenomicRanges::GRanges() 
+        }
+    })
+    return(GenomicRanges::GRangesList(Filter(length, result)))
+}
+
+
+#' Produce a project level peak counts table
+#'
+#' @param pep A PEP configuration file
+#' @keywords project peak counts
+#' @export
+peakCounts <- function(pep) {
+    # Identify the project configuration file
+    prj <- invisible(suppressWarnings(pepr::Project(pep)))
+
+    project_dir    <- pepr::config(prj)$metadata$output_dir
+    sample_names   <- pepr::samples(prj)$sample_name
+    genomes        <- as.list(pepr::samples(prj)$genome)
+    names(genomes) <- sample_names
+    sample_names   <- as.character(pepr::samples(prj)$sample_name)
+    
+    c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
+                      paste0(unique(genomes), "/fasta.chrom_sizes")),
+                      stdout=TRUE)
+
+    if (file.exists(c_path)) {
+        c_size <- fread(c_path)
+        colnames(c_size) <- c("chr", "size")
+    } else {
+        warning("Unable to load the chromosome sizes file.")
+        warning(paste0("Confirm that ", c_path,
+                       " is present before continuing."))
+        return(NULL)
+    }
+    
+    # Use reference peak coverage file if available
+    if (any(file.exists(file.path(project_dir, "results_pipeline",
+                        sample_names, paste0("peak_calling_", genomes),
+                        paste0(sample_names, "_ref_peaks_coverage.bed"))))) {
+        peak_file_name = "_ref_peaks_coverage.bed"
+        reference = TRUE
+    } else {
+        warning("Peak coverage files are not derived from a singular reference peak set.")
+        reference = FALSE
+        peak_file_name = "_peaks_coverage.bed"
+    }
+    
+    peak_files <- file.path(project_dir, "results_pipeline",
+                         sample_names, paste0("peak_calling_", genomes),
+                         paste0(sample_names, peak_file_name))
+
+    if (reference) {
+        peaks_dt = data.table(chr=as.character(),
+                              start=as.numeric(),
+                              end=as.numeric(),
+                              name=as.character(),
+                              score=as.numeric(),
+                              strand=as.character(),
+                              signalValue=as.numeric(),
+                              pValue=as.numeric(),
+                              qValue=as.numeric(),
+                              peak=as.numeric(),
+                              read_count=as.numeric(),
+                              base_count=as.numeric(),
+                              width=as.numeric(),
+                              frac=as.numeric(),
+                              norm=as.numeric(),
+                              group=as.character())
+
+        # Load peak files
+        num_files <- 0
+        name_list <- as.character()
+        for (file in peak_files) {
+            info <- file.info(file.path(file))
+            if (file.exists(file.path(file)) && info$size != 0) {
+                num_files <- num_files + 1
+                peaks     <- fread(file)
+                name      <- gsub(peak_file_name, "", basename(file))
+                name_list <- append(name_list, name)
+                colnames(peaks) <- c("chr", "start", "end", "name", "score",
+                                     "strand", "signalValue", "pValue",
+                                     "qValue", "peak", "read_count",
+                                     "base_count", "width", "frac", "norm")
+                peaks$group <- name
+                setkey(peaks, chr, start, end)
+                peaks_dt <- rbind(peaks_dt, peaks)
+            }
+        }
+        peak_list  <- splitDataTable(peaks_dt, "group")
+        # confirm identical chr, start, end coordinates exist in all peak files
+        same <- all(sapply(lapply(peak_list, function(x) {x[,c(1:3)]}),
+                    identical,
+                    lapply(peak_list, function(x) {x[,c(1:3)]})[[1]]))
+        if (same) {
+            new_list <- lapply(names(peak_list), function(x){
+                colnames(peak_list[[x]]) <- c("chr", "start", "end", "name",
+                                              "score", "strand", "signalValue",
+                                              "pValue", "qValue", "peak",
+                                              "read_count", "base_count",
+                                              "width", "frac", x, "group")
+                peak_list[[x]]
+            })
+            names(new_list) <- names(peak_list)
+            reduce_dt <- Reduce(function(...) merge(..., all=F),
+                                lapply(new_list, function(x) {x[,c(1:3,15)]}))
+        } else {
+            warning("Reference peak set is inconsistent between samples")
+            warning("Confirm the same reference peak set was passed to `--frip-ref-peaks`")
+            return(NULL)
+        }
+    } else {
+        peaks_dt = data.table(chr=as.character(),
+                              start=as.numeric(),
+                              end=as.numeric(),
+                              read_count=as.numeric(),
+                              base_count=as.numeric(),
+                              width=as.numeric(),
+                              frac=as.numeric(),
+                              norm=as.numeric())
+        # Concatenate peak files
+        for (file in peak_files) {
+            info <- file.info(file.path(file))
+            if (file.exists(file.path(file)) && info$size != 0) {
+                peaks <- fread(file)
+                colnames(peaks) <- c("chr", "start", "end", "read_count",
+                                     "base_count", "width", "frac", "norm")
+                setkey(peaks, chr, start, end)
+                peaks_dt <- rbind(peaks_dt, peaks)
+            }
+        }
+        
+        peaksGR   <- makeGRangesFromDataFrame(peaks_dt, keep.extra.columns=T)
+        reduceGR  <- reduce(peaksGR)
+        
+        # instead, different column for each sample is the counts columns, plural
+        reduce_dt <- data.table(chr=as.character(seqnames(reduceGR)),
+                                start=start(reduceGR),
+                                end=end(reduceGR))
+        f <- function(x) {list(0)}
+        reduce_dt[, (sample_names) := f()]
+       
+        # for each peak file
+        for (file in peak_files) {
+            info <- file.info(file.path(file))
+            if (file.exists(file.path(file)) && info$size != 0) {
+                peaks   <- fread(file)
+                name    <- gsub("_peaks_coverage.bed","", basename(file))
+                colnames(peaks) <- c("chr", "start", "end", "read_count",
+                                     "base_count", "width", "frac", "norm")
+                setkey(peaks, chr, start, end)
+                
+                reduceGR <- makeGRangesFromDataFrame(reduce_dt)
+                peaksGR  <- makeGRangesFromDataFrame(peaks)
+                hitsGR   <- findOverlaps(query=reduceGR, subject=peaksGR)
+
+                # Weight counts by percent overlap
+                olap   <- pintersect(reduceGR[queryHits(hitsGR)],
+                                     peaksGR[subjectHits(hitsGR)])
+                polap  <- width(olap) / width(peaksGR[subjectHits(hitsGR)])
+                counts <- data.table(index=rep(1:nrow(peaks)),
+                                     counts=peaks$norm*polap)
+                hits   <- data.table(xid=queryHits(hitsGR),
+                                     yid=subjectHits(hitsGR))
+                setkey(hits, yid)
+                setkey(counts, index)
+                out    <- hits[counts, nomatch=0]
+                keep   <- out[out[,.I[which.max(counts)],by=yid]$V1]
+                reduce_dt[keep$xid][[name]] <- keep$counts
+            }
+        }
+        # trim any bad peaks (extend beyond chromosome)
+        # can't be negative
+        reduce_dt[start < 0, start := 0]
+        # ensure sorted
+        setorderv(reduce_dt, cols = c("chr", "start"))
+        # can't extend past chromosome
+        for (i in nrow(c_size)) {
+            reduce_dt[chr == c_size$chr[i] & end > c_size$size[i],
+                      end := c_size$size[i]]
+        }
+        columnIndices <- c(4:ncol(reduce_dt))
+        # Drop regions with no coverage
+        keepRows      <- rowMeans(reduce_dt[, ..columnIndices]) > 0
+        reduce_dt     <- reduce_dt[keepRows]
+        # identify reproducible peaks
+        reduce_dt$count <- apply(reduce_dt[, ..columnIndices], 1,
+                                 function(x) sum(x > 0))
+        # keep peaks present in 2 or more individual peak sets
+        reduce_dt <- reduce_dt[count >= 2,]
+        reduce_dt[,count := NULL]
+    }
+    # Create matrix rownames
+    reduce_dt <- cbind(name=paste(reduce_dt$chr,
+                                  reduce_dt$start,
+                                  reduce_dt$end, sep="_"),
+                       reduce_dt)
+    reduce_dt <- reduce_dt[,-c("chr","start","end")]
+
+    # save counts table
+    if (exists("reduce_dt")) {
+            countsPath <- buildFilePath("_peaks_coverage.tsv", prj)
+            # save consensus peak set
+            fwrite(reduce_dt, countsPath, sep="\t", col.names=TRUE)
+            return(countsPath)
+    } else {
+        warning("Unable to produce a peak coverage file.")
+        warning("Check that individual peak coverage files exist for your samples.")
+        return(NULL)
+    }
 }
 ################################################################################

@@ -1,121 +1,45 @@
-protocol_mapping:
-  ATAC: pepatac.py
-  atac: pepatac.py
-  ATAC-SEQ: pepatac.py 
-  ATAC-seq: pepatac.py
-  atac-seq: pepatac.py
+sample_pipeline:
+  name: PEPATAC
+  path: pipelines/pepatac.py
+  schema: pepatac_input_schema.yaml
+  output_schema: pepatac_output_schema.yaml
+  command_template: >
+    {pipeline.path}
+    --sample-name {sample.sample_name}
+    --genome {sample.genome}
+    --input {sample.read1}
+    --single-or-paired {sample.read_type}
+    -O {looper.output_folder}
+    -P {compute.cores}
+    -M {compute.mem}
+    {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
+    {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
+    {% if sample.FRIP_ref is defined %} --frip-ref-peaks {sample.FRIP_ref} {% endif %}
+    {% if sample.prealignments is defined %} --prealignments {sample.prealignments} {% endif %}
+    {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
+    {% if sample.trimmer is defined %} --trimmer {sample.trimmer} {% endif %}
+    {% if sample.macs_genome_size is defined %} --genome-size {sample.macs_genome_size} {% endif %}
+    {% if sample.TSS_name is defined %} --TSS-name {sample.TSS_name} {% endif %}
+    {% if sample.anno_name is defined %} --anno_name {sample.anno_name} {% endif %}
+    {% if sample.keep is defined %} --keep {sample.keep} {% endif %}
+    {% if sample.no_fifo is defined %} --noFIFO {sample.no_fifo} {% endif %}
+    {% if sample.lite is defined %} --lite {sample.lite} {% endif %}
+  compute:
+    singularity_image: ${SIMAGES}pepatac
+    docker_image: databio/pepatac
+    bulker_crate: databio/pepatac
+    size_dependent_variables: resources.tsv
 
-pipelines:
-  pepatac.py:
-    name: PEPATAC
-    path: pipelines/pepatac.py
-    looper_args: True
-    required_input_files: [read1]
-    all_input_files: [read1, read2]
-    ngs_input_files: [read1, read2]
-    arguments:
-      "--sample-name": sample_name
-      "--genome": genome
-      "--input": read1
-      "--single-or-paired": read_type
-    optional_arguments:
-      "--input2": read2
-      "--peak-caller": peak_caller
-      "--genome-size": macs_genome_size
-      "--trimmer": trimmer
-      "--prealignments": prealignments
-      "--deduplicator": deduplicator
-      "--TSS-name": TSS_name
-      "--blacklist": blacklist
-      "--peak-type": peak_type
-      "--extend": extend
-      "--frip-ref-peaks": frip_ref_peaks
-      "--motif": motif
-      "--anno-name": anno_name
-      "--prioritize": prioritize
-      "--keep": keep
-      "--noFIFO": no_fifo
-      "--lite": lite
-    command_template: >
-      {pipeline.path}
-      --sample-name {sample.sample_name}
-      --genome {sample.genome}
-      --input {sample.read1}
-      --single-or-paired {sample.read_type}
-      {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
-      {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
-      {% if sample.FRIP_ref is defined %} --frip-ref-peaks {sample.FRIP_ref} {% endif %}
-      {% if sample.prealignments is defined %} --prealignments {sample.prealignments} {% endif %}
-      {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
-      {% if sample.trimmer is defined %} --trimmer {sample.trimmer} {% endif %}
-      {% if sample.macs_genome_size is defined %} --genome-size {sample.macs_genome_size} {% endif %}
-      {% if sample.TSS_name is defined %} --TSS-name {sample.TSS_name} {% endif %}
-      {% if sample.anno_name is defined %} --anno_name {sample.anno_name} {% endif %}
-      {% if sample.keep is defined %} --keep {sample.keep} {% endif %}
-      {% if sample.no_fifo is defined %} --noFIFO {sample.no_fifo} {% endif %}
-      {% if sample.lite is defined %} --lite {sample.lite} {% endif %}
-    outputs:
-      smooth_bw: "aligned_{sample.genome}/{sample.sample_name}_smooth.bw"
-      exact_bw:  "aligned_{sample.genome}_exact/{sample.sample_name}_exact.bw"
-      aligned_bam: "aligned_{sample.genome}/{sample.sample_name}_sort.bam"
-      # pre_smooth_bw: "aligned_{project.prealignments}/{sample.sample_name}_smooth.bw"
-      peaks_bed: "peak_calling_{sample.genome}/{sample.sample_name}_peaks.bed"
-      summits_bed: "peak_calling_{sample.genome}/{sample.sample_name}_summits.bed"
-    compute:
-      singularity_image: ${SIMAGES}pepatac
-      docker_image: databio/pepatac
-      bulker_crate: databio/pepatac
-    summarizers:
-      - tools/PEPATAC_summarizer.R
-      - tools/PEPATAC_consensusPeaks.R
-    bioconductor:
-      readFunName: readPepatacPeakBeds
-      readFunPath: BiocProject/readPepatacPeakBeds.R
-    summary_results:
-      - alignment_percent_file:
-        caption: "Alignment percent file"
-        description: "Plots percent of total alignment to all pre-alignments and primary genome."
-        thumbnail_path: "summary/{name}_alignmentPercent.png"
-        path: "summary/{name}_alignmentPercent.pdf"
-      - alignment_raw_file:
-        caption: "Alignment raw file"
-        description: "Plots raw alignment rates to all pre-alignments and primary genome."
-        thumbnail_path: "summary/{name}_alignmentRaw.png"
-        path: "summary/{name}_alignmentRaw.pdf"
-      - tss_file:
-        caption: "TSS enrichment file"
-        description: "Plots TSS scores for each sample."
-        thumbnail_path: "summary/{name}_TSSEnrichment.png"
-        path: "summary/{name}_TSSEnrichment.pdf"
-    resources:
-      default:
-        file_size: "0"
-        cores: "8"
-        mem: "16000"
-        time: "00-18:00:00"
-      femto:
-        file_size: "0.001"
-        cores: "1"
-        mem: "8000"
-        time: "00-04:00:00"
-      pico:
-        file_size: "0.05"
-        cores: "2"
-        mem: "12000"
-        time: "00-08:00:00"
-      nano:
-        file_size: "0.5"
-        cores: "4"
-        mem: "16000"
-        time: "00-12:00:00"
-      micro:
-        file_size: "1"
-        cores: "8"
-        mem: "16000"
-        time: "00-24:00:00"
-      milli:
-        file_size: "10"
-        cores: "16"
-        mem: "32000"
-        time: "02-00:00:00"
+project_pipeline:
+  name: PEPATAC_collator1
+  path: pipelines/pepatac_collator.py
+  command_template: >
+    {pipeline.path} -c {looper.pep_config} -o {looper.output_folder} -n {project.name}
+  compute:
+    singularity_image: ${SIMAGES}pepatac
+    bulker_crate: databio/pepatac
+    size_dependent_variables: resources.tsv
 
+bioconductor:
+  readFunName: readPepatacPeakBeds
+  readFunPath: BiocProject/readPepatacPeakBeds.R
