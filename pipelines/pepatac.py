@@ -835,12 +835,16 @@ def main():
     unmap_fq1 = unmap_fq1 + ".gz"
     unmap_fq2 = unmap_fq2 + ".gz"
 
+    bt2_index = os.path.join(rgc.seek(reference, BT2_IDX_KEY))
+    if not bt2_index.endswith(reference):
+        bt2_index = os.path.join(
+            rgc.seek(reference, BT2_IDX_KEY), reference)
+
+
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
     cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
-    cmd += " -x " + os.path.join(
-        rgc.seek(args.genome_assembly, BT2_IDX_KEY),
-                      args.genome_assembly)
+    cmd += " -x " + bt2_index
     if args.paired_end:
         cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
     else:
