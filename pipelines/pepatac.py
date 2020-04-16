@@ -466,7 +466,7 @@ def main():
 
     args = parse_arguments()
 
-    args.paired_end = args.single_or_paired == "paired"
+    args.paired_end = args.single_or_paired.lower() == "paired"
 
     # Initialize, creating global PipelineManager and NGSTk instance for
     # access in ancillary functions outside of main().
