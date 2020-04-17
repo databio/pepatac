@@ -1,4 +1,4 @@
-description: A PEP for nascent ATAC-seq samples for the PEPATAC pipeline.
+description: A PEP for ATAC-seq samples for the PEPATAC pipeline.
 imports: http://schema.databio.org/pep/2.0.0.yaml
 properties:
   samples:
