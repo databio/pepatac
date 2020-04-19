@@ -2,7 +2,7 @@ pipeline_name: PEPATAC
 sample_pipeline:
   name: PEPATAC
   path: pipelines/pepatac.py
-  schema: pepatac_input_schema.yaml
+  input_schema: pepatac_input_schema.yaml
   output_schema: pepatac_output_schema.yaml
   command_template: >
     {pipeline.path}
