@@ -1647,7 +1647,7 @@ setPanelSize <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 #' @param pep A PEP project configuration file
 #' @export
 buildFilePath <- function(suffix, pep=prj) {
-    file.path(config(pep)$metadata$output_dir, "summary",
+    file.path(pepr::config(pep)$looper$output_dir, "summary",
               paste0(config(pep)$name, suffix))
 }
 
@@ -2250,13 +2250,13 @@ summarizer <- function(pep) {
     prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
     # Build the stats summary file path
-    summary_file <- file.path(config(prj)$metadata$output_dir,
+    summary_file <- file.path(pepr::config(prj)$looper$output_dir,
                               paste0(config(prj)$name, "_stats_summary.tsv"))
 
     # Produce output directory
     dir.create(
         suppressMessages(
-            file.path(config(prj)$metadata$output_dir, "summary")),
+            file.path(pepr::config(prj)$looper$output_dir, "summary")),
         showWarnings = FALSE)
 
     # read in stats summary file
@@ -2344,7 +2344,7 @@ consensusPeaks <- function(pep) {
 
     # generate paths to peak files
     info <- capture.output({ 
-      peakList[,peakFiles:=.(list(unique(file.path(config(prj)$metadata$output_dir,
+      peakList[,peakFiles:=.(list(unique(file.path(pepr::config(prj)$looper$output_dir,
                paste0("results_pipeline/", samples(prj)$sample_name),
                paste0("peak_calling_", genome),
                paste0(samples(prj)$sample_name,
@@ -2423,7 +2423,7 @@ consensusPeaks <- function(pep) {
 
         # Produce output directory
         dir.create(
-            suppressMessages(file.path(config(prj)$metadata$output_dir,
+            suppressMessages(file.path(pepr::config(prj)$looper$output_dir,
                              "summary")),
             showWarnings = FALSE)
 
@@ -2450,9 +2450,9 @@ consensusPeaks <- function(pep) {
 #' @keywords project peak coverage
 #' @export
 readPepatacPeakCounts = function(prj) {
-    project_dir    <- pepr::config(prj)$metadata$output_dir
-    sample_names   <- pepr::samples(prj)$sample_name
-    genomes        <- as.list(pepr::samples(prj)$genome)
+    project_dir    <- pepr::config(prj)$looper$output_dir
+    sample_names   <- pepr::sampleTable(prj)$sample_name
+    genomes        <- as.list(pepr::sampleTable(prj)$genome)
     names(genomes) <- sample_names
     paths          <- vector("list", length(sample_names))
     names(paths)   <- sample_names
@@ -2498,11 +2498,11 @@ peakCounts <- function(pep) {
     # Identify the project configuration file
     prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
-    project_dir    <- pepr::config(prj)$metadata$output_dir
-    sample_names   <- pepr::samples(prj)$sample_name
-    genomes        <- as.list(pepr::samples(prj)$genome)
+    project_dir    <- pepr::config(prj)$looper$output_dir
+    sample_names   <- pepr::sampleTable(prj)$sample_name
+    genomes        <- as.list(pepr::sampleTable(prj)$genome)
     names(genomes) <- sample_names
-    sample_names   <- as.character(pepr::samples(prj)$sample_name)
+    sample_names   <- as.character(pepr::sampleTable(prj)$sample_name)
     
     c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
                       paste0(unique(genomes), "/fasta.chrom_sizes")),
