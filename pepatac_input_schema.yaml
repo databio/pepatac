@@ -15,7 +15,6 @@ properties:
         protocol: 
           type: string
           description: "Must be an ATAC-seq or DNAse-seq sample"
-          enum: ["ATAC", "ATAC-SEQ", "ATAC-seq", "DNase", "DNase-seq"]
         genome:
           type: string
           description: "Refgenie genome registry identifier"
