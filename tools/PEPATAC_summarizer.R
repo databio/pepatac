@@ -103,9 +103,9 @@ if (!file.exists(complexity_path)) {
                 sep="/")
     rc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
                 "results_pipeline",
-                suppressMessages(pepr::samples(prj)$sample_name),
-                paste0("QC_", suppressMessages(pepr::samples(prj)$genome)),
-                paste0(suppressMessages(pepr::samples(prj)$sample_name),
+                suppressMessages(pepr::sampleTable(prj)$sample_name),
+                paste0("QC_", suppressMessages(pepr::sampleTable(prj)$genome)),
+                paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_counts.txt"),
                 sep="/")
 
