@@ -834,7 +834,7 @@ def main():
 
     unmap_fq1 = unmap_fq1 + ".gz"
     unmap_fq2 = unmap_fq2 + ".gz"
-
+    reference = args.genome_assembly
     bt2_index = os.path.join(rgc.seek(reference, BT2_IDX_KEY))
     if not bt2_index.endswith(reference):
         bt2_index = os.path.join(
