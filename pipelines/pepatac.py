@@ -1546,8 +1546,6 @@ def main():
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
     peak_input_file = shift_bed
-    bigNarrowPeak = os.path.join(peak_folder,
-                                 args.sample_name + "_peaks.bigBed")
     peak_bed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
     chr_order = os.path.join(peak_folder, "chr_order.txt")
     chr_keep = os.path.join(peak_folder, "chr_keep.txt")
@@ -1792,6 +1790,10 @@ def main():
         ########################################################################
         pm.timestamp("### # Produce bigBed formatted narrowPeak file")
 
+        bigNarrowPeak = os.path.join(peak_folder,
+                                     args.sample_name + "_peaks.bigBed")
+        temp = tempfile.NamedTemporaryFile(dir=peak_folder, delete=False)
+
         if not os.path.exists(bigNarrowPeak) or args.new_start:
             df = pd.read_csv(peak_output_file, sep='\t', header=None,
                              names=("V1","V2","V3","V4","V5","V6",
@@ -1819,6 +1821,8 @@ def main():
             df = df.drop(columns=["V11"])
             # ensure score is a whole integer value
             df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
+            df.to_csv(temp.name)
+            #pm.clean_add(temp.name)
 
             as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
             cmd = ("echo 'table bigNarrowPeak\n" + 
@@ -1838,8 +1842,7 @@ def main():
             pm.run(cmd, as_file, clean=True)
 
             cmd = (tools.bedToBigBed + " -as=" + as_file + " -type=bed6+4 " +
-                   peak_output_file + " " + res.chrom_sizes + " " +
-                   bigNarrowPeak)
+                   temp.name + " " + res.chrom_sizes + " " + bigNarrowPeak)
             pm.run(cmd, bigNarrowPeak, nofail=True)
 
 
@@ -1955,7 +1958,7 @@ def main():
     FRiF_PDF = os.path.join(QC_folder, args.sample_name + "_FRiF.pdf")
     FRiF_PNG = os.path.join(QC_folder, args.sample_name + "_FRiF.png")
 
-    if not os.path.exists(cFRiF_PDF) or args.new_start:
+    if not os.path.exists(cFRiF_PDF) and not os.path.exists(FRiF_PDF) or args.new_start:
         if (not os.path.exists(anno_local) and
             os.path.exists(res.feat_annotation) or
             args.new_start):
