@@ -267,6 +267,8 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 pm.run(filter_pair, [summary_file, out_fastq_r2_gz])
                 pm.wait = True
                 pm.run(cmd, [summary_file, out_fastq_r2_gz])
+                import time
+                time.sleep(15)
         else:
             if args.keep:
                 pm.run(cmd, mapped_bam)
