@@ -1172,7 +1172,13 @@ plotFLD <- function(fragL,
     if (exists(fragL_count)) {
         dat <- data.table(get(fragL_count))
     } else if (file.exists(fragL_count)) {
-        dat <- fread(fragL_count)
+        info <- file.info(file.path(fragL_count))
+        if (info$size != 0) {
+            dat <- fread(fragL_count)
+        } else {
+            warning(paste0(fragL_count, " is an empty file."))
+            return(ggplot())
+        }
     } else {
         stop(paste0("FileExistsError: ", fragL_count, " could not be found."))
         quit(save = "no", status = 1, runLast = FALSE)
@@ -1207,16 +1213,6 @@ plotFLD <- function(fragL,
     p <- ggplot(dat3, aes(x=V2, y=V1/count_factor)) +
             geom_point(size=1, alpha=0.25) +
             geom_line(alpha=0.5) +
-            # annotate("rect", xmin=-Inf, xmax=20, ymin=-Inf, ymax=Inf,
-            #      alpha=0.1, fill="#ff001e") +
-            # annotate("text", x=25, y=(max(dat1$V1)/2),
-            #          size=theme_get()$text[["size"]]/4,
-            #          label="partial degradation", angle=90, col="#858585") +
-            # annotate("rect", xmin=-Inf, xmax=30, ymin=-Inf, ymax=Inf,
-            #          alpha=0.1, fill="#ffee00") + 
-            # annotate("text", x=7.5, y=(max(dat1$V1)/2),
-            #          size=theme_get()$text[["size"]]/4,
-            #          label="high degradation", angle=90, col="#858585") +
             labs(x="Fragment length", y=ylabel) +
             theme_PEPATAC() +
             theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
@@ -1313,6 +1309,8 @@ filetype <- function(path){
 #' @param path A path to a file for which you wish to extract the sample name
 #' @param num_fields An integer representing the number of fields to strip
 #' @param delim A delimiter for the fields splitting a path or string
+#'
+#' @export
 sampleName <- function(path, num_fields=2, delim='_') {
     name <- basename(tools::file_path_sans_ext(path))
     if(num_fields == 0) {return(name)}
@@ -1475,14 +1473,17 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 
     if (file.exists(file.path(chr_sizes))) {
         chrom_sizes <- fread(file.path(chr_sizes))
+        colnames(chrom_sizes) <- c("chr", "size")
     } else {
-        err_msg = paste0("Could not find: ", file.path(chr_sizes))
+        err_msg <- paste0("Could not find: ", file.path(chr_sizes))
         stop(err_msg)
     }
 
     info = file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
-        np     <- fread(file.path(input))
+        np           <- fread(file.path(input))
+        colnames(np) <- c("chr", "start", "end", "name", "score", "strand",
+                          "signalValue", "pValue", "qValue", "peak")
     } else {
       out_file <- file.path(paste0(sample_path, "_peaks.bigBed"))
       system2(paste("touch"), out_file)
@@ -1491,19 +1492,26 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 
     # some 'score' values are greater than 1000 (more than BED format allows); 
     # rescale the scores to 0-1000 based on the 99th percentile being 1000
-    nineNine <- quantile(np$V5, 0.99)
-    np$V5    <- replace(np$V5, np$V5 > nineNine, nineNine)
-    np$V5    <- rescale(log(np$V5), to = c(0, 1000))
+    nineNine <- quantile(np$score, 0.99)
+    np$score <- replace(np$score, np$score > nineNine, nineNine)
+    np$score <- rescale(log(np$score), to = c(0, 1000))
 
-    np           <- merge(np, chrom_sizes, by="V1", sort=FALSE)
-    colnames(np) <- c("V1","V2","V3","V4","V5","V6","V7","V8","V9","V10","V11")
+    np           <- merge(np, chrom_sizes, by="chr", sort=FALSE)
+    colnames(np) <- c("chr", "start", "end", "name", "score", "strand",
+                      "signalValue", "pValue", "qValue", "peak", "max_size")
 
     # make sure 'end' positions are not greater than the max chrom.size
     for (j in 1:nrow(np)) {
-        if (np$V3[j] > np$V11[j]) np$V3[j] <- np$V11[j]
+        if (np$end[j] > np$max_size[j]) np$end[j] <- np$max_size[j]
     }
     np       <- np[,-11]
-    np$V5    <- as.integer(np$V5)  # ensure score is an integer value
+    np$score <- as.integer(np$score)  # ensure score is an integer value
+    
+    # can't extend past chromosome
+    for (i in nrow(chrom_sizes)) {
+        np[chr == c_size$chr[i] & end > c_size$size[i], end := c_size$size[i]]
+    }
+
     tmp_file <- file.path(paste0(sample_path, "_peaks.bed"))
     as_file  <- file.path(paste0(dirname(sample_path), "bigNarrowPeak.as"))
     out_file <- file.path(paste0(sample_path, "_peaks.bigBed"))
