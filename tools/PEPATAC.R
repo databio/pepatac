@@ -3,7 +3,7 @@
 # PEPATAC R parser
 
 ###############################################################################
-version <- 0.5
+version <- 0.6
 ##### Load dependencies #####
 
 required_libraries <- c("PEPATACr")
@@ -159,13 +159,13 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
                                required=FALSE, default=500000000,
                                description="Upper x-limit (default 500 million)")
 
-        p <- plotComplexityCurves(ccurves = input,
-                                  coverage = coverage,
-                                  read_length = read_length,
-                                  real_counts_path = real_counts,
-                                  ignore_unique = ign_unique,
-                                  x_min = x_min,
-                                  x_max = x_max)
+        p <- PEPATACr::plotComplexityCurves(ccurves = input,
+                                            coverage = coverage,
+                                            read_length = read_length,
+                                            real_counts_path = real_counts,
+                                            ignore_unique = ign_unique,
+                                            x_min = x_min,
+                                            x_max = x_max)
 
         if (length(input) == 1) {
             # now save the plot
@@ -203,14 +203,11 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         "Usage:   PEPPRO.R [command] {args}\n",
         "Version: ", version, "\n\n",
         "Command: frif \t plot fraction of reads in features\n\n",
-        " -s, --sample_name\t   Sample name.\n",
-        " -n, --num_reads\t\t   Number of mapped reads.\n",
-        " -z, --size\t\t   Size of genome (bp).\n",
-        " -y, --type\t Choose plot type: cFRiF, FRiF, or Both.\n",
-        " -o, --output_name\t   Output file name.\n",
-        " -b, --bed\t\t   Coverage file(s).\n"
+        " -i, --input\t   A file of regions to be annotated.\n",
+        " -p, --partitions\t\t   File of named and ordered genomic partitions.\n",
+        " -n, --names\t\t   Optional list of partition names.\n",
+        " -t, --type\t\t   Type of plot. Default='expected'.\n"
     )
-
     help <- opt_get(name = c("help", "?", "h"), required=FALSE,
                     default=FALSE, n=0)
     if (!help) {
@@ -222,33 +219,48 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         message(usage)
         quit()
     } else {
-        sample_name <- opt_get(name = c("sample_name", "s"), required=TRUE,
-                               description="Sample name.")
-        num_reads   <- opt_get(name = c("num_reads", "n"), required=TRUE,
-                               description="Number of mapped reads (or bases).")
-        genome_size <- opt_get(name = c("size", "z"), required=TRUE,
-                               description="Size of genome (bp).")
-        type        <- opt_get(name = c("type", "y"), required=FALSE, default="cfrif",
-                               description="Choose plot type: cFRiF, FRiF, or Both (Default = cfrif).")
-        reads       <- opt_get(name = c("reads", "r"), required=FALSE, default=FALSE,
-                               description="Calculate using reads (TRUE) or bases (FALSE) (Default = FALSE).")
-        output_name <- opt_get(name = c("output_name", "o"), required=TRUE,
-                               description="Output file name.")
-        numArgs     <- length(opt_get_args())
-        argGap      <- ifelse(reads, 13, 12)
-        bed         <- opt_get(name = c("bed", "b"), required=TRUE,
-                               n=(numArgs - argGap),
-                               description="Coverage file(s).")
+        input         <- opt_get(name = c("input", "i"), required=TRUE,
+                                 description="A file of regions to be annotated.")
+        input_format  <- opt_get(name = c("format", "f"), required=FALSE,
+                                 default="bed",
+                                 description="The input file format.")
+        partitions    <- opt_get(name = c("partitions", "p"), required=TRUE,
+                                 description="File of named and ordered genomic partitions.")
+        feature_names <- opt_get(name = c("names", "n"), required=FALSE,
+                                 default=c("Enhancer", "Promoter",
+                                           "Promoter Flanking Region",
+                                           "5' UTR", "3' UTR",
+                                           "Exon", "Intron"),
+                                 description="Optional list of partition names.")
+        type          <- opt_get(name = c("type", "t"), required=FALSE,
+                                 default="expected",
+                                 description="Type of plot. Default='expected'.")
+        output_name   <- opt_get(name = c("output_name", "o"), required=TRUE,
+                                 description="Output file name.")
 
-        p <- plotFRiF(sample_name = sample_name,
-                      num_reads = as.numeric(num_reads),
-                      genome_size = as.numeric(genome_size),
-                      type = tolower(type),
-                      reads = reads,
-                      output_name = output_name,
-                      bedFile = bed)
+        if (tolower(input_format) == "bam") {
+            query_bam <- rtracklayer::import(input)
+            query     <- GenomicRanges::granges(query_bam, use.mcols = TRUE)
+        } else {
+            query <- rtracklayer::import(input)
+        }
+        anno <- data.table::fread(partitions)
+        colnames(anno) <- c("chr", "start", "end", "name", "score", "strand")
+        anno$strand    <- ifelse(anno$strand == '.', '*', anno$strand) 
+        partition_list <- lapply(split(anno, anno$name), function(i){
+            GenomicRanges::GRanges(
+                    seqnames = i$chr,
+                    ranges = IRanges::IRanges(start = i$start,
+                                              end = i$end,
+                                              names = i$name),
+                    strand=i$strand
+            )
+          }
+        )
+        partition_list <- partition_list[feature_names]
+        p <- PEPATACr::plotFRiF(query, partition_list, type=type)
 
-        if (tolower(type) == "both") {
+        if (tolower(type) == "expected") {
             pdf(file = paste0(tools::file_path_sans_ext(output_name), ".pdf"),
                 height = 5.45, width = 8.39, useDingbats=F)
             suppressWarnings(print(p))
@@ -257,7 +269,8 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
                 height = 550, width=850)
             suppressWarnings(print(p))
             invisible(dev.off())
-        } else {
+            write(paste0("FRiF plot completed!\n"), stdout())
+        } else if (tolower(type) == "cumulative") {
             pdf(file = paste0(tools::file_path_sans_ext(output_name), ".pdf"),
                 height = 4, width = 4, useDingbats=F)
             suppressWarnings(print(p))
@@ -266,11 +279,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
                 height = 275, width=275)
             suppressWarnings(print(p))
             invisible(dev.off())
-        }
-        
-
-        if (exists("p")) {
-            write(paste0("Cumulative ", type, " plot completed!\n"), stdout())
+            write(paste0("Cumulative FRiF plot completed!\n"), stdout())
         } else {
             write(paste0("Unable to produce ", type, " plot!\n"), stdout())
         }
@@ -317,9 +326,9 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         TSSfile     <- opt_get(name = c("input", "i"), required=TRUE, n=inArgs,
                                description="TSS enrichment file.")
 
-        p           <- plotTSS(TSSfile = TSSfile)
+        p           <- PEPATACr::plotTSS(TSSfile = TSSfile)
 
-        sample_name <- sampleName(TSSfile[1])
+        sample_name <- PEPATACr::sampleName(TSSfile[1])
 
         png(filename = paste0(sample_name, "_TSS_enrichment.png"),
             width = 275, height = 275)
@@ -369,10 +378,10 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         fragL_txt   <- opt_get(name = c("text", "t"), required=TRUE,
                                description="Fragment length distribution stats file.")
 
-        p <- plotFLD(fragL = fragL,
-                     fragL_count = fragL_count,
-                     fragL_txt = fragL_txt,
-                     max_fragment = 600)
+        p <- PEPATACr::plotFLD(fragL = fragL,
+                               fragL_count = fragL_count,
+                               fragL_txt = fragL_txt,
+                               max_fragment = 600)
 
         # Save plot to pdf file
         pdf(file=fragL_name, width = 4, height = 4, useDingbats=F)
@@ -433,12 +442,12 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         output_name <- opt_get(name = c("output", "o"), required=TRUE,
                                description="Output file name.")
 
-        p <- plotAnno(plot = plot,
-                      input = input,
-                      type = type,
-                      feat = feat,
-                      genome = genome,
-                      output = output_name)
+        p <- PEPATACr::plotAnno(plot = plot,
+                                input = input,
+                                type = type,
+                                feat = feat,
+                                genome = genome,
+                                output = output_name)
 
         pdf(file = paste0(tools::file_path_sans_ext(output_name), ".pdf"),
             width = 7, height = 7, useDingbats=F)
@@ -454,7 +463,8 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         if (exists("p")) {
             write(paste0(plot, " distribution plot completed!\n"), stdout())
         } else {
-            write(paste0("Unable to produce ", plot, " distribution plot!\n"), stdout())
+            write(paste0("Unable to produce ", plot,
+                         " distribution plot!\n"), stdout())
         }
     }
 } else if (!is.na(subcmd) && tolower(subcmd) == "bigbed") {
@@ -490,10 +500,10 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
                              default=FALSE,
                              description="Keep BED format intermediate file.")
 
-        narrowPeakToBigBed(input=input,
-                           chr_sizes=chr_sizes,
-                           ucsc_tool=ucsc_tool,
-                           keep=keep)
+        PEPATACr::narrowPeakToBigBed(input=input,
+                                     chr_sizes=chr_sizes,
+                                     ucsc_tool=ucsc_tool,
+                                     keep=keep)
     }
 } else if (!is.na(subcmd) && tolower(subcmd) == "reduce") {
     usage <- paste0(
@@ -527,11 +537,11 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         normalize <- opt_get(name = c("normalize", "n"), required=FALSE,
                              default=FALSE,
                              description="Normalize scores.")
-
-        reducePeaks(input=input,
-                    chr_sizes=chr_sizes,
-                    output=output,
-                    normalize=normalize)
+        print(message(paste0("Normalize: ", normalize)))
+        PEPATACr::reducePeaks(input=input,
+                              chr_sizes=chr_sizes,
+                              output=output,
+                              normalize=normalize)
     }
 } else if (!is.na(subcmd) && tolower(subcmd) == "summarize") {
     usage <- paste0(
@@ -556,7 +566,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         input <- opt_get(name = c("input", "i"), required=TRUE,
                          description="PEP configuration file.")
 
-        reducePeaks(pep=input)
+        PEPATACr::reducePeaks(pep=input)
     }
 } else {
     usage <- paste0(

@@ -836,12 +836,11 @@ def main():
 
     unmap_fq1 = unmap_fq1 + ".gz"
     unmap_fq2 = unmap_fq2 + ".gz"
-    reference = args.genome_assembly
-    bt2_index = os.path.join(rgc.seek(reference, BT2_IDX_KEY))
-    if not bt2_index.endswith(reference):
-        bt2_index = os.path.join(
-            rgc.seek(reference, BT2_IDX_KEY), reference)
 
+    bt2_index = os.path.join(rgc.seek(args.genome_assembly, BT2_IDX_KEY))
+    if not bt2_index.endswith(args.genome_assembly):
+        bt2_index = os.path.join(
+            rgc.seek(args.genome_assembly, BT2_IDX_KEY), args.genome_assembly)
 
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
     cmd += " " + bt2_options
@@ -1945,10 +1944,10 @@ def main():
                 pm.stop_pipeline()
 
 
-    ############################################################################ 
-    #                  Determine genomic feature coverage                      #
     ############################################################################
-    pm.timestamp("### Calculate read coverage")
+    #                             Plot FRiF or FRiP                            #
+    ############################################################################
+    pm.timestamp("### Calculate cumulative and expected fraction of reads in features (cFRiF/FRiF)")
 
     # Cummulative Fraction of Reads in Features (cFRiF)
     cFRiF_PDF = os.path.join(QC_folder, args.sample_name + "_cFRiF.pdf")
@@ -1959,224 +1958,40 @@ def main():
     FRiF_PNG = os.path.join(QC_folder, args.sample_name + "_FRiF.png")
 
     if not os.path.exists(cFRiF_PDF) or args.new_start:
-        anno_list = list()
-        anno_files = list()
+        if (not os.path.exists(anno_local) and
+            os.path.exists(res.feat_annotation) or
+            args.new_start):
 
-        if os.path.isfile(anno_local):
-            # Get list of features
-            if args.prioritize:
-                cmd1 = ("cut -f 4 " + anno_local + " | uniq")
+            if res.feat_annotation.endswith(".gz"):
+                cmd1 = ("ln -sf " + res.feat_annotation + " " + anno_zip)
+                cmd2 = (ngstk.ziptool + " -d -c " + anno_zip +
+                        " > " + anno_local)
+                pm.run([cmd1, cmd2], anno_local)
+                pm.clean_add(anno_local)
+            elif res.feat_annotation.endswith(".bed"):
+                cmd = ("ln -sf " + res.feat_annotation + " " + anno_local)
+                pm.run(cmd, anno_local)
+                pm.clean_add(anno_local)
             else:
-                cmd1 = ("cut -f 4 " + anno_local + " | sort -u")
-            ft_list = pm.checkprint(cmd1, shell=True)
-            ft_list = ft_list.splitlines()
-
-            # Split annotation file on features
-            cmd2 = ("awk -F'\t' '{print>\"" + QC_folder + "/\"$4}' " +
-                    anno_local)
-
-            if args.prioritize:
-                if len(ft_list) >= 1:
-                    for pos, anno in enumerate(ft_list):
-                        # working files
-                        anno_file = os.path.join(QC_folder, str(anno))
-                        valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
-                        file_name = os.path.join(QC_folder, valid_name)
-                        anno_sort = os.path.join(QC_folder,
-                                                 valid_name + "_sort.bed")
-                        anno_cov = os.path.join(QC_folder,
-                                                args.sample_name + "_" +
-                                                valid_name + "_coverage.bed")
-
-                        # Extract feature files
-                        pm.run(cmd2, anno_file)
-
-                        # Rename files to valid file_names
-                        # Avoid 'mv' "are the same file" error
-                        if not os.path.exists(file_name):
-                            cmd = 'mv "{old}" "{new}"'.format(old=anno_file,
-                                                              new=file_name)
-                            pm.run(cmd, file_name)
-
-                        # Sort files (ensure only aligned chromosomes are kept)
-                        # Need to cut -f 1-6 if you want strand information
-                        # Not all features are stranded
-                        # TODO: check for strandedness (*only works on some features)
-                        if not os.path.exists(chr_order):
-                            cmd = (tools.samtools + " view -H " + rmdup_bam +
-                                   " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
-                                   "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
-                            pm.run(cmd, chr_order)
-                            pm.clean_add(chr_order)
-
-
-                        cmd3 = ("cut -f 1 " + chr_order + " | grep -wf - " +
-                                file_name + " | cut -f 1-3 | " +
-                                "bedtools sort -i stdin -faidx " +
-                                chr_order + " | bedtools merge -i stdin > " +                           
-                                anno_sort)
-                        # for future stranded possibilities include for merge
-                        # "-c 4,5,6 -o collapse,collapse,collapse > " +
-                        pm.run(cmd3, anno_sort)
-                
-                        anno_files.append(anno_sort)
-                        anno_list.append(anno_cov)
-
-                        pm.clean_add(file_name)
-                        pm.clean_add(anno_sort)
-                        pm.clean_add(anno_cov)
-
-                    # Iteratively prioritize annotations by order presented
-                    anno_files.reverse()
-                    if len(anno_files) >= 1:
-                        idx = list(range(0,len(anno_files)))
-                        #idx.reverse()
-                        file_count = 1
-                        for annotation in anno_files:
-                            del idx[0]
-                            if file_count < len(anno_files):
-                                file_count += 1
-                                for i in idx:
-                                    if annotation is not anno_files[i]:
-                                        os.path.join(QC_folder)
-                                        temp = tempfile.NamedTemporaryFile(dir=QC_folder, delete=False)
-                                        #os.chmod(temp.name, 0o771)
-                                        cmd1 = ("bedtools subtract -a " +
-                                                annotation + " -b " +
-                                                anno_files[i] + " > " + 
-                                                temp.name)
-                                        cmd2 = ("mv " + temp.name +
-                                                " " + annotation)
-                                        pm.run([cmd1, cmd2], cFRiF_PDF)
-                                        temp.close()
-
-                    anno_list.reverse()
-                    if len(anno_files) >= 1:
-                        for idx, annotation in enumerate(anno_files):
-                            # Identifies unstranded coverage
-                            # Would need to use '-s' flag to be stranded
-                            if os.path.isfile(annotation) and os.stat(annotation).st_size > 0:
-                                cmd3 = (tools.bedtools +
-                                        " coverage -sorted -a " +
-                                        annotation + " -b " + rmdup_bam +
-                                        " -g " + chr_order + " > " +
-                                        anno_list[idx])
-                                pm.run(cmd3, cFRiF_PDF)
-            else:
-                if len(ft_list) >= 1:
-                    for pos, anno in enumerate(ft_list):
-                        # working files
-                        anno_file = os.path.join(QC_folder, str(anno))
-                        valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
-                        file_name = os.path.join(QC_folder, valid_name)
-                        anno_sort = os.path.join(QC_folder,
-                                                 valid_name + "_sort.bed")
-                        anno_cov = os.path.join(QC_folder,
-                                                args.sample_name + "_" +
-                                                valid_name + "_coverage.bed")
-
-                        # Extract feature files
-                        pm.run(cmd2, anno_file)
-
-                        # Rename files to valid file_names
-                        # Avoid 'mv' "are the same file" error
-                        if not os.path.exists(file_name):
-                            cmd = 'mv "{old}" "{new}"'.format(old=anno_file,
-                                                              new=file_name)
-                            pm.run(cmd, file_name)
-
-                        # Sort files (ensure only aligned chromosomes are kept)
-                        # Need to cut -f 1-6 if you want strand information
-                        # Not all features are stranded
-                        # TODO: check for strandedness
-                        if not os.path.exists(chr_order):
-                            cmd = (tools.samtools + " view -H " + rmdup_bam +
-                                   " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
-                                   "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
-                            pm.run(cmd, chr_order)
-                            pm.clean_add(chr_order)
-
-                        cmd3 = ("cut -f 1 " + chr_order + " | grep -wf - " +
-                                file_name + " | cut -f 1-3 | " +
-                                "bedtools sort -i stdin -faidx " +
-                                chr_order + " > " + anno_sort)
-                        pm.run(cmd3, anno_sort)
-                        
-                        anno_list.append(anno_cov)
-                        # Identifies unstranded coverage
-                        # Would need to use '-s' flag to be stranded
-                        cmd4 = (tools.bedtools + " coverage -sorted " +
-                                " -a " + anno_sort + " -b " + rmdup_bam +
-                                " -g " + chr_order + " > " + anno_cov)
-                        pm.run(cmd4, anno_cov)
-
-                        pm.clean_add(file_name)
-                        pm.clean_add(anno_sort)
-                        pm.clean_add(anno_cov)
-    
-
-    ############################################################################
-    #                             Plot FRiF or FRiP                            #
-    ############################################################################
-    pm.timestamp("### Calculate cumulative and terminal fraction of reads in features (cFRiF/FRiF)")
-
-    # Calculate size of genome
-    if not pm.get_stat("Genome_size") or args.new_start:
-        genome_size = int(pm.checkprint(
-            ("awk '{sum+=$2} END {printf \"%.0f\", sum}' " +
-             res.chrom_sizes)))
-        pm.report_result("Genome_size", genome_size)
-    else:
-        genome_size = int(pm.get_stat("Genome_size"))
-
-    if not os.path.exists(cFRiF_PDF) or args.new_start:
-        if args.prioritize:
-            # Count bases, not reads
-            # return to original priority ranked order
-            anno_list.reverse()
-            count_cmd = (tools.bedtools + " genomecov -ibam " + rmdup_bam +
-                         " -bg | awk '{sum+=($3-$2)}END{print sum}'")
-        else:
-            # Count reads
-            count_cmd = (tools.samtools + " view -@ " + str(pm.cores) + " " +
-                         param.samtools.params + " -c -F4 " + rmdup_bam)
-
-        read_count = pm.checkprint(count_cmd)
-        read_count = str(read_count).rstrip()
+                print("Skipping read and peak annotation...")
+                print("This requires a {} annotation file."
+                      .format(args.genome_assembly))
+                print("Could not find {}.`"
+                      .format(str(os.path.dirname(res.feat_annotation))))
 
         cFRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
-                     "-s", args.sample_name, "-z", str(genome_size).rstrip(),
-                     "-n", read_count, "-y", "cfrif"]
-
+                     "-i", mapping_genome_bam, "-f", "bam", "-p", anno_local,
+                     "-t", "cumulative", "-o", cFRiF_PDF]
+        cmd = build_command(cFRiF_cmd)
+        pm.run(cmd, cFRiF_PDF, nofail=False)
+        pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
+        
         FRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
-                    "-s", args.sample_name, "-z", str(genome_size).rstrip(),
-                    "-n", read_count, "-y", "frif"]
-
-        if not args.prioritize:
-            # Use reads for calculation
-            cFRiF_cmd.append("--reads")
-            FRiF_cmd.append("--reads")
-
-        cFRiF_cmd.append("-o")
-        cFRiF_cmd.append(cFRiF_PDF)
-        cFRiF_cmd.append("--bed")
-
-        FRiF_cmd.append("-o")
-        FRiF_cmd.append(FRiF_PDF)
-        FRiF_cmd.append("--bed")
-
-        if anno_list:
-            for cov in anno_list:
-                if os.path.isfile(cov) and os.stat(cov).st_size > 0:
-                    cFRiF_cmd.append(cov)
-                    FRiF_cmd.append(cov)
-            cmd = build_command(cFRiF_cmd)
-            pm.run(cmd, cFRiF_PDF, nofail=False)
-            pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
-
-            cmd = build_command(FRiF_cmd)
-            pm.run(cmd, FRiF_PDF, nofail=False)
-            pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+                    "-i", mapping_genome_bam, "-f", "bam", "-p", anno_local,
+                    "-t", "expected", "-o", FRiF_PDF]
+        cmd = build_command(FRiF_cmd)
+        pm.run(cmd, FRiF_PDF, nofail=False)
+        pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
 
 
     ############################################################################
