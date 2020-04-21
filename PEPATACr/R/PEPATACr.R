@@ -570,356 +570,387 @@ plotComplexityCurves <- function(ccurves,
 }
 
 
-#' Calculate the Fraction of Reads in Features (FRiF)
+#' Calculate and return a plot of either the expected or cumulative 
+#' distribution of regions in a provided list of genomic partitions.
 #'
-#' This function calculates the fraction of reads in a feature and returns
-#' a modified BED file with the cumulative sum of reads, cumulative size
-#' of covered features, the fraction of reads in those features, and the
-#' number of total features.
-#'
-#' @param bedFile A BED format file
-#' @param total Number of aligned reads (or number of aligned bases)
-#' @param reads If TRUE, we're working with read counts.
-#'              If FALSE, we're working with absolute number of bases
-#' @keywords FRiF
-#' @examples
-#' calcFRiF()
-calcFRiF <- function(bedFile, total, reads) {
-    colnames(bedFile) <- c("chromosome", "start", "end",
-                           "count", "bases", "width", "fraction")
-    grObj   <- makeGRangesFromDataFrame(bedFile)
-    grObj   <- reduce(grObj)
-    redBed  <- data.frame(chromosome=seqnames(grObj),
-                          start=start(grObj), end=end(grObj))
-    bedFile <- merge(redBed, bedFile, by=c("chromosome","start","end"))
-    bedFile <- cbind(bedFile, size=(bedFile$end-bedFile$start))
-
-    if (reads) {
-        bedFile <- bedFile[order(-bedFile$count),]
-    } else {
-        bedFile <- bedFile[order(-bedFile$bases),]
-    }
-
-    bedFile <- bedFile[apply(bedFile != 0, 1, all),]
-
-    if (reads) {
-        bedFile <- cbind(bedFile, cumsum=cumsum(bedFile$count))
-    } else {
-        bedFile <- cbind(bedFile, cumsum=cumsum(bedFile$bases))
-    }
-
-    bedFile <- cbind(bedFile, cumSize=cumsum(bedFile$size))
-    bedFile <- cbind(bedFile, frip=bedFile$cumsum/as.numeric(total))
-    bedFile <- cbind(bedFile, numfeats=as.numeric(1:nrow(bedFile)))
-    return(bedFile)
-}
-
-#' Plot Fraction of Reads in Features (FRiF)
-#'
-#' This function plots the fraction of reads in a set of features
-#' and produces pdf/png output files.
-#'
-#' @param sample_name Name of sample
-#' @param num_reads Number of aligned reads in sample
-#' @param genome_size Size of genome in bp
-#' @param output_name Output file name
-#' @param bedFile A BED format file
-#' @keywords FRiP FRiF BED
+#' @param query A GenomicRanges or GenomicRangesList object with query regions.
+#' @param partition_list An ORDERED and NAMED list of genomic partitions
+#'     GRanges. This list must be in priority order; the input will be assigned
+#'     to the first partition it overlaps.
+#' @param feature_names An optional character vector of feature names, in the 
+#'                      same order as the partitionList object.
+#' @param type Plot either the 'expected' or 'cumulative' distribution.
 #' @export
-#' @examples
-#' data("promoter")
-#' data("promoter_flanking")
-#' data("exon")
-#' data("intron")
-#' data("utr3")
-#' data("utr5")
-#' plotFRiF(sample_name="example", num_reads=87520,
-#'          output_name="example_frif.pdf",
-#'          bedFile = c("promoter", "promoter_flanking", "exon",
-#'                      "intron", "utr3", "utr5"))
-#' @export
-plotFRiF <- function(sample_name, num_reads, genome_size,
-                     type = c("cfrif", "frif", "both"),
-                     reads=TRUE, output_name, bedFile) {
-    labels  <- data.frame(xPos=numeric(), yPos=numeric(), name=character(),
-                          val=numeric(), color=character(),
-                          stringsAsFactors=FALSE)
-    feature_dist  <- data.frame(feature=character(), numfeats=numeric(),
-                                numbases=numeric(), expected=numeric(),
-                                stringsAsFactors=FALSE)
-    palette <- colorRampPalette(c("#999999", "#FFC107", "#27C6AB", "#004D40",
-                                  "#B97BC8", "#009E73", "#C92404", "#E3E550",
-                                  "#372B4C", "#E3DAC7", "#27CAE6", "#B361BC",
-                                  "#897779", "#6114F8", "#19C42B", "#56B4E9"))
-    plotColors <- palette(length(bedFile))
-    if (!exists(bedFile[1])) {
-        info   <- file.info(file.path(bedFile[1]))
-    }
-    name       <- sample_name
-
-    if (exists(bedFile[1])) {
-        bed        <- get(bedFile[1])
-        bedCov     <- calcFRiF(bed, num_reads, reads)
-        name       <- bedFile[1]
-        labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
-                        name, round(max(bedCov$frip),2), "#FF0703")
-        feature_dist[1,] <- c(name, nrow(bed),
-                              as.numeric(sum(abs(bed$V3-bed$V2))),
-                              as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
-        bedCov$feature <- name
-    } else if (file.exists(file.path(bedFile[1])) && info$size != 0) {
-        bed <- read.table(file.path(bedFile[1]))
-        if (nrow(bed[which(bed$V5 != 0),]) == 0) {
-            message(paste0(name, "  has no covered features"))
-        } else {
-            bedCov     <- calcFRiF(bed, num_reads, reads)
-            name       <- basename(tools::file_path_sans_ext(bedFile[1]))
-            name       <- gsub(sample_name, "", name)
-            name       <- gsub("^.*?_", "", name)
-            numFields  <- 1
-            for(i in 1:numFields) name <- gsub("_[^_]*$", "", name)
-            labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
-                            name, round(max(bedCov$frip),2), "#FF0703")
-            feature_dist[1,] <- c(name, nrow(bed),
-                                  as.numeric(sum(abs(bed$V3-bed$V2))),
-                                  as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
-            bedCov$feature <- name
-        }
-    }  else {
-        if (is.na(info[1])) {
-            message(paste0(name, " coverage file is missing"))
-        } else if (info$size == 0) {
-            message(paste0(name, " coverage file is empty"))
-        } else {
-            message(paste0(name, " coverage file is missing"))
-        }
-    }
-
-    if (exists("bedCov")) {
-        covDF <- bedCov
+plotFRiF <- function(query, partition_list, feature_names=NULL,
+                     type=c("expected", "cumulative")) {
+    if (type == "expected") {
+        ep <- calcExpectedPartitions(query, partition_list)
+        return(plotExpectedPartitions(ep))
+    } else if (type == "cumulative") {
+        cp <- calcCumulativePartitions(query, partition_list)
+        return(plotCumulativePartitions(cp))
     } else {
+        warning(
+            paste0(type, " is not a recognized option for partitionPlot()")
+        )
         return(ggplot())
     }
+}
 
-    if (length(bedFile) > 1) {
-        for (i in 2:length(bedFile)) {
-            if (exists(bedFile[i])) {
-                name       <- bedFile[i]
-            } else {
-                info       <- file.info(file.path(bedFile[i]))
-                name       <- basename(tools::file_path_sans_ext(bedFile[i]))
-                name       <- gsub(sample_name, "", name)
-                name       <- gsub("^.*?_", "", name)
-                numFields  <- 2
-                for(j in 1:numFields) name <- gsub("_[^_]*$", "", name)
-            }
 
-            if (exists(bedFile[i])) {
-                bed     <- get(bedFile[i])
-            } else if (file.exists(file.path(bedFile[i])) && info$size != 0) {
-                bed     <- read.table(file.path(bedFile[i]))
-            } else {
-                outFile <- file.path(output_name)
-                system2(paste("touch"), outFile)
-                quit(save = "no", status = 1, runLast = FALSE)
-            }
+# #' DEPRECATED
+# #' Calculate the Fraction of Reads in Features (FRiF)
+# #'
+# #' This function calculates the fraction of reads in a feature and returns
+# #' a modified BED file with the cumulative sum of reads, cumulative size
+# #' of covered features, the fraction of reads in those features, and the
+# #' number of total features.
+# #'
+# #' @param bedFile A BED format file
+# #' @param total Number of aligned reads (or number of aligned bases)
+# #' @param reads If TRUE, we're working with read counts.
+# #'              If FALSE, we're working with absolute number of bases
+# #' @keywords FRiF
+# #' @examples
+# #' calcFRiF()
+# calcFRiF <- function(bedFile, total, reads) {
+    # colnames(bedFile) <- c("chromosome", "start", "end",
+                           # "count", "bases", "width", "fraction")
+    # grObj   <- makeGRangesFromDataFrame(bedFile)
+    # grObj   <- reduce(grObj)
+    # redBed  <- data.frame(chromosome=seqnames(grObj),
+                          # start=start(grObj), end=end(grObj))
+    # bedFile <- merge(redBed, bedFile, by=c("chromosome","start","end"))
+    # bedFile <- cbind(bedFile, size=(bedFile$end-bedFile$start))
 
-            if (max(bed[,4] > 0)) {
-                if (exists("covDF")) {
-                    covFile <- calcFRiF(bed, num_reads, reads)
-                    covFile$feature <- name
-                    covDF   <- rbind(covDF, covFile)
-                    labels  <- rbind(labels, c(0.95*max(log10(covFile$cumSize)),
-                                               max(covFile$frip)+0.001,
-                                               name, round(max(covFile$frip),2),
-                                               plotColors[i]))
-                    feature_dist <- rbind(feature_dist,
-                        c(name, nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
-                          as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
-                } else {
-                    covDF         <- calcFRiF(bed, num_reads, reads)
-                    covDF$feature <- name
-                    labels        <- rbind(labels,
-                                           c(0.95*max(log10(covDF$cumSize)),
-                                             max(covDF$frip)+0.001,
-                                             name, round(max(covDF$frip),2),
-                                             plotColors[i]))
-                    feature_dist <- rbind(feature_dist,
-                        c(name, nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
-                          as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
-                }
-            }
-        }
-    }
+    # if (reads) {
+        # bedFile <- bedFile[order(-bedFile$count),]
+    # } else {
+        # bedFile <- bedFile[order(-bedFile$bases),]
+    # }
 
-    # Reorder by labels (ensures plotting matches up labels and colors)
-    if (exists("covDF")) {
-        covDF$feature <- factor(covDF$feature, levels=(labels$name))
-    }
+    # bedFile <- bedFile[apply(bedFile != 0, 1, all),]
 
-    feature_dist$numbases <- as.numeric(feature_dist$numbases)
-    feature_dist$expected <- as.numeric(feature_dist$expected)
-    feature_dist$observed <- as.numeric(labels$val)
-    feature_dist$logOE <- log10(feature_dist$observed/feature_dist$expected)
-    feature_dist$logOE <- ifelse(feature_dist$logOE < 0, 0, feature_dist$logOE)
-    feature_dist <- merge(feature_dist, labels, by.x="feature", by.y="name")
-    #feature_dist <- feature_dist[order(feature_dist$logOE, decreasing=TRUE),]
-    feature_dist <- feature_dist[order(feature_dist$logOE),]
-    rownames(feature_dist) <- NULL
-    feature_dist$feature <- factor(feature_dist$feature,
-                                   levels=feature_dist$feature)
-    feature_dist$color <- factor(feature_dist$color,
-                                 levels=feature_dist$color)
+    # if (reads) {
+        # bedFile <- cbind(bedFile, cumsum=cumsum(bedFile$count))
+    # } else {
+        # bedFile <- cbind(bedFile, cumsum=cumsum(bedFile$bases))
+    # }
 
-    if (!is.null(bedFile)) {
+    # bedFile <- cbind(bedFile, cumSize=cumsum(bedFile$size))
+    # bedFile <- cbind(bedFile, frip=bedFile$cumsum/as.numeric(total))
+    # bedFile <- cbind(bedFile, numfeats=as.numeric(1:nrow(bedFile)))
+    # return(bedFile)
+# }
 
-        if (tolower(type) == "both") {
-            # Produce plot with bed files
-            # take minimum quantile (only works if everything is above that value)
-            #p <- ggplot(covDF[which(covDF$frip > min(density(covDF$frip)$y)),],
-            #           aes(x=log10(cumSize), y=frip,
-            #               group=feature, color=feature)) +
-            p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
-                        group=feature, color=feature)) +
-                #geom_line(aes(linetype=feature), size=2, alpha=0.5) +
-                geom_line(size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
-                labs(x=expression(log[10]("number of bases")),
-                     y="FRiF") +
-                theme_PEPATAC()
 
-            # Recolor and reposition legend
-            p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
-                                                      labels$val),
-                                        values=labels$color) +
-                labs(color="FRiF") +
-                theme(legend.position="right",
-                      legend.justification=c(0.1,0.9),
-                      legend.background=element_blank(),
-                      legend.text = element_text(size = rel(0.65)),
-                      legend.key = element_blank(),
-                      axis.text.x = element_text(angle = 0, hjust = 1,
-                                                 vjust=0.5))
+# #' DEPRECATED
+# #' Plot Fraction of Reads in Features (FRiF)
+# #'
+# #' This function plots the fraction of reads in a set of features
+# #' and produces pdf/png output files.
+# #'
+# #' @param sample_name Name of sample
+# #' @param num_reads Number of aligned reads in sample
+# #' @param genome_size Size of genome in bp
+# #' @param output_name Output file name
+# #' @param bedFile A BED format file
+# #' @keywords FRiP FRiF BED
+# #' @export
+# #' @examples
+# #' data("promoter")
+# #' data("promoter_flanking")
+# #' data("exon")
+# #' data("intron")
+# #' data("utr3")
+# #' data("utr5")
+# #' plotFRiF(sample_name="example", num_reads=87520,
+# #'          output_name="example_frif.pdf",
+# #'          bedFile = c("promoter", "promoter_flanking", "exon",
+# #'                      "intron", "utr3", "utr5"))
+# #' @export
+# plotFRiF <- function(sample_name, num_reads, genome_size,
+                     # type = c("cfrif", "frif", "both"),
+                     # reads=TRUE, output_name, bedFile) {
+    # labels  <- data.frame(xPos=numeric(), yPos=numeric(), name=character(),
+                          # val=numeric(), color=character(),
+                          # stringsAsFactors=FALSE)
+    # feature_dist  <- data.frame(feature=character(), numfeats=numeric(),
+                                # numbases=numeric(), expected=numeric(),
+                                # stringsAsFactors=FALSE)
+    # palette <- colorRampPalette(c("#999999", "#FFC107", "#27C6AB", "#004D40",
+                                  # "#B97BC8", "#009E73", "#C92404", "#E3E550",
+                                  # "#372B4C", "#E3DAC7", "#27CAE6", "#B361BC",
+                                  # "#897779", "#6114F8", "#19C42B", "#56B4E9"))
+    # plotColors <- palette(length(bedFile))
+    # if (!exists(bedFile[1])) {
+        # info   <- file.info(file.path(bedFile[1]))
+    # }
+    # name       <- sample_name
 
-            p2 <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
-                geom_bar(stat="identity", fill=labels$color, alpha=0.5) + 
-                geom_hline(aes(yintercept=0), linetype="dotted") +
-                xlab('') +
-                ylab(expression(log[10](over(Obs, Exp)))) +
-                coord_flip() +
-                scale_x_discrete(position="top") +
-                theme_PEPATAC() +
-                theme(plot.background = element_rect(fill = "transparent",
-                                                     color = NA,),
-                      panel.background = element_rect(fill = "transparent"),
-                      rect = element_rect(fill = "transparent"),
-                      plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
+    # if (exists(bedFile[1])) {
+        # bed        <- get(bedFile[1])
+        # bedCov     <- calcFRiF(bed, num_reads, reads)
+        # name       <- bedFile[1]
+        # labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
+                        # name, round(max(bedCov$frip),2), "#FF0703")
+        # feature_dist[1,] <- c(name, nrow(bed),
+                              # as.numeric(sum(abs(bed$V3-bed$V2))),
+                              # as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
+        # bedCov$feature <- name
+    # } else if (file.exists(file.path(bedFile[1])) && info$size != 0) {
+        # bed <- read.table(file.path(bedFile[1]))
+        # if (nrow(bed[which(bed$V5 != 0),]) == 0) {
+            # message(paste0(name, "  has no covered features"))
+        # } else {
+            # bedCov     <- calcFRiF(bed, num_reads, reads)
+            # name       <- basename(tools::file_path_sans_ext(bedFile[1]))
+            # name       <- gsub(sample_name, "", name)
+            # name       <- gsub("^.*?_", "", name)
+            # numFields  <- 1
+            # for(i in 1:numFields) name <- gsub("_[^_]*$", "", name)
+            # labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
+                            # name, round(max(bedCov$frip),2), "#FF0703")
+            # feature_dist[1,] <- c(name, nrow(bed),
+                                  # as.numeric(sum(abs(bed$V3-bed$V2))),
+                                  # as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
+            # bedCov$feature <- name
+        # }
+    # }  else {
+        # if (is.na(info[1])) {
+            # message(paste0(name, " coverage file is missing"))
+        # } else if (info$size == 0) {
+            # message(paste0(name, " coverage file is empty"))
+        # } else {
+            # message(paste0(name, " coverage file is missing"))
+        # }
+    # }
 
-            g   <- ggplotGrob(p2)
-            min_x <- min(layer_scales(p)$x$range$range)
-            max_x <- max(layer_scales(p)$x$range$range)
-            min_y <- min(layer_scales(p)$y$range$range)
-            max_y <- max(layer_scales(p)$y$range$range)
+    # if (exists("bedCov")) {
+        # covDF <- bedCov
+    # } else {
+        # return(ggplot())
+    # }
 
-            p <- p + annotation_custom(grob = g, xmin = 1.05*min_x,
-                                       xmax=min_x*2.05, ymin=max_y/2,
-                                       ymax=max_y)
-        } else if (tolower(type) == "cfrif") {
-            # take minimum quantile (only works if everything is above that value)
-            #p <- ggplot(covDF[which(covDF$frip > min(density(covDF$frip)$y)),],
-            #           aes(x=log10(cumSize), y=frip,
-            #               group=feature, color=feature)) +
-            p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
-                        group=feature, color=feature)) +
-                geom_line(size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
-                labs(x=expression(log[10]("number of bases")), y="FRiF") +
-                theme_PEPATAC()
+    # if (length(bedFile) > 1) {
+        # for (i in 2:length(bedFile)) {
+            # if (exists(bedFile[i])) {
+                # name       <- bedFile[i]
+            # } else {
+                # info       <- file.info(file.path(bedFile[i]))
+                # name       <- basename(tools::file_path_sans_ext(bedFile[i]))
+                # name       <- gsub(sample_name, "", name)
+                # name       <- gsub("^.*?_", "", name)
+                # numFields  <- 2
+                # for(j in 1:numFields) name <- gsub("_[^_]*$", "", name)
+            # }
 
-            # Recolor and reposition legend
-            p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
-                                                      labels$val),
-                                        values=labels$color) +
-                labs(color="FRiF") +
-                theme(legend.position=c(0.075,0.975),
-                      legend.justification=c(0.1,0.9),
-                      legend.title = element_blank(),
-                      legend.text = element_text(size = rel(0.65)), 
-                      legend.background=element_blank(),
-                      legend.key = element_blank(),
-                      axis.text.x = element_text(angle = 0, hjust = 1,
-                                                 vjust=0.5))
-        } else if (tolower(type) == "frif") {
-            p <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
-                geom_bar(stat="identity",
-                         fill = feature_dist$color,
-                         alpha = 0.5) + 
-                geom_hline(aes(yintercept=0), linetype="dotted") +
-                xlab('') +
-                ylab(expression(log[10](over(Obs, Exp)))) +
-                coord_flip() +
-                theme_PEPATAC()
-        } else {
-            # default to both
-            # Produce plot with bed files
-            p <- ggplot(covDF,
-                        aes(x=log10(cumSize), y=frip,
-                            group=feature, color=feature)) +
-                geom_line(aes(linetype=feature), size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
-                labs(x=expression(log[10]("number of bases")),
-                     y="FRiF") +
-                theme_PEPATAC()
+            # if (exists(bedFile[i])) {
+                # bed     <- get(bedFile[i])
+            # } else if (file.exists(file.path(bedFile[i])) && info$size != 0) {
+                # bed     <- read.table(file.path(bedFile[i]))
+            # } else {
+                # outFile <- file.path(output_name)
+                # system2(paste("touch"), outFile)
+                # quit(save = "no", status = 1, runLast = FALSE)
+            # }
 
-            # Recolor and reposition legend
-            p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
-                                                      labels$val),
-                                        values=labels$color) +
-                labs(color="FRiF") +
-                theme(legend.position="right",
-                      legend.justification=c(0.1,0.9),
-                      legend.background=element_blank(),
-                      legend.key = element_blank(),
-                      axis.text.x = element_text(angle = 0, hjust = 1,
-                                                 vjust=0.5))
+            # if (max(bed[,4] > 0)) {
+                # if (exists("covDF")) {
+                    # covFile <- calcFRiF(bed, num_reads, reads)
+                    # covFile$feature <- name
+                    # covDF   <- rbind(covDF, covFile)
+                    # labels  <- rbind(labels, c(0.95*max(log10(covFile$cumSize)),
+                                               # max(covFile$frip)+0.001,
+                                               # name, round(max(covFile$frip),2),
+                                               # plotColors[i]))
+                    # feature_dist <- rbind(feature_dist,
+                        # c(name, nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
+                          # as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
+                # } else {
+                    # covDF         <- calcFRiF(bed, num_reads, reads)
+                    # covDF$feature <- name
+                    # labels        <- rbind(labels,
+                                           # c(0.95*max(log10(covDF$cumSize)),
+                                             # max(covDF$frip)+0.001,
+                                             # name, round(max(covDF$frip),2),
+                                             # plotColors[i]))
+                    # feature_dist <- rbind(feature_dist,
+                        # c(name, nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
+                          # as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
+                # }
+            # }
+        # }
+    # }
 
-            p2 <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
-                geom_bar(stat="identity", fill=labels$color, alpha=0.5) + 
-                geom_hline(aes(yintercept=0), linetype="dotted") +
-                xlab('') +
-                ylab(expression(log[10](over(Obs, Exp)))) +
-                coord_flip() +
-                scale_x_discrete(position="top") +
-                theme_PEPATAC() +
-                theme(plot.background = element_rect(fill = "transparent",
-                                                     color = NA,),
-                      panel.background = element_rect(fill = "transparent"),
-                      rect = element_rect(fill = "transparent"),
-                      plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
+    # # Reorder by labels (ensures plotting matches up labels and colors)
+    # if (exists("covDF")) {
+        # covDF$feature <- factor(covDF$feature, levels=(labels$name))
+    # }
 
-            g   <- ggplotGrob(p2)
-            min_x <- min(layer_scales(p)$x$range$range)
-            max_x <- max(layer_scales(p)$x$range$range)
-            min_y <- min(layer_scales(p)$y$range$range)
-            max_y <- max(layer_scales(p)$y$range$range)
+    # feature_dist$numbases <- as.numeric(feature_dist$numbases)
+    # feature_dist$expected <- as.numeric(feature_dist$expected)
+    # feature_dist$observed <- as.numeric(labels$val)
+    # feature_dist$logOE <- log10(feature_dist$observed/feature_dist$expected)
+    # feature_dist$logOE <- ifelse(feature_dist$logOE < 0, 0, feature_dist$logOE)
+    # feature_dist <- merge(feature_dist, labels, by.x="feature", by.y="name")
+    # #feature_dist <- feature_dist[order(feature_dist$logOE, decreasing=TRUE),]
+    # feature_dist <- feature_dist[order(feature_dist$logOE),]
+    # rownames(feature_dist) <- NULL
+    # feature_dist$feature <- factor(feature_dist$feature,
+                                   # levels=feature_dist$feature)
+    # feature_dist$color <- factor(feature_dist$color,
+                                 # levels=feature_dist$color)
 
-            p <- p + annotation_custom(grob = g, xmin = 1.05*min_x,
-                                       xmax=min_x*2.05, ymin=max_y/2,
-                                       ymax=max_y)
-        }
+    # if (!is.null(bedFile)) {
+
+        # if (tolower(type) == "both") {
+            # # Produce plot with bed files
+            # # take minimum quantile (only works if everything is above that value)
+            # #p <- ggplot(covDF[which(covDF$frip > min(density(covDF$frip)$y)),],
+            # #           aes(x=log10(cumSize), y=frip,
+            # #               group=feature, color=feature)) +
+            # p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
+                        # group=feature, color=feature)) +
+                # #geom_line(aes(linetype=feature), size=2, alpha=0.5) +
+                # geom_line(size=2, alpha=0.5) +
+                # guides(linetype = FALSE) +
+                # labs(x=expression(log[10]("number of bases")),
+                     # y="FRiF") +
+                # theme_PEPATAC()
+
+            # # Recolor and reposition legend
+            # p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
+                                                      # labels$val),
+                                        # values=labels$color) +
+                # labs(color="FRiF") +
+                # theme(legend.position="right",
+                      # legend.justification=c(0.1,0.9),
+                      # legend.background=element_blank(),
+                      # legend.text = element_text(size = rel(0.65)),
+                      # legend.key = element_blank(),
+                      # axis.text.x = element_text(angle = 0, hjust = 1,
+                                                 # vjust=0.5))
+
+            # p2 <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
+                # geom_bar(stat="identity", fill=labels$color, alpha=0.5) + 
+                # geom_hline(aes(yintercept=0), linetype="dotted") +
+                # xlab('') +
+                # ylab(expression(log[10](over(Obs, Exp)))) +
+                # coord_flip() +
+                # scale_x_discrete(position="top") +
+                # theme_PEPATAC() +
+                # theme(plot.background = element_rect(fill = "transparent",
+                                                     # color = NA,),
+                      # panel.background = element_rect(fill = "transparent"),
+                      # rect = element_rect(fill = "transparent"),
+                      # plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
+
+            # g   <- ggplotGrob(p2)
+            # min_x <- min(layer_scales(p)$x$range$range)
+            # max_x <- max(layer_scales(p)$x$range$range)
+            # min_y <- min(layer_scales(p)$y$range$range)
+            # max_y <- max(layer_scales(p)$y$range$range)
+
+            # p <- p + annotation_custom(grob = g, xmin = 1.05*min_x,
+                                       # xmax=min_x*2.05, ymin=max_y/2,
+                                       # ymax=max_y)
+        # } else if (tolower(type) == "cfrif") {
+            # # take minimum quantile (only works if everything is above that value)
+            # #p <- ggplot(covDF[which(covDF$frip > min(density(covDF$frip)$y)),],
+            # #           aes(x=log10(cumSize), y=frip,
+            # #               group=feature, color=feature)) +
+            # p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
+                        # group=feature, color=feature)) +
+                # geom_line(size=2, alpha=0.5) +
+                # guides(linetype = FALSE) +
+                # labs(x=expression(log[10]("number of bases")), y="FRiF") +
+                # theme_PEPATAC()
+
+            # # Recolor and reposition legend
+            # p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
+                                                      # labels$val),
+                                        # values=labels$color) +
+                # labs(color="FRiF") +
+                # theme(legend.position=c(0.075,0.975),
+                      # legend.justification=c(0.1,0.9),
+                      # legend.title = element_blank(),
+                      # legend.text = element_text(size = rel(0.65)), 
+                      # legend.background=element_blank(),
+                      # legend.key = element_blank(),
+                      # axis.text.x = element_text(angle = 0, hjust = 1,
+                                                 # vjust=0.5))
+        # } else if (tolower(type) == "frif") {
+            # p <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
+                # geom_bar(stat="identity",
+                         # fill = feature_dist$color,
+                         # alpha = 0.5) + 
+                # geom_hline(aes(yintercept=0), linetype="dotted") +
+                # xlab('') +
+                # ylab(expression(log[10](over(Obs, Exp)))) +
+                # coord_flip() +
+                # theme_PEPATAC()
+        # } else {
+            # # default to both
+            # # Produce plot with bed files
+            # p <- ggplot(covDF,
+                        # aes(x=log10(cumSize), y=frip,
+                            # group=feature, color=feature)) +
+                # geom_line(aes(linetype=feature), size=2, alpha=0.5) +
+                # guides(linetype = FALSE) +
+                # labs(x=expression(log[10]("number of bases")),
+                     # y="FRiF") +
+                # theme_PEPATAC()
+
+            # # Recolor and reposition legend
+            # p <- p + scale_color_manual(labels=paste0(labels$name, ": ",
+                                                      # labels$val),
+                                        # values=labels$color) +
+                # labs(color="FRiF") +
+                # theme(legend.position="right",
+                      # legend.justification=c(0.1,0.9),
+                      # legend.background=element_blank(),
+                      # legend.key = element_blank(),
+                      # axis.text.x = element_text(angle = 0, hjust = 1,
+                                                 # vjust=0.5))
+
+            # p2 <- ggplot(feature_dist, aes(x = feature, y = logOE)) +
+                # geom_bar(stat="identity", fill=labels$color, alpha=0.5) + 
+                # geom_hline(aes(yintercept=0), linetype="dotted") +
+                # xlab('') +
+                # ylab(expression(log[10](over(Obs, Exp)))) +
+                # coord_flip() +
+                # scale_x_discrete(position="top") +
+                # theme_PEPATAC() +
+                # theme(plot.background = element_rect(fill = "transparent",
+                                                     # color = NA,),
+                      # panel.background = element_rect(fill = "transparent"),
+                      # rect = element_rect(fill = "transparent"),
+                      # plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
+
+            # g   <- ggplotGrob(p2)
+            # min_x <- min(layer_scales(p)$x$range$range)
+            # max_x <- max(layer_scales(p)$x$range$range)
+            # min_y <- min(layer_scales(p)$y$range$range)
+            # max_y <- max(layer_scales(p)$y$range$range)
+
+            # p <- p + annotation_custom(grob = g, xmin = 1.05*min_x,
+                                       # xmax=min_x*2.05, ymin=max_y/2,
+                                       # ymax=max_y)
+        # }
 
         
-    } else {
-        err_msg <- paste0("Unable to produce ", type ," plot!\n")
-        write(err_msg, stdout())
-    }
+    # } else {
+        # err_msg <- paste0("Unable to produce ", type ," plot!\n")
+        # write(err_msg, stdout())
+    # }
 
-    if (!exists("p")) {
-        p <- ggplot()
-    }
+    # if (!exists("p")) {
+        # p <- ggplot()
+    # }
 
-    return(p)
-}
+    # return(p)
+# }
 
 
 #' Plot TSS enrichment
@@ -1340,11 +1371,11 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
 
     if (ncol(in_file) >= 6) {
         in_bed <- in_file[,c(1,2,3,4,5,6)]
-        colnames(in_bed) <- c("chromosome", "start", "end",
+        colnames(in_bed) <- c("chr", "start", "end",
                               "name", "score", "strand")
     } else {
         in_bed <- in_file[,c(1,2,3)]
-        colnames(in_bed) <- c("chromosome", "start", "end")
+        colnames(in_bed) <- c("chr", "start", "end")
     } 
 
     # Convert to GRanges Object
@@ -1389,22 +1420,24 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
             }
         }
         
-        colnames(anno_file) <- c("chromosome", "start", "end",
+        colnames(anno_file) <- c("chr", "start", "end",
                                  "name", "scores", "strand")
         priority <- sapply(unique(anno_file$name), list)
         dt_list  <- splitDataTable(anno_file, "name")
         dt_list  <- dt_list[names(priority)]
-        gl       <- GRangesList(lapply(dt_list, makeGRangesFromDataFrame))
+        gl       <- lapply(dt_list, GenomicRanges::makeGRangesFromDataFrame)
 
         if (genome %in% knownGenomes) {
             gp   <- suppressWarnings(
-                      calcPartitions(query, gl, remainder = "Intergenic"))
+                      GenomicDistributions::calcPartitions(
+                        query, gl, remainder = "Intergenic"))
         } else {
             gp   <- suppressWarnings(
-                      calcPartitions(query, gl, remainder = "Other"))
+                      GenomicDistributions::calcPartitions(
+                        query, gl, remainder = "Other"))
         }
 
-        gp_plot   <- plotPartitions(gp)
+        gp_plot   <- GenomicDistributions::plotPartitions(gp)
 
         return(gp_plot)
     } else {
@@ -1465,7 +1498,7 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
     np           <- merge(np, chrom_sizes, by="V1", sort=FALSE)
     colnames(np) <- c("V1","V2","V3","V4","V5","V6","V7","V8","V9","V10","V11")
 
-    # make sure 'chromEnd' positions are not greater than the max chrom.size
+    # make sure 'end' positions are not greater than the max chrom.size
     for (j in 1:nrow(np)) {
         if (np$V3[j] > np$V11[j]) np$V3[j] <- np$V11[j]
     }
@@ -1482,15 +1515,15 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
     "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n",
     "(\n",
     "     string chrom;        \"Reference sequence chromosome or scaffold\"\n",
-    "     uint   chromStart;   \"Start position in chromosome\"\n",
-    "     uint   chromEnd;     \"End position in chromosome\"\n",
+    "     uint   start;   \"Start position in chromosome\"\n",
+    "     uint   end;     \"End position in chromosome\"\n",
     "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n",
     "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n",
     "     char[1]  strand;     \"+ or - or . for unknown\"\n",
     "     float  signalValue;  \"Measurement of average enrichment for the region\"\n",
     "     float  pValue;       \"Statistical significance of signal value (-log10). Set to -1 if not used.\"\n",
     "     float  qValue;       \"Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used.\"\n",
-    "     int   peak;          \"Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called.\"\n",
+    "     int   peak;          \"Point-source called for this peak; 0-based offset from start. Set to -1 if no point-source called.\"\n",
     ")", sep="", file = as_file)
 
     system2(paste(ucsc_tool),
@@ -1511,15 +1544,14 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 #' @param normalize Remove overlaps and normalize the score.
 #' @keywords reduce fixed peaks
 #' @export
-reducePeaks <- function(input=input, chr_sizes=chr_sizes,
-                        output=NULL, normalize=FALSE) {
+reducePeaks <- function(input, chr_sizes, output=NULL, normalize=FALSE) {
     info <- file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
         peaks           <- fread(file.path(input))
-        colnames(peaks) <- c("chrom", "chromStart", "chromEnd",
+        colnames(peaks) <- c("chr", "start", "end",
                              "name", "score", "strand",
                              "signalValue", "pValue", "qValue", "peak")
-        setkey(peaks, chrom, chromStart, chromEnd)
+        setkey(peaks, chr, start, end)
     } else {
         if (info$size == 0) {
             message(paste0("reducePeaks(): ", input,
@@ -1532,7 +1564,7 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes,
     info <- file.info(file.path(chr_sizes))
     if (file.exists(file.path(chr_sizes)) && info$size != 0) {
         c_size           <- fread(file.path(chr_sizes))
-        colnames(c_size) <- c("chrom", "size")
+        colnames(c_size) <- c("chr", "size")
     } else {
         if (info$size == 0) {
             message(paste0("reducePeaks(): ", chr_sizes,
@@ -1544,7 +1576,7 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes,
 
     if (exists("peaks") & exists("c_size")) {
         hits  <- foverlaps(peaks, peaks,
-                           by.x=c("chrom", "chromStart", "chromEnd"),
+                           by.x=c("chr", "start", "end"),
                            type="any", which=TRUE, nomatch=0)
         qVals <- data.table(index=rep(1:nrow(peaks)), qValue=peaks$qValue)
         setkey(hits, xid)
@@ -1555,13 +1587,13 @@ reducePeaks <- function(input=input, chr_sizes=chr_sizes,
         final   <- peaks[indices,]
         # trim any bad peaks (extend beyond chromosome)
         # can't be negative
-        final[chromStart < 0, chromStart := 0]
+        final[start < 0, start := 0]
         # ensure sorted
         setorderv(final, cols = c("chr", "start"))
         # can't extend past chromosome
         for (i in nrow(c_size)) {
-            final[chrom == c_size$chrom[i] & chromEnd > c_size$size[i],
-                  chromEnd := c_size$size[i]]
+            final[chr == c_size$chr[i] & end > c_size$size[i],
+                  end := c_size$size[i]]
         }
         if (normalize) {
             # normalize peak scores for cross sample comparison
