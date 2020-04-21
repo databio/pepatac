@@ -1172,7 +1172,13 @@ plotFLD <- function(fragL,
     if (exists(fragL_count)) {
         dat <- data.table(get(fragL_count))
     } else if (file.exists(fragL_count)) {
-        dat <- fread(fragL_count)
+        info <- file.info(file.path(fragL_count))
+        if (info$size != 0) {
+            dat <- fread(fragL_count)
+        } else {
+            warning(paste0(fragL_count, " is an empty file."))
+            return(ggplot())
+        }
     } else {
         stop(paste0("FileExistsError: ", fragL_count, " could not be found."))
         quit(save = "no", status = 1, runLast = FALSE)
@@ -1207,16 +1213,6 @@ plotFLD <- function(fragL,
     p <- ggplot(dat3, aes(x=V2, y=V1/count_factor)) +
             geom_point(size=1, alpha=0.25) +
             geom_line(alpha=0.5) +
-            # annotate("rect", xmin=-Inf, xmax=20, ymin=-Inf, ymax=Inf,
-            #      alpha=0.1, fill="#ff001e") +
-            # annotate("text", x=25, y=(max(dat1$V1)/2),
-            #          size=theme_get()$text[["size"]]/4,
-            #          label="partial degradation", angle=90, col="#858585") +
-            # annotate("rect", xmin=-Inf, xmax=30, ymin=-Inf, ymax=Inf,
-            #          alpha=0.1, fill="#ffee00") + 
-            # annotate("text", x=7.5, y=(max(dat1$V1)/2),
-            #          size=theme_get()$text[["size"]]/4,
-            #          label="high degradation", angle=90, col="#858585") +
             labs(x="Fragment length", y=ylabel) +
             theme_PEPATAC() +
             theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
