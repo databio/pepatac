@@ -2291,7 +2291,7 @@ summarizer <- function(pep) {
 
     # Build the stats summary file path
     summary_file <- file.path(pepr::config(prj)$looper$output_dir,
-                              paste0(config(prj)$name, "_stats_summary.tsv"))
+                              paste0(pepr::config(prj)$name, "_stats_summary.tsv"))
 
     # Produce output directory
     dir.create(
@@ -2306,7 +2306,7 @@ summarizer <- function(pep) {
                                         check.names=FALSE))
     } else {
         warning("PEPATAC.R summarizer was unable to locate the summary file.")
-        return(NULL)
+        return(FALSE)
     }
 
     # Set absent values in table to zero
@@ -2364,10 +2364,23 @@ consensusPeaks <- function(pep) {
 
     # generate initial peak set
     info <- capture.output({ 
-        numSamples <- length(samples(prj)$sample_name)
+        numSamples <- length(pepr::sampleTable(prj)$sample_name)
     })
     peakList <- data.table(peakFiles = list(numSamples))
-    genome   <- invisible(config(prj)$implied_attributes[[1]][[1]]$genome)
+    
+    #pepr::config(prj)$sample_modifiers$imply[[1]]$then$genome
+    continue <- 1
+    cmd <- 'pepr::config(prj)'
+    hit <- grep('genome', eval(parse(text=cmd)))
+    while (continue > 0) {
+        if (length(hit) > 0) {
+            cmd <- paste0(cmd, '[[', hit, ']]')
+            hit <- grep('genome', eval(parse(text=cmd)))
+        } else {
+            genome   <- eval(parse(text=cmd))$genome
+            continue <- 0
+        }
+    }
 
     c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
                       paste0(genome, "/fasta.chrom_sizes")), stdout=TRUE)
@@ -2385,9 +2398,9 @@ consensusPeaks <- function(pep) {
     # generate paths to peak files
     info <- capture.output({ 
       peakList[,peakFiles:=.(list(unique(file.path(pepr::config(prj)$looper$output_dir,
-               paste0("results_pipeline/", samples(prj)$sample_name),
+               paste0("results_pipeline/", pepr::sampleTable(prj)$sample_name),
                paste0("peak_calling_", genome),
-               paste0(samples(prj)$sample_name,
+               paste0(pepr::sampleTable(prj)$sample_name,
                "_peaks_normalized.narrowPeak")))))]
     })
 
@@ -2402,13 +2415,15 @@ consensusPeaks <- function(pep) {
                         qValue=numeric(),
                         peak=integer())
 
-    fileList  <- peakList$peakFiles[[1]]
+    fileList <- peakList$peakFiles[[1]]
+    fileList <- system(paste0("echo ", fileList), intern = TRUE)
 
     if (length(fileList) > 1) {
         finalList <- character()
         for (i in 1:length(fileList)) {
-            if(file.exists(file.path(fileList[i]))) {
-                finalList <- append(finalList,fileList[i])
+            file_path <- system(paste0("echo ", fileList[i]), intern = TRUE)
+            if(file.exists(file.path(file_path))) {
+                finalList <- append(finalList,file_path)
             }
         }
     } else if (length(fileList) == 1 ) {
@@ -2539,6 +2554,8 @@ peakCounts <- function(pep) {
     prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
     project_dir    <- pepr::config(prj)$looper$output_dir
+    project_dir    <- system(paste0("echo ", project_dir), intern = TRUE)
+    
     sample_names   <- pepr::sampleTable(prj)$sample_name
     genomes        <- as.list(pepr::sampleTable(prj)$genome)
     names(genomes) <- sample_names
@@ -2710,8 +2727,10 @@ peakCounts <- function(pep) {
         # identify reproducible peaks
         reduce_dt$count <- apply(reduce_dt[, ..columnIndices], 1,
                                  function(x) sum(x > 0))
-        # keep peaks present in 2 or more individual peak sets
-        reduce_dt <- reduce_dt[count >= 2,]
+        if (length(peak_files) > 1) {
+            # keep peaks present in 2 or more individual peak sets
+            reduce_dt <- reduce_dt[count >= 2,]
+        }        
         reduce_dt[,count := NULL]
     }
     # Create matrix rownames
@@ -2724,6 +2743,7 @@ peakCounts <- function(pep) {
     # save counts table
     if (exists("reduce_dt")) {
             countsPath <- buildFilePath("_peaks_coverage.tsv", prj)
+            countsPath <- system(paste0("echo ", countsPath), intern = TRUE)
             # save consensus peak set
             fwrite(reduce_dt, countsPath, sep="\t", col.names=TRUE)
             return(countsPath)

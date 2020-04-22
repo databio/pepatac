@@ -83,16 +83,20 @@ pep <- argv$config
 prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
 # Produce output directory (if needed)
-dir.create(
-    suppressMessages(
-        file.path(pepr::config(prj)$looper$output_dir, "summary")),
-    showWarnings = FALSE)
+output_dir <- suppressMessages(
+    file.path(pepr::config(prj)$looper$output_dir, "summary"))
+output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
+dir.create(output_dir, showWarnings = FALSE)
 
 # Produce project summary plots
 summarizer_flag <- PEPATACr::summarizer(pep)
+if (is.null(summarizer_flag)) {
+    summarizer_flag <- FALSE
+}
 
 # Produce library complexity summary plots
 complexity_path <- PEPATACr::buildFilePath("_libComplexity.pdf", prj)
+complexity_path <- system(paste0("echo ", complexity_path), intern = TRUE)
 if (!file.exists(complexity_path)) {
     cc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
                 "results_pipeline",
@@ -101,6 +105,7 @@ if (!file.exists(complexity_path)) {
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_yield.txt"),
                 sep="/")
+    cc <- system(paste0("echo ", cc), intern = TRUE)
     rc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
                 "results_pipeline",
                 suppressMessages(pepr::sampleTable(prj)$sample_name),
@@ -108,6 +113,7 @@ if (!file.exists(complexity_path)) {
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_counts.txt"),
                 sep="/")
+    rc <- system(paste0("echo ", rc), intern = TRUE)
 
     hasBoth <- file.exists(cc) & file.exists(rc)
     ccSub   <- cc[hasBoth]
@@ -118,12 +124,15 @@ if (!file.exists(complexity_path)) {
                                             read_length = 0,
                                             real_counts_path = rcSub,
                                             ignore_unique = FALSE)
-        pdf(file = PEPATACr::buildFilePath("_libComplexity.pdf", prj),
-            width= 10, height = 7, useDingbats=F)
+        output_file <- PEPATACr::buildFilePath("_libComplexity.pdf", prj)
+        output_file <- system(paste0("echo ", output_file), intern = TRUE)
+        pdf(file = output_file, width= 10, height = 7, useDingbats=F)
         suppressWarnings(print(p))
         invisible(dev.off())
-        png(filename = PEPATACr::buildFilePath("_libComplexity.png", prj),
-            width = 686, height = 480)
+
+        output_file <- PEPATACr::buildFilePath("_libComplexity.png", prj)
+        output_file <- system(paste0("echo ", output_file), intern = TRUE)
+        png(filename = output_file, width = 686, height = 480)
         suppressWarnings(print(p))
         invisible(dev.off())
     } else {
@@ -146,14 +155,18 @@ if (summarizer_flag & complexity_flag) {
 
 # Calculate consensus peaks
 consensus_path <- PEPATACr::buildFilePath("_consensusPeaks.narrowPeak", prj)
+consensus_path <- system(paste0("echo ", consensus_path), intern = TRUE)
 if (!file.exists(consensus_path)) {
     consensus_path <- PEPATACr::consensusPeaks(pep)
+    consensus_path <- system(paste0("echo ", consensus_path), intern = TRUE)
     if (!is.null(consensus_path)) {
         if (file.exists(consensus_path)) {
             message("Consensus peak set: ", consensus_path, "\n")
-            icon <- PEPATACr::fileIcon()
-            png(filename = PEPATACr::buildFilePath("_consensusPeaks.png", prj),
-                height = 275, width=275, bg="transparent")
+            icon        <- PEPATACr::fileIcon()
+            output_file <- PEPATACr::buildFilePath("_consensusPeaks.png", prj)
+            output_file <- system(paste0("echo ", output_file), intern = TRUE)
+            png(filename = output_file, height = 275, width=275,
+                bg="transparent")
             suppressWarnings(print(icon))
             invisible(dev.off())
         }
@@ -164,14 +177,18 @@ if (!file.exists(consensus_path)) {
 
 # Create count matrix
 counts_path <- PEPATACr::buildFilePath("_peaks_coverage.tsv", prj)
+counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
 if (!file.exists(counts_path)) {
     counts_path <- PEPATACr::peakCounts(pep)
+    counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
     if (!is.null(counts_path)) {
         if (file.exists(counts_path)) {
             message("Counts table: ", counts_path, "\n")
             icon <- PEPATACr::fileIcon()
-            png(filename = PEPATACr::buildFilePath("_peaks_coverage.png", prj),
-                height = 275, width=275, bg="transparent")
+            output_file <- PEPATACr::buildFilePath("_peaks_coverage.png", prj)
+            output_file <- system(paste0("echo ", output_file), intern = TRUE)
+            png(filename = output_file, height = 275, width=275,
+                bg="transparent")
             suppressWarnings(print(icon))
             invisible(dev.off())
         }
