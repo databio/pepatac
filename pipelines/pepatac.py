@@ -267,8 +267,6 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 pm.run(filter_pair, [summary_file, out_fastq_r2_gz])
                 pm.wait = True
                 pm.run(cmd, [summary_file, out_fastq_r2_gz])
-                import time
-                time.sleep(15)
         else:
             if args.keep:
                 pm.run(cmd, mapped_bam)
@@ -1806,6 +1804,8 @@ def main():
             def rescale(n, after=[0,1], before=[]):
                 if not before:
                     before=[min(n), max(n)]
+                if (before[1] - before[0]) == 0:
+                    return n
                 return (((after[1] - after[0]) * (n - before[0]) / 
                          (before[1] - before[0])) + after[0])
             # rescale score to be between 0 and 1000
@@ -1823,8 +1823,8 @@ def main():
             df = df.drop(columns=["V11"])
             # ensure score is a whole integer value
             df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
-            df.to_csv(temp.name)
-            #pm.clean_add(temp.name)
+            df.to_csv(temp.name, sep='\t', header=False, index=False)
+            pm.clean_add(temp.name)
 
             as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
             cmd = ("echo 'table bigNarrowPeak\n" + 
