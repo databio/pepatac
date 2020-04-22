@@ -1177,7 +1177,7 @@ def main():
                    " preseq " + "-i " + preseq_yield)
             cmd += (" -r " + preseq_counts + " -o " + preseq_plot)
 
-            pm.run(cmd, [preseq_pdf, preseq_png])
+            pm.run(cmd, [preseq_pdf, preseq_png], nofail=True)
 
             pm.report_object("Library complexity", preseq_pdf,
                              anchor_image=preseq_png)
