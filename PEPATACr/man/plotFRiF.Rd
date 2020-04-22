@@ -2,29 +2,45 @@
 % Please edit documentation in R/PEPATACr.R
 \name{plotFRiF}
 \alias{plotFRiF}
-\title{Calculate and return a plot of either the expected or cumulative 
-distribution of regions in a provided list of genomic partitions.}
+\title{Plot Fraction of Reads in Features (FRiF)}
 \usage{
 plotFRiF(
-  query,
-  partition_list,
-  feature_names = NULL,
-  type = c("expected", "cumulative")
+  sample_name,
+  num_reads,
+  genome_size,
+  type = c("cfrif", "frif", "both"),
+  reads = TRUE,
+  output_name,
+  bedFile
 )
 }
 \arguments{
-\item{query}{A GenomicRanges or GenomicRangesList object with query regions.}
+\item{sample_name}{Name of sample}
 
-\item{partition_list}{An ORDERED and NAMED list of genomic partitions
-GRanges. This list must be in priority order; the input will be assigned
-to the first partition it overlaps.}
+\item{num_reads}{Number of aligned reads in sample}
 
-\item{feature_names}{An optional character vector of feature names, in the 
-same order as the partitionList object.}
+\item{genome_size}{Size of genome in bp}
 
-\item{type}{Plot either the 'expected' or 'cumulative' distribution.}
+\item{output_name}{Output file name}
+
+\item{bedFile}{A BED format file}
 }
 \description{
-Calculate and return a plot of either the expected or cumulative 
-distribution of regions in a provided list of genomic partitions.
+This function plots the fraction of reads in a set of features
+and produces pdf/png output files.
 }
+\examples{
+data("promoter")
+data("promoter_flanking")
+data("exon")
+data("intron")
+data("utr3")
+data("utr5")
+plotFRiF(sample_name="example", num_reads=87520,
+         output_name="example_frif.pdf",
+         bedFile = c("promoter", "promoter_flanking", "exon",
+                     "intron", "utr3", "utr5"))
+}
+\keyword{BED}
+\keyword{FRiF}
+\keyword{FRiP}
