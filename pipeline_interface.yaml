@@ -21,8 +21,8 @@ sample_pipeline:
     {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
     {% if sample.TSS_name is defined %} --TSS-name {sample.TSS_name} {% endif %}
     {% if sample.blacklist is defined %} --blacklist {sample.blacklist} {% endif %}
-    {% if sample.anno_name is defined %} --anno_name {sample.anno_name} {% endif %}
-    {% if sample.peak_type is defined %} --peak_type {sample.peak_type} {% endif %}
+    {% if sample.anno_name is defined %} --anno-name {sample.anno_name} {% endif %}
+    {% if sample.peak_type is defined %} --peak-type {sample.peak_type} {% endif %}
     {% if sample.extend is defined %} --extend {sample.extend} {% endif %}
     {% if sample.frip_ref_peaks is defined %} --frip-ref-peaks {sample.frip_ref_peaks} {% endif %}
     {% if sample.motif is defined %} --motif {% endif %}
