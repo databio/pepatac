@@ -25,12 +25,12 @@ sample_pipeline:
     {% if sample.peak_type is defined %} --peak_type {sample.peak_type} {% endif %}
     {% if sample.extend is defined %} --extend {sample.extend} {% endif %}
     {% if sample.frip_ref_peaks is defined %} --frip-ref-peaks {sample.frip_ref_peaks} {% endif %}
-    {% if sample.motif is defined %} --motif {sample.motif} {% endif %}
-    {% if sample.sob is defined %} --sob {sample.sob} {% endif %}
-    {% if sample.prioritize is defined %} --prioritize {sample.prioritize} {% endif %}
-    {% if sample.keep is defined %} --keep {sample.keep} {% endif %}
-    {% if sample.no_fifo is defined %} --noFIFO {sample.no_fifo} {% endif %}
-    {% if sample.lite is defined %} --lite {sample.lite} {% endif %}
+    {% if sample.motif is defined %} --motif {% endif %}
+    {% if sample.sob is defined %} --sob {% endif %}
+    {% if sample.prioritize is defined %} --prioritize {% endif %}
+    {% if sample.keep is defined %} --keep {% endif %}
+    {% if sample.no_fifo is defined %} --noFIFO {% endif %}
+    {% if sample.lite is defined %} --lite {% endif %}
   compute:
     singularity_image: ${SIMAGES}pepatac
     docker_image: databio/pepatac
