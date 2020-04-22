@@ -1842,10 +1842,12 @@ plotAlignedRaw <- function(prj, stats) {
             align_theme)
 
     # Produce full-size PDF
+    output_file <- buildFilePath("_alignmentRaw.pdf", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             align_raw_plot,
-            file=buildFilePath("_alignmentRaw.pdf", prj),
+            file=output_file,
             width=unit(8,"inches"),
             height=unit(chart_height,"inches")
             )
@@ -1874,10 +1876,12 @@ plotAlignedRaw <- function(prj, stats) {
             coord_flip() +
             align_theme)
 
+    output_file <- buildFilePath("_alignmentRaw.png", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             thumb_raw_plot,
-            file=buildFilePath("_alignmentRaw.png", prj),
+            file=output_file,
             width=unit(8,"inches"),
             height=unit(chart_height,"inches")
             )
@@ -2036,10 +2040,12 @@ plotAlignedPct <- function(prj, stats) {
             align_theme)
 
     # Produce full-size PDF
+    output_file <- buildFilePath("_alignmentPercent.pdf", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             align_percent_plot, 
-            file=buildFilePath("_alignmentPercent.pdf", prj), 
+            file=output_file, 
             width=unit(8,"inches"), 
             height=unit(chart_height,"inches")
             )
@@ -2071,10 +2077,12 @@ plotAlignedPct <- function(prj, stats) {
             coord_flip() +
             align_theme)
 
+    output_file <- buildFilePath("_alignmentPercent.png", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             thumb_percent_plot, 
-            file=buildFilePath("_alignmentPercent.png", prj), 
+            file=output_file, 
             width=unit(8,"inches"), 
             height=unit(chart_height,"inches")
             )
@@ -2171,9 +2179,11 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
         align_theme
 
     # Produce both PDF and PNG
+    output_file <- buildFilePath("_TSSEnrichment.pdf", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
-            TSS_plot, file=buildFilePath("_TSSEnrichment.pdf", prj),
+            TSS_plot, file=output_file,
             width=unit(8,"inches"), 
             height=unit(chart_height,"inches")
             )
@@ -2200,9 +2210,11 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
         coord_flip() +
         align_theme
 
+    output_file <- buildFilePath("_TSSEnrichment.png", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
-            TSS_plot, file=buildFilePath("_TSSEnrichment.png", prj),
+            TSS_plot, file=output_file,
             width=unit(8,"inches"),
             height=unit(chart_height,"inches")
             )
@@ -2262,16 +2274,20 @@ plotLibSizes <- function(prj, stats) {
         align_theme
     
     # Produce both PDF and PNG
+    output_file <- buildFilePath("_LibSize.pdf", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(lib_size_plot,
-                     file=buildFilePath("_LibSize.pdf", prj),
+                     file=output_file,
                      width=unit(8,"inches"),
                      height=unit(chart_height,"inches")
                     )
     )
+    output_file <- buildFilePath("_LibSize.png", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(lib_size_plot,
-                     file=buildFilePath("_LibSize.png", prj),
+                     file=output_file,
                      width=unit(8,"inches"),
                      height=unit(chart_height,"inches")
                     )
@@ -2291,13 +2307,14 @@ summarizer <- function(pep) {
 
     # Build the stats summary file path
     summary_file <- file.path(pepr::config(prj)$looper$output_dir,
-                              paste0(pepr::config(prj)$name, "_stats_summary.tsv"))
+        paste0(pepr::config(prj)$name, "_stats_summary.tsv"))
+    summary_file <- system(paste0("echo ", summary_file), intern = TRUE)
 
-    # Produce output directory
-    dir.create(
-        suppressMessages(
-            file.path(pepr::config(prj)$looper$output_dir, "summary")),
-        showWarnings = FALSE)
+    # Produce output directory (if needed)
+    output_dir <- suppressMessages(
+        file.path(pepr::config(prj)$looper$output_dir, "summary"))
+    output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
+    dir.create(output_dir, showWarnings = FALSE)
 
     # read in stats summary file
     if (file.exists(summary_file)) {
@@ -2476,16 +2493,17 @@ consensusPeaks <- function(pep) {
         final <- final[count >= 2 & score >= 5,]
         final[,count := NULL]
 
-        # Produce output directory
-        dir.create(
-            suppressMessages(file.path(pepr::config(prj)$looper$output_dir,
-                             "summary")),
-            showWarnings = FALSE)
+        # Produce output directory (if needed)
+        output_dir <- suppressMessages(
+            file.path(pepr::config(prj)$looper$output_dir, "summary"))
+        output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
+        dir.create(output_dir, showWarnings = FALSE)
 
         if (exists("final")) {
             # save consensus peak set
-            fwrite(final, buildFilePath("_consensusPeaks.narrowPeak", prj),
-                   sep="\t", col.names=FALSE)
+            output_file <- buildFilePath("_consensusPeaks.narrowPeak", prj)
+            output_file <- system(paste0("echo ", output_file), intern = TRUE)
+            fwrite(final, output_file, sep="\t", col.names=FALSE)
         } else {
             warning("Unable to produce a consensus peak file.")
             warning("Check that individual peak files exist for your samples.")
@@ -2495,7 +2513,9 @@ consensusPeaks <- function(pep) {
         warning("Unable to produce a consensus peak file.")
         return(NULL)
     }
-    return(buildFilePath("_consensusPeaks.narrowPeak", prj))
+    output_file <- buildFilePath("_consensusPeaks.narrowPeak", prj)
+    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    return(output_file)
 }
 
 
