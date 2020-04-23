@@ -2349,6 +2349,7 @@ summarizer <- function(pep) {
 }
 
 
+#' Internal helper function for \code{collapsePeaks}
 #' Count the number of times a peak appears across a list of peak files
 #'
 #' @param peakList A list of data.table objects representing
@@ -2370,57 +2371,15 @@ countReproduciblePeaks <- function(peakList, peakDT) {
 }
 
 
-#' This function is meant to identify a project level set of consensus peaks.
+#' Internal helper function for \code{consensusPeaks}
+#' Take a set of peak files and identify only the reproducible minimally
+#' scoring peaks.
 #'
-#' @param pep A PEP configuration file
-#' @keywords consensus peaks
-#' @export
-consensusPeaks <- function(pep) {
-    # Identify the project configuration file
-    prj <- invisible(suppressWarnings(pepr::Project(pep)))
-
-    # generate initial peak set
-    info <- capture.output({ 
-        numSamples <- length(pepr::sampleTable(prj)$sample_name)
-    })
-    peakList <- data.table(peakFiles = list(numSamples))
-    
-    #pepr::config(prj)$sample_modifiers$imply[[1]]$then$genome
-    continue <- 1
-    cmd <- 'pepr::config(prj)'
-    hit <- grep('genome', eval(parse(text=cmd)))
-    while (continue > 0) {
-        if (length(hit) > 0) {
-            cmd <- paste0(cmd, '[[', hit, ']]')
-            hit <- grep('genome', eval(parse(text=cmd)))
-        } else {
-            genome   <- eval(parse(text=cmd))$genome
-            continue <- 0
-        }
-    }
-
-    c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
-                      paste0(genome, "/fasta.chrom_sizes")), stdout=TRUE)
-
-    if (file.exists(c_path)) {
-        c_size <- fread(c_path)
-        colnames(c_size) <- c("chr", "size")
-    } else {
-        warning("Unable to load the chromosome sizes file.")
-        warning(paste0("Confirm that ", c_path,
-                       " is present before continuing."))
-        return(NULL)
-    }
-
-    # generate paths to peak files
-    info <- capture.output({ 
-      peakList[,peakFiles:=.(list(unique(file.path(pepr::config(prj)$looper$output_dir,
-               paste0("results_pipeline/", pepr::sampleTable(prj)$sample_name),
-               paste0("peak_calling_", genome),
-               paste0(pepr::sampleTable(prj)$sample_name,
-               "_peaks_normalized.narrowPeak")))))]
-    })
-
+#' @param sample_table A data.table object that includes paths to
+#'                     valid peak files.
+#' @param chrom_sizes A data.table of genome chromosome sizes.
+#' @param min_score A minimum peak score to keep.
+collapsePeaks <- function(sample_table, chrom_sizes, min_score=5) {
     final <- data.table(chr=character(),
                         start=integer(),
                         end=integer(),
@@ -2431,91 +2390,138 @@ consensusPeaks <- function(pep) {
                         pValue=numeric(),
                         qValue=numeric(),
                         peak=integer())
-
-    fileList <- peakList$peakFiles[[1]]
-    fileList <- system(paste0("echo ", fileList), intern = TRUE)
-
-    if (length(fileList) > 1) {
-        finalList <- character()
-        for (i in 1:length(fileList)) {
-            file_path <- system(paste0("echo ", fileList[i]), intern = TRUE)
-            if(file.exists(file.path(file_path))) {
-                finalList <- append(finalList,file_path)
-            }
-        }
-    } else if (length(fileList) == 1 ) {
-        warning("Found only a single peak file.")
-        warning("Does your project include more than one sample?")
-        return(NULL)
-    } else {
-        warning("Unable to find any peak files.")
-        warning("Confirm peak files exist for your samples.")
-        return(NULL)
+    # create combined peaks
+    peaks           <- rbindlist(lapply(sample_table$peak_files, fread))
+    colnames(peaks) <- c("chr", "start", "end", "name", "score",
+                         "strand", "signalValue", "pValue", "qValue",
+                         "peak")
+    setkey(peaks, chr, start, end)
+    # keep highest scored peaks
+    hits    <- foverlaps(peaks, peaks,
+                         by.x=c("chr", "start", "end"),
+                         type="any", which=TRUE, nomatch=0)
+    scores  <- data.table(index=rep(1:nrow(peaks)), score=peaks$score)
+    setkey(hits, xid)
+    setkey(scores, index)
+    out     <- hits[scores, nomatch=0]
+    keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
+    indices <- unique(keep$xid)
+    final   <- peaks[indices,]
+    # trim any bad peaks (extend beyond chromosome)
+    # can't be negative
+    final[start < 0, start := 0]
+    # can't extend past chromosome
+    for (i in nrow(chrom_sizes)) {
+        final[chr == chrom_sizes$chr[i] & end > chrom_sizes$size[i],
+              end := chrom_sizes$size[i]]
     }
 
-    if (length(finalList) >= 1) {
-        # create combined peaks
-        peaks           <- rbindlist(lapply(finalList, fread))
-        colnames(peaks) <- c("chr", "start", "end", "name", "score",
-                             "strand", "signalValue", "pValue", "qValue",
-                             "peak")
-        setkey(peaks, chr, start, end)
-        # keep highest scored peaks
-        hits    <- foverlaps(peaks, peaks,
-                             by.x=c("chr", "start", "end"),
-                             type="any", which=TRUE, nomatch=0)
-        scores  <- data.table(index=rep(1:nrow(peaks)), score=peaks$score)
-        setkey(hits, xid)
-        setkey(scores, index)
-        out     <- hits[scores, nomatch=0]
-        keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
-        indices <- unique(keep$xid)
-        final   <- peaks[indices,]
-        # trim any bad peaks (extend beyond chromosome)
-        # can't be negative
-        final[start < 0, start := 0]
-        # can't extend past chromosome
-        for (i in nrow(c_size)) {
-            final[chr == c_size$chr[i] & end > c_size$size[i],
-                  end := c_size$size[i]]
+    # identify reproducible peaks
+    peakSet <- copy(peaks)
+    peakSet[,group := gsub("_peak.*","",name)]
+    peakList <- splitDataTable(peakSet, "group")
+    #original <- copy(final)
+
+    invisible(sapply(peakList, countReproduciblePeaks, peakDT=final))
+
+    # keep peaks present in 2 or more individual peak sets
+    # keep peaks with score per million >= 5
+    final <- final[count >= 2 & score >= min_score,]
+    final[,count := NULL]
+    return(final)
+}
+
+
+#' This function is meant to identify a project level set of consensus peaks.
+#'
+#' @param pep A PEP configuration file
+#' @param assets A data.table containing file assets
+#' @keywords consensus peaks
+#' @export
+consensusPeaks <- function(pep, assets) {
+    # Identify the project configuration file
+    prj <- invisible(suppressWarnings(pepr::Project(pep)))
+    
+    # Produce output directory (if needed)
+    output_dir <- suppressMessages(
+        file.path(pepr::config(prj)$looper$output_dir, "summary"))
+    output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
+    dir.create(output_dir, showWarnings = FALSE)
+    
+    # Grab project directory
+    project_dir <- config(prj)$looper$output_dir
+    project_dir <- system(paste0("echo ", project_dir), intern = TRUE)
+
+    sample_table <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
+                               genome=pepr::sampleTable(prj)$genome)
+    setDT(sample_table)[assets[asset == 'chrom_sizes', ],
+                        c_path := i.path, on = 'sample_name']
+
+    # generate paths to peak files
+    sample_table[,peak_files:=.((file.path(project_dir,
+               paste0("results_pipeline/", sample_table$sample_name),
+               paste0("peak_calling_", sample_table$genome),
+               paste0(sample_table$sample_name,
+               "_peaks_normalized.narrowPeak"))))]
+
+    #Only keep samples with valid peak files
+    file_list   <- sample_table$peak_files
+    file_exists <- character()
+    for (i in 1:length(file_list)) {
+        if(file.exists(file.path(file_list[i]))) {
+            file_exists <- append(file_exists, file.path(file_list[i]))
         }
+    }
+    files <- data.table(peak_files=file_exists)
+    consensus_peak_files = list()
+    if (nrow(files) == 0) {
+        return(consensus_peak_files)
+    }
+    sample_table <- sample_table[files, .SD, nomatch=0L,
+                                 on="peak_files", .SDcols=names(sample_table)]
+    
+    # Need to group by genome, then create a consensus list by genome!
+    st_list = splitDataTable(sample_table, "genome")
 
-        # identify reproducible peaks
-        peakSet <- copy(peaks)
-        peakSet[,group := gsub("_peak.*","",name)]
-        peakList <- splitDataTable(peakSet, "group")
-        original <- copy(final)
-
-        invisible(sapply(peakList, countReproduciblePeaks, peakDT=final))
-
-        # keep peaks present in 2 or more individual peak sets
-        # keep peaks with score per million >= 5
-        final <- final[count >= 2 & score >= 5,]
-        final[,count := NULL]
-
-        # Produce output directory (if needed)
-        output_dir <- suppressMessages(
-            file.path(pepr::config(prj)$looper$output_dir, "summary"))
-        output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
-        dir.create(output_dir, showWarnings = FALSE)
-
-        if (exists("final")) {
+    for (genome in names(st_list)) {
+        if (nrow(st_list[[genome]]) == 1) {
+            err_msg = paste0("Found only a single valid peak file for ",
+                             genome, ".")
+            warning(err_msg)
+            next
+        }
+        if (nrow(st_list[[genome]]) == 0) {
+            warning("Unable to find any valid peak files.")
+            warning("Confirm peak files exist for your samples.")
+            next
+        }
+        # c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
+                          # paste0(genome, "/fasta.chrom_sizes")), stdout=TRUE)
+        c_path <- unique(sample_table[genome == genome, c_path])
+        if (file.exists(c_path)) {
+            c_size <- fread(c_path)
+            colnames(c_size) <- c("chr", "size")
+        } else {
+            warning("Unable to load the chromosome sizes file.")
+            warning(paste0("Confirm that ", c_path,
+                           " is present before continuing."))
+            final <- NULL
+        }
+        final <- collapsePeaks(st_list[[genome]], c_size)
+        if (!is.null(final)) {
             # save consensus peak set
-            output_file <- buildFilePath("_consensusPeaks.narrowPeak", prj)
+            file_name   <- paste0("_", genome,"_consensusPeaks.narrowPeak")
+            output_file <- buildFilePath(file_name, prj)
             output_file <- system(paste0("echo ", output_file), intern = TRUE)
             fwrite(final, output_file, sep="\t", col.names=FALSE)
+            consensus_peak_files <- c(consensus_peak_files, output_file)
         } else {
             warning("Unable to produce a consensus peak file.")
             warning("Check that individual peak files exist for your samples.")
-            return(NULL)
         }
-    } else {
-        warning("Unable to produce a consensus peak file.")
-        return(NULL)
     }
-    output_file <- buildFilePath("_consensusPeaks.narrowPeak", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
-    return(output_file)
+
+    return(consensus_peak_files)
 }
 
 
@@ -2567,34 +2573,32 @@ readPepatacPeakCounts = function(prj) {
 #' Produce a project level peak counts table
 #'
 #' @param pep A PEP configuration file
+#' @param assets A data.table containing file assets
 #' @keywords project peak counts
 #' @export
-peakCounts <- function(pep) {
+peakCounts <- function(pep, assets) {
     # Identify the project configuration file
     prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
     project_dir    <- pepr::config(prj)$looper$output_dir
     project_dir    <- system(paste0("echo ", project_dir), intern = TRUE)
     
+    # TODO: handle multiple genomes in single project
     sample_names   <- pepr::sampleTable(prj)$sample_name
     genomes        <- as.list(pepr::sampleTable(prj)$genome)
     names(genomes) <- sample_names
     sample_names   <- as.character(pepr::sampleTable(prj)$sample_name)
     
-    c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
-                      paste0(unique(genomes), "/fasta.chrom_sizes")),
-                      stdout=TRUE)
-
-    if (file.exists(c_path)) {
-        c_size <- fread(c_path)
-        colnames(c_size) <- c("chr", "size")
-    } else {
-        warning("Unable to load the chromosome sizes file.")
-        warning(paste0("Confirm that ", c_path,
-                       " is present before continuing."))
-        return(NULL)
-    }
+    sample_table <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
+                               genome=pepr::sampleTable(prj)$genome)
     
+    setDT(sample_table)[assets[asset == 'chrom_sizes', ],
+                        c_path := i.path, on = 'sample_name']
+
+    # c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
+                      # paste0(unique(genomes), "/fasta.chrom_sizes")),
+                      # stdout=TRUE)
+
     # Use reference peak coverage file if available
     if (any(file.exists(file.path(project_dir, "results_pipeline",
                         sample_names, paste0("peak_calling_", genomes),
@@ -2607,9 +2611,12 @@ peakCounts <- function(pep) {
         peak_file_name = "_peaks_coverage.bed"
     }
     
-    peak_files <- file.path(project_dir, "results_pipeline",
-                         sample_names, paste0("peak_calling_", genomes),
-                         paste0(sample_names, peak_file_name))
+    # generate paths to peak coverage files
+    sample_table[,peak_files:=.((file.path(project_dir,
+               paste0("results_pipeline/", sample_table$sample_name),
+               paste0("peak_calling_", sample_table$genome),
+               paste0(sample_table$sample_name, peak_file_name))))]
+    peak_files = sample_table$peak_files
 
     if (reference) {
         peaks_dt = data.table(chr=as.character(),
@@ -2736,6 +2743,16 @@ peakCounts <- function(pep) {
         # ensure sorted
         setorderv(reduce_dt, cols = c("chr", "start"))
         # can't extend past chromosome
+        c_path <- sample_table[peak_files == file, c_path]
+        if (file.exists(c_path)) {
+            c_size <- fread(c_path)
+            colnames(c_size) <- c("chr", "size")
+        } else {
+            warning("Unable to load the chromosome sizes file.")
+            warning(paste0("Confirm that ", c_path,
+                           " is present before continuing."))
+            return(NULL)
+        }
         for (i in nrow(c_size)) {
             reduce_dt[chr == c_size$chr[i] & end > c_size$size[i],
                       end := c_size$size[i]]
@@ -2773,4 +2790,54 @@ peakCounts <- function(pep) {
         return(NULL)
     }
 }
+
+
+#' Create and return assets spreadsheet and save the spreadsheet to file
+#'
+#' @param pep A PEP configuration file
+#' @export
+createAssetsSummary <- function(pep) {
+    prj <- invisible(suppressWarnings(pepr::Project(pep)))
+    
+    # Grab project directory
+    project_dir <- config(prj)$looper$output_dir
+    project_dir <- system(paste0("echo ", project_dir), intern = TRUE)
+    
+    # Create assets_summary file
+    project_samples <- pepr::sampleTable(prj)$sample_name
+    missing_files   <- 0
+    assets  <- data.table(sample_name=character(),
+                          asset=character(),
+                          path=character(),
+                          annotation=character())
+    write(paste0("Creating assets summary..."), stdout())
+    for (sample in project_samples) {
+        sample_output_folder = file.path(project_dir,
+               paste0("results_pipeline/", sample))
+        sample_assets_file = file.path(sample_output_folder, "assets.tsv")
+
+        if (!file.exists(sample_assets_file)) {
+            missing_files <- missing_files + 1
+            next
+        }
+
+        t <- fread(sample_assets_file, header=FALSE,
+                   col.names=c('asset', 'path', 'annotation'))
+        t <- t[!duplicated(t[, c('asset', 'path', 'annotation')], fromLast=TRUE),]
+        t[,sample_name:=sample]
+        assets = rbind(assets, t)
+    }
+    project_assets_file <- file.path(project_dir,
+        paste0(config(prj)$name, '_assets_summary.tsv'))
+    if (missing_files > 0) {
+        warning(sprintf("Assets files missing for %s samples.", missing_files))
+    }
+
+    fwrite(assets, project_assets_file, sep="\t", col.names=FALSE)
+
+    message(sprintf("Summary (n=%s): %s",
+        length(unique(assets$sample_name)), project_assets_file))
+    return(assets)
+}
+
 ################################################################################

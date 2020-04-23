@@ -132,6 +132,31 @@ def parse_arguments():
     return args
 
 
+def report_message(pm, report_file, message, annotation=None):
+    """
+    Writes a string to provided file in a safe way.
+    
+    :param PipelineManager pm: a pypiper PipelineManager object
+    :param str report_file: name of the output file
+    :param str message: string to write to the output file
+    :param str annotation: By default, the message will be annotated with the
+        pipeline name, so you can tell which pipeline records which stats.
+        If you want, you can change this; use annotation='shared' if you
+        need the stat to be used by another pipeline (using get_stat()).
+    """
+    # Default annotation is current pipeline name.
+    annotation = str(annotation or pm.name)
+
+    message = str(message).strip()
+    
+    message = "{message}\t{annotation}".format(
+        message=message, annotation=annotation)
+
+    # Just to be extra careful, let's lock the file while we we write
+    # in case multiple pipelines write to the same file.
+    pm._safe_write_to_file(report_file, message)
+
+
 def calc_frip(bamfile, peakfile, frip_func, pipeline_manager,
               aligned_reads_key="Aligned_reads"):
     """
@@ -420,9 +445,9 @@ def _add_resources(args, res, asset_dict=None):
                                                     seek_key,
                                                     tag))  # DEBUG
                     res[seek_key] = rgc.seek(args.genome_assembly,
-                                                  asset_name=str(asset),
-                                                  tag_name=str(tag),
-                                                  seek_key=str(seek_key))
+                                             asset_name=str(asset),
+                                             tag_name=str(tag),
+                                             seek_key=str(seek_key))
                 except KeyError:
                     key_errors.append(item)
                     if req:
@@ -581,6 +606,16 @@ def main():
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
+
+    # Report utilized assets
+    assets_file = os.path.join(param.outfolder, "assets.tsv")
+    for asset in res:
+        message = "{}\t{}".format(asset, os.path.expandvars(res[asset]))
+        report_message(pm, assets_file, message)
+        
+    # Report primary genome
+    message = "genome\t{}".format(args.genome_assembly)
+    report_message(pm, assets_file, message)
 
 
     ############################################################################
@@ -2231,6 +2266,10 @@ def main():
         # cmd = build_command(FRiF_cmd)
         # pm.run(cmd, FRiF_PDF, nofail=False)
         # pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+     
+    # Test
+    test_file = os.path.join(QC_folder, args.sample_name + "_test.tsv")
+    pm._safe_write_to_file(test_file, "test")
 
 
     ############################################################################

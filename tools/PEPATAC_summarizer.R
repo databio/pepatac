@@ -82,6 +82,9 @@ for (i in required_libraries) {
 pep <- argv$config
 prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
+# Project genomes
+genomes <- invisible(suppressWarnings(pepr::sampleTable(prj)$genome))
+
 # Produce output directory (if needed)
 output_dir <- suppressMessages(
     file.path(pepr::config(prj)$looper$output_dir, "summary"))
@@ -153,33 +156,49 @@ if (summarizer_flag & complexity_flag) {
     message("Successfully produced project summary plots.\n")
 }
 
-# Calculate consensus peaks
-consensus_path <- PEPATACr::buildFilePath("_consensusPeaks.narrowPeak", prj)
-consensus_path <- system(paste0("echo ", consensus_path), intern = TRUE)
-if (!file.exists(consensus_path)) {
-    consensus_path <- PEPATACr::consensusPeaks(pep)
+# Get assets
+assets <- PEPATACr::createAssetsSummary(pep)
+if (nrow(assets) == 0) {
+    quit()
+}
+
+# Report existing consensus peaks
+for (genome in genomes) {
+    file_name      <- paste0("_", genome,"_consensusPeaks.narrowPeak")
+    consensus_path <- PEPATACr::buildFilePath(file_name, prj)
     consensus_path <- system(paste0("echo ", consensus_path), intern = TRUE)
-    if (!is.null(consensus_path)) {
-        if (file.exists(consensus_path)) {
-            message("Consensus peak set: ", consensus_path, "\n")
-            icon        <- PEPATACr::fileIcon()
-            output_file <- PEPATACr::buildFilePath("_consensusPeaks.png", prj)
-            output_file <- system(paste0("echo ", output_file), intern = TRUE)
-            png(filename = output_file, height = 275, width=275,
-                bg="transparent")
-            suppressWarnings(print(icon))
-            invisible(dev.off())
+    if (file.exists(consensus_path)) {
+        message(paste0("Consensus peak set (", genome, "): ",
+                       consensus_path, "\n"))
+    }
+}
+
+# Calculate consensus peaks
+if (!file.exists(consensus_path)) {
+    consensus_paths <- PEPATACr::consensusPeaks(pep, assets)
+    consensus_paths <- system(paste0("echo ", consensus_paths), intern = TRUE)
+    if (!length(consensus_paths) == 0) {
+        for (consensus_file in consensus_paths) {
+            if (file.exists(consensus_file)) {
+                message("Consensus peak set: ", consensus_file, "\n")
+                icon        <- PEPATACr::fileIcon()
+                file_name   <- paste0("_", genome,"_consensusPeaks.png")
+                output_file <- PEPATACr::buildFilePath(file_name, prj)
+                output_file <- system(paste0("echo ", output_file), intern = TRUE)
+                png(filename = output_file, height = 275, width=275,
+                    bg="transparent")
+                suppressWarnings(print(icon))
+                invisible(dev.off())
+            }
         }
     }
-} else {
-    message("Consensus peak set: ", consensus_path, "\n")
 }
 
 # Create count matrix
 counts_path <- PEPATACr::buildFilePath("_peaks_coverage.tsv", prj)
 counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
 if (!file.exists(counts_path)) {
-    counts_path <- PEPATACr::peakCounts(pep)
+    counts_path <- PEPATACr::peakCounts(pep, assets)
     counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
     if (!is.null(counts_path)) {
         if (file.exists(counts_path)) {

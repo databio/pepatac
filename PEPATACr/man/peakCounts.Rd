@@ -4,10 +4,12 @@
 \alias{peakCounts}
 \title{Produce a project level peak counts table}
 \usage{
-peakCounts(pep)
+peakCounts(pep, assets)
 }
 \arguments{
 \item{pep}{A PEP configuration file}
+
+\item{assets}{A data.table containing file assets}
 }
 \description{
 Produce a project level peak counts table

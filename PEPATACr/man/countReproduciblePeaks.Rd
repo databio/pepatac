@@ -2,7 +2,8 @@
 % Please edit documentation in R/PEPATACr.R
 \name{countReproduciblePeaks}
 \alias{countReproduciblePeaks}
-\title{Count the number of times a peak appears across a list of peak files}
+\title{Internal helper function for \code{collapsePeaks}
+Count the number of times a peak appears across a list of peak files}
 \usage{
 countReproduciblePeaks(peakList, peakDT)
 }
@@ -13,5 +14,6 @@ narrowPeak files}
 \item{peakDT}{A single data.table of peaks}
 }
 \description{
+Internal helper function for \code{collapsePeaks}
 Count the number of times a peak appears across a list of peak files
 }

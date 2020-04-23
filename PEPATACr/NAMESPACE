@@ -2,6 +2,7 @@
 
 export(buildFilePath)
 export(consensusPeaks)
+export(createAssetsSummary)
 export(fileIcon)
 export(getPrealignments)
 export(narrowPeakToBigBed)
