@@ -1485,6 +1485,7 @@ def main():
 
                 pm.report_result("TSS_score", round(Tss_score, 1))
             except ZeroDivisionError:
+                pm.report_result("TSS_score", 0)
                 pass
         
         # Call Rscript to plot TSS Enrichment
