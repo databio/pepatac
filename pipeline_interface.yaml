@@ -38,11 +38,12 @@ sample_pipeline:
     size_dependent_variables: resources-sample.tsv
 
 project_pipeline:
-  name: PEPATAC_collator1
-  path: tools/PEPATAC_summarizer.R
+  name: PEPATAC_summarizer
+  path: pipelines/pepatac_collator.py
   output_schema: pepatac_output_schema.yaml
   command_template: >
-    {pipeline.path} {looper.pep_config}
+    looper summarize {looper.pep_config} &&
+    {pipeline.path} -C {looper.pep_config} -o {looper.output_folder} -n {project.name}
   compute:
     singularity_image: ${SIMAGES}pepatac
     bulker_crate: databio/pepatac
