@@ -1843,7 +1843,7 @@ plotAlignedRaw <- function(prj, stats) {
 
     # Produce full-size PDF
     output_file <- buildFilePath("_alignmentRaw.pdf", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             align_raw_plot,
@@ -1877,7 +1877,7 @@ plotAlignedRaw <- function(prj, stats) {
             align_theme)
 
     output_file <- buildFilePath("_alignmentRaw.png", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             thumb_raw_plot,
@@ -2041,7 +2041,7 @@ plotAlignedPct <- function(prj, stats) {
 
     # Produce full-size PDF
     output_file <- buildFilePath("_alignmentPercent.pdf", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             align_percent_plot, 
@@ -2078,7 +2078,7 @@ plotAlignedPct <- function(prj, stats) {
             align_theme)
 
     output_file <- buildFilePath("_alignmentPercent.png", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             thumb_percent_plot, 
@@ -2102,7 +2102,8 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
-        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.border      = element_rect(colour = "black", fill = NA,
+                                         size = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
@@ -2141,7 +2142,7 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
             cbind.data.frame(sample=stats$sample_name, 
                              TSS=round(stats$TSS_score, digits=2),
                              QCcolor=(TSS_colors[round(stats$TSS_score+0.01,
-                                                      digits=2)*100]))
+                                                       digits=2)*100]))
         },
         error=function(e) {
             message("The summary file value(s) for the TSS score(s)",
@@ -2167,10 +2168,9 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
 
     TSS_score$sample <- factor(TSS_score$sample, levels=TSS_score$sample)
 
-    TSS_plot <- ggplot(
-        TSS_score, aes(x=sample, y=as.numeric(TSS))) +
+    TSS_plot <- ggplot(TSS_score, aes(x=sample, y=as.numeric(TSS))) +
         geom_bar(colour="black", size=0.25, width=0.7, stat="identity",
-                 fill=rev(TSS_score$QCcolor)) +
+                 fill=TSS_score$QCcolor) +
         geom_hline(yintercept=6, linetype=2, color="grey", size=0.25) +
         labs(x="", y="TSS Enrichment Score") +
         scale_x_discrete(limits=rev(TSS_score$sample)) +
@@ -2180,14 +2180,14 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
 
     # Produce both PDF and PNG
     output_file <- buildFilePath("_TSSEnrichment.pdf", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             TSS_plot, file=output_file,
             width=unit(8,"inches"), 
             height=unit(chart_height,"inches")
-            )
         )
+    )
 
     # Produce snap-shot thumbnail PNG for HTML display
     # Limit to 25 samples max
@@ -2211,7 +2211,7 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
         align_theme
 
     output_file <- buildFilePath("_TSSEnrichment.png", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(
             TSS_plot, file=output_file,
@@ -2275,7 +2275,7 @@ plotLibSizes <- function(prj, stats) {
     
     # Produce both PDF and PNG
     output_file <- buildFilePath("_LibSize.pdf", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(lib_size_plot,
                      file=output_file,
@@ -2284,7 +2284,7 @@ plotLibSizes <- function(prj, stats) {
                     )
     )
     output_file <- buildFilePath("_LibSize.png", prj)
-    output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
     suppressWarnings(
         setPanelSize(lib_size_plot,
                      file=output_file,
@@ -2308,12 +2308,12 @@ summarizer <- function(pep) {
     # Build the stats summary file path
     summary_file <- file.path(pepr::config(prj)$looper$output_dir,
         paste0(pepr::config(prj)$name, "_stats_summary.tsv"))
-    summary_file <- system(paste0("echo ", summary_file), intern = TRUE)
+    #summary_file <- system(paste0("echo ", summary_file), intern = TRUE)
 
     # Produce output directory (if needed)
     output_dir <- suppressMessages(
         file.path(pepr::config(prj)$looper$output_dir, "summary"))
-    output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
+    #output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
     dir.create(output_dir, showWarnings = FALSE)
 
     # read in stats summary file
@@ -2445,12 +2445,12 @@ consensusPeaks <- function(pep, assets) {
     # Produce output directory (if needed)
     output_dir <- suppressMessages(
         file.path(pepr::config(prj)$looper$output_dir, "summary"))
-    output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
+    #output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
     dir.create(output_dir, showWarnings = FALSE)
     
     # Grab project directory
     project_dir <- config(prj)$looper$output_dir
-    project_dir <- system(paste0("echo ", project_dir), intern = TRUE)
+    #project_dir <- system(paste0("echo ", project_dir), intern = TRUE)
 
     sample_table <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
                                genome=pepr::sampleTable(prj)$genome)
@@ -2512,7 +2512,7 @@ consensusPeaks <- function(pep, assets) {
             # save consensus peak set
             file_name   <- paste0("_", genome,"_consensusPeaks.narrowPeak")
             output_file <- buildFilePath(file_name, prj)
-            output_file <- system(paste0("echo ", output_file), intern = TRUE)
+            #output_file <- system(paste0("echo ", output_file), intern = TRUE)
             fwrite(final, output_file, sep="\t", col.names=FALSE)
             consensus_peak_files <- c(consensus_peak_files, output_file)
         } else {
@@ -2581,7 +2581,7 @@ peakCounts <- function(pep, assets) {
     prj <- invisible(suppressWarnings(pepr::Project(pep)))
 
     project_dir    <- pepr::config(prj)$looper$output_dir
-    project_dir    <- system(paste0("echo ", project_dir), intern = TRUE)
+    #project_dir    <- system(paste0("echo ", project_dir), intern = TRUE)
     
     # TODO: handle multiple genomes in single project
     sample_names   <- pepr::sampleTable(prj)$sample_name
@@ -2780,7 +2780,7 @@ peakCounts <- function(pep, assets) {
     # save counts table
     if (exists("reduce_dt")) {
             countsPath <- buildFilePath("_peaks_coverage.tsv", prj)
-            countsPath <- system(paste0("echo ", countsPath), intern = TRUE)
+            #countsPath <- system(paste0("echo ", countsPath), intern = TRUE)
             # save consensus peak set
             fwrite(reduce_dt, countsPath, sep="\t", col.names=TRUE)
             return(countsPath)
@@ -2801,7 +2801,7 @@ createAssetsSummary <- function(pep) {
     
     # Grab project directory
     project_dir <- config(prj)$looper$output_dir
-    project_dir <- system(paste0("echo ", project_dir), intern = TRUE)
+    #project_dir <- system(paste0("echo ", project_dir), intern = TRUE)
     
     # Create assets_summary file
     project_samples <- pepr::sampleTable(prj)$sample_name
