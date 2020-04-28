@@ -88,7 +88,7 @@ genomes <- invisible(suppressWarnings(pepr::sampleTable(prj)$genome))
 # Produce output directory (if needed)
 output_dir <- suppressMessages(
     file.path(pepr::config(prj)$looper$output_dir, "summary"))
-output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
+#output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
 dir.create(output_dir, showWarnings = FALSE)
 
 # Produce project summary plots
@@ -99,7 +99,7 @@ if (is.null(summarizer_flag)) {
 
 # Produce library complexity summary plots
 complexity_path <- PEPATACr::buildFilePath("_libComplexity.pdf", prj)
-complexity_path <- system(paste0("echo ", complexity_path), intern = TRUE)
+#complexity_path <- system(paste0("echo ", complexity_path), intern = TRUE)
 if (!file.exists(complexity_path)) {
     cc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
                 "results_pipeline",
@@ -108,7 +108,7 @@ if (!file.exists(complexity_path)) {
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_yield.txt"),
                 sep="/")
-    cc <- system(paste0("echo ", cc), intern = TRUE)
+    #cc <- system(paste0("echo ", cc), intern = TRUE)
     rc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
                 "results_pipeline",
                 suppressMessages(pepr::sampleTable(prj)$sample_name),
@@ -116,7 +116,7 @@ if (!file.exists(complexity_path)) {
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_counts.txt"),
                 sep="/")
-    rc <- system(paste0("echo ", rc), intern = TRUE)
+    #rc <- system(paste0("echo ", rc), intern = TRUE)
 
     hasBoth <- file.exists(cc) & file.exists(rc)
     ccSub   <- cc[hasBoth]
@@ -128,13 +128,13 @@ if (!file.exists(complexity_path)) {
                                             real_counts_path = rcSub,
                                             ignore_unique = FALSE)
         output_file <- PEPATACr::buildFilePath("_libComplexity.pdf", prj)
-        output_file <- system(paste0("echo ", output_file), intern = TRUE)
+        #output_file <- system(paste0("echo ", output_file), intern = TRUE)
         pdf(file = output_file, width= 10, height = 7, useDingbats=F)
         suppressWarnings(print(p))
         invisible(dev.off())
 
         output_file <- PEPATACr::buildFilePath("_libComplexity.png", prj)
-        output_file <- system(paste0("echo ", output_file), intern = TRUE)
+        #output_file <- system(paste0("echo ", output_file), intern = TRUE)
         png(filename = output_file, width = 686, height = 480)
         suppressWarnings(print(p))
         invisible(dev.off())
@@ -143,16 +143,16 @@ if (!file.exists(complexity_path)) {
         complexity_flag <- FALSE
         message("No samples have available library complexity files.")
     }
-    if (!is.null(complexity_path)) {
-        if (file.exists(complexity_path)) {
-            complexity_flag <- TRUE
-        }
+    if (!is.null(complexity_path) && file.exists(complexity_path)) {
+        complexity_flag <- TRUE
     }
 } else {
+    warning("Project level library complexity plot already exists.")
+    message(paste0("Project library complexity plot: ", complexity_path, "\n"))
     complexity_flag <- TRUE
 }
 
-if (summarizer_flag & complexity_flag) {
+if (summarizer_flag && complexity_flag) {
     message("Successfully produced project summary plots.\n")
 }
 
@@ -163,10 +163,10 @@ if (nrow(assets) == 0) {
 }
 
 # Report existing consensus peaks
-for (genome in genomes) {
+for (genome in unique(genomes)) {
     file_name      <- paste0("_", genome,"_consensusPeaks.narrowPeak")
     consensus_path <- PEPATACr::buildFilePath(file_name, prj)
-    consensus_path <- system(paste0("echo ", consensus_path), intern = TRUE)
+    #consensus_path <- system(paste0("echo ", consensus_path), intern = TRUE)
     if (file.exists(consensus_path)) {
         message(paste0("Consensus peak set (", genome, "): ",
                        consensus_path, "\n"))
@@ -176,7 +176,7 @@ for (genome in genomes) {
 # Calculate consensus peaks
 if (!file.exists(consensus_path)) {
     consensus_paths <- PEPATACr::consensusPeaks(pep, assets)
-    consensus_paths <- system(paste0("echo ", consensus_paths), intern = TRUE)
+    #consensus_paths <- system(paste0("echo ", consensus_paths), intern = TRUE)
     if (!length(consensus_paths) == 0) {
         for (consensus_file in consensus_paths) {
             if (file.exists(consensus_file)) {
@@ -184,7 +184,7 @@ if (!file.exists(consensus_path)) {
                 icon        <- PEPATACr::fileIcon()
                 file_name   <- paste0("_", genome,"_consensusPeaks.png")
                 output_file <- PEPATACr::buildFilePath(file_name, prj)
-                output_file <- system(paste0("echo ", output_file), intern = TRUE)
+                #output_file <- system(paste0("echo ", output_file), intern = TRUE)
                 png(filename = output_file, height = 275, width=275,
                     bg="transparent")
                 suppressWarnings(print(icon))
@@ -196,21 +196,19 @@ if (!file.exists(consensus_path)) {
 
 # Create count matrix
 counts_path <- PEPATACr::buildFilePath("_peaks_coverage.tsv", prj)
-counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
+#counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
 if (!file.exists(counts_path)) {
     counts_path <- PEPATACr::peakCounts(pep, assets)
-    counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
-    if (!is.null(counts_path)) {
-        if (file.exists(counts_path)) {
-            message("Counts table: ", counts_path, "\n")
-            icon <- PEPATACr::fileIcon()
-            output_file <- PEPATACr::buildFilePath("_peaks_coverage.png", prj)
-            output_file <- system(paste0("echo ", output_file), intern = TRUE)
-            png(filename = output_file, height = 275, width=275,
-                bg="transparent")
-            suppressWarnings(print(icon))
-            invisible(dev.off())
-        }
+    #counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
+    if (!is.null(counts_path) && file.exists(counts_path)) {
+        message("Counts table: ", counts_path, "\n")
+        icon <- PEPATACr::fileIcon()
+        output_file <- PEPATACr::buildFilePath("_peaks_coverage.png", prj)
+        #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+        png(filename = output_file, height = 275, width=275,
+            bg="transparent")
+        suppressWarnings(print(icon))
+        invisible(dev.off())
     }
 } else {
    message("Counts table: ", counts_path, "\n")
