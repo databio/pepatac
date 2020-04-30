@@ -1634,15 +1634,7 @@ def main():
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
             ]
-            if args.peak_type == "variable":
-                macs_cmd_base.extend(param.macs2.params.split())
-            elif args.peak_type == "fixed":
-                fixed_width = ('--shift -75 --extsize 150 --nomodel '
-                               '--call-summits --nolambda --keep-dup all '
-                               '-p 0.01')
-                macs_cmd_base.extend(fixed_width.split())
-            else:  # default to variable
-                macs_cmd_base.extend(param.macs2.params.split())
+            macs_cmd_base.extend(param.macs2.params.split())
 
         # Call peaks and report peak count.
         cmd = build_command(macs_cmd_base)
