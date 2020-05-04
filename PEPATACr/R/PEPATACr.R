@@ -1381,7 +1381,24 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
 
     if (tolower(plot) == "chromosome") {
         # Chromosome distribution plot
-        x      <- suppressMessages(calcChromBinsRef(query, genome))
+        # TODO: makes this a try-catch
+        x <- tryCatch(
+            {
+                suppressMessages(calcChromBinsRef(query, genome))
+            },
+            error=function(e) {
+                message("calcChromBinsRef(): ", e)
+                return(NULL)
+            },
+            warning=function(e) {
+                message("calcChromBinsRef(): ", e)
+                return(NULL)
+            }
+        )
+        
+        if (is.null(x)) {
+            return(ggplot())
+        }
         # Don't plot lowest 10% represented chromosomes
         tbl    <- data.frame(table(x$chr))
         cutoff <- quantile(tbl$Freq, 0.1)
@@ -1441,7 +1458,22 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
     } else {
         # Default to chromosome distribution plot
         # Chromosome distribution plot
-        x      <- suppressMessages(calcChromBinsRef(query, genome))
+        x <- tryCatch(
+            {
+                suppressMessages(calcChromBinsRef(query, genome))
+            },
+            error=function(e) {
+                message("calcChromBinsRef(): ", e)
+                return(NULL)
+            },
+            warning=function(e) {
+                message("calcChromBinsRef(): ", e)
+                return(NULL)
+            }
+        )
+        if (is.null(x)) {
+            return(ggplot())
+        }
         # Don't plot lowest 10% represented chromosomes
         tbl    <- data.frame(table(x$chr))
         cutoff <- quantile(tbl$Freq, 0.1)
