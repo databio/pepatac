@@ -536,7 +536,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         suppressMessages(suppressWarnings(print(p)))
         invisible(dev.off())
 
-        if (exists("p")) {
+        if (exists("p") && length(p$data) != 0) {
             write(paste0(plot, " distribution plot completed!\n"), stdout())
         } else {
             write(paste0("Unable to produce ", plot,
