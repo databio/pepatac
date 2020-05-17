@@ -3,7 +3,7 @@ pipeline_type: project
 path: pipelines/pepatac_collator.py
 output_schema: pepatac_output_schema.yaml
 command_template: >
-  looper summarize {looper.pep_config} &&
+  looper table {looper.pep_config} &&
   {pipeline.path} -C {looper.pep_config} -o {looper.output_folder} -n {project.name}
 compute:
   singularity_image: ${SIMAGES}pepatac
