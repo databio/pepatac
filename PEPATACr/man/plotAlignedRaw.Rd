@@ -4,10 +4,12 @@
 \alias{plotAlignedRaw}
 \title{This function is meant to plot project level raw aligned reads.}
 \usage{
-plotAlignedRaw(prj, stats)
+plotAlignedRaw(prj, summary_dir, stats)
 }
 \arguments{
 \item{prj}{A PEPr Project object}
+
+\item{summary_dir}{A PEP project summary directory path}
 
 \item{stats}{A looper derived stats_summary.tsv file}
 }

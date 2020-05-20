@@ -4,10 +4,12 @@
 \alias{plotTSSscores}
 \title{This function is meant to plot TSS scores.}
 \usage{
-plotTSSscores(prj, stats, cutoff = 6)
+plotTSSscores(prj, summary_dir, stats, cutoff = 6)
 }
 \arguments{
 \item{prj}{A PEPr Project object}
+
+\item{summary_dir}{A PEP project summary directory path}
 
 \item{stats}{A looper derived stats_summary.tsv file}
 

@@ -4,10 +4,14 @@
 \alias{createAssetsSummary}
 \title{Create and return assets spreadsheet and save the spreadsheet to file}
 \usage{
-createAssetsSummary(pep)
+createAssetsSummary(project, output_dir, results_subdir)
 }
 \arguments{
-\item{pep}{A PEP configuration file}
+\item{project}{A PEPr project object}
+
+\item{output_dir}{A PEP project output directory path}
+
+\item{results_subdir}{A PEP project results subdirectory path}
 }
 \description{
 Create and return assets spreadsheet and save the spreadsheet to file

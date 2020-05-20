@@ -43,11 +43,19 @@ if (length(loadLibrary)!=0) {
 p <- arg_parser("Produce ATAC-seq Summary Reports, Files, and Plots")
 
 # Add command line arguments
-p <- add_argument(p, "config", 
+p <- add_argument(p, arg="config", short="-c",
                   help="PEPATAC project_config.yaml")
-
+p <- add_argument(p, arg="output", short="-o",
+                  help="Project parent output directory path")
+p <- add_argument(p, arg="results", short="-r",
+                  help="Project results output subdirectory path")
+p <- add_argument(p, arg="--new-start", short="-N", flag=TRUE,
+                  help=paste0("New start mode. This flag will tell the ",
+                       "summarizer to start over, and run every command, even ",
+                       "if its target output already exists."))
 # Parse the command line arguments
 argv <- parse_args(p)
+#print(argv)  # DEBUG
 
 ###############################################################################
 ##### LOAD DEPENDENCIES #####
@@ -78,39 +86,55 @@ for (i in required_libraries) {
 ################################################################################
 ##### MAIN #####
 
-# Identify the project configuration file
+# Set the project configuration file
 pep <- argv$config
+# Load the project
 prj <- invisible(suppressWarnings(pepr::Project(pep)))
+# Convenience
+project_name <- config(prj)$name
 
-# Project genomes
+# Set the output directory
+summary_dir <- suppressMessages(file.path(argv$output, "summary"))
+# Produce output directory (if needed)
+dir.create(summary_dir, showWarnings = FALSE)
+
+# Get project genomes
 genomes <- invisible(suppressWarnings(pepr::sampleTable(prj)$genome))
 
-# Produce output directory (if needed)
-output_dir <- suppressMessages(
-    file.path(pepr::config(prj)$looper$output_dir, "summary"))
-#output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
-dir.create(output_dir, showWarnings = FALSE)
+# Set the results subdirectory
+if (dir.exists(argv$results)) {
+    results_subdir <- suppressMessages(file.path(argv$results))
+} else {
+    warning(paste0("The project results subdirectory (", argv$results,
+            ") does not exist."))
+    quit()
+}
+
+
+# Get assets
+assets  <- PEPATACr::createAssetsSummary(prj, argv$output, results_subdir)
+if (nrow(assets) == 0) {
+    quit()
+}
 
 # Produce project summary plots
-summarizer_flag <- PEPATACr::summarizer(pep)
+summarizer_flag <- PEPATACr::summarizer(prj, argv$output)
 if (is.null(summarizer_flag)) {
     summarizer_flag <- FALSE
 }
 
 # Produce library complexity summary plots
-complexity_path <- PEPATACr::buildFilePath("_libComplexity.pdf", prj)
-#complexity_path <- system(paste0("echo ", complexity_path), intern = TRUE)
-if (!file.exists(complexity_path)) {
-    cc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
-                "results_pipeline",
+complexity_path <- file.path(summary_dir,
+                             paste0(project_name, "_libComplexity.pdf"))
+if (!file.exists(complexity_path) || argv$new_start) {
+    cc <- paste(results_subdir,
                 suppressMessages(pepr::sampleTable(prj)$sample_name),
                 paste0("QC_", suppressMessages(pepr::sampleTable(prj)$genome)),
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_yield.txt"),
                 sep="/")
     #cc <- system(paste0("echo ", cc), intern = TRUE)
-    rc <- paste(suppressMessages(pepr::config(prj)$looper$output_dir),
-                "results_pipeline",
+    rc <- paste(results_subdir,
                 suppressMessages(pepr::sampleTable(prj)$sample_name),
                 paste0("QC_", suppressMessages(pepr::sampleTable(prj)$genome)),
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
@@ -121,20 +145,21 @@ if (!file.exists(complexity_path)) {
     hasBoth <- file.exists(cc) & file.exists(rc)
     ccSub   <- cc[hasBoth]
     rcSub   <- rc[hasBoth]
-    message(paste0(length(ccSub), " of ", length(cc), " files available"))
+    message(paste0(length(ccSub), " of ", length(cc),
+            " library complexity files available."))
     if (sum(hasBoth) > 0){
         p <- PEPATACr::plotComplexityCurves(ccurves = ccSub, coverage = 0,
                                             read_length = 0,
                                             real_counts_path = rcSub,
                                             ignore_unique = FALSE)
-        output_file <- PEPATACr::buildFilePath("_libComplexity.pdf", prj)
-        #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+        output_file <- file.path(summary_dir,
+                                 paste0(project_name, "_libComplexity.pdf"))
         pdf(file = output_file, width= 10, height = 7, useDingbats=F)
         suppressWarnings(print(p))
         invisible(dev.off())
 
-        output_file <- PEPATACr::buildFilePath("_libComplexity.png", prj)
-        #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+        output_file <- file.path(summary_dir,
+                                 paste0(project_name, "_libComplexity.png"))
         png(filename = output_file, width = 686, height = 480)
         suppressWarnings(print(p))
         invisible(dev.off())
@@ -156,17 +181,10 @@ if (summarizer_flag && complexity_flag) {
     message("Successfully produced project summary plots.\n")
 }
 
-# Get assets
-assets <- PEPATACr::createAssetsSummary(pep)
-if (nrow(assets) == 0) {
-    quit()
-}
-
 # Report existing consensus peaks
 for (genome in unique(genomes)) {
     file_name      <- paste0("_", genome,"_consensusPeaks.narrowPeak")
-    consensus_path <- PEPATACr::buildFilePath(file_name, prj)
-    #consensus_path <- system(paste0("echo ", consensus_path), intern = TRUE)
+    consensus_path <- file.path(summary_dir, paste0(project_name, file_name))
     if (file.exists(consensus_path)) {
         message(paste0("Consensus peak set (", genome, "): ",
                        consensus_path, "\n"))
@@ -174,17 +192,18 @@ for (genome in unique(genomes)) {
 }
 
 # Calculate consensus peaks
-if (!file.exists(consensus_path)) {
-    consensus_paths <- PEPATACr::consensusPeaks(pep, assets)
-    #consensus_paths <- system(paste0("echo ", consensus_paths), intern = TRUE)
+if (!file.exists(consensus_path) || argv$new_start) {
+    write(paste0("Creating consensus peak set..."), stdout())
+    consensus_paths <- PEPATACr::consensusPeaks(prj, argv$output,
+                                                argv$results, assets)
     if (!length(consensus_paths) == 0) {
         for (consensus_file in consensus_paths) {
             if (file.exists(consensus_file)) {
                 message("Consensus peak set: ", consensus_file, "\n")
                 icon        <- PEPATACr::fileIcon()
                 file_name   <- paste0("_", genome,"_consensusPeaks.png")
-                output_file <- PEPATACr::buildFilePath(file_name, prj)
-                #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+                output_file <- file.path(summary_dir,
+                                         paste0(project_name, file_name))
                 png(filename = output_file, height = 275, width=275,
                     bg="transparent")
                 suppressWarnings(print(icon))
@@ -195,16 +214,16 @@ if (!file.exists(consensus_path)) {
 }
 
 # Create count matrix
-counts_path <- PEPATACr::buildFilePath("_peaks_coverage.tsv", prj)
-#counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
-if (!file.exists(counts_path)) {
-    counts_path <- PEPATACr::peakCounts(pep, assets)
-    #counts_path <- system(paste0("echo ", counts_path), intern = TRUE)
+counts_path <- file.path(summary_dir,
+                         paste0(project_name, "_peaks_coverage.tsv"))
+if (!file.exists(counts_path) || argv$new_start) {
+    write(paste0("Creating gene count table..."), stdout())
+    counts_path <- PEPATACr::peakCounts(prj, argv$output, argv$results, assets)
     if (!is.null(counts_path) && file.exists(counts_path)) {
         message("Counts table: ", counts_path, "\n")
         icon <- PEPATACr::fileIcon()
-        output_file <- PEPATACr::buildFilePath("_peaks_coverage.png", prj)
-        #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+        output_file <- file.path(summary_dir,
+                                 paste0(project_name, "_peaks_coverage.png"))
         png(filename = output_file, height = 275, width=275,
             bg="transparent")
         suppressWarnings(print(icon))

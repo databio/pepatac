@@ -5,7 +5,7 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 from argparse import ArgumentParser
 import os
@@ -31,27 +31,40 @@ def parse_arguments():
 
     :return argparse.Namespace: parsed arguments namespace
     """
-    parser = VersionInHelpParser(prog="PEPATAC collator", description='PEPATAC collator' , version=__version__)
+    parser = VersionInHelpParser(prog="PEPATAC_collator",
+        description='PEPATAC collator' , version=__version__)
     parser = pypiper.add_pypiper_args(parser, groups=['pypiper', 'looper'])
-    parser.add_argument("-n", "--name", help="Name of the project to use.", type=str)
-    parser.add_argument("-o", "--output", help="Output dir path.", type=str)
+    parser.add_argument("-n", "--name",
+                        help="Name of the project to use.", type=str)
+    parser.add_argument("-r", "--results",
+                        help="Output results sub directory path.", type=str)
     args = parser.parse_args()
     return args
 
 
 def main():
     args = parse_arguments()
-    outfolder = os.path.abspath(os.path.join(args.output, "summary"))
+    outfolder = os.path.abspath(os.path.join(args.output_parent, "summary"))
     
-    pm = pypiper.PipelineManager(
-        name="PEPATAC collator", outfolder=outfolder,
-        args=args, version=__version__)
+    pm = pypiper.PipelineManager(name="PEPATAC_collator", outfolder=outfolder,
+                                 args=args, version=__version__)
 
-    cmd = "Rscript {} {}".format(tool_path("PEPATAC_summarizer.R"), args.config_file)
+    cmd = "Rscript {R_file} {config_file} {output_dir} {results_subdir}".format(
+        R_file=tool_path("PEPATAC_summarizer.R"),
+        config_file=args.config_file,
+        output_dir=args.output_parent,
+        results_subdir=args.results)
+    if args.new_start:
+        cmd += " --new-start"
 
-    pm.run(cmd, [os.path.join(outfolder, "{name}_libComplexity.pdf".format(name=args.name)),
-                 os.path.join(outfolder, "{name}_*_consensusPeaks.narrowPeak".format(name=args.name)),
-                 os.path.join(outfolder, "{name}_peaks_coverage.tsv".format(name=args.name))])
+    complexity_file = os.path.join(
+        outfolder, "{name}_libComplexity.pdf".format(name=args.name))
+    consensus_peaks_file = os.path.join(
+        outfolder, "{name}_*_consensusPeaks.narrowPea".format(name=args.name))
+    peak_coverage_file = os.path.join(
+        outfolder, "{name}_peaks_coverage.tsv".format(name=args.name))
+
+    pm.run(cmd, [complexity_file, consensus_peaks_file, peak_coverage_file])
     pm.stop_pipeline()
 
 

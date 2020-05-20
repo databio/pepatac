@@ -4,10 +4,14 @@
 \alias{consensusPeaks}
 \title{This function is meant to identify a project level set of consensus peaks.}
 \usage{
-consensusPeaks(pep, assets)
+consensusPeaks(project, output_dir, results_subdir, assets)
 }
 \arguments{
-\item{pep}{A PEP configuration file}
+\item{project}{A PEPr Project object}
+
+\item{output_dir}{A PEP project output directory path}
+
+\item{results_subdir}{A PEP project results subdirectory path}
 
 \item{assets}{A data.table containing file assets}
 }

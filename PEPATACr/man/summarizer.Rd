@@ -5,10 +5,12 @@
 \title{This function is meant to plot multiple summary graphs from the summary table 
 made by the Looper summarize command}
 \usage{
-summarizer(pep)
+summarizer(project, output_dir)
 }
 \arguments{
-\item{pep}{A PEP configuration file}
+\item{project}{A PEPr Project object}
+
+\item{output_dir}{A PEP project output directory path}
 }
 \description{
 This function is meant to plot multiple summary graphs from the summary table 

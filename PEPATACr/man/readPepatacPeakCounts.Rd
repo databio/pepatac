@@ -4,10 +4,12 @@
 \alias{readPepatacPeakCounts}
 \title{Read PEPATAC peak coverage files}
 \usage{
-readPepatacPeakCounts(prj)
+readPepatacPeakCounts(prj, results_subdir)
 }
 \arguments{
-\item{pep}{A PEPr project object}
+\item{prj}{A PEPr project object}
+
+\item{results_subdir}{A PEP project results subdirectory path}
 }
 \description{
 Read PEPATAC peak coverage files

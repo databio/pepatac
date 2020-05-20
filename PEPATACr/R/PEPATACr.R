@@ -267,7 +267,7 @@ plotComplexityCurves <- function(ccurves,
         numFields   <- 2
         for(j in 1:numFields) name <- gsub("_[^_]*$", "", name)
         sample_name <- name
-        message(paste0("Processing ", sample_name))
+        #message(paste0("Processing ", sample_name))
 
         if (exists(ccurves[[c]])) {
             ctable <- data.table(get(ccurves[[c]]))
@@ -1712,18 +1712,6 @@ setPanelSize <- function(p=NULL, g=ggplotGrob(p), file=NULL,
 }
 
 
-#' Helper function to build a file path to the correct output folder using a
-#' specified suffix
-#'
-#' @param suffix A file suffix identifier
-#' @param pep A PEP project configuration file
-#' @export
-buildFilePath <- function(suffix, pep=prj) {
-    file.path(pepr::config(pep)$looper$output_dir, "summary",
-              paste0(config(pep)$name, suffix))
-}
-
-
 #' Return a list of prealignments from a stats_summary.tsv file if they exist
 #'
 #' @param stats_file A looper derived stats_summary.tsv file
@@ -1743,10 +1731,14 @@ getPrealignments <- function(stats_file) {
 #' This function is meant to plot project level raw aligned reads.
 #'
 #' @param prj A PEPr Project object
+#' @param summary_dir A PEP project summary directory path
 #' @param stats A looper derived stats_summary.tsv file
 #' @keywords aligned reads raw
 #' @export
-plotAlignedRaw <- function(prj, stats) {
+plotAlignedRaw <- function(prj, summary_dir, stats) {
+    # Convenience
+    project_name <- config(prj)$name
+
     align_theme <- theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
@@ -1874,8 +1866,8 @@ plotAlignedRaw <- function(prj, stats) {
             align_theme)
 
     # Produce full-size PDF
-    output_file <- buildFilePath("_alignmentRaw.pdf", prj)
-    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    output_file <- file.path(summary_dir,
+                             paste0(project_name, "_alignmentRaw.pdf"))
     suppressWarnings(
         setPanelSize(
             align_raw_plot,
@@ -1908,8 +1900,8 @@ plotAlignedRaw <- function(prj, stats) {
             coord_flip() +
             align_theme)
 
-    output_file <- buildFilePath("_alignmentRaw.png", prj)
-    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    output_file <- file.path(summary_dir,
+                             paste0(project_name, "_alignmentRaw.png"))
     suppressWarnings(
         setPanelSize(
             thumb_raw_plot,
@@ -1924,10 +1916,14 @@ plotAlignedRaw <- function(prj, stats) {
 #' This function is meant to plot project level percent aligned reads.
 #'
 #' @param prj A PEPr Project object
+#' @param summary_dir A PEP project summary directory path
 #' @param stats A looper derived stats_summary.tsv file
 #' @keywords aligned reads percent
 #' @export
-plotAlignedPct <- function(prj, stats) {
+plotAlignedPct <- function(prj, summary_dir, stats) {
+    # Convenience
+    project_name <- config(prj)$name
+
     align_theme <- theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
@@ -2072,8 +2068,8 @@ plotAlignedPct <- function(prj, stats) {
             align_theme)
 
     # Produce full-size PDF
-    output_file <- buildFilePath("_alignmentPercent.pdf", prj)
-    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    output_file <- file.path(summary_dir,
+                             paste0(project_name, "_alignmentPercent.pdf"))
     suppressWarnings(
         setPanelSize(
             align_percent_plot, 
@@ -2109,8 +2105,8 @@ plotAlignedPct <- function(prj, stats) {
             coord_flip() +
             align_theme)
 
-    output_file <- buildFilePath("_alignmentPercent.png", prj)
-    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    output_file <- file.path(summary_dir,
+                             paste0(project_name, "_alignmentPercent.png"))
     suppressWarnings(
         setPanelSize(
             thumb_percent_plot, 
@@ -2125,11 +2121,15 @@ plotAlignedPct <- function(prj, stats) {
 #' This function is meant to plot TSS scores.
 #'
 #' @param prj A PEPr Project object
+#' @param summary_dir A PEP project summary directory path
 #' @param stats A looper derived stats_summary.tsv file
 #' @param cutoff A TSS enrichment cutoff score for low quality scores
 #' @keywords TSS scores
 #' @export
-plotTSSscores <- function(prj, stats, cutoff=6) {
+plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
+    # Convenience
+    project_name <- config(prj)$name
+
     align_theme <- theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
@@ -2211,8 +2211,8 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
         align_theme
 
     # Produce both PDF and PNG
-    output_file <- buildFilePath("_TSSEnrichment.pdf", prj)
-    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    output_file <- file.path(summary_dir,
+                             paste0(project_name, "_TSSEnrichment.pdf"))
     suppressWarnings(
         setPanelSize(
             TSS_plot, file=output_file,
@@ -2242,8 +2242,8 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
         coord_flip() +
         align_theme
 
-    output_file <- buildFilePath("_TSSEnrichment.png", prj)
-    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    output_file <- file.path(summary_dir,
+                             paste0(project_name, "_TSSEnrichment.png"))
     suppressWarnings(
         setPanelSize(
             TSS_plot, file=output_file,
@@ -2257,10 +2257,14 @@ plotTSSscores <- function(prj, stats, cutoff=6) {
 #' This function is meant to plot library sizes.
 #'
 #' @param prj A PEPr Project object
+#' @param summary_dir A PEP project summary directory path
 #' @param stats A looper derived stats_summary.tsv file
 #' @keywords library size
 #' @export
-plotLibSizes <- function(prj, stats) {
+plotLibSizes <- function(prj, summary_dir, stats) {
+    # Convenience
+    project_name <- config(prj)$name
+
     align_theme <- theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
@@ -2306,8 +2310,7 @@ plotLibSizes <- function(prj, stats) {
         align_theme
     
     # Produce both PDF and PNG
-    output_file <- buildFilePath("_LibSize.pdf", prj)
-    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    output_file <- file.path(summary_dir, paste0(project_name, "_LibSize.pdf"))
     suppressWarnings(
         setPanelSize(lib_size_plot,
                      file=output_file,
@@ -2315,8 +2318,7 @@ plotLibSizes <- function(prj, stats) {
                      height=unit(chart_height,"inches")
                     )
     )
-    output_file <- buildFilePath("_LibSize.png", prj)
-    #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+    output_file <- file.path(summary_dir, paste0(project_name, "_LibSize.png"))
     suppressWarnings(
         setPanelSize(lib_size_plot,
                      file=output_file,
@@ -2330,23 +2332,19 @@ plotLibSizes <- function(prj, stats) {
 #' This function is meant to plot multiple summary graphs from the summary table 
 #' made by the Looper summarize command
 #'
-#' @param pep A PEP configuration file
+#' @param project A PEPr Project object
+#' @param output_dir A PEP project output directory path
 #' @keywords summarize PEPATAC
 #' @export
-summarizer <- function(pep) {
-    # Load PEP configuration file
-    prj <- invisible(suppressWarnings(pepr::Project(pep)))
-
+summarizer <- function(project, output_dir) {
     # Build the stats summary file path
-    summary_file <- file.path(pepr::config(prj)$looper$output_dir,
-        paste0(pepr::config(prj)$name, "_stats_summary.tsv"))
-    #summary_file <- system(paste0("echo ", summary_file), intern = TRUE)
+    summary_file <- file.path(output_dir,
+        paste0(pepr::config(project)$name, "_stats_summary.tsv"))
 
+    # Set the output directory
+    summary_dir <- suppressMessages(file.path(output_dir, "summary"))
     # Produce output directory (if needed)
-    output_dir <- suppressMessages(
-        file.path(pepr::config(prj)$looper$output_dir, "summary"))
-    #output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
-    dir.create(output_dir, showWarnings = FALSE)
+    dir.create(summary_dir, showWarnings = FALSE)
 
     # read in stats summary file
     if (file.exists(summary_file)) {
@@ -2365,17 +2363,17 @@ summarizer <- function(pep) {
     stats$Picard_est_lib_size[stats$Picard_est_lib_size=="Unknown"] <- 0
 
     # plot raw alignment statistics for the project
-    plotAlignedRaw(prj, stats)
+    plotAlignedRaw(project, summary_dir, stats)
 
     # plot percent alignment statistics for the project
-    plotAlignedPct(prj, stats)
+    plotAlignedPct(project, summary_dir, stats)
 
     # plot the TSS scores for all project samples
-    plotTSSscores(prj, stats)
+    plotTSSscores(project, summary_dir, stats)
 
     # plot library sizes if that was calculated
     if (any(!is.na(stats$Picard_est_lib_size))) {
-        plotLibSize(prj, stats)
+        plotLibSize(project, summary_dir, stats)
     }
     return(TRUE)
 }
@@ -2466,23 +2464,17 @@ collapsePeaks <- function(sample_table, chrom_sizes, min_score=5) {
 
 #' This function is meant to identify a project level set of consensus peaks.
 #'
-#' @param pep A PEP configuration file
+#' @param project A PEPr Project object
+#' @param output_dir A PEP project output directory path
+#' @param results_subdir A PEP project results subdirectory path
 #' @param assets A data.table containing file assets
 #' @keywords consensus peaks
 #' @export
-consensusPeaks <- function(pep, assets) {
-    # Identify the project configuration file
-    prj <- invisible(suppressWarnings(pepr::Project(pep)))
-    
-    # Produce output directory (if needed)
-    output_dir <- suppressMessages(
-        file.path(pepr::config(prj)$looper$output_dir, "summary"))
-    #output_dir <- system(paste0("echo ", output_dir), intern = TRUE)
-    dir.create(output_dir, showWarnings = FALSE)
-    
-    # Grab project directory
-    project_dir <- config(prj)$looper$output_dir
-    #project_dir <- system(paste0("echo ", project_dir), intern = TRUE)
+consensusPeaks <- function(project, output_dir, results_subdir, assets) {    
+    # Set the summary output directory
+    summary_dir <- suppressMessages(file.path(output_dir, "summary"))
+    # Produce summary output directory (if needed)
+    dir.create(summary_dir, showWarnings = FALSE)
 
     sample_table <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
                                genome=pepr::sampleTable(prj)$genome)
@@ -2490,8 +2482,9 @@ consensusPeaks <- function(pep, assets) {
                         c_path := i.path, on = 'sample_name']
 
     # generate paths to peak files
-    sample_table[,peak_files:=.((file.path(project_dir,
-               paste0("results_pipeline/", sample_table$sample_name),
+    sample_table[,peak_files:=.((file.path(
+               results_subdir,
+               sample_table$sample_name,
                paste0("peak_calling_", sample_table$genome),
                paste0(sample_table$sample_name,
                "_peaks_normalized.narrowPeak"))))]
@@ -2527,8 +2520,6 @@ consensusPeaks <- function(pep, assets) {
             warning("Confirm peak files exist for your samples.")
             next
         }
-        # c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
-                          # paste0(genome, "/fasta.chrom_sizes")), stdout=TRUE)
         c_path <- unique(sample_table[genome == genome, c_path])
         if (file.exists(c_path)) {
             c_size <- fread(c_path)
@@ -2543,8 +2534,8 @@ consensusPeaks <- function(pep, assets) {
         if (!is.null(final)) {
             # save consensus peak set
             file_name   <- paste0("_", genome,"_consensusPeaks.narrowPeak")
-            output_file <- buildFilePath(file_name, prj)
-            #output_file <- system(paste0("echo ", output_file), intern = TRUE)
+            output_file <- file.path(summary_dir,
+                                     paste0(project_name, file_name))
             fwrite(final, output_file, sep="\t", col.names=FALSE)
             consensus_peak_files <- c(consensus_peak_files, output_file)
         } else {
@@ -2559,11 +2550,11 @@ consensusPeaks <- function(pep, assets) {
 
 #' Read PEPATAC peak coverage files
 #'
-#' @param pep A PEPr project object
+#' @param prj A PEPr project object
+#' @param results_subdir A PEP project results subdirectory path
 #' @keywords project peak coverage
 #' @export
-readPepatacPeakCounts = function(prj) {
-    project_dir    <- pepr::config(prj)$looper$output_dir
+readPepatacPeakCounts = function(prj, results_subdir) {
     sample_names   <- pepr::sampleTable(prj)$sample_name
     genomes        <- as.list(pepr::sampleTable(prj)$genome)
     names(genomes) <- sample_names
@@ -2571,17 +2562,20 @@ readPepatacPeakCounts = function(prj) {
     names(paths)   <- sample_names
 
     # Use reference peak coverage file if available
-    if (any(file.exists(file.path(project_dir, "results_pipeline",
+    if (any(file.exists(file.path(results_subdir,
                         sample_names, paste0("peak_calling_", genomes),
                         paste0(sample_names, "_ref_peaks_coverage.bed"))))) {
         peak_file = "_ref_peaks_coverage.bed"
     } else {
-        warning("Peak coverage files are not derived from a singular reference peak set.")
+        warning(paste0("Peak coverage files are not derived from a ",
+                       "singular reference peak set.\n",
+                       "Try using --frip-ref-peaks and point to a single ",
+                       "reference peak set."))
         peak_file = "_peaks_coverage.bed"
     }
 
     for (sample in sample_names) {
-        paths[[sample]] <- paste(project_dir, 'results_pipeline', sample,
+        paths[[sample]] <- paste(results_subdir, sample,
                                  paste0('peak_calling_', genomes[[sample]]),
                                  paste0(sample, peak_file),
                                  sep="/")
@@ -2604,35 +2598,33 @@ readPepatacPeakCounts = function(prj) {
 
 #' Produce a project level peak counts table
 #'
-#' @param pep A PEP configuration file
+#' @param project A PEPr project object
+#' @param output_dir A PEP project output directory path
+#' @param results_subdir A PEP project results subdirectory path
 #' @param assets A data.table containing file assets
 #' @keywords project peak counts
 #' @export
-peakCounts <- function(pep, assets) {
-    # Identify the project configuration file
-    prj <- invisible(suppressWarnings(pepr::Project(pep)))
+peakCounts <- function(project, output_dir, results_subdir, assets) {
+    # Set the output directory
+    summary_dir <- suppressMessages(file.path(output_dir, "summary"))
+    # Produce output directory (if needed)
+    dir.create(summary_dir, showWarnings = FALSE)
 
-    project_dir    <- pepr::config(prj)$looper$output_dir
-    #project_dir    <- system(paste0("echo ", project_dir), intern = TRUE)
-    
     # TODO: handle multiple genomes in single project
-    sample_names   <- pepr::sampleTable(prj)$sample_name
-    genomes        <- as.list(pepr::sampleTable(prj)$genome)
+    sample_names   <- pepr::sampleTable(project)$sample_name
+    genomes        <- as.list(pepr::sampleTable(project)$genome)
     names(genomes) <- sample_names
-    sample_names   <- as.character(pepr::sampleTable(prj)$sample_name)
+    sample_names   <- as.character(pepr::sampleTable(project)$sample_name)
     
-    sample_table <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
-                               genome=pepr::sampleTable(prj)$genome)
+    sample_table <- data.table(
+        sample_name=pepr::sampleTable(project)$sample_name,
+        genome=pepr::sampleTable(project)$genome)
     
     setDT(sample_table)[assets[asset == 'chrom_sizes', ],
                         c_path := i.path, on = 'sample_name']
 
-    # c_path <- system2(paste0("refgenie"), args=c(paste(" seek "),
-                      # paste0(unique(genomes), "/fasta.chrom_sizes")),
-                      # stdout=TRUE)
-
     # Use reference peak coverage file if available
-    if (any(file.exists(file.path(project_dir, "results_pipeline",
+    if (any(file.exists(file.path(results_subdir,
                         sample_names, paste0("peak_calling_", genomes),
                         paste0(sample_names, "_ref_peaks_coverage.bed"))))) {
         peak_file_name = "_ref_peaks_coverage.bed"
@@ -2644,8 +2636,9 @@ peakCounts <- function(pep, assets) {
     }
     
     # generate paths to peak coverage files
-    sample_table[,peak_files:=.((file.path(project_dir,
-               paste0("results_pipeline/", sample_table$sample_name),
+    sample_table[,peak_files:=.((file.path(
+               results_subdir,
+               sample_table$sample_name,
                paste0("peak_calling_", sample_table$genome),
                paste0(sample_table$sample_name, peak_file_name))))]
     peak_files = sample_table$peak_files
@@ -2811,11 +2804,11 @@ peakCounts <- function(pep, assets) {
 
     # save counts table
     if (exists("reduce_dt")) {
-            countsPath <- buildFilePath("_peaks_coverage.tsv", prj)
-            #countsPath <- system(paste0("echo ", countsPath), intern = TRUE)
+            counts_path <- file.path(summary_dir,
+                paste0(project_name, "_peaks_coverage.tsv"))
             # save consensus peak set
-            fwrite(reduce_dt, countsPath, sep="\t", col.names=TRUE)
-            return(countsPath)
+            fwrite(reduce_dt, counts_path, sep="\t", col.names=TRUE)
+            return(counts_path)
     } else {
         warning("Unable to produce a peak coverage file.")
         warning("Check that individual peak coverage files exist for your samples.")
@@ -2826,27 +2819,26 @@ peakCounts <- function(pep, assets) {
 
 #' Create and return assets spreadsheet and save the spreadsheet to file
 #'
-#' @param pep A PEP configuration file
+#' @param project A PEPr project object
+#' @param output_dir A PEP project output directory path
+#' @param results_subdir A PEP project results subdirectory path
 #' @export
-createAssetsSummary <- function(pep) {
-    prj <- invisible(suppressWarnings(pepr::Project(pep)))
-    
-    # Grab project directory
-    project_dir <- config(prj)$looper$output_dir
-    #project_dir <- system(paste0("echo ", project_dir), intern = TRUE)
+createAssetsSummary <- function(project, output_dir, results_subdir) {
+    # Convenience
+    project_name <- pepr::config(project)$name
     
     # Create assets_summary file
-    project_samples <- pepr::sampleTable(prj)$sample_name
+    project_samples <- pepr::sampleTable(project)$sample_name
     missing_files   <- 0
     assets  <- data.table(sample_name=character(),
                           asset=character(),
                           path=character(),
                           annotation=character())
     write(paste0("Creating assets summary..."), stdout())
+
     for (sample in project_samples) {
-        sample_output_folder = file.path(project_dir,
-               paste0("results_pipeline/", sample))
-        sample_assets_file = file.path(sample_output_folder, "assets.tsv")
+        sample_output_folder <- file.path(results_subdir, sample)
+        sample_assets_file   <- file.path(sample_output_folder, "assets.tsv")
 
         if (!file.exists(sample_assets_file)) {
             missing_files <- missing_files + 1
@@ -2855,12 +2847,13 @@ createAssetsSummary <- function(pep) {
 
         t <- fread(sample_assets_file, header=FALSE,
                    col.names=c('asset', 'path', 'annotation'))
-        t <- t[!duplicated(t[, c('asset', 'path', 'annotation')], fromLast=TRUE),]
+        t <- t[!duplicated(t[, c('asset', 'path', 'annotation')],
+               fromLast=TRUE),]
         t[,sample_name:=sample]
         assets = rbind(assets, t)
     }
-    project_assets_file <- file.path(project_dir,
-        paste0(config(prj)$name, '_assets_summary.tsv'))
+    project_assets_file <- file.path(output_dir,
+        paste0(project_name, '_assets_summary.tsv'))
     if (missing_files > 0) {
         warning(sprintf("Assets files missing for %s samples.", missing_files))
     }
