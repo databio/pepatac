@@ -4,7 +4,7 @@ path: pipelines/pepatac_collator.py
 output_schema: pepatac_output_schema.yaml
 command_template: >
   looper table {looper.pep_config} &&
-  {pipeline.path} -C {looper.pep_config} -o {looper.output_folder} -n {project.name}
+  {pipeline.path} -C {looper.pep_config} -o {looper.output_dir} -n {project.name}
 compute:
   singularity_image: ${SIMAGES}pepatac
   bulker_crate: databio/pepatac
