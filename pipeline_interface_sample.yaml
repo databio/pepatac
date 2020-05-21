@@ -1,7 +1,7 @@
 pipeline_name: PEPATAC
 pipeline_type: sample
 path: pipelines/pepatac.py
-input_schema: http://schema.databio.org/pipelines/pepatac.yaml
+input_schema: pepatac_input_schema.yaml
 output_schema: pepatac_output_schema.yaml
 command_template: >
   {pipeline.path}
@@ -9,7 +9,7 @@ command_template: >
   --genome {sample.genome}
   --input {sample.read1}
   --single-or-paired {sample.read_type}
-  -O {looper.output_dir}
+  -O {looper.results_subdir}
   -P {compute.cores}
   -M {compute.mem}
   {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
@@ -35,3 +35,7 @@ compute:
   docker_image: databio/pepatac
   bulker_crate: databio/pepatac
   size_dependent_variables: resources-sample.tsv
+
+bioconductor:
+  readFunName: readPepatacPeakBeds
+  readFunPath: BiocProject/readPepatacPeakBeds.R
