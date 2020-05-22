@@ -34,9 +34,9 @@ properties:
         - protocol
         - read1
         - genome
-      required_input_attrs:
+      required_files:
         - read1
-      input_attrs:
+      files:
         - read1
         - read2
 required:
