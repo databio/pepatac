@@ -1433,7 +1433,7 @@ def main():
             shift_minus_bed,
             (" > ", fixed_minus_bed) 
         ])
-        pm.run([fix_cmd1, fix_cmd2], shift_bed)
+        pm.run([fix_cmd1, fix_cmd2], [fixed_plus_bed, fixed_minus_bed])
         pm.clean_add(fixed_plus_bed)
         pm.clean_add(fixed_minus_bed)
 
