@@ -28,7 +28,7 @@ nav:
   - Reference: 
     - Example output file structure: 'browse_output.md'
     - "Example summary: gold project": 'files/examples/gold/gold_summary.html'
-    - "Example summary: tutorial project": 'files/examples/tutorial/tutorial_summary.html'
+    - "Example summary: tutorial project": 'files/examples/tutorial/PEPATAC_tutorial_summary.html'
     - Usage: 'usage.md'
     - FAQ: faq.md
     - Glossary: 'glossary.md'
