@@ -7,7 +7,6 @@ looper:
   output_dir: "$PROCESSED/tutorial/"
   pipeline_interfaces: ["$CODE/pepatac/project_pipeline_interface.yaml"]
 
-
 sample_modifiers:
   append:
     pipeline_interfaces: ["$CODE/pepatac/sample_pipeline_interface.yaml"]

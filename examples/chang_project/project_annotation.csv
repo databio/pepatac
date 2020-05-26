@@ -1,4 +1,0 @@
-sample_name,library,organism,read1,read2,read_length,read_type
-sample1,ATAC,human,R1,R2,75,paired
-sample2,ATAC,human,R1,R2,75,paired
-sample3,ATAC,human,R1,R2,75,paired
