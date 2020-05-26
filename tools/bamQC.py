@@ -1,21 +1,20 @@
 #!/usr/bin/env python
-# bamQC.py
-#
-# Last updated 8/4/18: Jason Smith
 #
 # Function: Script takes as input a BAM file and calculates the non-redundant
 #           fraction (NRF) and the PCR bottleneck coefficients 1 (PBC1)
 #           and 2 (PBC2). 
 #
+__author__ = ["Jason Smith"]
+__credits__ = []
+__license__ = "BSD2"
+__version__ = "0.1.0"
+__email__ = "jasonsmith@virginia.edu"
 
 from argparse import ArgumentParser
 import os
 import sys
-
 import pararead
-from logmuse import add_logging_options
-from logmuse import logger_via_cli
-
+import logmuse
 import pandas as _pd
 import numpy as np
 
@@ -114,7 +113,7 @@ class bamQC(pararead.ParaReadProcessor):
                 return merge 
 
         ##### MAIN #####
-        _LOGGER.info("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
+        _LOGGER.debug("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
         if os.path.isfile(self.reads_filename):
             chrom_out_file = self._tempf(chrom)
             readCount = []
@@ -230,7 +229,7 @@ def parse_args(cmdl):
     parser.add_argument('-c', '--cores', dest='cores', default=20, type=int,
                         help="Number of processors to use. Default=20")
 
-    parser = add_logging_options(parser)
+    parser = logmuse.add_logging_options(parser)
     return parser.parse_args(cmdl)
 
 
@@ -238,7 +237,7 @@ def parse_args(cmdl):
 if __name__ == "__main__":
 
     args = parse_args(sys.argv[1:])
-    _LOGGER = logger_via_cli(args)
+    _LOGGER = logmuse.logger_via_cli(args, make_root=True)
 
     qc = bamQC(reads_filename=args.infile,
                out_filename=args.outfile,
@@ -248,5 +247,5 @@ if __name__ == "__main__":
     qc.register_files()
     good_chromosomes = qc.run()
 
-    _LOGGER.info("Reduce step (merge files)...")
+    _LOGGER.debug("Reduce step (merge files)...")
     qc.combine(good_chromosomes)

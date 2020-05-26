@@ -18,16 +18,17 @@ nav:
     - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
-    - How to configure reference genome assemblies: 'howto/install-refgenie.md'
-    - How to download SRA data: 'howto/download.md'
-    - How to create a custom annotation file: 'howto/create-annotation-file.md'
-    - How to run multiple samples using looper: 'howto/run-looper.md'
-    - How to run the pipeline on a cluster: 'howto/run-cluster.md'
-    - How to run the pipeline in a container: 'howto/use-container.md'
+    - Run directly: 'run-directly.md'
+    - Run on cluster: 'run-cluster.md'
+    - Run using containers: 'run-container.md'
+    - Download SRA data: 'download.md'
+    - Configure prealignments: 'prealignments.md'
+    - Detailed install guide: 'detailed-install.md'
+    - Use custom reference data: 'annotation.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
-    - "Example summary: gold project": 'files/examples/gold/summary.html'
-    - "Example summary: tutorial project": 'files/examples/tutorial/tutorial_summary.html'
+    - "Example summary: gold project": 'files/examples/gold/gold_summary.html'
+    - "Example summary: tutorial project": 'files/examples/tutorial/PEPATAC_tutorial_summary.html'
     - Usage: 'usage.md'
     - FAQ: faq.md
     - Glossary: 'glossary.md'
@@ -37,8 +38,6 @@ nav:
 plugins:
   - search
   - databio:
-      autodoc_modules: null
-      autodoc_build: "docs_build"
       usage_template: "docs/usage_template.md"
       usage_cmds:
         -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help

@@ -3,7 +3,7 @@
 __author__ = ["Nathan C. Sheffield", "Jason Smith"]
 __credits__ = []
 __license__ = "BSD2"
-__version__ = "0.3"
+__version__ = "0.3.1"
 __email__ = "nathan@code.databio.org"
 
 from argparse import ArgumentParser
@@ -13,12 +13,11 @@ from operator import methodcaller
 import os
 import subprocess
 import sys
-
+import logmuse
 import pararead
 import pysam
 
-from logmuse import add_logging_options
-from logmuse import logger_via_cli
+from pararead import  ParaReadProcessor
 
 MODES = ["dnase", "atac"]
 
@@ -33,7 +32,7 @@ class CutTracer(pararead.ParaReadProcessor):
     """
     def __init__(self, reads_filename, chrom_sizes_file, temp_parent, nProc,
         limit, verbosity, shift_factor={"+":0, "-":-0}, variable_step=False,
-        exactbw=False, summary_filename=None, bedout=False, smoothbw=False,
+        exactbw=False, scale=1, bedout=False, smoothbw=False,
         smooth_length=25, step_size=5, retain_temp=False, tail_edge=False):
         # The resultAcronym should be set for each class
         self.resultAcronym="cuttrace"
@@ -46,13 +45,17 @@ class CutTracer(pararead.ParaReadProcessor):
             _LOGGER.info("Cutting parallel chroms in half to accommodate two tracks.")
             nProc = max(int(nProc / 2), 1)
 
-        super(CutTracer,self).__init__(reads_filename, nProc,
-            self.resultAcronym, temp_parent, limit, allow_unaligned=False,
+        super(CutTracer,self).__init__(path_reads_file=reads_filename, cores=nProc,
+            action=self.resultAcronym, temp_folder_parent_path=temp_parent, 
+            limit=limit, allow_unaligned=False,
             retain_temp=retain_temp)
         self.exactbw = exactbw
-        self.summary_filename = summary_filename
+        self.scale = scale
         self.verbosity=verbosity
-        self.variable_step=variable_step
+        if variable_step:
+            self.variable_step = 1 # True
+        else:
+            self.variable_step = 0 # False
         self.bedout = bedout
         self.smoothbw = smoothbw
         self.smooth_length = smooth_length
@@ -64,6 +67,7 @@ class CutTracer(pararead.ParaReadProcessor):
         try:
             self.check_command("wigToBigWig")
             self.check_command("perl")
+            self.check_command("bigWigCat")
         except AttributeError:
             # backwards compatibility with earlier versions of pararead that did
             # not have a check_command function
@@ -90,8 +94,7 @@ class CutTracer(pararead.ParaReadProcessor):
 
         chrom_size = self.get_chrom_size(chrom)
 
-        #self.unbuffered_write("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
-        _LOGGER.info("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
+        _LOGGER.debug("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
         reads = self.fetch_chunk(chrom)
 
         chromOutFile = self._tempf(chrom)
@@ -99,17 +102,15 @@ class CutTracer(pararead.ParaReadProcessor):
 
         cutsToWig = os.path.join(os.path.dirname(__file__), "cutsToWig.pl")
 
-        cmd = "sort -n | perl " + cutsToWig + " " + str(chrom_size) + str(self.variable_step)
-        # cmd = "awk 'FNR==1 {print;next} { for (i = $1-" + str(self.smooth_length) + \
-        #     "; i <= $1+" + str(self.smooth_length) + "; ++i) print i }' | sort -n | perl " + \
-        #     cutsToWig + " " + str(chrom_size) 
+        cmd1 = ("sort -n | perl " + cutsToWig + " " + str(chrom_size) +
+                " " + str(self.variable_step) + " " + str(self.scale))
         cmd2 = ("wigToBigWig -clip -fixedSummaries -keepAllChromosomes stdin " +
                 self.chrom_sizes_file + " " + chromOutFileBw)
-        _LOGGER.debug("  cutsToWigProcess: " + cmd)
+        _LOGGER.debug("  cutsToWigProcess: " + cmd1)
         _LOGGER.debug("  wigToBigWigProcess: " + cmd2)
 
         if self.exactbw:
-            cutsToWigProcess = subprocess.Popen(cmd, shell=True,
+            cutsToWigProcess = subprocess.Popen(cmd1, shell=True,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             wigToBigWigProcess = subprocess.Popen(
                 ['wigToBigWig', '-clip', '-fixedSummaries',
@@ -122,13 +123,14 @@ class CutTracer(pararead.ParaReadProcessor):
                                        "smoothWig.pl")
             chromOutFileBwSm = chromOutFile + "_smooth.bw"
             tmpFile = chromOutFile + "_cuts.txt"
-            cmd = ("sort -n | tee " + tmpFile + " | perl " + cutsToWigSm +
-                   " " + str(chrom_size) + " " +  str(self.smooth_length) +
-                   " " + str(self.step_size))
+            cmd1 = ("sort -n | tee " + tmpFile + " | perl " + cutsToWigSm +
+                    " " + str(chrom_size) + " " +  str(self.smooth_length) +
+                    " " + str(self.step_size) + " " + str(self.variable_step) +
+                    " " + str(self.scale))
             cmd2 = ("wigToBigWig -clip -fixedSummaries " +
                     "-keepAllChromosomes stdin " + self.chrom_sizes_file +
                     " " + chromOutFileBwSm)
-            cutsToWigProcessSm = subprocess.Popen(cmd, shell=True,
+            cutsToWigProcessSm = subprocess.Popen(cmd1, shell=True,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             wigToBigWigProcessSm = subprocess.Popen(
                 ['wigToBigWig', '-clip', '-fixedSummaries',
@@ -194,7 +196,7 @@ class CutTracer(pararead.ParaReadProcessor):
 
         if self.exactbw:
             if self.variable_step:
-                header_line = "variableStep chrom=" + chrom + " span=1\n";
+                header_line = ("variableStep chrom=" + chrom + "\n")
             else: 
                 header_line = ("fixedStep chrom=" + chrom + " start=" +
                                str(begin) + " step=1\n")
@@ -203,7 +205,7 @@ class CutTracer(pararead.ParaReadProcessor):
 
         if self.smoothbw:
             if self.variable_step:
-                header_line = "variableStep chrom=" + chrom + " span=1\n";
+                header_line = ("variableStep chrom=" + chrom + "\n")
             else:
                 header_line = ("fixedStep chrom=" + chrom + " start=" +
                                str(begin) + " step=" + str(self.step_size) +
@@ -215,13 +217,13 @@ class CutTracer(pararead.ParaReadProcessor):
             for read in reads:
                 shifted_pos = get_shifted_pos(read, shift_factor)
 
-                if self.exactbw:
+                if self.exactbw and shifted_pos:
                     cutsToWigProcess.stdin.write((str(shifted_pos) + "\n").encode('utf-8'))
 
-                if self.smoothbw:
+                if self.smoothbw and shifted_pos:
                     cutsToWigProcessSm.stdin.write((str(shifted_pos) + "\n").encode('utf-8'))
 
-                if self.bedout:
+                if self.bedout and shifted_pos:
                     strand = "-" if read.is_reverse else "+"
                     # The bed file needs 6 columns (even though some are dummy) 
                     # because MACS says so.
@@ -278,22 +280,34 @@ class CutTracer(pararead.ParaReadProcessor):
                 _LOGGER.info("Merging {} files into output file: '{}'".
                       format(len(good_chromosomes), self.exactbw))
                 temp_files = [self._tempf(chrom) + ".bw" for chrom in good_chromosomes]
-                cmd = "bigWigCat " + self.exactbw + " " + " ".join(temp_files)
+                files_exist = []
+                for file in temp_files:
+                    if os.path.isfile(file) and os.stat(file).st_size > 0:
+                        files_exist.append(file)
+                cmd = "bigWigCat " + self.exactbw + " " + " ".join(files_exist)
                 _LOGGER.debug(cmd)
-                p = subprocess.call(['bigWigCat', self.exactbw] + temp_files)
+                p = subprocess.call(['bigWigCat', self.exactbw] + files_exist)
 
             if self.smoothbw:
                 _LOGGER.info("Merging {} files into output file: '{}'".
                       format(len(good_chromosomes), self.smoothbw))
                 temp_files = [self._tempf(chrom) + "_smooth.bw" for chrom in good_chromosomes]
-                cmd = "bigWigCat " + self.smoothbw + " " + " ".join(temp_files)
+                files_exist = []
+                for file in temp_files:
+                    if os.path.isfile(file) and os.stat(file).st_size > 0:
+                        files_exist.append(file)
+                cmd = "bigWigCat " + self.smoothbw + " " + " ".join(files_exist)
                 _LOGGER.debug(cmd)
-                p = subprocess.call(['bigWigCat', self.smoothbw] + temp_files)
+                p = subprocess.call(['bigWigCat', self.smoothbw] + files_exist)
 
             if self.bedout:
                 # root, ext = os.path.splitext(self.exactbw)
                 temp_files = [self._tempf(chrom) + ".bed" for chrom in good_chromosomes]
-                cmd = "cat " + " ".join(temp_files) + " > " + self.bedout
+                files_exist = []
+                for file in temp_files:
+                    if os.path.isfile(file) and os.stat(file).st_size > 0:
+                        files_exist.append(file)
+                cmd = "cat " + " ".join(files_exist) + " > " + self.bedout
                 _LOGGER.debug(cmd)
                 p = subprocess.call(cmd, shell=True)
 
@@ -304,10 +318,10 @@ def parse_args(cmdl):
         help="Input file (in bam or sam format)", required=True)
     parser.add_argument('-c', '--chrom-sizes-file',
         help="Chromosome sizes file", required=True)
-    parser.add_argument('-s', '--summary-file',
-        help="Summary file")
     parser.add_argument('-v', '--variable-step', default=False, action='store_true',
         help="Use variableStep wiggle format. Default: fixedStep")
+    parser.add_argument('-s', '--scale', dest='scale', default=1,
+        help="Scale read count by this value. Default: 1")    
     parser.add_argument('-o', '--exactbw', dest='exactbw', default=None,
         help="Output filename for exact bigwig. Default: None")
     parser.add_argument('-w', '--smoothbw', dest='smoothbw', default=None,
@@ -334,15 +348,16 @@ def parse_args(cmdl):
     parser.add_argument('--retain-temp', action='store_true', default=False,
         help="Retain temporary files? Default: False")
 
-    parser = add_logging_options(parser)
-    return parser.parse_args(cmdl)
+    parser = logmuse.add_logging_options(parser)
+    args = parser.parse_args(cmdl)
+    if not (args.exactbw or args.smoothbw):
+        parser.error('No output requested, use --exactbw and/or --smoothbw')
+    return args
 
 if __name__ == "__main__":
 
     args = parse_args(sys.argv[1:])
-    if not (args.exactbw or args.smoothbw):
-        parser.error('No output requested, use --exactbw and/or --smoothbw')
-    _LOGGER = logger_via_cli(args)
+    _LOGGER = logmuse.logger_via_cli(args, make_root=True)
 
     if args.mode == "dnase":
         shift_factor = {"+":1, "-":0}  # DNase
@@ -350,10 +365,9 @@ if __name__ == "__main__":
         shift_factor = {"+":4, "-":-5}  # ATAC
     else:
         shift_factor = {"+":0, "-":0}
-
     ct = CutTracer( reads_filename=args.infile,
                     chrom_sizes_file=args.chrom_sizes_file,
-                    summary_filename=args.summary_file,
+                    scale=args.scale,
                     variable_step=args.variable_step,
                     exactbw=args.exactbw,
                     smoothbw=args.smoothbw,

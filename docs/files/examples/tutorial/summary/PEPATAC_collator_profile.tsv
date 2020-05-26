@@ -1,0 +1,4 @@
+# Pipeline started at 05-26 13:30:24
+
+# pid	hash	cid	runtime	mem	cmd	lock
+48176	9291eb2437	1	0:00:21.040000	 0.6204	Rscript	lock.PEPATAC_tutorial_peaks_coverage.tsv

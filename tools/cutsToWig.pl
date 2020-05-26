@@ -2,6 +2,8 @@
 
 # By Nathan Sheffield, University of Virginia, 2017
 # Update 03.04.19 - Jason Smith - Add option to use variable or fixedStep
+# Update 05.14.19 - Jason Smith - Fix variableStep use
+# Update 05.14.20 - Jason Smith - Add scaling factor
 
 # This is an incredibly fast Perl utility that converts cut sites
 # (coordinates) into a wiggle-like output.
@@ -25,46 +27,45 @@
 # cat cuts.txt | cutsToWig.pl CHROMSIZE FALSE | wigToBigWig -clip stdin chrom_sizes.txt out.bw
 
 # Setup
-$chrSize = shift;       # Size of chromosome is the first argument
-$variableStep = shift;  # Second argument is whether to use variable or fixed
+my $chrSize = shift;       # Size of chromosome is the first argument
+my $variableStep = shift;  # Second argument is whether to use variable or fixed
+my $scale = shift;         # Third argument is scaling factor
 $countIndex = 1;
 $currentCount = 1;
-$header =  <>; # Discard the first line (fixedstep)
+$header =  <>;  # Grab the first line (e.g. the header)
 print $header;
+
 $cutSite = <>;  # Grab the first cut
+chomp($cutSite);
 
 if ($variableStep) {  # Use variableStep wiggle format
-	# Increment until the first cut
-	while ($countIndex < $cutSite) {
-		$countIndex++;	
-	}
 	$previousCut = $cutSite;
 
 	# Loop through cuts, converting to wiggle format
-	while($cutSite = <>) {
-		chomp($cutSite);
-		# if it's a duplicate read...
-		if ($cutSite == $previousCut) { # sum up all reads for this spot.
-			$currentCount++;
-			next;						# skip to next read
+	if (length $cutSite == 0) {
+		print "$chrSize\t0\n";
+	} else {
+		$chomps = 0;
+		while($cutSite = <>) {
+			chomp($cutSite);
+			$chomps++;		
+			# if it's a duplicate read...
+			if ($cutSite == $previousCut) { # sum up all reads for this spot.
+				$currentCount++;
+				next;						# skip to next read
+			}
+			# otherwise, it makes it past this loop;
+			# output the sum of counts for the previous spot
+            $scaledCount = $currentCount/$scale;
+			print "$previousCut\t$scaledCount\n";
+			# reset for the current spot
+			$currentCount = 1;
+			$previousCut = $cutSite;
+		} # end while
+		# If there are no additional cutSites
+		if ($currentCount == 1) {
+			print "$chrSize\t0\n";
 		}
-
-		# otherwise, it makes it past this loop;
-		# output the sum of counts for the previous spot
-		print $previousCut."\t".$currentCount."\n"; 
-		$countIndex++;
-		# reset for the current spot
-		$currentCount = 1;
-		# increment until cutSite
-		while ($countIndex < $cutSite) {
-			$countIndex++;	
-		}
-		$previousCut = $cutSite;
-	} # end while
-
-	# Increment until we each the end.
-	while($countIndex <= $chrSize) {
-		$countIndex++;
 	}
 } else {  # Use fixedStep wiggle format
 	# Print out 0s until the first cut
@@ -85,7 +86,8 @@ if ($variableStep) {  # Use variableStep wiggle format
 
 		# otherwise, it makes it past this loop;
 		# output the sum of counts for the previous spot
-		print $currentCount."\n"; 
+        $scaledCount = $currentCount/$scale;
+		print $scaledCount."\n"; 
 		$countIndex++;
 		# reset for the current spot
 		$currentCount = 1;

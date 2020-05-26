@@ -21,18 +21,20 @@
 # cutsToWig.pl CHROMSIZE SMOOTH_LENGTH cuts.txt > out.wig
 
 # It's also useful to pipe this to the ucsc tool for bigwig compression:
-# cat cuts.txt | cutsToWig.pl CHROMSIZE | wigToBigWig -clip stdin chrom_sizes.txt out.bw
+# cat cuts.txt | cutsToWig.pl CHROMSIZE | wigToBigWig -clip stdin \
+# chrom_sizes.txt out.bw
 
 # Setup
-my $chrSize = shift;  # Size of chromosome is the first argument
-my $smoothSize = shift; # Smooth size is 2nd argument
-my $stepSize = shift; # Step size
+my $chrSize = shift;       # Size of chromosome is the first argument
+my $smoothSize = shift;    # Smooth size is 2nd argument
+my $stepSize = shift;      # Step size
+my $variableStep = shift;  # Fourth argument is whether to use variable or fixed
+my $scale = shift;         # Fifth argument is scaling factor
 
 $countIndex = 1;
 $currentCount = 0;
-$header =  <>; # Discard the first line (fixedstep)
+$header =  <>;  # Grab the first line (e.g. the header)
 print $header;
-
 
 # The strategy here is to make a smoothed signal track (bigwig file) given the
 # exact base-pair locations of the signals. We want to extend those signals out
@@ -55,57 +57,98 @@ $cutSite = <>; # Grab the first cut
 $cutSite -= $smoothSize;
 $endSite = $cutSite + $smoothSize*2;
 
-# Print out 0s until the first cut
-while ($countIndex < $cutSite) {
-	print "0\n";
-	$countIndex += $stepSize;	
-}
-$previousCut = $cutSite;
-
-# Loop through cuts, converting to wiggle format
-while($cutSite = <>) {
-	$cutSite -= $smoothSize;
-	$currentCount++;
-	push @closers, $cutSite + $smoothSize*2;
-	chomp($cutSite);
-	# if it's a duplicate read...
-	if ($cutSite == $previousCut) { # sum up all reads for this spot.
-		# push @closers, $cutSite + $smoothSize;
-		# $currentCount++;
-		next;						# skip to next read
-	}
-
-	# otherwise, it makes it past this loop;
-	# output the sum of counts for the previous spot
-	# print $currentCount."\n"; 
-	# $countIndex++;
-
-	# and print out all 0s between them
+if ($variableStep) {
+	# Cycle to the first cut
 	while ($countIndex < $cutSite) {
-		# print ":".$countIndex.":".$endSite.":";
+		$countIndex += $stepSize;	
+	}
+	$previousCut = $cutSite;
+
+	# Loop through cuts, converting to wiggle format
+	while($cutSite = <>) {
+		$cutSite -= $smoothSize;
+		$currentCount++;
+		push @closers, $cutSite + $smoothSize*2;
+		chomp($cutSite);
+		# if it's a duplicate read...
+		if ($cutSite == $previousCut) {
+			next;  # skip to next read
+		}
+
+		while ($countIndex < $cutSite) {
+			while ($endSite == $countIndex) {
+				$currentCount--;
+				$endSite = shift @closers;
+			}
+
+			if ($countIndex % $stepSize == 0) {
+                $scaledCount = $currentCount/$scale;
+				print "$countIndex\t$scaledCount\n";
+			}
+			$countIndex++;
+		}
+
+		$previousCut = $cutSite;
+	} # end while
+
+	# Finish chromosome by cycling until we each the end.
+	while($countIndex <= $chrSize) {
 		while ($endSite == $countIndex) {
 			$currentCount--;
 			$endSite = shift @closers;
 		}
 		if ($countIndex % $stepSize == 0) {
-			print "$currentCount\n";
+            $scaledCount = $currentCount/$scale;
+			print "$countIndex\t$scaledCount\n";
 		}
 		$countIndex++;	
 	}
-
-
+} else {  # Use fixedStep wiggle format
+	# Print out 0s until the first cut
+	while ($countIndex < $cutSite) {
+		print "0\n";
+		$countIndex += $stepSize;	
+	}
 	$previousCut = $cutSite;
-} # end while
 
-# Finish chromosome by printing 0s until we each the end.
-while($countIndex <= $chrSize) {
-	#print ":".$countIndex.":".$endSite.":";
-	while ($endSite == $countIndex) {
-		$currentCount--;
-		$endSite = shift @closers;
+	# Loop through cuts, converting to wiggle format
+	while($cutSite = <>) {
+		$cutSite -= $smoothSize;
+		$currentCount++;
+		push @closers, $cutSite + $smoothSize*2;
+		chomp($cutSite);
+		# if it's a duplicate read...
+		if ($cutSite == $previousCut) {
+			next; # skip to next read
+		}
+
+		# and print out all 0s between them
+		while ($countIndex < $cutSite) {
+			# print ":".$countIndex.":".$endSite.":";
+			while ($endSite == $countIndex) {
+				$currentCount--;
+				$endSite = shift @closers;
+			}
+			if ($countIndex % $stepSize == 0) {
+                $scaledCount = $currentCount/$scale;
+				print "$scaledCount\n";
+			}
+			$countIndex++;
+		}
+
+		$previousCut = $cutSite;
+	} # end while
+
+	# Finish chromosome by printing 0s until we each the end.
+	while($countIndex <= $chrSize) {
+		while ($endSite == $countIndex) {
+			$currentCount--;
+			$endSite = shift @closers;
+		}
+		if ($countIndex % $stepSize == 0) {
+            $scaledCount = $currentCount/$scale;
+			print "$scaledCount\n";
+		}
+		$countIndex++;	
 	}
-	if ($countIndex % $stepSize == 0) {
-		print "$currentCount\n";
-	}
-	$countIndex++;	
 }

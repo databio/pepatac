@@ -1,12 +1,31 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.8.7] -- 2020-02-24
+## [0.9.0] -- 2020-05-26
+
+### Added
+ - Calculate and plot library complexity with preseq
+ - Optionally correct for bias with seqOutBias
+ - Optionally run `homer` to perform motif analysis
+ - Add option to calculate FRiF using prioritized list of features
+ - Custom R package to handle plots and corresponding calculations
+
+### Changed
+ - Move to python3 *only*
+ - Enable scaled bigWig files by default
+ - Split project level analyses into separate incl. project pipeline
+ - Use PEP 2.0 standard
+ - Updated handling of genome assets to use current `refgenie` mechanics
+ - Changed handling of command line asset use
+ - Update requirements
+ - Update docs
+
+## Unreleased
+- Improve interaction with `BiocProject` auto-loading results in R.
+
+## [0.8.7] -- 2019-06-18
 ### Fixed
 - Bug with python2 unicode strings.
-- Bug with pararead/logmuse dependencies
-- Bug with bamQC pickling
-
 
 ## [0.8.6] -- 2019-03-26
 
@@ -34,7 +53,7 @@ All notable changes to this project will be documented in this file.
 - Switched to samblaster for default deduplication
 - Improved readability of reported results
 - Improved help messages
-- Fix mitochdonrial counting and remainding removal
+- Fix mitochondrial counting and remaining removal
 - Use gunzip instead of zcat for MacOS compatibility
 
 ### Added

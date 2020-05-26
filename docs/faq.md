@@ -10,40 +10,10 @@ When deciding whether or not to merge technical replicates, you should first fol
 
 ## How do I know if my samples or replicates are high quality?
 
-- Look over the sample [fragment length distribution](http://code.databio.org/PEPATAC/glossary/#qc-output) plot(s). For a good quality sample you should observe a well-defined peak &lt; 100-bp representing nucleosome-free regions, a second peak around 200-bp representing mono-nucleosomes, then sequentially weaker peaks representing multiple nucleosomes.
-- Observe the individual [TSS enrichment](http://code.databio.org/PEPATAC/glossary/#qc-output) scores for each sample, which is a representation of signal to noise.  A score below 6 is a general cutoff for a sample to be "concerning."  This is an empirical metric and may vary based on the individual data set, but represents a comfortable starting point.
+- Look over the sample [fragment length distribution](glossary.md#qc-output) plot(s). For a good quality sample you should observe a well-defined peak &lt; 100-bp representing nucleosome-free regions, a second peak around 200-bp representing mono-nucleosomes, then sequentially weaker peaks representing multiple nucleosomes.
+- Observe the individual [TSS enrichment](glossary.md#qc-output) scores for each sample, which is a representation of signal to noise.  A score below 6 is a general cutoff for a sample to be "concerning."  This is an empirical metric and may vary based on the individual data set, but represents a comfortable starting point.
 - Library complexity metrics (for complete explanations, see [terms and definitions from ENCODE](https://www.encodeproject.org/data-standards/terms/)):
-    - [Non-redundant fraction (NRF)](http://code.databio.org/PEPATAC/glossary/#qc-output): values &lt; 0.7 are considered concerning; values &gt; 0.9 are ideal
-    - [PCR Bottleneck Coefficient 1 (PBC1)](http://code.databio.org/PEPATAC/glossary/#qc-output): values &lt; 0.7 are considered concerning; values &gt; 0.9 are ideal
-    - [PCR Bottleneck Coefficient 2 (PBC2)](http://code.databio.org/PEPATAC/glossary/#qc-output): values &lt; 1.0 represent severe bottlenecking; values &gt; 3.0 are acceptable
+    - [Non-redundant fraction (NRF)](glossary.md#qc-output): values &lt; 0.7 are considered concerning; values &gt; 0.9 are ideal
+    - [PCR Bottleneck Coefficient 1 (PBC1)](glossary.md#qc-output): values &lt; 0.7 are considered concerning; values &gt; 0.9 are ideal
+    - [PCR Bottleneck Coefficient 2 (PBC2)](glossary.md#qc-output): values &lt; 1.0 represent severe bottlenecking; values &gt; 3.0 are acceptable
 
-## What is the $GENOME variable?
-
-The `$GENOME` environment variable represents the `PATH` to where you have stored [`refgenie`](https://github.com/databio/refgenie) compatible genome builds. For example, if I have placed the [hg38 genome build](http://big.databio.org/refgenomes/hg38.tgz) in a `genomes/` directory in my `HOME` directory, I would execute the following command:
-
-```
-export GENOME="$HOME/genomes"
-```
-
-## How do I calculate TSS enrichments?
-
-By default, the pipeline is designed to calculate TSS enrichments. However, you will still need to provide a TSS annotation file in your reference genome directory. You may generate that using the following commands:
-
-```
-wget -O hg38_TSS_full.txt.gz http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz
-zcat hg38_TSS_full.txt.gz | \
-  awk  '{if($4=="+"){print $3"\t"$5"\t"$5"\t"$4"\t"$13}else{print $3"\t"$6"\t"$6"\t"$4"\t"$13}}' | \
-  LC_COLLATE=C sort -k1,1 -k2,2n -u > hg38_TSS.tsv
-```
-
-Alternatively, you can directly download the TSS annotation files for [hg19](http://big.databio.org/refgenomes/hg19_TSS.tgz) and [hg38](http://big.databio.org/refgenomes/hg38_TSS.tgz).  Remember to put the TSS annotation file in the corresponding `refgenie` genome directory.
-
-## How do I annotate the aligned reads and peak calls?
-
-You must provide the pipeline an annotation file to produce the following files: `*_peaks_chr_dist.pdf`, `*_peaks_partition_dist.pdf`, `*_peaks_TSS_dist.pdf`, `*_frif.pdf`.
-
-A default annotation file that annotates the 5' UTR, 3' UTR, exons, introns, promoters, and promoter flanking regions can be directly downloaded for [hg19](http://big.databio.org/pepatac/hg19_annotations.bed.gz), [hg38](http://big.databio.org/pepatac/hg38_annotations.bed.gz), [mm10](http://big.databio.org/pepatac/mm10_annotations.bed.gz), and [mm9](http://big.databio.org/pepatac/mm9_annotations.bed.gz).
-
-Simply place the downloaded annotation file in the the `pepatac/anno` folder and you're all set. You can also point the pipeline directly to your annotation file with the `--anno-name` option.
-
-You can [learn how to create a custom annotation file](howto/create-annotation-file.md) to investigate your own favorite features too!

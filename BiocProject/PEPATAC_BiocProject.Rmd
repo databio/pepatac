@@ -4,7 +4,7 @@ author: "Michal Stolarczyk"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{PEPATAC BiocProject}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -19,37 +19,37 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-Before you start see the [Getting started with `BiocProject` vignette](http://code.databio.org/pepr/articles/gettingStarted.html) for the basic `BiocProejct` information and installation instructions and [`PEPATAC` website](http://code.databio.org/PEPATAC/) for information regarding this ATAC-seq pipeline.
+Before you start see the [Getting started with `BiocProject` vignette](http://code.databio.org/BiocProject/articles/vignette1getStarted.html) for the basic `BiocProject` information and installation instructions and [`PEPATAC` website](http://pepatac.databio.org) for information regarding this ATAC-seq pipeline.
 
-# Read the results of `PEPATAC` 
+`BiocProject` provides a slick way of reading in the outputs of the pipeline listed in the `outputs` section of its [pipeline interface](http://code.databio.org/looper/pipeline-interface/). 
 
-The function shown below reads in the [`BED` files](https://genome.ucsc.edu/FAQ/FAQformat.html) from the `output_dir` specified in the [PEP](https://pepkit.github.io/docs/simple_example/) (precisely: YAML config file). 
+__With a single line of code you can read all the indicated results and your project metadata.__
 
-```{r include=FALSE, eval=TRUE}
-processFunction =  "readPepatacPeakBeds.R"
-source(processFunction)
-```
-```{r echo=FALSE, comment=""}
-readPepatacPeakBeds
-```
+# Read the results of `PEPATAC` run
 
-Get the project config
-```{r echo=T,message=FALSE}
+The function shown below reads in the `BED` files from the `output` section specified in the [`PEPATAC` pipeline interface](https://github.com/databio/pepatac/blob/master/pipeline_interface.yaml).
+
+The way the output files are read is defined in a [function](https://github.com/databio/pepatac/blob/master/BiocProject/readPepatacPeakBeds.R) supplied by the `PEPATAC` developers. The function listed in `bioconductor` section of `PEPATAC` pipeline interface file is identified by `BiocProject` function, sourced and automatically executed on samples matching the protocols bound to the pipeline specified as an argument in [`outputsByPipeline`](http://code.databio.org/BiocProject/reference/outputsByPipeline.html) function.
+
+## Get the project config
+
+```{r echo=T, message=FALSE}
 library(BiocProject)
 ProjectConfig = "gold_hg19.yaml"
 ```
-## Create the `BiocProject` object 
+
+## Run the `BiocProject` function
 
 ```{r}
-bp =  BiocProject(file=ProjectConfig)
+bp = BiocProject(ProjectConfig)
 ```
 
-## Get the read data
+As you can see in the message above, the `readPepatacPeakBeds` function was sourced from the file indicated in the `PEPATAC` pipeline interface.
+
+## Browse the results
+
+The read data is conveninetly stored in a `List` object with ([`pepr::Project`](http://code.databio.org/pepr/reference/Project-class.html) object in its metadata slot:
 
 ```{r}
-data = getData(bp)
-```
-It is packed into a nested list, so to access the specific elements run, e.g.:
-```{r}
-data[[1]]$gold1
+bp
 ```

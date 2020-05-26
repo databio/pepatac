@@ -1,6 +1,9 @@
 # General
 *.pyc
 .~lock*
+.idea/
+*.DS_Store
+._*
 
 # Tests
 .cache/

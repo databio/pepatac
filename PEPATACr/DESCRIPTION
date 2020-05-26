@@ -1,0 +1,11 @@
+Package: PEPATACr
+Title: Functions and libraries to analyze ATAC-seq data
+Version: 0.0.1.0000
+Authors@R: person("Jason", "Smith", email = "jasonsmith@virginia.edu", role = c("aut", "cre"))
+Maintainer: Jason Smith <jasonsmith@virginia.edu>
+Description: Installs required libraries to calculate the fraction of reads in features, TSS enrichments, and fragment length distributions. 
+Depends: R (>= 3.5.1), data.table, pepr, gplots, grid, ggplot2, optigrab, scales, GenomicDistributions
+License: BSD 2-Clause "Simplified" License
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.0
