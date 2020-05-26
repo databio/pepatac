@@ -1433,7 +1433,7 @@ def main():
             shift_minus_bed,
             (" > ", fixed_minus_bed) 
         ])
-        pm.run([fix_cmd1, fix_cmd2], [fixed_plus_bed, fixed_minus_bed])
+        pm.run([fix_cmd1, fix_cmd2], exact_target)
         pm.clean_add(fixed_plus_bed)
         pm.clean_add(fixed_minus_bed)
 
@@ -1450,7 +1450,7 @@ def main():
             " | awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, $4}' ",
             (">", shift_bed)
         ])
-        pm.run(merge_cmd2, shift_bed)
+        pm.run(merge_cmd2, exact_target)
 
         # sort merged bedGraph
         sort_bedgraph = os.path.join(
