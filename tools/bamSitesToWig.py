@@ -32,7 +32,7 @@ class CutTracer(pararead.ParaReadProcessor):
     """
     def __init__(self, reads_filename, chrom_sizes_file, temp_parent, nProc,
         limit, verbosity, shift_factor={"+":0, "-":-0}, variable_step=False,
-        exactbw=False, summary_filename=None, bedout=False, smoothbw=False,
+        exactbw=False, scale=1, bedout=False, smoothbw=False,
         smooth_length=25, step_size=5, retain_temp=False, tail_edge=False):
         # The resultAcronym should be set for each class
         self.resultAcronym="cuttrace"
@@ -50,7 +50,7 @@ class CutTracer(pararead.ParaReadProcessor):
             limit=limit, allow_unaligned=False,
             retain_temp=retain_temp)
         self.exactbw = exactbw
-        self.summary_filename = summary_filename
+        self.scale = scale
         self.verbosity=verbosity
         if variable_step:
             self.variable_step = 1 # True
@@ -94,7 +94,6 @@ class CutTracer(pararead.ParaReadProcessor):
 
         chrom_size = self.get_chrom_size(chrom)
 
-        #self.unbuffered_write("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
         _LOGGER.debug("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
         reads = self.fetch_chunk(chrom)
 
@@ -103,18 +102,15 @@ class CutTracer(pararead.ParaReadProcessor):
 
         cutsToWig = os.path.join(os.path.dirname(__file__), "cutsToWig.pl")
 
-        cmd = ("sort -n | perl " + cutsToWig + " " +
-               str(chrom_size) + " " + str(self.variable_step))
-        # cmd = "awk 'FNR==1 {print;next} { for (i = $1-" + str(self.smooth_length) + \
-        #     "; i <= $1+" + str(self.smooth_length) + "; ++i) print i }' | sort -n | perl " + \
-        #     cutsToWig + " " + str(chrom_size) 
+        cmd1 = ("sort -n | perl " + cutsToWig + " " + str(chrom_size) +
+                " " + str(self.variable_step) + " " + str(self.scale))
         cmd2 = ("wigToBigWig -clip -fixedSummaries -keepAllChromosomes stdin " +
                 self.chrom_sizes_file + " " + chromOutFileBw)
-        _LOGGER.debug("  cutsToWigProcess: " + cmd)
+        _LOGGER.debug("  cutsToWigProcess: " + cmd1)
         _LOGGER.debug("  wigToBigWigProcess: " + cmd2)
 
         if self.exactbw:
-            cutsToWigProcess = subprocess.Popen(cmd, shell=True,
+            cutsToWigProcess = subprocess.Popen(cmd1, shell=True,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             wigToBigWigProcess = subprocess.Popen(
                 ['wigToBigWig', '-clip', '-fixedSummaries',
@@ -127,13 +123,14 @@ class CutTracer(pararead.ParaReadProcessor):
                                        "smoothWig.pl")
             chromOutFileBwSm = chromOutFile + "_smooth.bw"
             tmpFile = chromOutFile + "_cuts.txt"
-            cmd = ("sort -n | tee " + tmpFile + " | perl " + cutsToWigSm +
-                   " " + str(chrom_size) + " " +  str(self.smooth_length) +
-                   " " + str(self.step_size) + " " + str(self.variable_step))
+            cmd1 = ("sort -n | tee " + tmpFile + " | perl " + cutsToWigSm +
+                    " " + str(chrom_size) + " " +  str(self.smooth_length) +
+                    " " + str(self.step_size) + " " + str(self.variable_step) +
+                    " " + str(self.scale))
             cmd2 = ("wigToBigWig -clip -fixedSummaries " +
                     "-keepAllChromosomes stdin " + self.chrom_sizes_file +
                     " " + chromOutFileBwSm)
-            cutsToWigProcessSm = subprocess.Popen(cmd, shell=True,
+            cutsToWigProcessSm = subprocess.Popen(cmd1, shell=True,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             wigToBigWigProcessSm = subprocess.Popen(
                 ['wigToBigWig', '-clip', '-fixedSummaries',
@@ -321,10 +318,10 @@ def parse_args(cmdl):
         help="Input file (in bam or sam format)", required=True)
     parser.add_argument('-c', '--chrom-sizes-file',
         help="Chromosome sizes file", required=True)
-    parser.add_argument('-s', '--summary-file',
-        help="Summary file")
     parser.add_argument('-v', '--variable-step', default=False, action='store_true',
         help="Use variableStep wiggle format. Default: fixedStep")
+    parser.add_argument('-s', '--scale', dest='scale', default=1,
+        help="Scale read count by this value. Default: 1")    
     parser.add_argument('-o', '--exactbw', dest='exactbw', default=None,
         help="Output filename for exact bigwig. Default: None")
     parser.add_argument('-w', '--smoothbw', dest='smoothbw', default=None,
@@ -370,7 +367,7 @@ if __name__ == "__main__":
         shift_factor = {"+":0, "-":0}
     ct = CutTracer( reads_filename=args.infile,
                     chrom_sizes_file=args.chrom_sizes_file,
-                    summary_filename=args.summary_file,
+                    scale=args.scale,
                     variable_step=args.variable_step,
                     exactbw=args.exactbw,
                     smoothbw=args.smoothbw,

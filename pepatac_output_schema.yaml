@@ -1,0 +1,62 @@
+description: objects produced by PEPPRO pipeline.
+properties:
+  samples:
+    type: array
+    items:
+      type: object
+      properties:
+        smooth_bw: 
+          path: "aligned_{genome}/{sample_name}_smooth.bw"
+          type: string
+          description: "Test sample property"
+        exact_bw:
+          path: "aligned_{genome}_exact/{sample_name}_exact.bw"
+          type: string
+          description: "Test sample property"
+        aligned_bam: 
+          path: "aligned_{genome}/{sample_name}_sort.bam"
+          type: string
+          description: "Test sample property"
+        peaks_bed: 
+          path: "peak_calling_{genome}/{sample_name}_peaks.bed"
+          type: string
+          description: "Test sample property"
+        summits_bed: 
+          path: "peak_calling_{genome}/{sample_name}_summits.bed"
+          type: string
+          description: "Test sample property"
+  alignment_percent_file:
+    title: "Alignment percent file"
+    description: "Plots percent of total alignment to all pre-alignments and primary genome."
+    thumbnail_path: "summary/{name}_alignmentPercent.png"
+    path: "summary/{name}_alignmentPercent.pdf"
+    type: image
+  alignment_raw_file:
+    title: "Alignment raw file"
+    description: "Plots raw alignment rates to all pre-alignments and primary genome."
+    thumbnail_path: "summary/{name}_alignmentRaw.png"
+    path: "summary/{name}_alignmentRaw.pdf"
+    type: image
+  tss_file:
+    title: "TSS enrichment file"
+    description: "Plots TSS scores for each sample."
+    thumbnail_path: "summary/{name}_TSSEnrichment.png"
+    path: "summary/{name}_TSSEnrichment.pdf"
+    type: image
+  library_complexity_file:
+    title: "Library complexity file"
+    description: "Plots each sample's library complexity on a single plot."
+    thumbnail_path: "summary/{name}_libComplexity.png"
+    path: "summary/{name}_libComplexity.pdf"
+    type: image
+  consensus_peaks_file:
+    title: "Consensus peaks file"
+    description: "A set of consensus peaks across samples."
+    thumbnail_path: "summary/{name}_consensusPeaks.png"
+    path: "summary/{name}_consensusPeaks.narrowPeak"
+    type: image
+  counts_table:
+    title: "Project peak coverage file"
+    description: "Project peak coverages: chr_start_end X sample"
+    path: "summary/{name}_peaks_coverage.tsv"
+    type: link

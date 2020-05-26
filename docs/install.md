@@ -53,6 +53,7 @@ Rscript -e 'devtools::install_github("pepkit/pepr")'
 Rscript -e 'install.packages("BiocManager")'
 Rscript -e 'BiocManager::install("GenomicRanges")'
 Rscript -e 'devtools::install_github("databio/GenomicDistributions")'
+Rscript -e 'install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.1.tar.gz", repos=NULL)'
 ```
 
 Then, install the `PEPATAC` package.  From the `pepatac/` directory:
@@ -115,7 +116,6 @@ The sample annotation file must specify these columns:
 
 This is just the beginning. For your next step, take a look at one of these user guides:
 
-- [Running on multiple samples with looper](run-looper.md)
 - [Extended tutorial for running a single sample](tutorial.md)
 - [Running the pipeline directly in a container](run-container.md)
 - See other detailed user guide links in the side menu

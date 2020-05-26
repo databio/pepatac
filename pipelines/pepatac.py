@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.10-dev"
+__version__ = "0.9.0"
 
 
 from argparse import ArgumentParser
@@ -97,6 +97,13 @@ def parse_arguments():
                         help="Use seqOutBias to produce signal tracks, "
                              "incorporate mappability information, "
                              "and account for Tn5 bias.")
+    
+    parser.add_argument("--no-scale", action='store_true',
+                        dest="no_scale", default=False,
+                        help="Do not scale signal tracks: "
+                             "Default is to scale by read count.\n"
+                             "If using seqOutBias, scales by the expected/"
+                             "observed cut frequency.")
 
     parser.add_argument("--prioritize", action='store_true', default=False,
                         dest="prioritize",
@@ -130,6 +137,31 @@ def parse_arguments():
         raise SystemExit
 
     return args
+
+
+def report_message(pm, report_file, message, annotation=None):
+    """
+    Writes a string to provided file in a safe way.
+    
+    :param PipelineManager pm: a pypiper PipelineManager object
+    :param str report_file: name of the output file
+    :param str message: string to write to the output file
+    :param str annotation: By default, the message will be annotated with the
+        pipeline name, so you can tell which pipeline records which stats.
+        If you want, you can change this; use annotation='shared' if you
+        need the stat to be used by another pipeline (using get_stat()).
+    """
+    # Default annotation is current pipeline name.
+    annotation = str(annotation or pm.name)
+
+    message = str(message).strip()
+    
+    message = "{message}\t{annotation}".format(
+        message=message, annotation=annotation)
+
+    # Just to be extra careful, let's lock the file while we we write
+    # in case multiple pipelines write to the same file.
+    pm._safe_write_to_file(report_file, message)
 
 
 def calc_frip(bamfile, peakfile, frip_func, pipeline_manager,
@@ -390,7 +422,7 @@ def _add_resources(args, res, asset_dict=None):
     for reference in args.prealignments:
         for asset in [BT2_IDX_KEY]:
             try:
-                res[asset] = rgc.get_asset(reference, asset)
+                res[asset] = rgc.seek(reference, asset)
             except KeyError:
                 err_msg = "{} for {} is missing from REFGENIE config file."
                 pm.fail_pipeline(KeyError(err_msg.format(asset, reference)))
@@ -419,10 +451,10 @@ def _add_resources(args, res, asset_dict=None):
                                                     asset,
                                                     seek_key,
                                                     tag))  # DEBUG
-                    res[seek_key] = rgc.get_asset(args.genome_assembly,
-                                                  asset_name=str(asset),
-                                                  tag_name=str(tag),
-                                                  seek_key=str(seek_key))
+                    res[seek_key] = rgc.seek(args.genome_assembly,
+                                             asset_name=str(asset),
+                                             tag_name=str(tag),
+                                             seek_key=str(seek_key))
                 except KeyError:
                     key_errors.append(item)
                     if req:
@@ -466,7 +498,7 @@ def main():
 
     args = parse_arguments()
 
-    args.paired_end = args.single_or_paired == "paired"
+    args.paired_end = args.single_or_paired.lower() == "paired"
 
     # Initialize, creating global PipelineManager and NGSTk instance for
     # access in ancillary functions outside of main().
@@ -581,6 +613,16 @@ def main():
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
+
+    # Report utilized assets
+    assets_file = os.path.join(param.outfolder, "assets.tsv")
+    for asset in res:
+        message = "{}\t{}".format(asset, os.path.expandvars(res[asset]))
+        report_message(pm, assets_file, message)
+        
+    # Report primary genome
+    message = "genome\t{}".format(args.genome_assembly)
+    report_message(pm, assets_file, message)
 
 
     ############################################################################
@@ -770,10 +812,10 @@ def main():
         print("Prealignment assemblies: " + str(args.prealignments))
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
-            bt2_index = os.path.join(rgc.get_asset(reference, BT2_IDX_KEY))
+            bt2_index = os.path.join(rgc.seek(reference, BT2_IDX_KEY))
             if not bt2_index.endswith(reference):
                 bt2_index = os.path.join(
-                    rgc.get_asset(reference, BT2_IDX_KEY), reference)
+                    rgc.seek(reference, BT2_IDX_KEY), reference)
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align_with_bt2(
                     args, tools, args.paired_end, False,
@@ -835,12 +877,15 @@ def main():
     unmap_fq1 = unmap_fq1 + ".gz"
     unmap_fq2 = unmap_fq2 + ".gz"
 
+    bt2_index = os.path.join(rgc.seek(args.genome_assembly, BT2_IDX_KEY))
+    if not bt2_index.endswith(args.genome_assembly):
+        bt2_index = os.path.join(
+            rgc.seek(args.genome_assembly, BT2_IDX_KEY), args.genome_assembly)
+
     cmd = tools.bowtie2 + " -p " + str(pm.cores)
     cmd += " " + bt2_options
     cmd += " --rg-id " + args.sample_name
-    cmd += " -x " + os.path.join(
-        rgc.get_asset(args.genome_assembly, BT2_IDX_KEY),
-                      args.genome_assembly)
+    cmd += " -x " + bt2_index
     if args.paired_end:
         cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
     else:
@@ -1174,7 +1219,7 @@ def main():
                    " preseq " + "-i " + preseq_yield)
             cmd += (" -r " + preseq_counts + " -o " + preseq_plot)
 
-            pm.run(cmd, [preseq_pdf, preseq_png])
+            pm.run(cmd, [preseq_pdf, preseq_png], nofail=True)
 
             pm.report_object("Library complexity", preseq_pdf,
                              anchor_image=preseq_png)
@@ -1223,6 +1268,10 @@ def main():
             cmd += " -m " + "atac"
             cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
             cmd += " --variable-step"
+            if not args.no_scale:
+                ar = float(pm.get_stat("Aligned_reads"))
+                if ar:
+                    cmd += " --scale " + str(ar)
             pm.run(cmd, [exact_target, smooth_target])
         else:
             pm.warning("Skipping signal track production:"
@@ -1303,24 +1352,58 @@ def main():
         pm.clean_add(plus_table)
         pm.clean_add(minus_table)
 
-        pm.timestamp("### Scale and produce signal tracks")
-        scale_plus_cmd = build_command([
-            (tools.seqOutBias, "scale"),
-            plus_table,
-            plus_bam,
-            str("--bed=" + shift_plus_bed),
-            "--shift-counts",
-            str("--bw=" + plus_exact_bw)
-        ])
+        # seqOutBias fails if bed output exists. Must remove on new_start.
+        if os.path.exists(shift_plus_bed) or args.new_start:
+            try:
+                os.remove(shift_plus_bed)
+            except OSError:
+                pass
+        if os.path.exists(shift_minus_bed) or args.new_start:
+            try:
+                os.remove(shift_minus_bed)
+            except OSError:
+                pass
 
-        scale_minus_cmd = build_command([
-            (tools.seqOutBias, "scale"),
-            minus_table,
-            minus_bam,
-            str("--bed=" + shift_minus_bed),
-            "--shift-counts",
-            str("--bw=" + minus_exact_bw),
-        ])
+        if not args.no_scale:
+            pm.timestamp("### Produce scaled signal tracks")
+            scale_plus_cmd = build_command([
+                (tools.seqOutBias, "scale"),
+                plus_table,
+                plus_bam,
+                str("--bed=" + shift_plus_bed),
+                "--shift-counts",
+                str("--bw=" + plus_exact_bw)
+            ])
+
+            scale_minus_cmd = build_command([
+                (tools.seqOutBias, "scale"),
+                minus_table,
+                minus_bam,
+                str("--bed=" + shift_minus_bed),
+                "--shift-counts",
+                str("--bw=" + minus_exact_bw),
+            ])
+        else:
+            pm.timestamp("### Produce unscaled signal tracks")
+            scale_plus_cmd = build_command([
+                (tools.seqOutBias, "scale"),
+                plus_table,
+                plus_bam,
+                "--no-scale",
+                str("--bed=" + shift_plus_bed),
+                "--shift-counts",
+                str("--bw=" + plus_exact_bw)
+            ])
+
+            scale_minus_cmd = build_command([
+                (tools.seqOutBias, "scale"),
+                minus_table,
+                minus_bam,
+                "--no-scale",
+                str("--bed=" + shift_minus_bed),
+                "--shift-counts",
+                str("--bw=" + minus_exact_bw),
+            ])
         pm.run([scale_plus_cmd, scale_minus_cmd], exact_target)
         pm.clean_add(plus_exact_bw)
         pm.clean_add(minus_exact_bw)
@@ -1350,7 +1433,7 @@ def main():
             shift_minus_bed,
             (" > ", fixed_minus_bed) 
         ])
-        pm.run([fix_cmd1, fix_cmd2], shift_bed)
+        pm.run([fix_cmd1, fix_cmd2], exact_target)
         pm.clean_add(fixed_plus_bed)
         pm.clean_add(fixed_minus_bed)
 
@@ -1367,7 +1450,7 @@ def main():
             " | awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, $4}' ",
             (">", shift_bed)
         ])
-        pm.run(merge_cmd2, shift_bed)
+        pm.run(merge_cmd2, exact_target)
 
         # sort merged bedGraph
         sort_bedgraph = os.path.join(
@@ -1401,6 +1484,10 @@ def main():
             cmd += " -m " + "atac"
             cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
             cmd += " --variable-step"
+            if not args.no_scale:
+                ar = float(pm.get_stat("Aligned_reads"))
+                if ar:
+                    cmd += " --scale " + str(ar)
             pm.run(cmd, smooth_target)
         else:
             pm.warning("Skipping smooth signal track production:"
@@ -1447,6 +1534,7 @@ def main():
 
                 pm.report_result("TSS_score", round(Tss_score, 1))
             except ZeroDivisionError:
+                pm.report_result("TSS_score", 0)
                 pass
         
         # Call Rscript to plot TSS Enrichment
@@ -1543,8 +1631,6 @@ def main():
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
     peak_input_file = shift_bed
-    bigNarrowPeak = os.path.join(peak_folder,
-                                 args.sample_name + "_peaks.bigBed")
     peak_bed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
     chr_order = os.path.join(peak_folder, "chr_order.txt")
     chr_keep = os.path.join(peak_folder, "chr_keep.txt")
@@ -1597,15 +1683,7 @@ def main():
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
             ]
-            if args.peak_type == "variable":
-                macs_cmd_base.extend(param.macs2.params.split())
-            elif args.peak_type == "fixed":
-                fixed_width = ('--shift -75 --extsize 150 --nomodel '
-                               '--call-summits --nolambda --keep-dup all '
-                               '-p 0.01')
-                macs_cmd_base.extend(fixed_width.split())
-            else:  # default to variable
-                macs_cmd_base.extend(param.macs2.params.split())
+            macs_cmd_base.extend(param.macs2.params.split())
 
         # Call peaks and report peak count.
         cmd = build_command(macs_cmd_base)
@@ -1789,6 +1867,10 @@ def main():
         ########################################################################
         pm.timestamp("### # Produce bigBed formatted narrowPeak file")
 
+        bigNarrowPeak = os.path.join(peak_folder,
+                                     args.sample_name + "_peaks.bigBed")
+        temp = tempfile.NamedTemporaryFile(dir=peak_folder, delete=False)
+
         if not os.path.exists(bigNarrowPeak) or args.new_start:
             df = pd.read_csv(peak_output_file, sep='\t', header=None,
                              names=("V1","V2","V3","V4","V5","V6",
@@ -1799,6 +1881,8 @@ def main():
             def rescale(n, after=[0,1], before=[]):
                 if not before:
                     before=[min(n), max(n)]
+                if (before[1] - before[0]) == 0:
+                    return n
                 return (((after[1] - after[0]) * (n - before[0]) / 
                          (before[1] - before[0])) + after[0])
             # rescale score to be between 0 and 1000
@@ -1816,6 +1900,8 @@ def main():
             df = df.drop(columns=["V11"])
             # ensure score is a whole integer value
             df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
+            df.to_csv(temp.name, sep='\t', header=False, index=False)
+            pm.clean_add(temp.name)
 
             as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
             cmd = ("echo 'table bigNarrowPeak\n" + 
@@ -1835,8 +1921,7 @@ def main():
             pm.run(cmd, as_file, clean=True)
 
             cmd = (tools.bedToBigBed + " -as=" + as_file + " -type=bed6+4 " +
-                   peak_output_file + " " + res.chrom_sizes + " " +
-                   bigNarrowPeak)
+                   temp.name + " " + res.chrom_sizes + " " + bigNarrowPeak)
             pm.run(cmd, bigNarrowPeak, nofail=True)
 
 
@@ -2107,7 +2192,7 @@ def main():
                         pm.clean_add(file_name)
                         pm.clean_add(anno_sort)
                         pm.clean_add(anno_cov)
-    
+
 
     ############################################################################
     #                             Plot FRiF or FRiP                            #
@@ -2171,6 +2256,62 @@ def main():
             cmd = build_command(FRiF_cmd)
             pm.run(cmd, FRiF_PDF, nofail=False)
             pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+
+
+    ############################################################################
+    #                             Plot FRiF or FRiP                            #
+    ############################################################################
+    # TODO: Calculate coverage and plot using GenomicDistributions
+    #       *Currently much too memory intensive*
+    # pm.timestamp("### Calculate cumulative and expected fraction of reads in features (cFRiF/FRiF)")
+
+    # # Cummulative Fraction of Reads in Features (cFRiF)
+    # cFRiF_PDF = os.path.join(QC_folder, args.sample_name + "_cFRiF.pdf")
+    # cFRiF_PNG = os.path.join(QC_folder, args.sample_name + "_cFRiF.png")
+
+    # # Fraction of Reads in Feature (FRiF)
+    # FRiF_PDF = os.path.join(QC_folder, args.sample_name + "_FRiF.pdf")
+    # FRiF_PNG = os.path.join(QC_folder, args.sample_name + "_FRiF.png")
+
+    # if not os.path.exists(cFRiF_PDF) and not os.path.exists(FRiF_PDF) or args.new_start:
+        # if (not os.path.exists(anno_local) and
+            # os.path.exists(res.feat_annotation) or
+            # args.new_start):
+
+            # if res.feat_annotation.endswith(".gz"):
+                # cmd1 = ("ln -sf " + res.feat_annotation + " " + anno_zip)
+                # cmd2 = (ngstk.ziptool + " -d -c " + anno_zip +
+                        # " > " + anno_local)
+                # pm.run([cmd1, cmd2], anno_local)
+                # pm.clean_add(anno_local)
+            # elif res.feat_annotation.endswith(".bed"):
+                # cmd = ("ln -sf " + res.feat_annotation + " " + anno_local)
+                # pm.run(cmd, anno_local)
+                # pm.clean_add(anno_local)
+            # else:
+                # print("Skipping read and peak annotation...")
+                # print("This requires a {} annotation file."
+                      # .format(args.genome_assembly))
+                # print("Could not find {}.`"
+                      # .format(str(os.path.dirname(res.feat_annotation))))
+
+        # cFRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
+                     # "-i", mapping_genome_bam, "-f", "bam", "-p", anno_local,
+                     # "-t", "cumulative", "-o", cFRiF_PDF]
+        # cmd = build_command(cFRiF_cmd)
+        # pm.run(cmd, cFRiF_PDF, nofail=False)
+        # pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
+        
+        # FRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
+                    # "-i", mapping_genome_bam, "-f", "bam", "-p", anno_local,
+                    # "-t", "expected", "-o", FRiF_PDF]
+        # cmd = build_command(FRiF_cmd)
+        # pm.run(cmd, FRiF_PDF, nofail=False)
+        # pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+     
+    # Test
+    #test_file = os.path.join(QC_folder, args.sample_name + "_test.tsv")
+    #pm._safe_write_to_file(test_file, "test")
 
 
     ############################################################################

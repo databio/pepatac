@@ -10,7 +10,7 @@ This guide walks you through the nitty-gritty of how to install each prerequisit
 pip install --user --upgrade -r requirements.txt
 ```
 
-**Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the [pipeline configuration file](../pipelines/pepatac.yaml) tools section.
+**Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the [pipeline configuration file](https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml) tools section.
 The following tools are used by the pipeline:  
 
 * [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/)
@@ -132,6 +132,7 @@ Rscript -e 'devtools::install_github("pepkit/pepr")'
 Rscript -e 'install.packages("BiocManager")'
 Rscript -e 'BiocManager::install("GenomicRanges")'
 Rscript -e 'devtools::install_github("databio/GenomicDistributions")'
+Rscript -e 'install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.1.tar.gz", repos=NULL)'
 ```
 
 Then, install the `PEPATAC` package.  From the `pepatac/` directory:

@@ -21,20 +21,21 @@
 
 `PEPATAC` produces many outputs to set the stage for project-specific analysis:
 
-- HTML report: View this [HTML Summary report demo](files/examples/gold/summary.html)
-- We have produced an [interactive display of the output folder structure](browse_output/), which includes:
+- HTML report: View this [HTML Summary report demo](files/examples/gold/gold_summary.html)
+- We have produced an [interactive display of the output folder structure](browse_output.md), which includes:
 	- [Easily parsable summary statistics file](files/examples/gold/results_pipeline/gold5/stats.tsv)
 	- Called peaks (in both `narrowPeak` and `bigBed` format)
 	- BigWig signal tracks:
 	    - nucleotide-resolution ("exact cut") signal
 	    - smoothed signal
 	- Plots:               
-	    - [TSS enrichment plot](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_TssEnrichment.pdf)
-	    - [TSS distance distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_TSS_dist.pdf)
-	    - [Fragment length distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_fragLenDistribution.pdf)
-	    - [Peak chromosomal distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_chr_dist.pdf)
-	    - [Peak genomic partition distribution](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_peaks_partition_dist.pdf)
-	    - [Fraction of reads *and/or* peaks in features (FRiF)](files/examples/gold/results_pipeline/gold5/QC_hg19/gold5_frif.pdf)
+	    - [TSS enrichment plot](files/examples/gold/results_pipeline/gold5/QC_hg38/gold5_TSS_enrichment.pdf)
+	    - [TSS distance distribution](files/examples/gold/results_pipeline/gold5/QC_hg38/gold5_TSS_distribution.pdf)
+	    - [Fragment length distribution](files/examples/gold/results_pipeline/gold5/QC_hg38/gold5_fragLenDistribution.pdf)
+	    - [Peak chromosomal distribution](files/examples/gold/results_pipeline/gold5/QC_hg38/gold5_chromosome_distribution.pdf)
+	    - [Peak genomic partition distribution](files/examples/gold/results_pipeline/gold5/QC_hg38/gold5_genomic_distribution.pdf  )
+	    - [Fraction of reads *and/or* peaks in features (FRiF)](files/examples/gold/results_pipeline/gold5/QC_hg38/gold5_FRiF.pdf)
+        - [Cumulative Fraction of reads *and/or* peaks in features (cFRiF)](files/examples/gold/results_pipeline/gold5/QC_hg38/gold5_cFRiF.pdf)
 
 ## Quick start
 
