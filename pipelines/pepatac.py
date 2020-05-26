@@ -2310,8 +2310,8 @@ def main():
         # pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
      
     # Test
-    test_file = os.path.join(QC_folder, args.sample_name + "_test.tsv")
-    pm._safe_write_to_file(test_file, "test")
+    #test_file = os.path.join(QC_folder, args.sample_name + "_test.tsv")
+    #pm._safe_write_to_file(test_file, "test")
 
 
     ############################################################################
