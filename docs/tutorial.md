@@ -153,7 +153,7 @@ This should take less than a minute on the tutorial sample and will generate a `
 
 ## 6: Generate an `HTML` report using `looper`
 
-Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](../files/examples/tutorial/PEPATAC_tutorial_summary.html).  Otherwise, let's generate a report ourselves.
+Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](files/examples/tutorial/PEPATAC_tutorial_summary.html).  Otherwise, let's generate a report ourselves.
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `report` function of `looper`.
 ```
 looper report tutorial.yaml
