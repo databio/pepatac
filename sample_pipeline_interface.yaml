@@ -25,6 +25,7 @@ command_template: >
   {% if sample.extend is defined %} --extend {sample.extend} {% endif %}
   {% if sample.frip_ref_peaks is defined %} --frip-ref-peaks {sample.frip_ref_peaks} {% endif %}
   {% if sample.motif is defined %} --motif {% endif %}
+  {% if sample.no_scale is defined %} --no-scale {% endif %}
   {% if sample.sob is defined %} --sob {% endif %}
   {% if sample.prioritize is defined %} --prioritize {% endif %}
   {% if sample.keep is defined %} --keep {% endif %}

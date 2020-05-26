@@ -97,6 +97,13 @@ def parse_arguments():
                         help="Use seqOutBias to produce signal tracks, "
                              "incorporate mappability information, "
                              "and account for Tn5 bias.")
+    
+    parser.add_argument("--no-scale", action='store_true',
+                        dest="no_scale", default=False,
+                        help="Scale signal tracks: "
+                             "Default is to scale by read count.\n"
+                             "If using seqOutBias, scales by the expected/"
+                             "observed cut frequency.")
 
     parser.add_argument("--prioritize", action='store_true', default=False,
                         dest="prioritize",
@@ -1261,6 +1268,10 @@ def main():
             cmd += " -m " + "atac"
             cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
             cmd += " --variable-step"
+            if not args.no_scale:
+                ar = float(pm.get_stat("Aligned_reads"))
+                if ar:
+                    cmd += " --scale " + str(ar)
             pm.run(cmd, [exact_target, smooth_target])
         else:
             pm.warning("Skipping signal track production:"
@@ -1341,24 +1352,58 @@ def main():
         pm.clean_add(plus_table)
         pm.clean_add(minus_table)
 
-        pm.timestamp("### Scale and produce signal tracks")
-        scale_plus_cmd = build_command([
-            (tools.seqOutBias, "scale"),
-            plus_table,
-            plus_bam,
-            str("--bed=" + shift_plus_bed),
-            "--shift-counts",
-            str("--bw=" + plus_exact_bw)
-        ])
+        # seqOutBias fails if bed output exists. Must remove on new_start.
+        if os.path.exists(shift_plus_bed) or args.new_start:
+            try:
+                os.remove(shift_plus_bed)
+            except OSError:
+                pass
+        if os.path.exists(shift_minus_bed) or args.new_start:
+            try:
+                os.remove(shift_minus_bed)
+            except OSError:
+                pass
 
-        scale_minus_cmd = build_command([
-            (tools.seqOutBias, "scale"),
-            minus_table,
-            minus_bam,
-            str("--bed=" + shift_minus_bed),
-            "--shift-counts",
-            str("--bw=" + minus_exact_bw),
-        ])
+        if not args.no_scale:
+            pm.timestamp("### Produce scaled signal tracks")
+            scale_plus_cmd = build_command([
+                (tools.seqOutBias, "scale"),
+                plus_table,
+                plus_bam,
+                str("--bed=" + shift_plus_bed),
+                "--shift-counts",
+                str("--bw=" + plus_exact_bw)
+            ])
+
+            scale_minus_cmd = build_command([
+                (tools.seqOutBias, "scale"),
+                minus_table,
+                minus_bam,
+                str("--bed=" + shift_minus_bed),
+                "--shift-counts",
+                str("--bw=" + minus_exact_bw),
+            ])
+        else:
+            pm.timestamp("### Produce unscaled signal tracks")
+            scale_plus_cmd = build_command([
+                (tools.seqOutBias, "scale"),
+                plus_table,
+                plus_bam,
+                "--no-scale",
+                str("--bed=" + shift_plus_bed),
+                "--shift-counts",
+                str("--bw=" + plus_exact_bw)
+            ])
+
+            scale_minus_cmd = build_command([
+                (tools.seqOutBias, "scale"),
+                minus_table,
+                minus_bam,
+                "--no-scale",
+                str("--bed=" + shift_minus_bed),
+                "--shift-counts",
+                str("--bw=" + minus_exact_bw),
+            ])
         pm.run([scale_plus_cmd, scale_minus_cmd], exact_target)
         pm.clean_add(plus_exact_bw)
         pm.clean_add(minus_exact_bw)
@@ -1439,6 +1484,10 @@ def main():
             cmd += " -m " + "atac"
             cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
             cmd += " --variable-step"
+            if not args.no_scale:
+                ar = float(pm.get_stat("Aligned_reads"))
+                if ar:
+                    cmd += " --scale " + str(ar)
             pm.run(cmd, smooth_target)
         else:
             pm.warning("Skipping smooth signal track production:"
