@@ -116,7 +116,6 @@ The sample annotation file must specify these columns:
 
 This is just the beginning. For your next step, take a look at one of these user guides:
 
-- [Running on multiple samples with looper](run-looper.md)
 - [Extended tutorial for running a single sample](tutorial.md)
 - [Running the pipeline directly in a container](run-container.md)
 - See other detailed user guide links in the side menu

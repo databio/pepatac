@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.8.10-dev"
+__version__ = "0.9.0"
 
 
 from argparse import ArgumentParser
@@ -100,7 +100,7 @@ def parse_arguments():
     
     parser.add_argument("--no-scale", action='store_true',
                         dest="no_scale", default=False,
-                        help="Scale signal tracks: "
+                        help="Do not scale signal tracks: "
                              "Default is to scale by read count.\n"
                              "If using seqOutBias, scales by the expected/"
                              "observed cut frequency.")

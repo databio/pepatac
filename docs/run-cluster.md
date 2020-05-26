@@ -2,26 +2,26 @@
 
 ## Default computing options
 
-When you run your PEPATAC project using `looper run`, by default it will simply run each sample locally. You can change that using `looper run --compute PACKAGE`, where PACKAGE is an option described below. This enables you to adjust your computing preferences on-the-fly. You have several built-in packages, which you can view by typing `divvy list`. Default packages include:
+When you run your PEPATAC project using `looper run`, by default it will simply run each sample locally. You can change that using `looper run --package COMPUTE_PACKAGE`, where COMPUTE_PACKAGE is an option described below. This enables you to adjust your computing preferences on-the-fly. You have several built-in packages, which you can view by typing `divvy list`. Default packages include:
 
-- `--compute slurm`. Submit the jobs to a SLURM cluster using `sbatch`.
-- `--compute sge`. Submit the jobs to a SGE cluster using `qsub`.
+- `--package slurm`. Submit the jobs to a SLURM cluster using `sbatch`.
+- `--package sge`. Submit the jobs to a SGE cluster using `qsub`.
 
 To show how this works, let's run the example project using the `slurm` compute package. Used `-d` for a dry run to create the submits scripts but not run them:
 
 ```console
 cd pepatac
 looper run examples/test_project/test_config.yaml -d \
-  --compute slurm
+  --package slurm
 ```
 
 This will produce a job script:
 
 ```console
-cat $HOME/atac_out/submission/pepatac.py_test1.sub
+cat $PROCESSED/pepatac_test/submission/PEPATAC_test1.sub
 ```
 
-If all looks well, run looper without `-d` to actually submit the jobs. Read more to [learn how to run PEPATAC in containers](container.md). 
+If all looks well, run looper without `-d` to actually submit the jobs. Read more to [learn how to run PEPATAC in containers](run-container.md). 
 
 ## Customizing compute options
 
@@ -34,4 +34,4 @@ export DIVCFG="divvy_config.yaml"
 divvy init -c $DIVCFG
 ```
 
-Next, you edit that config file to add in any compute packages you need. PEPATAC will then give you access to any of your custom packages with `looper --compute <package>`. For complete instructions on how to create a custom compute package, read [how to configure divvy](https://divvy.databio.org/en/latest/configuration/). 
+Next, you edit that config file to add in any compute packages you need. PEPATAC will then give you access to any of your custom packages with `looper --package <compute_package>`. For complete instructions on how to create a custom compute package, read [how to configure divvy](https://divvy.databio.org/en/latest/configuration/). 

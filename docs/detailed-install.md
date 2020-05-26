@@ -10,7 +10,7 @@ This guide walks you through the nitty-gritty of how to install each prerequisit
 pip install --user --upgrade -r requirements.txt
 ```
 
-**Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the [pipeline configuration file](../pipelines/pepatac.yaml) tools section.
+**Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the [pipeline configuration file](../../pipelines/pepatac.yaml) tools section.
 The following tools are used by the pipeline:  
 
 * [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/)
