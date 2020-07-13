@@ -2,7 +2,7 @@
 
 The pipeline uses reference data at various stages. If you're using a common genome assembly, these resources are pre-built and can be easily downloaded using `refgenie pull`, as described in the setup instructions. If the resources are not available, you'll have to build them. Read [how to build `refgenie` assets](http://refgenie.databio.org/en/latest/build/) in the `refgenie` docs.  You may also [learn about the current buildable assets](http://refgenie.databio.org/en/latest/available_assets/) to which `refgenie` knows the recipe.
 
-##Use a custom `feat_annotation` asset
+## Use a custom `feat_annotation` asset
 
 The pipeline will calculate the fraction of reads in genomic features using the `refgenie` `feat_annotation` asset, but you can also specify this file yourself at the command line (`--anno-name`).
 
