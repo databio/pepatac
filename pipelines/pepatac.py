@@ -1742,7 +1742,7 @@ def main():
                     black_local = os.path.join(raw_folder,
                                                args.genome_assembly +
                                                "_blacklist.bed")
-                    cmd = ("ln -sf " + res.feat_annotation + " " + black_local)
+                    cmd = ("ln -sf " + res.blacklist + " " + black_local)
                     pm.run(cmd, black_local)
                 else:
                     print("Skipping peak filtering...")
