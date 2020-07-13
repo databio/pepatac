@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 
 from argparse import ArgumentParser
@@ -874,8 +874,10 @@ def main():
     os.chmod(tempdir, 0o771)
     pm.clean_add(tempdir)
 
-    unmap_fq1 = unmap_fq1 + ".gz"
-    unmap_fq2 = unmap_fq2 + ".gz"
+    # If there are no prealignments, unmap_fq1 will be unzipped
+    if pypiper.is_gzipped_fastq(unmap_fq1):
+        unmap_fq1 = unmap_fq1 + ".gz"
+        unmap_fq2 = unmap_fq2 + ".gz"
 
     bt2_index = os.path.join(rgc.seek(args.genome_assembly, BT2_IDX_KEY))
     if not bt2_index.endswith(args.genome_assembly):

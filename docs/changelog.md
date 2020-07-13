@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] -- 2020-07-13
+
+### Changed
+ - Fixed logic for no prealignments on first run
+
 ## [0.9.0] -- 2020-05-26
 
 ### Added
