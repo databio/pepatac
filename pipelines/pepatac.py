@@ -875,8 +875,9 @@ def main():
     pm.clean_add(tempdir)
 
     # If there are no prealignments, unmap_fq1 will be unzipped
-    if pypiper.is_gzipped_fastq(unmap_fq1):
+    if os.path.exists(unmap_fq1 + ".gz"):
         unmap_fq1 = unmap_fq1 + ".gz"
+    if os.path.exists(unmap_fq2 + ".gz"):
         unmap_fq2 = unmap_fq2 + ".gz"
 
     bt2_index = os.path.join(rgc.seek(args.genome_assembly, BT2_IDX_KEY))
