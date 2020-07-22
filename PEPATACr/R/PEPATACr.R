@@ -739,7 +739,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
             } else {
                 info       <- file.info(file.path(bedFile[i]))
                 name       <- basename(tools::file_path_sans_ext(bedFile[i]))
-                name       <- gsub(sample_name, "", name)
+                name       <- gsub(sample_name, "", name, fixed=TRUE)
                 name       <- gsub("^.*?_", "", name)
                 numFields  <- 2
                 for(j in 1:numFields) name <- gsub("_[^_]*$", "", name)
