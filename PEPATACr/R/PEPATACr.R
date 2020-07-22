@@ -1381,7 +1381,6 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
 
     if (tolower(plot) == "chromosome") {
         # Chromosome distribution plot
-        # TODO: makes this a try-catch
         x <- tryCatch(
             {
                 suppressMessages(calcChromBinsRef(query, genome))
@@ -1413,9 +1412,26 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         }
     } else if (tolower(plot) == "tss") {
         # Feature distance distribution plots
-        TSS_dist <- calcFeatureDistRefTSS(query, genome)
+        x <- tryCatch(
+            {
+                suppressMessages(calcFeatureDistRefTSS(query, genome))
+            },
+            error=function(e) {
+                message("calcFeatureDistRefTSS(): ", e)
+                return(NULL)
+            },
+            warning=function(e) {
+                message("calcFeatureDistRefTSS(): ", e)
+                return(NULL)
+            }
+        )
+
+        if (is.null(x)) {
+            return(ggplot())
+        }
+        
         if (!is.na(TSS_dist[1])) {
-            TSS_plot <- plotFeatureDist(TSS_dist, featureName="TSS")
+            TSS_plot <- plotFeatureDist(x, featureName="TSS")
             return(TSS_plot)
         } else {
             message("Unable to produce TSS distribution plot.")
