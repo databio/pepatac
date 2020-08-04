@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.1"
+__version__ = "0.9.2"
 
 
 from argparse import ArgumentParser
@@ -122,6 +122,10 @@ def parse_arguments():
     parser.add_argument("--lite", dest="lite", action='store_true',
                         help="Only keep minimal, essential output to conserve "
                              "disk space.")
+
+    parser.add_argument("--skipqc", dest="skipqc", action='store_true',
+                        help="Skip FastQC. Useful for bugs in FastQC "
+                             "that appear with some sequence read files.")
 
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {v}".format(v=__version__))
@@ -712,6 +716,13 @@ def main():
         trimming_prefix = out_fastq_pre
     trimmed_fastq = trimming_prefix + "_R1_trim.fastq"
     trimmed_fastq_R2 = trimming_prefix + "_R2_trim.fastq"
+    fastqc_folder = os.path.join(param.outfolder, "fastqc")
+    fastqc_report = os.path.join(fastqc_folder,
+        trimming_prefix + "_R1_trim_fastqc.html")
+    fastqc_report_R2 = os.path.join(fastqc_folder,
+        trimming_prefix + "_R2_trim_fastqc.html")
+    if ngstk.check_command(tools.fastqc):
+        ngstk.make_dir(fastqc_folder)
 
     # Create trimming command(s).
     if args.trimmer == "pyadapt":
@@ -726,7 +737,7 @@ def main():
             ("-o", out_fastq_pre),
             "-u"
         ]
-        cmd = build_command(trim_cmd_chunks)
+        trim_cmd = build_command(trim_cmd_chunks)
 
     elif args.trimmer == "skewer":
         # Create the primary skewer command.
@@ -762,7 +773,7 @@ def main():
                                       for old, new in skewer_filename_pairs]
 
         # Pypiper submits the commands serially.
-        cmd = [trimming_command] + trimming_renaming_commands
+        trim_cmd = [trimming_command] + trimming_renaming_commands
 
     else:
         # Default to trimmomatic.
@@ -780,13 +791,42 @@ def main():
             trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
             "ILLUMINACLIP:" + res.adapters + ":2:30:10"
         ]
-        cmd = build_command(trim_cmd_chunks)
+        trim_cmd = build_command(trim_cmd_chunks)
+
+    def check_trim():
+        pm.info("Evaluating read trimming")
+
+        if args.paired_end and not trimmed_fastq_R2:
+            pm.warning("Specified paired-end but no R2 file")
+
+        n_trim = float(ngstk.count_reads(trimmed_fastq, args.paired_end))
+        pm.report_result("Trimmed_reads", int(n_trim))
+        try:
+            rr = float(pm.get_stat("Raw_reads"))
+        except:
+            pm.warning("Can't calculate trim loss rate without raw read result.")
+        else:
+            pm.report_result(
+                "Trim_loss_rate", round((rr - n_trim) * 100 / rr, 2))
+
+        # Also run a fastqc (if installed/requested)
+        if fastqc_folder and not args.skipqc:
+            if fastqc_folder and os.path.isabs(fastqc_folder):
+                ngstk.make_sure_path_exists(fastqc_folder)
+            cmd = (tools.fastqc + " --noextract --outdir " +
+                   fastqc_folder + " " + trimmed_fastq)
+            pm.run(cmd, fastqc_report, nofail=False)
+            pm.report_object("FastQC report r1", fastqc_report)
+
+            if args.paired_end and trimmed_fastq_R2:
+                cmd = (tools.fastqc + " --noextract --outdir " +
+                       fastqc_folder + " " + trimmed_fastq_R2)
+                pm.run(cmd, fastqc_report_R2, nofail=False)
+                pm.report_object("FastQC report r2", fastqc_report_R2)
 
     if not os.path.exists(rmdup_bam) or args.new_start:
-        pm.run(cmd, trimmed_fastq,
-               follow=ngstk.check_trim(
-                   trimmed_fastq, args.paired_end, trimmed_fastq_R2,
-                   fastqc_folder=os.path.join(param.outfolder, "fastqc")))
+        pm.debug("trim_cmd: {}".format(trim_cmd))
+        pm.run(trim_cmd, trimmed_fastq, follow=check_trim) 
 
     pm.clean_add(os.path.join(fastq_folder, "*.fastq"), conditional=True)
     pm.clean_add(os.path.join(fastq_folder, "*.log"), conditional=True)
@@ -875,8 +915,9 @@ def main():
     pm.clean_add(tempdir)
 
     # If there are no prealignments, unmap_fq1 will be unzipped
-    if pypiper.is_gzipped_fastq(unmap_fq1):
+    if os.path.exists(unmap_fq1 + ".gz"):
         unmap_fq1 = unmap_fq1 + ".gz"
+    if os.path.exists(unmap_fq2 + ".gz"):
         unmap_fq2 = unmap_fq2 + ".gz"
 
     bt2_index = os.path.join(rgc.seek(args.genome_assembly, BT2_IDX_KEY))
@@ -1742,7 +1783,7 @@ def main():
                     black_local = os.path.join(raw_folder,
                                                args.genome_assembly +
                                                "_blacklist.bed")
-                    cmd = ("ln -sf " + res.feat_annotation + " " + black_local)
+                    cmd = ("ln -sf " + res.blacklist + " " + black_local)
                     pm.run(cmd, black_local)
                 else:
                     print("Skipping peak filtering...")

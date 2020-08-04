@@ -1,6 +1,12 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.2] -- 2020-08-04
+
+### Changed
+ - Reduce memory requirements of consensus peak generation
+ - Enable multiple genome projects for peak count tables
+
 ## [0.9.1] -- 2020-07-13
 
 ### Changed

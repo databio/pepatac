@@ -52,11 +52,12 @@ properties:
   consensus_peaks_file:
     title: "Consensus peaks file"
     description: "A set of consensus peaks across samples."
-    thumbnail_path: "summary/{name}_consensusPeaks.png"
-    path: "summary/{name}_consensusPeaks.narrowPeak"
-    type: image
+    thumbnail_path: "summary/{name}_*_consensusPeaks.png"
+    path: "summary/{name}_*_consensusPeaks.narrowPeak"
+    type: string
   counts_table:
     title: "Project peak coverage file"
     description: "Project peak coverages: chr_start_end X sample"
-    path: "summary/{name}_peaks_coverage.tsv"
-    type: link
+    thumbnail_path: "summary/{name}_*_peaks_coverage.png"
+    path: "summary/{name}_*_peaks_coverage.tsv"
+    type: string
