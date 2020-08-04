@@ -19,9 +19,9 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [--peak-type {fixed,variable}] [--extend EXTEND]
                   [--frip-ref-peaks FRIP_REF_PEAKS] [--motif] [--sob]
                   [--no-scale] [--prioritize] [--keep] [--noFIFO] [--lite]
-                  [-V]
+                  [--skipqc] [-V]
 
-PEPATAC version 0.9.1
+PEPATAC version 0.9.2
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -86,6 +86,8 @@ optional arguments:
   --noFIFO              Do NOT use named pipes during prealignments
   --lite                Only keep minimal, essential output to conserve disk
                         space.
+  --skipqc              Skip FastQC. Useful for bugs in FastQC that appear
+                        with some sequence read files.
   -V, --version         show program's version number and exit
 
 required named arguments:
