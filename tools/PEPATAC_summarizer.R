@@ -110,7 +110,6 @@ if (dir.exists(argv$results)) {
     quit()
 }
 
-
 # Get assets
 assets  <- PEPATACr::createAssetsSummary(prj, argv$output, results_subdir)
 if (nrow(assets) == 0) {
@@ -172,7 +171,7 @@ if (!file.exists(complexity_path) || argv$new_start) {
         complexity_flag <- TRUE
     }
 } else {
-    warning("Project level library complexity plot already exists.")
+    message("Project level library complexity plot already exists.")
     message(paste0("Project library complexity plot: ", complexity_path, "\n"))
     complexity_flag <- TRUE
 }
@@ -185,7 +184,7 @@ if (summarizer_flag && complexity_flag) {
 for (genome in unique(genomes)) {
     file_name      <- paste0("_", genome,"_consensusPeaks.narrowPeak")
     consensus_path <- file.path(summary_dir, paste0(project_name, file_name))
-    if (file.exists(consensus_path)) {
+    if (file.exists(consensus_path) && !argv$new_start) {
         message(paste0("Consensus peak set (", genome, "): ",
                        consensus_path, "\n"))
     }
@@ -193,7 +192,7 @@ for (genome in unique(genomes)) {
 
 # Calculate consensus peaks
 if (!file.exists(consensus_path) || argv$new_start) {
-    write(paste0("Creating consensus peak set..."), stdout())
+    #write(paste0("Creating consensus peak set..."), stdout())
     consensus_paths <- PEPATACr::consensusPeaks(prj, argv$output,
                                                 argv$results, assets)
     if (!length(consensus_paths) == 0) {
@@ -213,24 +212,35 @@ if (!file.exists(consensus_path) || argv$new_start) {
     }
 }
 
-# Create count matrix
-counts_path <- file.path(summary_dir,
-                         paste0(project_name, "_peaks_coverage.tsv"))
-if (!file.exists(counts_path) || argv$new_start) {
-    write(paste0("Creating gene count table..."), stdout())
-    counts_path <- PEPATACr::peakCounts(prj, argv$output, argv$results, assets)
-    if (!is.null(counts_path) && file.exists(counts_path)) {
-        message("Counts table: ", counts_path, "\n")
-        icon <- PEPATACr::fileIcon()
-        output_file <- file.path(summary_dir,
-                                 paste0(project_name, "_peaks_coverage.png"))
-        png(filename = output_file, height = 275, width=275,
-            bg="transparent")
-        suppressWarnings(print(icon))
-        invisible(dev.off())
+# Report existing counts tables
+# TODO: move genome handling out of the called function?
+for (genome in unique(genomes)) {
+    file_name   <- paste0("_", genome,"_peaks_coverage.tsv")
+    counts_path <- file.path(summary_dir, paste0(project_name, file_name))
+    if (file.exists(counts_path) && !argv$new_start) {
+        message(paste0("Peak counts table (", genome, "): ",
+                       counts_path, "\n"))
     }
-} else {
-   message("Counts table: ", counts_path, "\n")
+}
+
+# Create count matrix
+if (!file.exists(counts_path) || argv$new_start) {
+    #write(paste0("Creating peak count table(s)..."), stdout())
+    counts_paths <- PEPATACr::peakCounts(prj, argv$output, argv$results, assets)
+    if (!length(counts_paths) == 0) {
+        for (counts_table in counts_paths) {
+            if (file.exists(counts_table)) {
+                message("Counts table: ", counts_table, "\n")
+                icon        <- PEPATACr::fileIcon()
+                output_file <- file.path(summary_dir,
+                    paste0(project_name, "_", genome, "_peaks_coverage.png"))
+                png(filename = output_file, height = 275, width=275,
+                    bg="transparent")
+                suppressWarnings(print(icon))
+                invisible(dev.off())
+            }
+        }
+    }
 }
 
 ################################################################################
