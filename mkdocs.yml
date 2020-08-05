@@ -23,6 +23,7 @@ nav:
     - Run using containers: 'run-container.md'
     - Download SRA data: 'download.md'
     - Configure prealignments: 'prealignments.md'
+    - Configure seqOutBias assets: 'sob.md'
     - Detailed install guide: 'detailed-install.md'
     - Use custom reference data: 'annotation.md'
   - Reference: 
