@@ -777,18 +777,19 @@ def main():
 
     else:
         # Default to trimmomatic.
+        pm.info("trimmomatic local_input_files: {}".format(local_input_files))
         trim_cmd_chunks = [
             "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
                 java=tools.java, mem=pm.mem,
                 trim=tools.trimmomatic,
-                PE="PE" if args.paired_end else "",
+                PE="PE" if args.paired_end else "SE",
                 cores=pm.cores),
-            local_input_files[0],
-            local_input_files[1],
+            untrimmed_fastq1,
+            untrimmed_fastq2 if args.paired_end else None,
             trimmed_fastq,
-            trimming_prefix + "_R1_unpaired.fq",
-            trimmed_fastq_R2 if args.paired_end else "",
-            trimming_prefix + "_R2_unpaired.fq" if args.paired_end else "",
+            trimming_prefix + "_R1_unpaired.fq" if args.paired_end else None,
+            trimmed_fastq_R2 if args.paired_end else None,
+            trimming_prefix + "_R2_unpaired.fq" if args.paired_end else None,
             "ILLUMINACLIP:" + res.adapters + ":2:30:10"
         ]
         trim_cmd = build_command(trim_cmd_chunks)
@@ -1305,6 +1306,7 @@ def main():
             cmd = tool_path("bamSitesToWig.py")
             cmd += " -i " + rmdup_bam
             cmd += " -c " + res.chrom_sizes
+            cmd += " -e " + exact_folder
             cmd += " -b " + shift_bed # request bed output
             cmd += " -o " + exact_target
             cmd += " -w " + smooth_target
@@ -1974,17 +1976,17 @@ def main():
         pm.timestamp("### Annotate peaks")
 
         chr_PDF  = os.path.join(QC_folder, 
-            args.sample_name + "_chromosome_distribution.pdf")
+            args.sample_name + "_peak_chromosome_distribution.pdf")
         chr_PNG  = os.path.join(QC_folder,
-            args.sample_name + "_chromosome_distribution.png")
+            args.sample_name + "_peak_chromosome_distribution.png")
         TSSdist_PDF = os.path.join(QC_folder,
-            args.sample_name + "_TSS_distribution.pdf")
+            args.sample_name + "_peak_TSS_distribution.pdf")
         TSSdist_PNG = os.path.join(QC_folder,
-            args.sample_name + "_TSS_distribution.png")
+            args.sample_name + "_peak_TSS_distribution.png")
         gd_PDF  = os.path.join(QC_folder,
-            args.sample_name + "_genomic_distribution.pdf")
+            args.sample_name + "_peak_genomic_distribution.pdf")
         gd_PNG  = os.path.join(QC_folder,
-            args.sample_name + "_genomic_distribution.png")
+            args.sample_name + "_peak_genomic_distribution.png")
 
         cmd1 = build_command(
                 [tools.Rscript,
