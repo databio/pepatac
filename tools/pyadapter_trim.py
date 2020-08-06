@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Author: Jason Buenrostro, Stanford University
+# Update to python3: Jason Smith, University of Virginia
 # The following program will trim PE reads
 
 ##### IMPORT MODULES #####
@@ -62,29 +63,29 @@ append = p1_in.split('.')[-1]
 if append == "fastq":
     p1_rds = open(p1_in,'r')
     p2_rds = open(p2_in,'r')
-    p1_out = re.sub(".fastq", ".trim.fastq", p1_file)
-    p2_out = re.sub(".fastq", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fastq", "_trim.fastq", p1_file)
+    p2_out = re.sub(".fastq", "_trim.fastq", p2_file)
 elif append == "fq":
     p1_rds = open(p1_in,'r')
     p2_rds = open(p2_in,'r')
-    p1_out = re.sub(".fq", ".trim.fastq", p1_file)
-    p2_out = re.sub(".fq", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fq", "_trim.fastq", p1_file)
+    p2_out = re.sub(".fq", "_trim.fastq", p2_file)
 elif append == "gz":
     p1_rds = gzip.open(p1_in,'r')
     p2_rds = gzip.open(p2_in,'r')
-    p1_out = re.sub(".fastq.gz", ".trim.fastq", p1_file)
-    p2_out = re.sub(".fastq.gz", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fastq.gz", "_trim.fastq", p1_file)
+    p2_out = re.sub(".fastq.gz", "_trim.fastq", p2_file)
 elif append == "bz2":
     p1_rds = bz2.BZ2File(p1_in,'r')
     p2_rds = bz2.BZ2File(p2_in,'r')
-    p1_out = re.sub(".fastq.bz2", ".trim.fastq", p1_file)
-    p2_out = re.sub(".fastq.bz2", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fastq.bz2", "_trim.fastq", p1_file)
+    p2_out = re.sub(".fastq.bz2", "_trim.fastq", p2_file)
 else:
     sys.exit("ERROR! The input file2 must be a .fastq or .fastq.gz")
 
 if options.o:
-    p1_out = options.o + "_R1.trim.fastq"
-    p2_out = options.o + "_R2.trim.fastq"
+    p1_out = options.o + "_R1_trim.fastq"
+    p2_out = options.o + "_R2_trim.fastq"
 
 ##### SCRIPT #####
 # initialize variables
