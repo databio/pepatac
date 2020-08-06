@@ -121,13 +121,15 @@ class bamQC(pararead.ParaReadProcessor):
             mitoCount = 0
             isPE = isPaired(self.fetch_chunk(chrom))   
             flags = countFlags(self.fetch_chunk(chrom))
-            if ('chrM' or 'rCRSd') in chrom:
+            if ('chrm' or 'rcrsd') in chrom.lower():
+                _LOGGER.debug("-- mitochondrial chromosome: " + str(chrom) + " --")
                 mitoCount = mitoCount + float(flags['num_pairs'])
                 chrStats = {'mitoReads':mitoCount}         
                 #chrStats.update(flags)
                 np.save(chrom_out_file, chrStats)
                 return chrom
             if isPE:
+                _LOGGER.debug("Name (PE): " + str(chrom))
                 readVals = getRead(self.fetch_chunk(chrom), isPE)
                 readVals = readVals.drop(columns='query_name')            
                 M_DISTINCT = len(readVals.drop_duplicates())
@@ -142,8 +144,10 @@ class bamQC(pararead.ParaReadProcessor):
                         M2 = value
                 chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2}         
                 chrStats.update(flags)
+                _LOGGER.debug("-- saving " + str(chrom) + " --")
                 np.save(chrom_out_file, chrStats)
             else:
+                _LOGGER.debug("Name (SE): " + str(chrom))
                 readSE = getRead(self.fetch_chunk(chrom), isPE)
                 readSE = readSE.drop(columns='query_name')
                 M_DISTINCT = len(readSE.drop_duplicates())
@@ -157,7 +161,9 @@ class bamQC(pararead.ParaReadProcessor):
                             M2 += 1
                 chrStats = {'M_DISTINCT':M_DISTINCT, 'M1':M1, 'M2':M2}         
                 chrStats.update(flags)
+                _LOGGER.debug("-- saving " + str(chrom) + " --")
                 np.save(chrom_out_file, chrStats)
+            _LOGGER.debug("-- returning " + str(chrom) + " --")
             return chrom
         else:
             _LOGGER.warn("{} could not be found.".format(self.reads_filename))
