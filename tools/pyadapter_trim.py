@@ -10,7 +10,6 @@ import re
 import sys
 import bz2
 import gzip
-import string
 import Levenshtein
 from Bio import SeqIO
 from Bio import AlignIO
@@ -18,9 +17,9 @@ from optparse import OptionParser
 
 ##### DEFINE FUNCTIONS #####
 # Reverse complement
-complement = string.maketrans('ATCGN', 'TAGCN')
+complement = "ATCGN".translate({ord('A'): 'T', ord('T'): 'A', ord('C'): 'G', ord('G'): 'C'}).encode('utf-8')
 def reverse_complement(sequence):
-    return sequence.upper().translate(complement)[::-1]
+    return sequence.decode("utf-8").upper().translate(complement)[::-1].encode('utf-8')
 
 # Align with mismatch, find first and move on, assumes only one
 def fuzz_align(s_seq,l_seq,mismatch):
@@ -150,20 +149,20 @@ while 1:
         
         # print data
         if options.s == "R1":
-            print seqhead1.strip()
-            print seq1
-            print qualhead1.strip()
-            print qual1
+            print(seqhead1.decode("utf-8").strip())
+            print(seq1.decode("utf-8"))
+            print(qualhead1.decode("utf-8").strip())
+            print(qual1.decode("utf-8"))
         elif options.s == "R2":
-            print seqhead2.strip()
-            print seq2
-            print qualhead2.strip()
-            print qual2
+            print(seqhead2.decode("utf-8").strip())
+            print(seq2.decode("utf-8"))
+            print(qualhead2.decode("utf-8").strip())
+            print(qual2.decode("utf-8"))
         else:
-            r1_write.write(seqhead1);r1_write.write(seq1+"\n")
-            r1_write.write(qualhead1);r1_write.write(qual1+"\n")
-            r2_write.write(seqhead2);r2_write.write(seq2+"\n")
-            r2_write.write(qualhead2);r2_write.write(qual2+"\n")
+            r1_write.write(seqhead1.decode("utf-8"));r1_write.write(seq1.decode("utf-8")+"\n")
+            r1_write.write(qualhead1.decode("utf-8"));r1_write.write(qual1.decode("utf-8")+"\n")
+            r2_write.write(seqhead2.decode("utf-8"));r2_write.write(seq2.decode("utf-8")+"\n")
+            r2_write.write(qualhead2.decode("utf-8"));r2_write.write(qual2.decode("utf-8")+"\n")
 
     # increment count
     count = count + 1
@@ -180,7 +179,11 @@ else:
     p1_rds.close();p2_rds.close()
 
     # give summary
-    print str(i)+" sequences total"
-    print str(j)+" sequences trimmed with 0 mismatches"
-    print str(k)+" sequences trimmed with 1 mismatch"
-    print str(tot_b/(j+k))+" mean number of bases trimmed for reads requiring trimming"
+    print(str(i)+" sequences total")
+    print(str(j)+" sequences trimmed with 0 mismatches")
+    print(str(k)+" sequences trimmed with 1 mismatch")
+    try:
+        print(str(tot_b/(j+k))+" mean number of bases trimmed for reads requiring trimming")
+    except ZeroDivisionError:
+        print(str(j+k) + " total sequences trimmed.")
+        
