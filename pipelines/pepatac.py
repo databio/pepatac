@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.3"
+__version__ = "0.9.4"
 
 
 from argparse import ArgumentParser
@@ -21,11 +21,12 @@ from refgenconf import RefGenConf as RGC, select_genome_config
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
+ALIGNERS = ["bowtie2", "bwa"]
 PEAK_CALLERS = ["fseq", "macs2"]
 PEAK_TYPES = [ "fixed", "variable"]
 DEDUPLICATORS = ["picard", "samblaster"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
-BT2_IDX_KEY = "bowtie2_index"
+GENOME_IDX_KEY = "bowtie2_index"
 
 
 def parse_arguments():
@@ -40,6 +41,10 @@ def parse_arguments():
         required=["input", "genome", "sample-name", "output-parent"])
 
     # Pipeline-specific arguments
+    parser.add_argument("--aligner", dest="aligner",
+                        default="bowtie2", choices=ALIGNERS,
+                        help="Name of read aligner")
+                        
     parser.add_argument("--peak-caller", dest="peak_caller",
                         default="macs2", choices=PEAK_CALLERS,
                         help="Name of peak caller")
@@ -194,9 +199,9 @@ def calc_frip(bamfile, peakfile, frip_func, pipeline_manager,
     return float(num_peak_reads) / float(num_aligned_reads)
 
 
-def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
-                    assembly_identifier, assembly_bt2, outfolder,
-                    aligndir=None, bt2_opts_txt=None):
+def _align(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
+           assembly_identifier, assembly, outfolder,
+           aligndir=None, bt2_opts_txt=None, bwa_opts_txt=None):
     """
     A helper function to run alignments in series, so you can run one alignment
     followed by another; this is useful for successive decoy alignments.
@@ -211,72 +216,120 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
     :param str unmap_fq2: path to unmapped read2 FASTQ file
     :param str assembly_identifier: text identifying a genome assembly for the
         pipeline
-    :param str assembly_bt2: assembly-specific bowtie2 folder (index, etc.)
+    :param str assembly: assembly-specific folder (index, etc.)
     :param str outfolder: path to output directory for the pipeline
     :param str aligndir: name of folder for temporary output
     :param str bt2_opts_txt: command-line text for bowtie2 options
+    :param str bwa_opts_txt: command-line text for bwa options
     :return (str, str): pair (R1, R2) of paths to FASTQ files
     """
-    if os.path.exists(os.path.dirname(assembly_bt2)):
-        pm.timestamp("### Map to " + assembly_identifier)
-        if not aligndir:
-            align_subdir = "aligned_{}_{}".format(args.genome_assembly,
-                                                  assembly_identifier)
-            sub_outdir = os.path.join(outfolder, align_subdir)
+    pm.timestamp("### Map to " + assembly_identifier)
+    if not aligndir:
+        align_subdir = "aligned_{}_{}".format(args.genome_assembly,
+                                              assembly_identifier)
+        sub_outdir = os.path.join(outfolder, align_subdir)
+    else:
+        sub_outdir = os.path.join(outfolder, aligndir)
+
+    ngstk.make_dir(sub_outdir)
+    bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
+    all_mapped_bam = os.path.join(sub_outdir, 
+        args.sample_name + "_" + assembly_identifier + "_all.bam")
+    mapped_bam = os.path.join(sub_outdir, bamname)
+    unmapped_bam = os.path.join(sub_outdir, 
+        args.sample_name + "_" + assembly_identifier + "_unmapped.bam")
+    summary_name = "{}_{}_bt_aln_summary.log".format(args.sample_name,
+                                                     assembly_identifier)
+    summary_file = os.path.join(sub_outdir, summary_name)
+
+    out_fastq_pre = os.path.join(
+        sub_outdir, args.sample_name + "_" + assembly_identifier)
+
+    out_fastq_r1    = out_fastq_pre + '_unmap_R1.fq'
+    out_fastq_r1_gz = out_fastq_r1  + '.gz'
+
+    out_fastq_r2    = out_fastq_pre + '_unmap_R2.fq'
+    out_fastq_r2_gz = out_fastq_r2  + '.gz'
+
+    if (useFIFO and
+            paired and not
+            args.keep and not
+            args.aligner.lower() == "bwa"):
+        out_fastq_tmp = os.path.join(sub_outdir,
+                assembly_identifier + "_bt2")
+        cmd = "mkfifo " + out_fastq_tmp
+
+        if os.path.exists(out_fastq_tmp):
+            os.remove(out_fastq_tmp)
+        pm.run(cmd, out_fastq_tmp)
+    else:
+        out_fastq_tmp    = out_fastq_pre + '_unmap.fq'
+        out_fastq_tmp_gz = out_fastq_tmp + ".gz"
+
+    filter_pair = build_command([tools.perl,
+        tool_path("filter_paired_fq.pl"), out_fastq_tmp,
+        unmap_fq1, unmap_fq2, out_fastq_r1, out_fastq_r2])
+
+    # samtools sort needs a temporary directory
+    tempdir = tempfile.mkdtemp(dir=sub_outdir)
+    os.chmod(tempdir, 0o771)
+    pm.clean_add(tempdir)
+
+    if args.aligner == "bwa":
+        if not bwa_opts_txt:
+            # Default options
+            bwa_opts_txt = "-M"
+            bwa_opts_txt += " -SP" # Treat as single end no matter source
+            bwa_opts_txt += " -r 3" # Increase speed at cost of accuracy
+        # build bwa command
+        cmd1 = tools.bwa + " mem -t " + str(pm.cores)
+        cmd1 += " " + bwa_opts_txt
+        cmd1 += " " + assembly
+        cmd1 += " " + unmap_fq1
+        cmd1 += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
+        cmd1 += " | " + tools.samtools + " sort - -@ 1"      # sort output
+        cmd1 += " -T " + tempdir
+        cmd1 += " -o " + all_mapped_bam
+        pm.clean_add(all_mapped_bam)
+
+        # get unmapped reads
+        cmd2 = tools.samtools + " view -bS -f 4 -@ " + str(pm.cores)
+        cmd2 += " " +  all_mapped_bam
+        cmd2 += " > " + unmapped_bam
+        pm.clean_add(unmapped_bam)
+
+        # get mapped reads (don't remove if args.keep)
+        cmd3 = tools.samtools + " view -bS -F 4 -@ " + str(pm.cores)
+        cmd3 += " " +  all_mapped_bam
+        cmd3 += " > " + mapped_bam
+        if not args.keep:
+            pm.clean_add(mapped_bam)
+
+        # Convert bam to fastq for bwa requirement
+        cmd4 = tools.bedtools + " bamtofastq "
+        cmd4 += " -i " + unmapped_bam
+        cmd4 += " -fq " + out_fastq_tmp
+
+        if paired:
+            pm.run([cmd1, cmd2, cmd3, cmd4, filter_pair], mapped_bam)
         else:
-            sub_outdir = os.path.join(outfolder, aligndir)
+            if args.keep:
+                pm.run(cmd, mapped_bam)
+            else:
+                pm.run(cmd, out_fastq_tmp_gz)
 
-        ngstk.make_dir(sub_outdir)
-        bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
-        mapped_bam = os.path.join(sub_outdir, bamname)
-        summary_name = "{}_{}_bt_aln_summary.log".format(args.sample_name,
-                                                         assembly_identifier)
-        summary_file = os.path.join(sub_outdir, summary_name)
-
-        out_fastq_pre = os.path.join(
-            sub_outdir, args.sample_name + "_" + assembly_identifier)
-
-        out_fastq_r1    = out_fastq_pre + '_unmap_R1.fq'
-        out_fastq_r1_gz = out_fastq_r1  + '.gz'
-
-        out_fastq_r2    = out_fastq_pre + '_unmap_R2.fq'
-        out_fastq_r2_gz = out_fastq_r2  + '.gz'
-
-        if useFIFO and paired and not args.keep:
-            out_fastq_tmp = os.path.join(sub_outdir,
-                    assembly_identifier + "_bt2")
-            cmd = "mkfifo " + out_fastq_tmp
-            
-            if os.path.exists(out_fastq_tmp):
-                os.remove(out_fastq_tmp)
-            pm.run(cmd, out_fastq_tmp)
-        else:
-            out_fastq_tmp    = out_fastq_pre + '_unmap.fq'
-            out_fastq_tmp_gz = out_fastq_tmp + ".gz"
-
-        filter_pair = build_command([tools.perl,
-            tool_path("filter_paired_fq.pl"), out_fastq_tmp,
-            unmap_fq1, unmap_fq2, out_fastq_r1, out_fastq_r2])
-        # TODO: make filter_paired_fq work with SE data
-        # cmd = build_command([tools.perl,
-           # tool_path("filter_paired_fq.pl"), out_fastq_tmp,
-           # unmap_fq1, out_fastq_r1])
-        # For now, revert to old method
-
+        cmd = tools.samtools + " view -c " + mapped_bam
+        align_exact = pm.checkprint(cmd)       
+    else:
         if not bt2_opts_txt:
             # Default options
             bt2_opts_txt = "-k 1"  # Return only 1 alignment
-            bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"
-
-        # samtools sort needs a temporary directory
-        tempdir = tempfile.mkdtemp(dir=sub_outdir)
-        os.chmod(tempdir, 0o771)
-        pm.clean_add(tempdir)  
+            bt2_opts_txt += " -D 20 -R 3 -N 1 -L 20 -i S,1,0.50"           
 
         # Build bowtie2 command
         cmd = "(" + tools.bowtie2 + " -p " + str(pm.cores)
         cmd += " " + bt2_opts_txt
-        cmd += " -x " + assembly_bt2
+        cmd += " -x " + assembly
         cmd += " --rg-id " + args.sample_name
         cmd += " -U " + unmap_fq1
         cmd += " --un " + out_fastq_tmp
@@ -311,49 +364,38 @@ def _align_with_bt2(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
                 #pm.run(cmd2, summary_file)
                 #pm.run(cmd1, out_fastq_r1)
                 pm.run(cmd, out_fastq_tmp_gz)
-
-        pm.clean_add(out_fastq_tmp)
-
-        # get aligned read counts
-        #if args.keep and paired:
-        #    cmd = ("grep 'aligned concordantly exactly 1 time' " +
-        #           summary_file + " | awk '{print $1}'")
-        #else:
         cmd = ("grep 'aligned exactly 1 time' " + summary_file +
                " | awk '{print $1}'")
         align_exact = pm.checkprint(cmd)
-        if align_exact:
-            ar = float(align_exact)*2
-        else:
-            ar = 0
 
-        # report aligned reads
-        pm.report_result("Aligned_reads_" + assembly_identifier, ar)
-        try:
-            # wrapped in try block in case Trimmed_reads is not reported in this
-            # pipeline.
-            tr = float(pm.get_stat("Trimmed_reads"))
-        except:
-            print("Trimmed reads is not reported.")
-        else:
-            res_key = "Alignment_rate_" + assembly_identifier
-            pm.report_result(res_key, round(float(ar) * 100 / float(tr), 2))
-        
-        if paired:
-            unmap_fq1 = out_fastq_r1
-            unmap_fq2 = out_fastq_r2
-        else:
-            # Use alternate once filter_paired_fq is working with SE
-            #unmap_fq1 = out_fastq_r1
-            unmap_fq1 = out_fastq_tmp
-            unmap_fq2 = ""
-
-        return unmap_fq1, unmap_fq2
+    pm.clean_add(out_fastq_tmp)
+ 
+    # report aligned reads
+    if align_exact:
+        ar = float(align_exact)*2
     else:
-        msg = "No {} index found in {}; skipping.".format(
-            assembly_identifier, os.path.dirname(assembly_bt2))
-        print(msg)
-        return unmap_fq1, unmap_fq2
+        ar = 0
+    pm.report_result("Aligned_reads_" + assembly_identifier, ar)
+    try:
+        # wrapped in try block in case Trimmed_reads is not reported in this
+        # pipeline.
+        tr = float(pm.get_stat("Trimmed_reads"))
+    except:
+        print("Trimmed reads is not reported.")
+    else:
+        res_key = "Alignment_rate_" + assembly_identifier
+        pm.report_result(res_key, round(float(ar) * 100 / float(tr), 2))
+    
+    if paired:
+        unmap_fq1 = out_fastq_r1
+        unmap_fq2 = out_fastq_r2
+    else:
+        # Use alternate once filter_paired_fq is working with SE
+        #unmap_fq1 = out_fastq_r1
+        unmap_fq1 = out_fastq_tmp
+        unmap_fq2 = ""
+
+    return unmap_fq1, unmap_fq2
 
 
 def tool_path(tool_name):
@@ -422,9 +464,9 @@ def _add_resources(args, res, asset_dict=None):
     exist_errors = []
     required_list = []
 
-    # Check that bowtie2 indicies exist for specified prealignments
+    # Check that bowtie2/bwa indicies exist for specified prealignments
     for reference in args.prealignments:
-        for asset in [BT2_IDX_KEY]:
+        for asset in [GENOME_IDX_KEY]:
             try:
                 res[asset] = rgc.seek(reference, asset)
             except KeyError:
@@ -525,9 +567,12 @@ def main():
     ############################################################################
     opt_tools = ["fseq", "${PICARD}", "${TRIMMOMATIC}", "pyadapt",
                  "findMotifsGenome.pl", "seqOutBias", "bigWigMerge",
-                 "bedGraphToBigWig", "pigz"]
+                 "bedGraphToBigWig", "pigz", "bwa"]
 
     # If using optional tools, remove those from the skipped checks
+    if args.aligner == "bwa":
+        if 'bwa' in opt_tools: opt_tools.remove('bwa')
+        
     if args.trimmer == "trimmomatic":
         if 'trimmomatic' in opt_tools: opt_tools.remove('trimmomatic')
 
@@ -565,6 +610,10 @@ def main():
     ############################################################################
     #          Set up reference resources according to primary genome.         #
     ############################################################################
+    if args.aligner.lower() == "bwa":
+        GENOME_IDX_KEY = "bwa_index"
+    else:
+        GENOME_IDX_KEY = "bowtie2_index"
     check_list = [
         {"asset_name":"fasta", "seek_key":"chrom_sizes",
          "tag_name":"default", "arg":None, "user_arg":None,
@@ -572,7 +621,7 @@ def main():
         {"asset_name":"fasta", "seek_key":None,
          "tag_name":"default", "arg":None, "user_arg":None,
          "required":True},
-        {"asset_name":BT2_IDX_KEY, "seek_key":None,
+        {"asset_name":GENOME_IDX_KEY, "seek_key":None,
          "tag_name":"default", "arg":None, "user_arg":None,
          "required":True}
     ]
@@ -853,32 +902,42 @@ def main():
         print("Prealignment assemblies: " + str(args.prealignments))
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
-            bt2_index = os.path.join(rgc.seek(reference, BT2_IDX_KEY))
-            if not bt2_index.endswith(reference):
-                bt2_index = os.path.join(
-                    rgc.seek(reference, BT2_IDX_KEY), reference)
-            if args.no_fifo:
-                unmap_fq1, unmap_fq2 = _align_with_bt2(
-                    args, tools, args.paired_end, False,
-                    unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=bt2_index,
-                    outfolder=param.outfolder,
-                    aligndir="prealignments",
-                    bt2_opts_txt=param.bowtie2_pre.params)
-                to_compress.append(unmap_fq1)
-                if args.paired_end:
-                    to_compress.append(unmap_fq2)
-            else:
-                unmap_fq1, unmap_fq2 = _align_with_bt2(
-                    args, tools, args.paired_end, True,
-                    unmap_fq1, unmap_fq2, reference,
-                    assembly_bt2=bt2_index, 
-                    outfolder=param.outfolder,
-                    aligndir="prealignments",
-                    bt2_opts_txt=param.bowtie2_pre.params)
-                to_compress.append(unmap_fq1)
-                if args.paired_end:
-                    to_compress.append(unmap_fq2)
+            genome_index = os.path.join(rgc.seek(reference, GENOME_IDX_KEY))
+            if not os.path.exists(os.path.dirname(genome_index)):
+                msg = "No {} index found in {}; skipping.".format(
+                reference, os.path.dirname(genome_index))
+                print(msg)
+            else:            
+                if not genome_index.endswith(reference):
+                    genome_index = os.path.join(
+                        os.path.dirname(rgc.seek(reference, GENOME_IDX_KEY)),
+                        reference)
+                    if args.aligner.lower() == "bwa":
+                        genome_index += ".fa"
+                if args.no_fifo:
+                    unmap_fq1, unmap_fq2 = _align(
+                        args, tools, args.paired_end, False,
+                        unmap_fq1, unmap_fq2, reference,
+                        assembly=genome_index,
+                        outfolder=param.outfolder,
+                        aligndir="prealignments",
+                        bt2_opts_txt=param.bowtie2_pre.params,
+                        bwa_opts_txt=param.bwa_pre.params)
+                    to_compress.append(unmap_fq1)
+                    if args.paired_end:
+                        to_compress.append(unmap_fq2)
+                else:
+                    unmap_fq1, unmap_fq2 = _align(
+                        args, tools, args.paired_end, True,
+                        unmap_fq1, unmap_fq2, reference,
+                        assembly=genome_index, 
+                        outfolder=param.outfolder,
+                        aligndir="prealignments",
+                        bt2_opts_txt=param.bowtie2_pre.params,
+                        bwa_opts_txt=param.bwa_pre.params)
+                    to_compress.append(unmap_fq1)
+                    if args.paired_end:
+                        to_compress.append(unmap_fq2)
 
     pm.timestamp("### Compress all unmapped read files")
     for unmapped_fq in to_compress:
@@ -903,12 +962,18 @@ def main():
     unmap_genome_bam = os.path.join(
         map_genome_folder, args.sample_name + "_unmap.bam")
 
-    if not param.bowtie2.params:
-        bt2_options = " --very-sensitive"
-        if args.paired_end:
-            bt2_options += " -X 2000"
+    if args.aligner.lower() == "bwa":
+        if not param.bwa.params:
+            bwa_options = " -M"
+        else:
+            bwa_options = param.bwa.params
     else:
-        bt2_options = param.bowtie2.params
+        if not param.bowtie2.params:
+            bt2_options = " --very-sensitive"
+            if args.paired_end:
+                bt2_options += " -X 2000"
+        else:
+            bt2_options = param.bowtie2.params    
 
     # samtools sort needs a temporary directory
     tempdir = tempfile.mkdtemp(dir=map_genome_folder)
@@ -921,23 +986,38 @@ def main():
     if os.path.exists(unmap_fq2 + ".gz"):
         unmap_fq2 = unmap_fq2 + ".gz"
 
-    bt2_index = os.path.join(rgc.seek(args.genome_assembly, BT2_IDX_KEY))
-    if not bt2_index.endswith(args.genome_assembly):
-        bt2_index = os.path.join(
-            rgc.seek(args.genome_assembly, BT2_IDX_KEY), args.genome_assembly)
+    genome_index = os.path.join(rgc.seek(args.genome_assembly, GENOME_IDX_KEY))          
+    if not genome_index.endswith(args.genome_assembly):
+        genome_index = os.path.join(
+            os.path.dirname(rgc.seek(args.genome_assembly, GENOME_IDX_KEY)),
+            args.genome_assembly)
+        if args.aligner.lower() == "bwa":
+            genome_index += ".fa"
 
-    cmd = tools.bowtie2 + " -p " + str(pm.cores)
-    cmd += " " + bt2_options
-    cmd += " --rg-id " + args.sample_name
-    cmd += " -x " + bt2_index
-    if args.paired_end:
-        cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+    if args.aligner.lower() == "bwa":
+        cmd = tools.bwa + " mem -t " + str(pm.cores)
+        cmd += " " + bwa_options
+        cmd += " " + genome_index
+        cmd += " " + unmap_fq1
+        if args.paired_end:
+            cmd += " " + unmap_fq2
+        cmd += " | " + tools.samtools + " view -bS - -@ 1"  # convert to bam
+        cmd += " | " + tools.samtools + " sort - -@ 1"      # sort output
+        cmd += " -T " + tempdir
+        cmd += " -o " + mapping_genome_bam_temp
     else:
-        cmd += " -U " + unmap_fq1
-    cmd += " | " + tools.samtools + " view -bS - -@ 1 "
-    cmd += " | " + tools.samtools + " sort - -@ 1"
-    cmd += " -T " + tempdir
-    cmd += " -o " + mapping_genome_bam_temp
+        cmd = tools.bowtie2 + " -p " + str(pm.cores)
+        cmd += " " + bt2_options
+        cmd += " --rg-id " + args.sample_name
+        cmd += " -x " + genome_index
+        if args.paired_end:
+            cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
+        else:
+            cmd += " -U " + unmap_fq1
+        cmd += " | " + tools.samtools + " view -bS - -@ 1 "
+        cmd += " | " + tools.samtools + " sort - -@ 1"
+        cmd += " -T " + tempdir
+        cmd += " -o " + mapping_genome_bam_temp
 
     # Split genome mapping result bamfile into two: high-quality aligned
     # reads (keepers) and unmapped reads (in case we want to analyze the
@@ -977,7 +1057,8 @@ def main():
     pm.clean_add(temp_mapping_index)
 
     # If first run, use the temp bam file
-    if os.path.isfile(mapping_genome_bam_temp) and os.stat(mapping_genome_bam_temp).st_size > 0:
+    if (os.path.isfile(mapping_genome_bam_temp) and
+            os.stat(mapping_genome_bam_temp).st_size > 0):
         bam_file = mapping_genome_bam_temp
     # Otherwise, use the final bam file previously generated
     else:
@@ -1158,7 +1239,7 @@ def main():
             "|",
             "{} view -h - -@ {}".format(tools.samtools, str(nProc)),
             "|",
-            "{} -r 2> {}".format(tools.samblaster, dedup_log),
+            "{} -r --ignoreUnmated 2> {}".format(tools.samblaster, dedup_log),
             "|",
             "{} view -b - -@ {}".format(tools.samtools, str(nProc)),
             "|",

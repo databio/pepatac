@@ -15,6 +15,7 @@ command_template: >
   {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
   {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
   {% if sample.macs_genome_size is defined %} --genome-size {sample.macs_genome_size} {% endif %}
+  {% if sample.aligner is defined %} --aligner {sample.trimmer} {% endif %}
   {% if sample.trimmer is defined %} --trimmer {sample.trimmer} {% endif %}
   {% if sample.prealignments is defined %} --prealignments {sample.prealignments} {% endif %}
   {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
