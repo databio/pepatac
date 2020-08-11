@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.9.4] -- 2020-08-?
 
+### Added
+ - Add bwa mem as alternative read aligner
+
 ### Changed
  - Update pyadapt_trim.py to python3
  - Fix trimmomatic for SE and PE
