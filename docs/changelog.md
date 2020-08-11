@@ -1,7 +1,7 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.9.4] -- 2020-08-?
+## [0.9.3] -- 2020-08-11
 
 ### Added
  - Add bwa mem as alternative read aligner
