@@ -613,7 +613,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         normalize <- opt_get(name = c("normalize", "n"), required=FALSE,
                              default=FALSE,
                              description="Normalize scores.")
-        print(message(paste0("Normalize: ", normalize)))
+        #print(message(paste0("Normalize: ", normalize)))
         PEPATACr::reducePeaks(input=input,
                               chr_sizes=chr_sizes,
                               output=output,
