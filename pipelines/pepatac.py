@@ -1351,7 +1351,7 @@ def main():
 
             if not pm.get_stat('Frac_exp_unique_at_10M') or args.new_start:
                 # Report the expected unique at 10M reads
-                cmd = ("grep -w '10000000' " + preseq_yield +
+                cmd = ("grep -w '^10000000' " + preseq_yield +
                        " | awk '{print $2}'")
                 expected_unique = pm.checkprint(cmd)
                 if expected_unique:
