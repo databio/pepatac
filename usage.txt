@@ -3,8 +3,9 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [-M MEMORY_LIMIT] [-P NUMBER_OF_CORES] -S SAMPLE_NAME -I
                   INPUT_FILES [INPUT_FILES ...]
                   [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G GENOME_ASSEMBLY
-                  [-Q SINGLE_OR_PAIRED] [--peak-caller {fseq,macs2}]
-                  [-gs GENOME_SIZE] [--trimmer {trimmomatic,pyadapt,skewer}]
+                  [-Q SINGLE_OR_PAIRED] [--aligner {bowtie2,bwa}]
+                  [--peak-caller {fseq,macs2}] [-gs GENOME_SIZE]
+                  [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]]
                   [--deduplicator {picard,samblaster}] [--TSS-name TSS_NAME]
                   [--blacklist BLACKLIST] [--anno-name ANNO_NAME]
@@ -13,7 +14,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [--no-scale] [--prioritize] [--keep] [--noFIFO] [--lite]
                   [--skipqc] [-V]
 
-PEPATAC version 0.9.2
+PEPATAC version 0.9.4
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -38,6 +39,8 @@ optional arguments:
                         Secondary input files, such as read2
   -Q SINGLE_OR_PAIRED, --single-or-paired SINGLE_OR_PAIRED
                         Single- or paired-end sequencing protocol
+  --aligner {bowtie2,bwa}
+                        Name of read aligner
   --peak-caller {fseq,macs2}
                         Name of peak caller
   -gs GENOME_SIZE, --genome-size GENOME_SIZE

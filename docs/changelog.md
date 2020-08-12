@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.3] -- 2020-08-12
+
+### Changed
+ - Fix preseq grep error where search term exists in additional column
+
 ## [0.9.3] -- 2020-08-11
 
 ### Added
