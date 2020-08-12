@@ -1284,7 +1284,7 @@ getFactor <- function(vec) {
 #'   splitDataTable(DT, "grp")
 #'   splitDataTable(DT, 2)
 #' @export
-splitDataTable = function(DT, split_factor) {
+splitDataTable <- function(DT, split_factor) {
 	if (is.numeric(split_factor)) {
 		split_factor = colnames(DT)[split_factor]
 		message("Integer split_factor, changed to: ", split_factor)
@@ -1297,8 +1297,8 @@ splitDataTable = function(DT, split_factor) {
 #'
 #' @param path A path to a file for which you wish to determine its class
 filetype <- function(path){
-    f = file(path)
-    ext = summary(f)$class
+    f   <- file(path)
+    ext <- summary(f)$class
     close.connection(f)
     ext
 }
@@ -1342,7 +1342,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
                      input, type=c("np", "bed"), feat,
                      genome = "hg38", output="chromosome_distribution.pdf") {
 
-    sample_path = sampleName(input)
+    sample_path <- sampleName(input)
 
     if (type == "np") {
         output_type = "peaks"
@@ -2723,49 +2723,30 @@ peakCounts <- function(project, output_dir, results_subdir, assets) {
         message(paste0("Calculating ", g, " peak counts for ",
                        nrow(st_list[[g]]), " samples..."))
         if (reference) {
-            peaks_dt <- data.table(chr=as.character(),
-                                   start=as.numeric(),
-                                   end=as.numeric(),
-                                   name=as.character(),
-                                   score=as.numeric(),
-                                   strand=as.character(),
-                                   signalValue=as.numeric(),
-                                   pValue=as.numeric(),
-                                   qValue=as.numeric(),
-                                   peak=as.numeric(),
-                                   read_count=as.numeric(),
-                                   base_count=as.numeric(),
-                                   width=as.numeric(),
-                                   frac=as.numeric(),
-                                   norm=as.numeric(),
-                                   group=as.character())
-
-            # Load peak files
-            peaks <- rbindlist(lapply(st_list[[g]]$peak_files, fread))
-            colnames(peaks) <- c("chr", "start", "end", "name", "score",
-                                 "strand", "signalValue", "pValue",
-                                 "qValue", "peak", "read_count",
-                                 "base_count", "width", "frac", "norm")
-            setkey(peaks, chr, start, end)
-            peaks_dt <- rbind(peaks_dt, peaks)
-            peak_set <- copy(peaks)
-            peak_set[,group := gsub(peak_file_name, "", name)]
-            peak_list <- splitDataTable(peak_set, "group")
-
-            # confirm identical chr, start, end coordinates exist in all peak files
-            same <- all(sapply(lapply(peak_list, function(x) {x[,c(1:3)]}),
+            read_peaks <- function(x, y) {
+                fread(y)
+            }
+            # Load each peak file as list of named data.tables
+            peaks <- mapply(FUN=read_peaks,
+                            st_list[[g]]$sample_name,
+                            st_list[[g]]$peak_files,
+                            SIMPLIFY=FALSE,
+                            USE.NAMES=TRUE)
+            # Check for identical chr, start, end coordinates in all peak files
+            same <- all(sapply(lapply(peaks, function(x) {x[,c(1:3)]}),
                         identical,
-                        lapply(peak_list, function(x) {x[,c(1:3)]})[[1]]))
+                        lapply(peaks, function(x) {x[,c(1:3)]})[[1]]))
             if (same) {
-                new_list <- lapply(names(peak_list), function(x){
-                    colnames(peak_list[[x]]) <- c("chr", "start", "end", "name",
+                # Produce counts table
+                new_list <- lapply(names(peaks), function(x){
+                    colnames(peaks[[x]]) <- c("chr", "start", "end", "name",
                                                   "score", "strand", "signalValue",
                                                   "pValue", "qValue", "peak",
                                                   "read_count", "base_count",
-                                                  "width", "frac", x, "group")
-                    peak_list[[x]]
+                                                  "width", "frac", x)
+                    peaks[[x]]
                 })
-                names(new_list) <- names(peak_list)
+                names(new_list) <- names(peaks)
                 reduce_dt       <- Reduce(function(...) merge(..., all=F),
                     lapply(new_list, function(x) {x[,c(1:3,15)]}))
             } else {
