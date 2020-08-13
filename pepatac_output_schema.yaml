@@ -1,4 +1,4 @@
-description: objects produced by PEPPRO pipeline.
+description: objects produced by PEPATAC pipeline.
 properties:
   samples:
     type: array
