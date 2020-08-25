@@ -1,142 +1,109 @@
-# Pipeline started at 01-08 10:18:24
-
-ln -sf /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/examples/data/tutorial_r1.fastq.gz /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/raw/tutorial_R1.fastq.gz
-
-ln -sf /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/examples/data/tutorial_r2.fastq.gz /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/raw/tutorial_R2.fastq.gz
-
-pigz -p 2 -d -c /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/raw/tutorial_R1.fastq.gz > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R1.fastq
-
-pigz -p 2 -d -c /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/raw/tutorial_R2.fastq.gz > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R2.fastq
-
-skewer -f sanger -t 2 -m pe -x /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/NexteraPE-PE.fa --quiet -o /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R1.fastq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R2.fastq
-
-mv /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial-trimmed-pair1.fastq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R1.trim.fastq
-
-mv /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial-trimmed-pair2.fastq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R2.trim.fastq
-
-fastqc --noextract --outdir /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastqc /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R1.trim.fastq
-
-fastqc --noextract --outdir /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastqc /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R2.trim.fastq
-
-mkfifo /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/rCRSd_bt2
-
-perl /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/filter_paired_fq.pl /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/rCRSd_bt2 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R1.trim.fastq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R2.trim.fastq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R1.fq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R2.fq
-
-(bowtie2 -p 2 -k 1 -D 20 -R 3 -N 1 -L 20 -i S,1,0.50 -x /nm/t1/genomes/rCRSd/indexed_bowtie2/rCRSd --rg-id tutorial -U /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/fastq/tutorial_R1.trim.fastq --un /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/rCRSd_bt2 > /dev/null) 2>/sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_bt_aln_summary.log
-
-grep 'aligned exactly 1 time' /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_bt_aln_summary.log | awk '{print $1}'
-
-mkfifo /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/human_repeats_bt2
-
-perl /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/filter_paired_fq.pl /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/human_repeats_bt2 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R1.fq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R2.fq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R1.fq /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R2.fq
-
-(bowtie2 -p 2 -k 1 -D 20 -R 3 -N 1 -L 20 -i S,1,0.50 -x /nm/t1/genomes/human_repeats/indexed_bowtie2/human_repeats --rg-id tutorial -U /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R1.fq --un /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/human_repeats_bt2 > /dev/null) 2>/sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_bt_aln_summary.log
-
-grep 'aligned exactly 1 time' /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_bt_aln_summary.log | awk '{print $1}'
-
-bowtie2 -p 2 --very-sensitive -X 2000 --rg-id tutorial -x /nm/t1/genomes/hg38/indexed_bowtie2/hg38 -1 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R1.fq -2 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R2.fq | samtools view -bS - -@ 1  | samtools sort - -@ 1 -T /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tmptVnmNF -o /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam
-
-samtools view -q 10 -b -@ 2 -U /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_fail_qc.bam -f 2 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
-
-gzip /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R1.fq
-
-gzip /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R2.fq
-
-gzip /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R1.fq
-
-gzip /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R2.fq
-
-samtools index /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam
-
-samtools index /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
-
-samtools idxstats /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam | grep -we 'chrM' -we 'chrMT' -we 'M' -we 'MT'| cut -f 3
-
-samtools idxstats /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam | cut -f 1 | grep -vwe 'chrM' -vwe 'chrMT' -vwe 'M' -vwe 'MT'| xargs samtools view -b -@ 2 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_noMT.bam
-
-mv /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_noMT.bam /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
-
-samtools index /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
-
-/sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/bamQC.py -i /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam -c 2 -o /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_bamQC.tsv
-
-awk '{ for (i=1; i<=NF; ++i) { if ($i ~ "NRF") c=i } getline; print $c }' /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_bamQC.tsv
-
-awk '{ for (i=1; i<=NF; ++i) { if ($i ~ "PBC1") c=i } getline; print $c }' /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_bamQC.tsv
-
-awk '{ for (i=1; i<=NF; ++i) { if ($i ~ "PBC2") c=i } getline; print $c }' /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_bamQC.tsv
-
-samtools view -b -@ 2 -f 12  /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_unmap.bam
-
-samtools view -c -f 4 -@ 2 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam
-
-samtools sort -n -@ 2 -T /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tmpLrA_r5 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam | samtools view -h - -@ 2 | samblaster -r 2> /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_dedup_metrics_log.txt | samtools view -b - -@ 2 | samtools sort - -@ 2 -T /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tmpLrA_r5 -o /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam
-
-samtools index /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam
-
-grep 'Removed' /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_dedup_metrics_log.txt | cut -f 3 -d ' '
-
-/sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/bamSitesToWig.py -i /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -c /nm/t1/genomes/hg38/hg38.chromSizes -b /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38_exact/tutorial_shift.bed -o /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38_exact/tutorial_exact.bw -w /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_smooth.bw -p 1
-
-touch /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38_exact/temp/flag_completed
-
-/sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/pyTssEnrichment.py -a /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -b /nm/t1/genomes/hg38/hg38_TSS.tsv -p ends -c 2 -e 2000 -u -v -s 4 -o /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.txt
-
-Rscript /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC_TSSenrichmentPlot.R /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TssEnrichment.txt pdf
-
-perl /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/fragment_length_dist.pl /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLen.txt
-
-sort -n  /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLen.txt | uniq -c  > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragCount.txt
-
-Rscript /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/fragment_length_dist.R /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLen.txt /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragCount.txt /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.pdf /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.txt
-
-macs2 callpeak -t /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38_exact/tutorial_shift.bed -f BED -g hs --outdir /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38 -n tutorial -q 0.01 --shift 0 --nomodel
-
-samtools view -@ 4 -c -L /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.narrowPeak /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam
-
-Rscript /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/narrowPeakToBigBed.R /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.narrowPeak /nm/t1/genomes/hg38/hg38.chromSizes bedToBigBed /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.bigBed
-
-cut -f 1-3 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.narrowPeak > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.bed
-
-samtools view -H /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam | grep 'SN:' | awk -F':' '{print $2,$3}' | awk -F' ' -v OFS='	' '{print $1,$3}' > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt
-
-bedtools sort -i /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.bed -faidx /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_sort.bed
-
-bedtools coverage -sorted -counts -a /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_sort.bed -b /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_coverage.bed
-
-ln -sf /sfs/lustre/scratch/jps3dp/tools/databio/pepatac/anno/hg38_annotations.bed.gz /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed.gz
-
-gunzip -c /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed.gz | cut -f 4 | sort -u
-
-gunzip -c /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed.gz | awk -F'	' '{print>"/sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/"$4}'
-
-cut -f 1-3 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/3_UTR | bedtools sort -i stdin -faidx /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/3_UTR_sort.bed
-
-bedtools coverage -sorted -counts -a /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/3_UTR_sort.bed -b /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_3_UTR_coverage.bed
-
-cut -f 1-3 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/5_UTR | bedtools sort -i stdin -faidx /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/5_UTR_sort.bed
-
-bedtools coverage -sorted -counts -a /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/5_UTR_sort.bed -b /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_5_UTR_coverage.bed
-
-cut -f 1-3 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Exon | bedtools sort -i stdin -faidx /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Exon_sort.bed
-
-bedtools coverage -sorted -counts -a /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Exon_sort.bed -b /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Exon_coverage.bed
-
-cut -f 1-3 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Intron | bedtools sort -i stdin -faidx /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Intron_sort.bed
-
-bedtools coverage -sorted -counts -a /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Intron_sort.bed -b /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Intron_coverage.bed
-
-cut -f 1-3 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Promoter | bedtools sort -i stdin -faidx /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_sort.bed
-
-bedtools coverage -sorted -counts -a /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_sort.bed -b /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_coverage.bed
-
-cut -f 1-3 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_Flanking_Region | bedtools sort -i stdin -faidx /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_Flanking_Region_sort.bed
-
-bedtools coverage -sorted -counts -a /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_Flanking_Region_sort.bed -b /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_Flanking_Region_coverage.bed
-
-samtools view -@ 2 -q 15 -c -F4 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam
-
-Rscript /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC_frip.R tutorial /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_coverage.bed 1746450 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_frif.pdf --bed /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_3_UTR_coverage.bed /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_5_UTR_coverage.bed /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Exon_coverage.bed /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Intron_coverage.bed /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_coverage.bed /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_Flanking_Region_coverage.bed
-
-Rscript /sfs/lustre/scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC_annotation.R /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed.gz /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.narrowPeak tutorial hg38 /sfs/lustre/allocations/shefflab/processed/tutorial/results_pipeline/tutorial/QC_hg38
-
+# Pipeline started at 05-26 11:06:28
+
+ln -sf /project/shefflab/data//pepatac/tutorial_r1.fastq.gz /home/jps3dp/tutorial/results_pipeline/tutorial/raw/tutorial_R1.fastq.gz
+ln -sf /project/shefflab/data//pepatac/tutorial_r2.fastq.gz /home/jps3dp/tutorial/results_pipeline/tutorial/raw/tutorial_R2.fastq.gz
+ln -sf /home/jps3dp/tutorial/results_pipeline/tutorial/raw/tutorial_R1.fastq.gz /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R1.fastq.gz
+ln -sf /home/jps3dp/tutorial/results_pipeline/tutorial/raw/tutorial_R2.fastq.gz /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R2.fastq.gz
+skewer -f sanger -t 8 -m pe -x /scratch/jps3dp/tools/databio//pepatac/tools/NexteraPE-PE.fa --quiet -o /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R1.fastq.gz /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R2.fastq.gz
+mv /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial-trimmed-pair1.fastq /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R1_trim.fastq
+mv /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial-trimmed-pair2.fastq /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R2_trim.fastq
+fastqc --noextract --outdir /home/jps3dp/tutorial/results_pipeline/tutorial/fastqc /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R1_trim.fastq
+fastqc --noextract --outdir /home/jps3dp/tutorial/results_pipeline/tutorial/fastqc /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R2_trim.fastq
+mkfifo /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/rCRSd_bt2
+perl /scratch/jps3dp/tools/databio//pepatac/tools/filter_paired_fq.pl /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/rCRSd_bt2 /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R1_trim.fastq /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R2_trim.fastq /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R1.fq /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R2.fq
+(bowtie2 -p 8 -k 1 -D 20 -R 3 -N 1 -L 20 -i S,1,0.50 -x /project/shefflab/genomes/rCRSd/bowtie2_index/default/rCRSd --rg-id tutorial -U /home/jps3dp/tutorial/results_pipeline/tutorial/fastq/tutorial_R1_trim.fastq --un /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/rCRSd_bt2 > /dev/null) 2>/home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_bt_aln_summary.log
+grep 'aligned exactly 1 time' /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_bt_aln_summary.log | awk '{print $1}'
+mkfifo /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/human_repeats_bt2
+perl /scratch/jps3dp/tools/databio//pepatac/tools/filter_paired_fq.pl /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/human_repeats_bt2 /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R1.fq /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R2.fq /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R1.fq /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R2.fq
+(bowtie2 -p 8 -k 1 -D 20 -R 3 -N 1 -L 20 -i S,1,0.50 -x /project/shefflab/genomes/human_repeats/bowtie2_index/default/human_repeats --rg-id tutorial -U /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R1.fq --un /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/human_repeats_bt2 > /dev/null) 2>/home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_bt_aln_summary.log
+grep 'aligned exactly 1 time' /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_bt_aln_summary.log | awk '{print $1}'
+pigz -f -p 8 /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R1.fq
+pigz -f -p 8 /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_rCRSd_unmap_R2.fq
+pigz -f -p 8 /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R1.fq
+pigz -f -p 8 /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R2.fq
+bowtie2 -p 8  --very-sensitive -X 2000 --rg-id tutorial -x /project/shefflab/genomes/hg38/bowtie2_index/default/hg38 -1 /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R1.fq.gz -2 /home/jps3dp/tutorial/results_pipeline/tutorial/prealignments/tutorial_human_repeats_unmap_R2.fq.gz | samtools view -bS - -@ 1  | samtools sort - -@ 1 -T /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tmpz60jlhb_ -o /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam
+samtools view -b -q 10 -@ 8 -U /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_fail_qc.bam -f 2 /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam > /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
+samtools index /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam
+samtools index /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
+samtools idxstats /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam | grep -we 'chrM' -we 'chrMT' -we 'M' -we 'MT' -we 'rCRSd'| cut -f 3
+samtools idxstats /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam | cut -f 1-2 | awk '{print $1, 0, $2}' | grep -vwe 'chrM' -vwe 'chrMT' -vwe 'M' -vwe 'MT' -vwe 'rCRSd' > /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/chr_sizes.bed
+samtools view -L /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/chr_sizes.bed -b -@ 8 /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam > /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_noMT.bam
+mv /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_noMT.bam /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
+samtools index /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
+/scratch/jps3dp/tools/databio//pepatac/tools/bamQC.py -i /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam -c 8 -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_bamQC.tsv
+awk '{ for (i=1; i<=NF; ++i) { if ($i ~ "NRF") c=i } getline; print $c }' /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_bamQC.tsv
+awk '{ for (i=1; i<=NF; ++i) { if ($i ~ "PBC1") c=i } getline; print $c }' /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_bamQC.tsv
+awk '{ for (i=1; i<=NF; ++i) { if ($i ~ "PBC2") c=i } getline; print $c }' /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_bamQC.tsv
+samtools view -b -@ 8 -f 12  /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam > /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_unmap.bam
+samtools view -c -f 4 -@ 8 /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_temp.bam
+samtools sort -n -@ 2 -T /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tmpbb5uv8eq /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam | samtools view -h - -@ 2 | samblaster -r 2> /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_dedup_metrics_log.txt | samtools view -b - -@ 2 | samtools sort - -@ 2 -T /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tmpbb5uv8eq -o /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam
+samtools index /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam
+grep 'Removed' /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_dedup_metrics_log.txt | cut -f 3 -d ' '
+samtools stats /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam | grep '^SN' | cut -f 2- | grep 'maximum length:' | cut -f 2-
+awk '{sum+=$2} END {printf "%.0f", sum}' /project/shefflab/genomes/hg38/fasta/default/hg38.chrom.sizes
+preseq c_curve -v -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_preseq_out.txt -B /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
+preseq lc_extrap -v -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_preseq_yield.txt -B /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam
+echo '/home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_preseq_yield.txt '$(samtools view -c -F 4 /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort.bam)' '$(samtools view -c -F 4 /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam) > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_preseq_counts.txt
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R preseq -i /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_preseq_yield.txt -r /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_preseq_counts.txt -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_preseq_plot
+grep -w '10000000' /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_preseq_yield.txt | awk '{print $2}'
+/scratch/jps3dp/tools/databio//pepatac/tools/bamSitesToWig.py -i /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -c /project/shefflab/genomes/hg38/fasta/default/hg38.chrom.sizes -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38_exact/tutorial_shift.bed -o /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38_exact/tutorial_exact.bw -w /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_smooth.bw -m atac -p 5 --variable-step --scale 1752770.0
+/scratch/jps3dp/tools/databio//pepatac/tools/pyTssEnrichment.py -a /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -b /project/shefflab/genomes/hg38/refgene_anno/default/hg38_TSS.bed -p ends -c 8 -z -v -s 6 -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TSS_enrichment.txt
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R tss -i /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TSS_enrichment.txt
+perl /scratch/jps3dp/tools/databio//pepatac/tools/fragment_length_dist.pl /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLen.txt
+sort -n  /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLen.txt | uniq -c  > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragCount.txt
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R frag -l /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLen.txt -c /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragCount.txt -p /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.pdf -t /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_fragLenDistribution.txt
+ln -sf /project/shefflab/genomes/hg38/feat_annotation/default/hg38_annotations.bed.gz /home/jps3dp/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed.gz
+pigz -f -p 8 -d -c /home/jps3dp/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed.gz > /home/jps3dp/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed
+macs2 callpeak -t /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38_exact/tutorial_shift.bed -f BED --outdir /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38 -n tutorial -g hs --shift -75 --extsize 150 --nomodel --call-summits --nolambda --keep-dup all -p 0.01
+awk -v OFS='	' '{$2 = int(($3 - $2)/2 + $2 - 250); $3 = int($2 + 500); print}' /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.narrowPeak > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_fixedWidth.narrowPeak
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R reduce -i /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_fixedWidth.narrowPeak -c /project/shefflab/genomes/hg38/fasta/default/hg38.chrom.sizes --normalize
+samtools view -@ 4 -c -L /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_normalized.narrowPeak /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam
+samtools view -H /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam | grep 'SN:' | awk -F':' '{print $2,$3}' | awk -F' ' -v OFS='	' '{print $1,$3}' > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt
+cut -f 1-3 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_normalized.narrowPeak > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.bed
+samtools view -H /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam | grep 'SN:' | awk -F':' '{print $2,$3}' | awk -F' ' -v OFS='	' '{print $1,$3}' > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt
+cut -f 1 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_keep.txt
+bedtools sort -i /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.bed -faidx /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_sort.bed
+bedtools coverage -sorted -a /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_sort.bed -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt | uniq > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_coverage.bed
+awk 'BEGIN{OFS="\t";} NR==FNR{sum += $5; next}{if (sum <= 0){sum = 1} print $1, $2, $3, $4, $5, $6, $7, ($5/sum*1000000)}' /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_coverage.bed > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_norm_peaks_coverage.bed
+mv /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_norm_peaks_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_coverage.bed
+touch /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/coverage.flag
+echo 'table bigNarrowPeak
+"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data."
+(
+     string chrom;        "Reference sequence chromosome or scaffold"
+     uint   chromStart;   "Start position in chromosome"
+     uint   chromEnd;     "End position in chromosome"
+     string name;         "Name given to a region (preferably unique). Use . if no name is assigned"
+     uint   score;        "Indicates how dark the peak will be displayed in the browser (0-1000) "
+     char[1]  strand;     "+ or - or . for unknown"
+     float  signalValue;  "Measurement of average enrichment for the region"
+     float  pValue;       "Statistical significance of signal value (-log10). Set to -1 if not used."
+     float  qValue;       "Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used."
+     int   peak;          "Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called."
+)' > /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/bigNarrowPeak.as
+bedToBigBed -as=/home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/bigNarrowPeak.as -type=bed6+4 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tmpqp97aw2g /project/shefflab/genomes/hg38/fasta/default/hg38.chrom.sizes /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks.bigBed
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R anno -p chromosome -i /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_normalized.narrowPeak -f /home/jps3dp/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed -g hg38 -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_chromosome_distribution.pdf
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R anno -p tss -i /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_normalized.narrowPeak -f /home/jps3dp/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed -g hg38 -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_TSS_distribution.pdf
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R anno -p genomic -i /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/tutorial_peaks_normalized.narrowPeak -f /home/jps3dp/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed -g hg38 -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_genomic_distribution.pdf
+cut -f 4 /home/jps3dp/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed | sort -u
+awk -F'	' '{print>"/home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/"$4}' /home/jps3dp/tutorial/results_pipeline/tutorial/raw/hg38_annotations.bed
+mv "/home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/3' UTR" "/home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/3_UTR"
+cut -f 1 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt | grep -wf - /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/3_UTR | cut -f 1-3 | bedtools sort -i stdin -faidx /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/3_UTR_sort.bed
+bedtools coverage -sorted  -a /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/3_UTR_sort.bed -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_3_UTR_coverage.bed
+mv "/home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/5' UTR" "/home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/5_UTR"
+cut -f 1 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt | grep -wf - /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/5_UTR | cut -f 1-3 | bedtools sort -i stdin -faidx /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/5_UTR_sort.bed
+bedtools coverage -sorted  -a /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/5_UTR_sort.bed -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_5_UTR_coverage.bed
+cut -f 1 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt | grep -wf - /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Enhancer | cut -f 1-3 | bedtools sort -i stdin -faidx /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Enhancer_sort.bed
+bedtools coverage -sorted  -a /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Enhancer_sort.bed -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Enhancer_coverage.bed
+cut -f 1 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt | grep -wf - /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Exon | cut -f 1-3 | bedtools sort -i stdin -faidx /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Exon_sort.bed
+bedtools coverage -sorted  -a /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Exon_sort.bed -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Exon_coverage.bed
+cut -f 1 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt | grep -wf - /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Intron | cut -f 1-3 | bedtools sort -i stdin -faidx /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Intron_sort.bed
+bedtools coverage -sorted  -a /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Intron_sort.bed -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Intron_coverage.bed
+cut -f 1 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt | grep -wf - /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Promoter | cut -f 1-3 | bedtools sort -i stdin -faidx /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_sort.bed
+bedtools coverage -sorted  -a /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_sort.bed -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_coverage.bed
+mv "/home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Promoter Flanking Region" "/home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_Flanking_Region"
+cut -f 1 /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt | grep -wf - /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_Flanking_Region | cut -f 1-3 | bedtools sort -i stdin -faidx /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_Flanking_Region_sort.bed
+bedtools coverage -sorted  -a /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/Promoter_Flanking_Region_sort.bed -b /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam -g /home/jps3dp/tutorial/results_pipeline/tutorial/peak_calling_hg38/chr_order.txt > /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_Flanking_Region_coverage.bed
+samtools view -@ 8 -q 10 -c -F4 /home/jps3dp/tutorial/results_pipeline/tutorial/aligned_hg38/tutorial_sort_dedup.bam
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R frif -s tutorial -z 3099922541 -n 1752746 -y cfrif --reads -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_cFRiF.pdf --bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_3_UTR_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_5_UTR_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Enhancer_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Exon_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Intron_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_Flanking_Region_coverage.bed
+Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC.R frif -s tutorial -z 3099922541 -n 1752746 -y frif --reads -o /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_FRiF.pdf --bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_3_UTR_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_5_UTR_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Enhancer_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Exon_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Intron_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_coverage.bed /home/jps3dp/tutorial/results_pipeline/tutorial/QC_hg38/tutorial_Promoter_Flanking_Region_coverage.bed

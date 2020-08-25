@@ -8,11 +8,12 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]]
                   [--deduplicator {picard,samblaster}] [--TSS-name TSS_NAME]
                   [--blacklist BLACKLIST] [--anno-name ANNO_NAME]
-                  [--peak-type {variable,fixed}] [--extend EXTEND]
+                  [--peak-type {fixed,variable}] [--extend EXTEND]
                   [--frip-ref-peaks FRIP_REF_PEAKS] [--motif] [--sob]
-                  [--prioritize] [--keep] [--noFIFO] [--lite] [-V]
+                  [--no-scale] [--prioritize] [--keep] [--noFIFO] [--lite]
+                  [--skipqc] [-V]
 
-PEPATAC version 0.8.9-dev
+PEPATAC version 0.9.2
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -57,7 +58,7 @@ optional arguments:
   --anno-name ANNO_NAME
                         Path to reference annotation file (BED format) for
                         calculating FRiF
-  --peak-type {variable,fixed}
+  --peak-type {fixed,variable}
                         Call variable or fixed width peaks. Fixed width
                         requires MACS2.
   --extend EXTEND       How far to extend fixed width peaks up and downstream.
@@ -67,6 +68,9 @@ optional arguments:
   --motif               Perform motif enrichment analysis
   --sob                 Use seqOutBias to produce signal tracks, incorporate
                         mappability information, and account for Tn5 bias.
+  --no-scale            Do not scale signal tracks: Default is to scale by
+                        read count. If using seqOutBias, scales by the
+                        expected/observed cut frequency.
   --prioritize          Plot cFRiF/FRiF using mutually exclusive priority
                         ranked features based on the order of feature
                         appearance in the feature annotation asset.
@@ -74,6 +78,8 @@ optional arguments:
   --noFIFO              Do NOT use named pipes during prealignments
   --lite                Only keep minimal, essential output to conserve disk
                         space.
+  --skipqc              Skip FastQC. Useful for bugs in FastQC that appear
+                        with some sequence read files.
   -V, --version         show program's version number and exit
 
 required named arguments:

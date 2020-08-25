@@ -6,3 +6,5 @@ pandas
 piper
 refgenconf>=0.7.0
 refgenie
+python-Levenshtein
+Bio

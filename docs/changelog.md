@@ -1,14 +1,40 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.8.9] -- 2020-03-
+## [0.9.3] -- 2020-08-11
 
 ### Added
+ - Add bwa mem as alternative read aligner
+
+### Changed
+ - Update pyadapt_trim.py to python3
+ - Fix trimmomatic for SE and PE
+
+## [0.9.2] -- 2020-08-04
+
+### Changed
+ - Reduce memory requirements of consensus peak generation
+ - Enable multiple genome projects for peak count tables
+
+## [0.9.1] -- 2020-07-13
+
+### Changed
+ - Fixed logic for no prealignments on first run
+
+## [0.9.0] -- 2020-05-26
+
+### Added
+ - Calculate and plot library complexity with preseq
+ - Optionally correct for bias with seqOutBias
  - Optionally run `homer` to perform motif analysis
  - Add option to calculate FRiF using prioritized list of features
  - Custom R package to handle plots and corresponding calculations
 
 ### Changed
+ - Move to python3 *only*
+ - Enable scaled bigWig files by default
+ - Split project level analyses into separate incl. project pipeline
+ - Use PEP 2.0 standard
  - Updated handling of genome assets to use current `refgenie` mechanics
  - Changed handling of command line asset use
  - Update requirements

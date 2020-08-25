@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Author: Jason Buenrostro, Stanford University
+# Update to python3: Jason Smith, University of Virginia
 # The following program will trim PE reads
 
 ##### IMPORT MODULES #####
@@ -10,7 +11,6 @@ import re
 import sys
 import bz2
 import gzip
-import string
 import Levenshtein
 from Bio import SeqIO
 from Bio import AlignIO
@@ -18,9 +18,9 @@ from optparse import OptionParser
 
 ##### DEFINE FUNCTIONS #####
 # Reverse complement
-complement = string.maketrans('ATCGN', 'TAGCN')
+complement = "ATCGN".translate({ord('A'): 'T', ord('T'): 'A', ord('C'): 'G', ord('G'): 'C'}).encode('utf-8')
 def reverse_complement(sequence):
-    return sequence.upper().translate(complement)[::-1]
+    return sequence.decode("utf-8").upper().translate(complement)[::-1].encode('utf-8')
 
 # Align with mismatch, find first and move on, assumes only one
 def fuzz_align(s_seq,l_seq,mismatch):
@@ -63,29 +63,29 @@ append = p1_in.split('.')[-1]
 if append == "fastq":
     p1_rds = open(p1_in,'r')
     p2_rds = open(p2_in,'r')
-    p1_out = re.sub(".fastq", ".trim.fastq", p1_file)
-    p2_out = re.sub(".fastq", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fastq", "_trim.fastq", p1_file)
+    p2_out = re.sub(".fastq", "_trim.fastq", p2_file)
 elif append == "fq":
     p1_rds = open(p1_in,'r')
     p2_rds = open(p2_in,'r')
-    p1_out = re.sub(".fq", ".trim.fastq", p1_file)
-    p2_out = re.sub(".fq", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fq", "_trim.fastq", p1_file)
+    p2_out = re.sub(".fq", "_trim.fastq", p2_file)
 elif append == "gz":
     p1_rds = gzip.open(p1_in,'r')
     p2_rds = gzip.open(p2_in,'r')
-    p1_out = re.sub(".fastq.gz", ".trim.fastq", p1_file)
-    p2_out = re.sub(".fastq.gz", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fastq.gz", "_trim.fastq", p1_file)
+    p2_out = re.sub(".fastq.gz", "_trim.fastq", p2_file)
 elif append == "bz2":
     p1_rds = bz2.BZ2File(p1_in,'r')
     p2_rds = bz2.BZ2File(p2_in,'r')
-    p1_out = re.sub(".fastq.bz2", ".trim.fastq", p1_file)
-    p2_out = re.sub(".fastq.bz2", ".trim.fastq", p2_file)
+    p1_out = re.sub(".fastq.bz2", "_trim.fastq", p1_file)
+    p2_out = re.sub(".fastq.bz2", "_trim.fastq", p2_file)
 else:
     sys.exit("ERROR! The input file2 must be a .fastq or .fastq.gz")
 
 if options.o:
-    p1_out = options.o + "_R1.trim.fastq"
-    p2_out = options.o + "_R2.trim.fastq"
+    p1_out = options.o + "_R1_trim.fastq"
+    p2_out = options.o + "_R2_trim.fastq"
 
 ##### SCRIPT #####
 # initialize variables
@@ -150,20 +150,20 @@ while 1:
         
         # print data
         if options.s == "R1":
-            print seqhead1.strip()
-            print seq1
-            print qualhead1.strip()
-            print qual1
+            print(seqhead1.decode("utf-8").strip())
+            print(seq1.decode("utf-8"))
+            print(qualhead1.decode("utf-8").strip())
+            print(qual1.decode("utf-8"))
         elif options.s == "R2":
-            print seqhead2.strip()
-            print seq2
-            print qualhead2.strip()
-            print qual2
+            print(seqhead2.decode("utf-8").strip())
+            print(seq2.decode("utf-8"))
+            print(qualhead2.decode("utf-8").strip())
+            print(qual2.decode("utf-8"))
         else:
-            r1_write.write(seqhead1);r1_write.write(seq1+"\n")
-            r1_write.write(qualhead1);r1_write.write(qual1+"\n")
-            r2_write.write(seqhead2);r2_write.write(seq2+"\n")
-            r2_write.write(qualhead2);r2_write.write(qual2+"\n")
+            r1_write.write(seqhead1.decode("utf-8"));r1_write.write(seq1.decode("utf-8")+"\n")
+            r1_write.write(qualhead1.decode("utf-8"));r1_write.write(qual1.decode("utf-8")+"\n")
+            r2_write.write(seqhead2.decode("utf-8"));r2_write.write(seq2.decode("utf-8")+"\n")
+            r2_write.write(qualhead2.decode("utf-8"));r2_write.write(qual2.decode("utf-8")+"\n")
 
     # increment count
     count = count + 1
@@ -180,7 +180,11 @@ else:
     p1_rds.close();p2_rds.close()
 
     # give summary
-    print str(i)+" sequences total"
-    print str(j)+" sequences trimmed with 0 mismatches"
-    print str(k)+" sequences trimmed with 1 mismatch"
-    print str(tot_b/(j+k))+" mean number of bases trimmed for reads requiring trimming"
+    print(str(i)+" sequences total")
+    print(str(j)+" sequences trimmed with 0 mismatches")
+    print(str(k)+" sequences trimmed with 1 mismatch")
+    try:
+        print(str(tot_b/(j+k))+" mean number of bases trimmed for reads requiring trimming")
+    except ZeroDivisionError:
+        print(str(j+k) + " total sequences trimmed.")
+        

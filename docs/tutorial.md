@@ -50,40 +50,38 @@ nano tutorial.yaml
 ```
 The following is what you should see in that configuration file.
 ```
-name: tutorial
+name: PEPATAC_tutorial
 
-metadata:
-  sample_annotation: tutorial.csv
-  output_dir: "$PROCESSED/tutorial/"
-  pipeline_interfaces: "$CODEBASE/pepatac/pipeline_interface.yaml"
-        
-derived_columns: [read1, read2]
+pep_version: 2.0.0
+sample_table: tutorial.csv
 
-data_sources:
-  tutorial_r1: "$CODEBASE/pepatac/examples/data/tutorial_r1.fastq.gz"
-  tutorial_r2: "$CODEBASE/pepatac/examples/data/tutorial_r2.fastq.gz"
+looper:
+  output_dir: "$HOME/tutorial/"
+  pipeline_interfaces: ["$CODE/pepatac/project_pipeline_interface.yaml"]
 
-implied_columns:
-  organism:
-    human:
-      genome: hg38
-      macs_genome_size: hs
-      prealignments: rCRSd human_repeats
-      deduplicator: samblaster # Default. [options: picard]
-      trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
-      peak_type: variable      # Default. [options: fixed]
-      extend: 250              # Default. For fixed-width peaks, extend this distance up- and down-stream.
-      frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
-      blacklist: $GENOMES/hg38/hg38.blacklist.bed.gz
-
-pipeline_args:
-#  peppro.py:
-#    "--motif": null      # Default is FALSE. Pass flag to perform motif analysis (requires Homer)
-#    "--prioritize": null # Default is FALSE. Pass flag to priority rank the features by order in feat_annotation asset
-#    "--keep": null       # Default is FALSE. Pass flag to keep prealignment BAM files.
-#    "--noFIFO": null     # Default is FALSE. Pass flag to NOT use named pipes during prealignments.
-#    "--lite": null       # Default is FALSE. Pass flag to only keep minimal, essential output to conserve disk space.
-
+sample_modifiers:
+  append:
+    pipeline_interfaces: ["$CODE/pepatac/sample_pipeline_interface.yaml"]
+  derive:
+    attributes: [read1, read2]
+    sources:
+      # Obtain tutorial data from http://big.databio.org/pepatac/ then set
+      # path to local files
+      tutorial_r1: "$DATA/pepatac/tutorial_r1.fastq.gz"
+      tutorial_r2: "$DATA/pepatac/tutorial_r2.fastq.gz"
+  imply:
+    - if:
+        organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
+      then:
+        genome: hg38
+        macs_genome_size: hs
+        prealignments: rCRSd human_repeats
+        deduplicator: samblaster # Default. [options: picard]
+        trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
+        peak_type: fixed         # Default. [options: variable]
+        extend: 250              # Default. For fixed-width peaks, extend this distance up- and down-stream.
+        frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
+        blacklist: $GENOMES/hg38/blacklist/default/hg38_blacklist.bed.gz
 ```
 There is also a sample annotation file referenced in our configuration file.  The sample annotation file contains metadata and other information about our sample. Just like before, this file, named `tutorial.csv` has been provided.  You may check it out if you wish, otherwise we're all set.
 If you open `tutorial.csv`, you should see the following:
@@ -94,7 +92,7 @@ tutorial,ATAC,human,tutorial_r1,tutorial_r2,paired
 That's it! Let's analyze that sample!
 
 
-## 4: Using `looper` to run the pipeline
+## 4: Using `looper` to run the sample processing pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. `Looper` uses [`divvy`](http://code.databio.org/divvy) to manage computing resource configuration so that projects and pipelines can easily travel among environments. For more detailed information, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing/). Let's set it up.
 
 ```
@@ -144,19 +142,25 @@ looper run tutorial.yaml
 ```         
 Congratulations! Your first sample should be running through the pipeline now.
 
-After the pipeline is finished, we can look through the output directory together.  We've provided a breakdown of that directory in the [browse output page](/browse_output/).
+After the pipeline is finished, we can look through the output directory together.  We've provided a breakdown of that directory in the [browse output page](browse_output.md).
 
-
-## 5: Generate an `HTML` report using `looper`
-
-Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](../files/examples/tutorial/tutorial_summary.html).  Otherwise, let's generate a report ourselves.
-Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `summarize` function of `looper`.
+## 5: Use `looper` to run the project level pipeline
+The pipeline also includes project level analyses that work on all samples concurrently.  This allows for analyses that require output produced by individual sample analysis. We'll run the project analysis much like we run the sample analysis:
 ```
-looper summarize tutorial.yaml
+looper runp tutorial.yaml
+```
+This should take less than a minute on the tutorial sample and will generate a `summary/` directory containing project level output in the parent project directory.  You can [browse the tutorial data](browse_output.md) to see the example output.
+
+## 6: Generate an `HTML` report using `looper`
+
+Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](files/examples/tutorial/PEPATAC_tutorial_summary.html).  Otherwise, let's generate a report ourselves.
+Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `report` function of `looper`.
+```
+looper report tutorial.yaml
 ```         
 That's it! Easy, right? `Looper` conveniently provides you with the location where the HTML report is produced.  You may either open the report with your preferred internet browser using the PATH provided, or we can change directories to the report's location and open it there.  Let's go ahead and change into the directory that contains the report.
 ```
 cd /path/to/pepatac_tutorial/processed/tutorial/
-firefox tutorial_summary.html
+firefox PEPATAC_tutorial_summary.html
 ```          
 The `HTML` report contains a summary page that integrates the project level summary table and any project level objects including: raw aligned reads, percent aligned reads, and TSS enrichment scores.  The status page lists all the samples in this project along with their current status, a link to their log files, the time it took to run the sample and the peak memory used during the run.  The objects page provides links to separate pages for each object type.  On each object page, all the individual samples' objects are provided.  Similarly, the samples page contains links to individual pages for each sample.  The sample pages list the individual summary statistics for that sample as well as links to log files, command logs, and summary files.  The sample pages also provide links and thumbnails for any individual objects generated for that sample.  Of course, all of these files are present in the sample directory, but the report provides easy access to them all.

@@ -1,0 +1,43 @@
+pipeline_name: PEPATAC
+pipeline_type: sample
+path: pipelines/pepatac.py
+input_schema: pepatac_input_schema.yaml
+output_schema: pepatac_output_schema.yaml
+command_template: >
+  {pipeline.path}
+  --sample-name {sample.sample_name}
+  --genome {sample.genome}
+  --input {sample.read1}
+  --single-or-paired {sample.read_type}
+  -O {looper.results_subdir}
+  -P {compute.cores}
+  -M {compute.mem}
+  {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
+  {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
+  {% if sample.macs_genome_size is defined %} --genome-size {sample.macs_genome_size} {% endif %}
+  {% if sample.aligner is defined %} --aligner {sample.aligner} {% endif %}
+  {% if sample.trimmer is defined %} --trimmer {sample.trimmer} {% endif %}
+  {% if sample.prealignments is defined %} --prealignments {sample.prealignments} {% endif %}
+  {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
+  {% if sample.TSS_name is defined %} --TSS-name {sample.TSS_name} {% endif %}
+  {% if sample.blacklist is defined %} --blacklist {sample.blacklist} {% endif %}
+  {% if sample.anno_name is defined %} --anno-name {sample.anno_name} {% endif %}
+  {% if sample.peak_type is defined %} --peak-type {sample.peak_type} {% endif %}
+  {% if sample.extend is defined %} --extend {sample.extend} {% endif %}
+  {% if sample.frip_ref_peaks is defined %} --frip-ref-peaks {sample.frip_ref_peaks} {% endif %}
+  {% if sample.motif is defined %} --motif {% endif %}
+  {% if sample.no_scale is defined %} --no-scale {% endif %}
+  {% if sample.sob is defined %} --sob {% endif %}
+  {% if sample.prioritize is defined %} --prioritize {% endif %}
+  {% if sample.keep is defined %} --keep {% endif %}
+  {% if sample.no_fifo is defined %} --noFIFO {% endif %}
+  {% if sample.lite is defined %} --lite {% endif %}
+compute:
+  singularity_image: ${SIMAGES}pepatac
+  docker_image: databio/pepatac
+  bulker_crate: databio/pepatac
+  size_dependent_variables: resources-sample.tsv
+
+bioconductor:
+  readFunName: readPepatacPeakBeds
+  readFunPath: BiocProject/readPepatacPeakBeds.R

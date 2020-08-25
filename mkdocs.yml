@@ -2,10 +2,10 @@ theme: databio
 
 site_name: PEPATAC
 site_author: Jason Smith
-site_url: http://code.databio.org/PEPATAC/
+site_url: http://pepatac.databio.org/
 site_logo: img/pepatac_logo_white.svg
 repo_url: https://github.com/databio/pepatac/
-google_analytics: ['UA-127092878-1', 'code.databio.org/PEPATAC']
+google_analytics: ['UA-127092878-1', 'pepatac.databio.org']
 
 markdown_extensions:
   - fontawesome_markdown  # pip install --user fontawesome-markdown
@@ -23,12 +23,13 @@ nav:
     - Run using containers: 'run-container.md'
     - Download SRA data: 'download.md'
     - Configure prealignments: 'prealignments.md'
+    - Configure seqOutBias assets: 'sob.md'
     - Detailed install guide: 'detailed-install.md'
     - Use custom reference data: 'annotation.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
     - "Example summary: gold project": 'files/examples/gold/gold_summary.html'
-    - "Example summary: tutorial project": 'files/examples/tutorial/tutorial_summary.html'
+    - "Example summary: tutorial project": 'files/examples/tutorial/PEPATAC_tutorial_summary.html'
     - Usage: 'usage.md'
     - FAQ: faq.md
     - Glossary: 'glossary.md'
@@ -47,6 +48,3 @@ navbar:
   - text: Software & Data
     icon: fa-code fa-lg
     href: http://databio.org/software/
-  # - text: Contact us
-  #   icon: fa-envelope
-  #   href: contact
