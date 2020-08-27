@@ -23,6 +23,7 @@ sample_modifiers:
         genome: hg38
         macs_genome_size: hs
         prealignments: rCRSd
+        aligner: bowtie2         # Default. [options: bwa]
         deduplicator: samblaster # Default. [options: picard]
         trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
         peak_type: fixed         # Default. [options: variable]
