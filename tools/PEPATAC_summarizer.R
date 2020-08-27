@@ -53,9 +53,12 @@ p <- add_argument(p, arg="--new-start", short="-N", flag=TRUE,
                   help=paste0("New start mode. This flag will tell the ",
                        "summarizer to start over, and run every command, even ",
                        "if its target output already exists."))
+p <- add_argument(p, arg="--skip-consensus", short="-P", flag=TRUE,
+                  help=paste0("Do not calculate consensus peaks."))
+p <- add_argument(p, arg="--skip-table", short="-T", flag=TRUE,
+                  help=paste0("Do not calculate peak counts table."))
 # Parse the command line arguments
 argv <- parse_args(p)
-#print(argv)  # DEBUG
 
 ###############################################################################
 ##### LOAD DEPENDENCIES #####
@@ -132,14 +135,12 @@ if (!file.exists(complexity_path) || argv$new_start) {
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_yield.txt"),
                 sep="/")
-    #cc <- system(paste0("echo ", cc), intern = TRUE)
     rc <- paste(results_subdir,
                 suppressMessages(pepr::sampleTable(prj)$sample_name),
                 paste0("QC_", suppressMessages(pepr::sampleTable(prj)$genome)),
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_counts.txt"),
                 sep="/")
-    #rc <- system(paste0("echo ", rc), intern = TRUE)
 
     hasBoth <- file.exists(cc) & file.exists(rc)
     ccSub   <- cc[hasBoth]
@@ -191,7 +192,7 @@ for (genome in unique(genomes)) {
 }
 
 # Calculate consensus peaks
-if (!file.exists(consensus_path) || argv$new_start) {
+if (!file.exists(consensus_path) || argv$new_start && !argv$skip_consensus) {
     #write(paste0("Creating consensus peak set..."), stdout())
     consensus_paths <- PEPATACr::consensusPeaks(prj, argv$output,
                                                 argv$results, assets)
@@ -224,7 +225,7 @@ for (genome in unique(genomes)) {
 }
 
 # Create count matrix
-if (!file.exists(counts_path) || argv$new_start) {
+if (!file.exists(counts_path) || argv$new_start && !argv$skip_table) {
     #write(paste0("Creating peak count table(s)..."), stdout())
     counts_paths <- PEPATACr::peakCounts(prj, argv$output, argv$results, assets)
     if (!length(counts_paths) == 0) {

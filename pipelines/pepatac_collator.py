@@ -38,6 +38,12 @@ def parse_arguments():
                         help="Name of the project to use.", type=str)
     parser.add_argument("-r", "--results",
                         help="Output results sub directory path.", type=str)
+    parser.add_argument("--skip-consensus", action='store_true',
+                        dest="skip_consensus", default=False,
+                        help="Do not calculate consensus peaks.")
+    parser.add_argument("--skip-table", action='store_true',
+                        dest="skip_table", default=False,
+                        help="Do not calculate peak counts table.")
     args = parser.parse_args()
     return args
 
@@ -56,6 +62,10 @@ def main():
         results_subdir=args.results)
     if args.new_start:
         cmd += " --new-start"
+    if args.skip_consensus:
+        cmd += " --skip-consensus"
+    if args.skip_table:
+        cmd += " --skip-table"
 
     complexity_file = os.path.join(
         outfolder, "{name}_libComplexity.pdf".format(name=args.name))
