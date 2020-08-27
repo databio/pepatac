@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.3"
+__version__ = "0.9.4"
 
 
 from argparse import ArgumentParser
@@ -296,7 +296,6 @@ def _align(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         cmd2 = tools.samtools + " view -bS -f 4 -@ " + str(pm.cores)
         cmd2 += " " +  all_mapped_bam
         cmd2 += " > " + unmapped_bam
-        pm.clean_add(unmapped_bam)
 
         # get mapped reads (don't remove if args.keep)
         cmd3 = tools.samtools + " view -bS -F 4 -@ " + str(pm.cores)
@@ -309,9 +308,10 @@ def _align(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         cmd4 = tools.bedtools + " bamtofastq "
         cmd4 += " -i " + unmapped_bam
         cmd4 += " -fq " + out_fastq_tmp
+        pm.clean_add(unmapped_bam)
 
         if paired:
-            pm.run([cmd1, cmd2, cmd3, cmd4, filter_pair], mapped_bam)
+            pm.run([cmd1, cmd2, cmd3, cmd4, filter_pair], out_fastq_r2_gz)
         else:
             if args.keep:
                 pm.run(cmd, mapped_bam)
@@ -749,8 +749,12 @@ def main():
     map_genome_folder = os.path.join(param.outfolder,
                                      "aligned_" + args.genome_assembly)
     ngstk.make_dir(map_genome_folder)
+    
+    # Primary endpoint file following alignment and deduplication
     rmdup_bam = os.path.join(map_genome_folder,
                              args.sample_name + "_sort_dedup.bam")
+    rmdup_idx = os.path.join(map_genome_folder,
+                             args.sample_name + "_sort_dedup.bam.bai")
 
 
     ############################################################################
@@ -1045,15 +1049,14 @@ def main():
         pm.report_result("Total_efficiency", round(float(ar) * 100 /
                          float(rr), 2))
 
-    pm.run([cmd, cmd2], mapping_genome_bam,
-           follow=check_alignment_genome)
+    pm.run([cmd, cmd2], rmdup_bam, follow=check_alignment_genome)
 
     # Index the temporary bam file and the sorted bam file
     temp_mapping_index   = os.path.join(mapping_genome_bam_temp + ".bai")
     mapping_genome_index = os.path.join(mapping_genome_bam + ".bai")
     cmd1 = tools.samtools + " index " + mapping_genome_bam_temp
     cmd2 = tools.samtools + " index " + mapping_genome_bam
-    pm.run([cmd1, cmd2], mapping_genome_index)
+    pm.run([cmd1, cmd2], rmdup_idx)
     pm.clean_add(temp_mapping_index)
 
     # If first run, use the temp bam file
@@ -1156,7 +1159,9 @@ def main():
         unmap_cmd += " -f 4 "
 
     unmap_cmd += " " + mapping_genome_bam_temp + " > " + unmap_genome_bam
-    pm.run(unmap_cmd, unmap_genome_bam, follow=count_unmapped_reads)
+    
+    if not pm.get_stat("Unmapped_reads") or args.new_start:
+        pm.run(unmap_cmd, unmap_genome_bam, follow=count_unmapped_reads)
 
     # Remove temporary bam file from unmapped file production
     pm.clean_add(mapping_genome_bam_temp)
@@ -1814,6 +1819,11 @@ def main():
         # Call peaks and report peak count.
         cmd = build_command(macs_cmd_base)
         pm.run(cmd, peak_output_file, follow=report_peak_count)
+        
+        # Compress peak_input_file (i.e. the shift_bed file)
+        shift_bed_gz = shift_bed + ".gz"
+        cmd = (ngstk.ziptool + " " + peak_input_file + " > " + shift_bed_gz)
+        pm.run(cmd, shift_bed_gz)
 
         fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
             "_peaks_fixedWidth.narrowPeak")
@@ -1984,6 +1994,12 @@ def main():
         cmd3 = ("mv " + norm_peak_coverage + " " + peak_coverage)
         cmd4 = ("touch " + coverage_flag)
         pm.run([cmd1, cmd2, cmd3, cmd4], coverage_flag, nofail=True)
+
+        # Compress coverage file
+        peak_coverage_gz = peak_coverage + ".gz"
+        cmd = (ngstk.ziptool + " " + peak_coverage + " > " + peak_coverage_gz)
+        pm.run(cmd, peak_coverage_gz)
+
         pm.clean_add(peak_bed)
         pm.clean_add(chr_keep)
 
@@ -2434,10 +2450,6 @@ def main():
         # cmd = build_command(FRiF_cmd)
         # pm.run(cmd, FRiF_PDF, nofail=False)
         # pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
-     
-    # Test
-    #test_file = os.path.join(QC_folder, args.sample_name + "_test.tsv")
-    #pm._safe_write_to_file(test_file, "test")
 
 
     ############################################################################
@@ -2448,8 +2460,8 @@ def main():
         pm.clean_add(fragL)
         pm.clean_add(fragL_dis2)
         pm.clean_add(fragL_count)
-        pm.clean_add(peak_coverage)
-        pm.clean_add(shift_bed)
+        pm.clean_add(peak_coverage_gz)
+        pm.clean_add(shift_bed_gz)
         pm.clean_add(Tss_enrich)
         pm.clean_add(mapping_genome_bam)
         pm.clean_add(mapping_genome_index)
