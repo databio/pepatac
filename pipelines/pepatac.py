@@ -2014,57 +2014,60 @@ def main():
         temp = tempfile.NamedTemporaryFile(dir=peak_folder, delete=False)
 
         if not os.path.exists(bigNarrowPeak) or args.new_start:
-            df = pd.read_csv(peak_output_file, sep='\t', header=None,
-                             names=("V1","V2","V3","V4","V5","V6",
-                                    "V7","V8","V9","V10"))
-            nineNine = df['V5'].quantile(q=0.99)
-            df.loc[df['V5'] > nineNine, 'V5'] = nineNine
+            if (os.path.exists(peak_output_file) and 
+                    os.stat(peak_output_file).st_size > 0):
+                df = pd.read_csv(peak_output_file, sep='\t', header=None,
+                                 names=("V1","V2","V3","V4","V5","V6",
+                                        "V7","V8","V9","V10"))
+                nineNine = df['V5'].quantile(q=0.99)
+                df.loc[df['V5'] > nineNine, 'V5'] = nineNine
 
-            def rescale(n, after=[0,1], before=[]):
-                if not before:
-                    before=[min(n), max(n)]
-                if (before[1] - before[0]) == 0:
-                    return n
-                return (((after[1] - after[0]) * (n - before[0]) / 
-                         (before[1] - before[0])) + after[0])
-            # rescale score to be between 0 and 1000
-            df['V5'] = rescale(np.log(df['V5']), [0, 1000])
+                def rescale(n, after=[0,1], before=[]):
+                    if not before:
+                        before=[min(n), max(n)]
+                    if (before[1] - before[0]) == 0:
+                        return n
+                    return (((after[1] - after[0]) * (n - before[0]) / 
+                             (before[1] - before[0])) + after[0])
+                # rescale score to be between 0 and 1000
+                df['V5'] = rescale(np.log(df['V5']), [0, 1000])
 
-            cs = pd.read_csv(res.chrom_sizes, sep='\t', header=None,
-                             names=("V1","V2"))
-            df = df.merge(cs, on="V1")
-            df.columns = ["V1","V2","V3","V4","V5","V6",
-                          "V7","V8","V9","V10","V11"]
-            # make sure 'chromEnd' positions are not greater than the max chrom_size
-            n = np.array(df['V3'].values.tolist())
-            df['V3'] = np.where(n > df['V11'], df['V11'], n).tolist()
+                cs = pd.read_csv(res.chrom_sizes, sep='\t', header=None,
+                                 names=("V1","V2"))
+                df = df.merge(cs, on="V1")
+                df.columns = ["V1","V2","V3","V4","V5","V6",
+                              "V7","V8","V9","V10","V11"]
+                # make sure 'chromEnd' positions are not greater than the 
+                # max chrom_size
+                n = np.array(df['V3'].values.tolist())
+                df['V3'] = np.where(n > df['V11'], df['V11'], n).tolist()
 
-            df = df.drop(columns=["V11"])
-            # ensure score is a whole integer value
-            df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
-            df.to_csv(temp.name, sep='\t', header=False, index=False)
-            pm.clean_add(temp.name)
+                df = df.drop(columns=["V11"])
+                # ensure score is a whole integer value
+                df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
+                df.to_csv(temp.name, sep='\t', header=False, index=False)
+                pm.clean_add(temp.name)
 
-            as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
-            cmd = ("echo 'table bigNarrowPeak\n" + 
-                   "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n" +
-                   "(\n" +
-                   "     string chrom;        \"Reference sequence chromosome or scaffold\"\n" +
-                   "     uint   chromStart;   \"Start position in chromosome\"\n" +
-                   "     uint   chromEnd;     \"End position in chromosome\"\n" +
-                   "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n" +
-                   "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n" +
-                   "     char[1]  strand;     \"+ or - or . for unknown\"\n" +
-                   "     float  signalValue;  \"Measurement of average enrichment for the region\"\n" +
-                   "     float  pValue;       \"Statistical significance of signal value (-log10). Set to -1 if not used.\"\n" +
-                   "     float  qValue;       \"Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used.\"\n" +
-                   "     int   peak;          \"Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called.\"\n" +
-                   ")' > " + as_file)
-            pm.run(cmd, as_file, clean=True)
+                as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
+                cmd = ("echo 'table bigNarrowPeak\n" + 
+                       "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n" +
+                       "(\n" +
+                       "     string chrom;        \"Reference sequence chromosome or scaffold\"\n" +
+                       "     uint   chromStart;   \"Start position in chromosome\"\n" +
+                       "     uint   chromEnd;     \"End position in chromosome\"\n" +
+                       "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n" +
+                       "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n" +
+                       "     char[1]  strand;     \"+ or - or . for unknown\"\n" +
+                       "     float  signalValue;  \"Measurement of average enrichment for the region\"\n" +
+                       "     float  pValue;       \"Statistical significance of signal value (-log10). Set to -1 if not used.\"\n" +
+                       "     float  qValue;       \"Statistical significance with multiple-test correction applied (FDR -log10). Set to -1 if not used.\"\n" +
+                       "     int   peak;          \"Point-source called for this peak; 0-based offset from chromStart. Set to -1 if no point-source called.\"\n" +
+                       ")' > " + as_file)
+                pm.run(cmd, as_file, clean=True)
 
-            cmd = (tools.bedToBigBed + " -as=" + as_file + " -type=bed6+4 " +
-                   temp.name + " " + res.chrom_sizes + " " + bigNarrowPeak)
-            pm.run(cmd, bigNarrowPeak, nofail=True)
+                cmd = (tools.bedToBigBed + " -as=" + as_file + " -type=bed6+4 " +
+                       temp.name + " " + res.chrom_sizes + " " + bigNarrowPeak)
+                pm.run(cmd, bigNarrowPeak, nofail=True)
 
 
         ########################################################################
