@@ -1,6 +1,19 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.4] -- 2020-08-31
+
+### Added
+ - Enable skipping of steps in project pipeline and summarizer
+
+### Changed
+ - Compress bed and peak coverage file output by default
+ - Fix `peakCounts` function reference peak set checks
+ - Fix `reduce` and `reducePeaks` to properly accept output file name/path
+ - Make input schema more explicit
+ - Catch and resolve issue with incomplete bed files in FRiF plotting
+ - Do not attempt to convert an empty peak file to a bigBed file
+
 ## [0.9.3] -- 2020-08-12
 
 ### Changed
