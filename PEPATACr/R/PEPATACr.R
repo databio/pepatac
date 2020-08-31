@@ -1606,7 +1606,7 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 #' @param normalize Remove overlaps and normalize the score.
 #' @keywords reduce fixed peaks
 #' @export
-reducePeaks <- function(input, chr_sizes, output=NULL, normalize=FALSE) {
+reducePeaks <- function(input, chr_sizes, output=NA, normalize=FALSE) {
     info <- file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
         peaks           <- fread(file.path(input))
@@ -1663,7 +1663,7 @@ reducePeaks <- function(input, chr_sizes, output=NULL, normalize=FALSE) {
         }
         final[score < 0, score := 0]
         # save final peak set
-        if (is.null(output)) {
+        if (is.na(output)) {
             fwrite(final, paste0(sampleName(input),
                                  "_peaks_normalized.narrowPeak"),
                    sep="\t", col.names=FALSE)
