@@ -755,29 +755,35 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                 quit(save = "no", status = 1, runLast = FALSE)
             }
 
-            if (max(bed[,4] > 0)) {
-                if (exists("covDF")) {
-                    covFile <- calcFRiF(bed, num_reads, reads)
-                    covFile$feature <- name
-                    covDF   <- rbind(covDF, covFile)
-                    labels  <- rbind(labels, c(0.95*max(log10(covFile$cumSize)),
-                                               max(covFile$frip)+0.001,
-                                               name, round(max(covFile$frip),2),
-                                               plotColors[i]))
-                    feature_dist <- rbind(feature_dist,
-                        c(name, nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
-                          as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
-                } else {
-                    covDF         <- calcFRiF(bed, num_reads, reads)
-                    covDF$feature <- name
-                    labels        <- rbind(labels,
-                                           c(0.95*max(log10(covDF$cumSize)),
-                                             max(covDF$frip)+0.001,
-                                             name, round(max(covDF$frip),2),
-                                             plotColors[i]))
-                    feature_dist <- rbind(feature_dist,
-                        c(name, nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
-                          as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
+            bed <- bed[complete.cases(bed), ]
+            if (nrow(bed) > 0) {
+                if (max(bed[,4], na.rm=TRUE) > 0) {
+                    if (exists("covDF")) {
+                        covFile <- calcFRiF(bed, num_reads, reads)
+                        covFile$feature <- name
+                        covDF   <- rbind(covDF, covFile)
+                        labels  <- rbind(labels,
+                            c(0.95*max(log10(covFile$cumSize)),
+                            max(covFile$frip)+0.001,
+                            name, round(max(covFile$frip),2),
+                            plotColors[i]))
+                        feature_dist <- rbind(feature_dist,
+                            c(name, nrow(bed),
+                            as.numeric(sum(abs(bed$V3-bed$V2))),
+                            as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
+                    } else {
+                        covDF         <- calcFRiF(bed, num_reads, reads)
+                        covDF$feature <- name
+                        labels        <- rbind(labels,
+                            c(0.95*max(log10(covDF$cumSize)),
+                            max(covDF$frip)+0.001,
+                            name, round(max(covDF$frip),2),
+                            plotColors[i]))
+                        feature_dist <- rbind(feature_dist,
+                            c(name, nrow(bed),
+                            as.numeric(sum(abs(bed$V3-bed$V2))),
+                            as.numeric((sum(abs(bed$V3-bed$V2))/genome_size))))
+                    }
                 }
             }
         }
