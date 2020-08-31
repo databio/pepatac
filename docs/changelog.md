@@ -14,11 +14,6 @@ All notable changes to this project will be documented in this file.
  - Catch and resolve issue with incomplete bed files in FRiF plotting
  - Do not attempt to convert an empty peak file to a bigBed file
 
-## [0.9.3] -- 2020-08-12
-
-### Changed
- - Fix preseq grep error where search term exists in additional column
-
 ## [0.9.3] -- 2020-08-11
 
 ### Added
@@ -27,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
  - Update pyadapt_trim.py to python3
  - Fix trimmomatic for SE and PE
+ - Fix preseq grep error where search term exists in additional column
 
 ## [0.9.2] -- 2020-08-04
 
