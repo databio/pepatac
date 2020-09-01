@@ -1068,7 +1068,7 @@ def main():
         bam_file = mapping_genome_bam
 
     # Determine mitochondrial read counts
-    mito_name = ["chrM", "chrMT", "M", "MT", "rCRSd"]
+    mito_name = ["chrM", "ChrM", "ChrMT", "chrMT", "M", "MT", "rCRSd"]
 
     if not pm.get_stat("Mitochondrial_reads") or args.new_start:
         cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
