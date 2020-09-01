@@ -614,7 +614,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
                              default=FALSE,
                              description="Normalize scores.")
         #print(message(paste0("Normalize: ", normalize)))
-        if (is.na(output)) {output <- NULL}
+        if (is.na(output)) {output <- NA}
         PEPATACr::reducePeaks(input=input,
                               chr_sizes=chr_sizes,
                               output=output,
