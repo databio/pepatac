@@ -2460,7 +2460,7 @@ def main():
     ############################################################################
     if args.lite:
         # Remove everything but ultimate outputs
-        pm.clean_add(fragL)
+        pm.clean_add(frag_len)
         pm.clean_add(fragL_dis2)
         pm.clean_add(fragL_count)
         pm.clean_add(peak_coverage_gz)
