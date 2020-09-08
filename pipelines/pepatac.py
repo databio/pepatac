@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.4"
+__version__ = "0.9.5"
 
 
 from argparse import ArgumentParser
@@ -1179,10 +1179,6 @@ def main():
 
     def post_dup_aligned_reads(dedup_log):
         if args.deduplicator == "picard":
-            # Number of aligned reads post tools.picard REMOVE_DUPLICATES
-            # cmd = ("awk -F'\t' -f " +
-                   # tool_path("extract_post_dup_aligned_reads.awk") + " " +
-                   # dedup_log)
             cmd = ("grep -A2 'METRICS CLASS' " + dedup_log +
                    " | tail -n 1 | awk '{print $(NF-3)}'")
         elif args.deduplicator == "samblaster":
@@ -1205,20 +1201,6 @@ def main():
         dar = round(float(pdar) * 100 / float(tr), 2)
         dte = round(float(pdar) * 100 / float(rr), 2)
         
-        # if args.deduplicator == "samblaster":
-            # pdar = float(ar) - float(dr)
-            # dar = round(float(pdar) * 100 / float(tr), 2)
-            # dte = round(float(pdar) * 100 / float(rr), 2)
-        # elif args.deduplicator == "picard":
-            # pdar = dr
-            # dr = float(ar) - float(pdar)
-            # dar = round(float(pdar) * 100 / float(tr), 2)
-            # dte = round(float(pdar) * 100 / float(rr), 2)
-        # else:
-            # pdar = float(ar) - float(dr)
-            # dar = round(float(pdar) * 100 / float(tr), 2)
-            # dte = round(float(pdar) * 100 / float(rr), 2)
-
         pm.report_result("Duplicate_reads", dr)
         pm.report_result("Dedup_aligned_reads", pdar)
         pm.report_result("Dedup_alignment_rate", dar)
