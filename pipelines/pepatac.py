@@ -1180,36 +1180,44 @@ def main():
     def post_dup_aligned_reads(dedup_log):
         if args.deduplicator == "picard":
             # Number of aligned reads post tools.picard REMOVE_DUPLICATES
-            cmd = ("awk -F'\t' -f " +
-                   tool_path("extract_post_dup_aligned_reads.awk") + " " +
-                   dedup_log)            
+            # cmd = ("awk -F'\t' -f " +
+                   # tool_path("extract_post_dup_aligned_reads.awk") + " " +
+                   # dedup_log)
+            cmd = ("grep -A2 'METRICS CLASS' " + dedup_log +
+                   " | tail -n 1 | awk '{print $(NF-3)}'")
         elif args.deduplicator == "samblaster":
-            cmd = ("grep 'Removed' " + dedup_log + " | cut -f 3 -d ' '")
+            cmd = ("grep 'Removed' " + dedup_log +
+                   " | tr -s ' ' | cut -f 3 -d ' '")
         else:
-            cmd = ("grep 'Removed' " + dedup_log + " | cut -f 3 -d ' '")
+            cmd = ("grep 'Removed' " + dedup_log +
+                   " | tr -s ' ' | cut -f 3 -d ' '")
 
-        pdar = pm.checkprint(cmd)
+        dr = pm.checkprint(cmd)
         ar = float(pm.get_stat("Aligned_reads"))
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
 
-        if not pdar and not pdar.strip():
-            pdar = ar
-
-        if args.deduplicator == "samblaster":
-            dr = pdar
-            pdar = float(ar) - float(dr)
-            dar = round(float(pdar) * 100 / float(tr), 2)
-            dte = round(float(pdar) * 100 / float(rr), 2)
-        elif args.deduplicator == "picard":
-            dr = float(ar) - float(pdar)
-            dar = round(float(pdar) * 100 / float(tr), 2)
-            dte = round(float(pdar) * 100 / float(rr), 2)
-        else:
-            dr = pdar
-            pdar = float(ar) - float(dr)
-            dar = round(float(pdar) * 100 / float(tr), 2)
-            dte = round(float(pdar) * 100 / float(rr), 2)
+        if not dr and not dr.strip():
+            pm.info("DEBUG: dr didn't work correctly")
+            dr = ar
+        
+        pdar = float(ar) - float(dr)
+        dar = round(float(pdar) * 100 / float(tr), 2)
+        dte = round(float(pdar) * 100 / float(rr), 2)
+        
+        # if args.deduplicator == "samblaster":
+            # pdar = float(ar) - float(dr)
+            # dar = round(float(pdar) * 100 / float(tr), 2)
+            # dte = round(float(pdar) * 100 / float(rr), 2)
+        # elif args.deduplicator == "picard":
+            # pdar = dr
+            # dr = float(ar) - float(pdar)
+            # dar = round(float(pdar) * 100 / float(tr), 2)
+            # dte = round(float(pdar) * 100 / float(rr), 2)
+        # else:
+            # pdar = float(ar) - float(dr)
+            # dar = round(float(pdar) * 100 / float(tr), 2)
+            # dte = round(float(pdar) * 100 / float(rr), 2)
 
         pm.report_result("Duplicate_reads", dr)
         pm.report_result("Dedup_aligned_reads", pdar)
