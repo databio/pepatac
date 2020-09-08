@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.5] -- 2020-09-08
+
+### Changed
+ - Corrected and unified duplicate read calculation and reporting
+
 ## [0.9.4] -- 2020-08-31
 
 ### Added
