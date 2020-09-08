@@ -22,7 +22,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [--no-scale] [--prioritize] [--keep] [--noFIFO] [--lite]
                   [--skipqc] [-V]
 
-PEPATAC version 0.9.4
+PEPATAC version 0.9.5
 
 optional arguments:
   -h, --help            show this help message and exit
