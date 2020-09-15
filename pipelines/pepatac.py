@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.5"
+__version__ = "0.9.6"
 
 
 from argparse import ArgumentParser
@@ -1876,6 +1876,8 @@ def main():
                           .format(str(os.path.dirname(res.blacklist))))
 
                 if os.path.exists(black_local):
+                    # -v: Only report entries in A with NO overlap in
+                    #     B (the blacklist), thereby removing blacklist regions
                     cmd = build_command([
                         (tools.bedtools, "intersect"),
                         ("-a", peak_output_file),
