@@ -366,7 +366,7 @@
                             
               <!-- if the status_page_name is not defined, the status page link is omitted -->
                   <li class="nav-item active">
-                    <a class="nav-link" href="reports/status.html">Status</a>
+                    <a class="nav-link" href="gold_reports/status.html">Status</a>
                   </li>
               
               
@@ -376,35 +376,23 @@
                     Objects
                   </a>
                   <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="reports/objects.html">All objects</a>
+                    <a class="dropdown-item" href="gold_reports/objects.html">All objects</a>
                     <div class="dropdown-divider"></div>
                     
                       
-                      <a class="dropdown-item" href="reports/frif.html">FRiF</a>
+                      <a class="dropdown-item" href="gold_reports/fastqc_report_r1.html">FastQC report r1</a>
                     
                       
-                      <a class="dropdown-item" href="reports/fastqc_report_r1.html">FastQC report r1</a>
+                      <a class="dropdown-item" href="gold_reports/fastqc_report_r2.html">FastQC report r2</a>
                     
                       
-                      <a class="dropdown-item" href="reports/fastqc_report_r2.html">FastQC report r2</a>
+                      <a class="dropdown-item" href="gold_reports/fragment_distribution.html">Fragment distribution</a>
                     
                       
-                      <a class="dropdown-item" href="reports/fragment_distribution.html">Fragment distribution</a>
+                      <a class="dropdown-item" href="gold_reports/library_complexity.html">Library complexity</a>
                     
                       
-                      <a class="dropdown-item" href="reports/peak_chromosome_distribution.html">Peak chromosome distribution</a>
-                    
-                      
-                      <a class="dropdown-item" href="reports/peak_partition_distribution.html">Peak partition distribution</a>
-                    
-                      
-                      <a class="dropdown-item" href="reports/tss_distance_distribution.html">TSS distance distribution</a>
-                    
-                      
-                      <a class="dropdown-item" href="reports/tss_enrichment.html">TSS enrichment</a>
-                    
-                      
-                      <a class="dropdown-item" href="reports/cfrif.html">cFRiF</a>
+                      <a class="dropdown-item" href="gold_reports/tss_enrichment.html">TSS enrichment</a>
                     
                   </div>
                 </li>
@@ -416,23 +404,23 @@
                   Samples
                   </a>
                   <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="reports/samples.html">All samples</a>
+                    <a class="dropdown-item" href="gold_reports/samples.html">All samples</a>
                     <div class="dropdown-divider"></div>
                     
                       
-                      <a class="dropdown-item" href="reports/gold1.html">gold1</a>
+                      <a class="dropdown-item" href="gold_reports/gold1.html">gold1</a>
                     
                       
-                      <a class="dropdown-item" href="reports/gold2.html">gold2</a>
+                      <a class="dropdown-item" href="gold_reports/gold2.html">gold2</a>
                     
                       
-                      <a class="dropdown-item" href="reports/gold3.html">gold3</a>
+                      <a class="dropdown-item" href="gold_reports/gold3.html">gold3</a>
                     
                       
-                      <a class="dropdown-item" href="reports/gold4.html">gold4</a>
+                      <a class="dropdown-item" href="gold_reports/gold4.html">gold4</a>
                     
                       
-                      <a class="dropdown-item" href="reports/gold5.html">gold5</a>
+                      <a class="dropdown-item" href="gold_reports/gold5.html">gold5</a>
                     
                   </div>
                 </li>
@@ -503,6 +491,10 @@
 								
 									<th class="text-nowrap text-center" data-sortable="true">Alignment_rate_rCRSd</th>
 								
+									<th class="text-nowrap text-center" data-sortable="true">Aligned_reads_human_repeats</th>
+								
+									<th class="text-nowrap text-center" data-sortable="true">Alignment_rate_human_repeats</th>
+								
 									<th class="text-nowrap text-center" data-sortable="true">Mapped_reads</th>
 								
 									<th class="text-nowrap text-center" data-sortable="true">QC_filtered_reads</th>
@@ -531,17 +523,15 @@
 								
 									<th class="text-nowrap text-center" data-sortable="true">Dedup_total_efficiency</th>
 								
-									<th class="text-nowrap text-center" data-sortable="true">TSS_score</th>
-								
-									<th class="text-nowrap text-center" data-sortable="true">Peak_count</th>
-								
-									<th class="text-nowrap text-center" data-sortable="true">FRiP</th>
+									<th class="text-nowrap text-center" data-sortable="true">Read_length</th>
 								
 									<th class="text-nowrap text-center" data-sortable="true">Genome_size</th>
 								
-									<th class="text-nowrap text-center" data-sortable="true">Time</th>
+									<th class="text-nowrap text-center" data-sortable="true">Frac_exp_unique_at_10M</th>
 								
-									<th class="text-nowrap text-center" data-sortable="true">Success</th>
+									<th class="text-nowrap text-center" data-sortable="true">TSS_score</th>
+								
+									<th class="text-nowrap text-center" data-sortable="true">Peak_count</th>
 								
 							</tr>
 						</thead>
@@ -550,8 +540,8 @@
 								<tr>
 									
 										
-											<td onclick="location.href='reports/gold1.html'">
-												<a class="LN1 LN2 LN3 LN4 LN5" href="reports/gold1.html">gold1</a>
+											<td onclick="location.href='gold_reports/gold1.html'">
+												<a class="LN1 LN2 LN3 LN4 LN5" href="gold_reports/gold1.html">gold1</a>
 											</td>
 										
 									
@@ -581,7 +571,7 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_bamSRR5210416.bam</td>
+												<td>SRA</td>
 											
 										
 									
@@ -623,13 +613,13 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210416_1.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210416_1.fastq.gz</td>
 											
 										
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210416_2.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210416_2.fastq.gz</td>
 											
 										
 									
@@ -641,7 +631,7 @@
 									
 										
 											
-												<td>paired</td>
+												<td>PAIRED</td>
 											
 										
 									
@@ -689,37 +679,49 @@
 									
 										
 											
-												<td>113463795</td>
+												<td>9761740.0</td>
 											
 										
 									
 										
 											
-												<td>14136849</td>
+												<td>7.08</td>
 											
 										
 									
 										
 											
-												<td>99326946</td>
+												<td>103770862</td>
 											
 										
 									
 										
 											
-												<td>72.02</td>
+												<td>8341982</td>
 											
 										
 									
 										
 											
-												<td>72.0</td>
+												<td>95428880</td>
 											
 										
 									
 										
 											
-												<td>19012</td>
+												<td>69.19</td>
+											
+										
+									
+										
+											
+												<td>69.18</td>
+											
+										
+									
+										
+											
+												<td>14500</td>
 											
 										
 									
@@ -737,55 +739,43 @@
 									
 										
 											
-												<td>31.83</td>
+												<td>32.71</td>
 											
 										
 									
 										
 											
-												<td>3411107</td>
+												<td>3342300</td>
 											
 										
 									
 										
 											
-												<td>2084510</td>
+												<td>2001987</td>
 											
 										
 									
 										
 											
-												<td>97242436.0</td>
+												<td>93426893.0</td>
 											
 										
 									
 										
 											
-												<td>70.5</td>
+												<td>67.74</td>
 											
 										
 									
 										
 											
-												<td>70.49</td>
+												<td>67.73</td>
 											
 										
 									
 										
 											
-												<td>8.9</td>
-											
-										
-									
-										
-											
-												<td>97177</td>
-											
-										
-									
-										
-											
-												<td>0.14</td>
+												<td>76</td>
 											
 										
 									
@@ -797,13 +787,19 @@
 									
 										
 											
-												<td>5:29:28</td>
+												<td>0.9721</td>
 											
 										
 									
 										
 											
-												<td>03-04-13:04:16</td>
+												<td>9.3</td>
+											
+										
+									
+										
+											
+												<td>382788</td>
 											
 										
 									
@@ -812,8 +808,8 @@
 								<tr>
 									
 										
-											<td onclick="location.href='reports/gold2.html'">
-												<a class="LN1 LN2 LN3 LN4 LN5" href="reports/gold2.html">gold2</a>
+											<td onclick="location.href='gold_reports/gold2.html'">
+												<a class="LN1 LN2 LN3 LN4 LN5" href="gold_reports/gold2.html">gold2</a>
 											</td>
 										
 									
@@ -843,7 +839,7 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_bamSRR5210450.bam</td>
+												<td>SRA</td>
 											
 										
 									
@@ -885,13 +881,13 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210450_1.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210450_1.fastq.gz</td>
 											
 										
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210450_2.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210450_2.fastq.gz</td>
 											
 										
 									
@@ -903,7 +899,7 @@
 									
 										
 											
-												<td>paired</td>
+												<td>PAIRED</td>
 											
 										
 									
@@ -951,37 +947,49 @@
 									
 										
 											
-												<td>17211404</td>
+												<td>1147860.0</td>
 											
 										
 									
 										
 											
-												<td>1749252</td>
+												<td>4.04</td>
 											
 										
 									
 										
 											
-												<td>15462152</td>
+												<td>16069631</td>
 											
 										
 									
 										
 											
-												<td>54.43</td>
+												<td>1124479</td>
 											
 										
 									
 										
 											
-												<td>54.43</td>
+												<td>14945152</td>
 											
 										
 									
 										
 											
-												<td>859</td>
+												<td>52.61</td>
+											
+										
+									
+										
+											
+												<td>52.61</td>
+											
+										
+									
+										
+											
+												<td>801</td>
 											
 										
 									
@@ -999,55 +1007,43 @@
 									
 										
 											
-												<td>27.59</td>
+												<td>27.69</td>
 											
 										
 									
 										
 											
-												<td>122926</td>
+												<td>116839</td>
 											
 										
 									
 										
 											
-												<td>282186</td>
+												<td>272965</td>
 											
 										
 									
 										
 											
-												<td>15179966.0</td>
+												<td>14672187.0</td>
 											
 										
 									
 										
 											
-												<td>53.43</td>
+												<td>51.65</td>
 											
 										
 									
 										
 											
-												<td>53.43</td>
+												<td>51.65</td>
 											
 										
 									
 										
 											
-												<td>12.6</td>
-											
-										
-									
-										
-											
-												<td>50415</td>
-											
-										
-									
-										
-											
-												<td>0.16</td>
+												<td>50</td>
 											
 										
 									
@@ -1059,13 +1055,19 @@
 									
 										
 											
-												<td>1:16:29</td>
+												<td>0.9219</td>
 											
 										
 									
 										
 											
-												<td>03-04-08:51:16</td>
+												<td>13.1</td>
+											
+										
+									
+										
+											
+												<td>420249</td>
 											
 										
 									
@@ -1074,8 +1076,8 @@
 								<tr>
 									
 										
-											<td onclick="location.href='reports/gold3.html'">
-												<a class="LN1 LN2 LN3 LN4 LN5" href="reports/gold3.html">gold3</a>
+											<td onclick="location.href='gold_reports/gold3.html'">
+												<a class="LN1 LN2 LN3 LN4 LN5" href="gold_reports/gold3.html">gold3</a>
 											</td>
 										
 									
@@ -1105,7 +1107,7 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_bamSRR5210398.bam</td>
+												<td>SRA</td>
 											
 										
 									
@@ -1147,13 +1149,13 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210398_1.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210398_1.fastq.gz</td>
 											
 										
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210398_2.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210398_2.fastq.gz</td>
 											
 										
 									
@@ -1165,7 +1167,7 @@
 									
 										
 											
-												<td>paired</td>
+												<td>PAIRED</td>
 											
 										
 									
@@ -1213,37 +1215,49 @@
 									
 										
 											
-												<td>134533496</td>
+												<td>10699930.0</td>
 											
 										
 									
 										
 											
-												<td>15314100</td>
+												<td>6.44</td>
 											
 										
 									
 										
 											
-												<td>119219396</td>
+												<td>123924925</td>
 											
 										
 									
 										
 											
-												<td>71.78</td>
+												<td>9613401</td>
 											
 										
 									
 										
 											
-												<td>71.78</td>
+												<td>114311524</td>
 											
 										
 									
 										
 											
-												<td>17337</td>
+												<td>68.82</td>
+											
+										
+									
+										
+											
+												<td>68.82</td>
+											
+										
+									
+										
+											
+												<td>14199</td>
 											
 										
 									
@@ -1261,55 +1275,43 @@
 									
 										
 											
-												<td>18.9</td>
+												<td>18.89</td>
 											
 										
 									
 										
 											
-												<td>2327642</td>
+												<td>2236283</td>
 											
 										
 									
 										
 											
-												<td>3285703</td>
+												<td>3152724</td>
 											
 										
 									
 										
 											
-												<td>115933693.0</td>
+												<td>111158800.0</td>
 											
 										
 									
 										
 											
-												<td>69.8</td>
+												<td>66.93</td>
 											
 										
 									
 										
 											
-												<td>69.8</td>
+												<td>66.93</td>
 											
 										
 									
 										
 											
-												<td>10.5</td>
-											
-										
-									
-										
-											
-												<td>100021</td>
-											
-										
-									
-										
-											
-												<td>0.15</td>
+												<td>40</td>
 											
 										
 									
@@ -1321,13 +1323,19 @@
 									
 										
 											
-												<td>5:34:46</td>
+												<td>0.9696</td>
 											
 										
 									
 										
 											
-												<td>03-04-13:09:33</td>
+												<td>11.0</td>
+											
+										
+									
+										
+											
+												<td>380540</td>
 											
 										
 									
@@ -1336,8 +1344,8 @@
 								<tr>
 									
 										
-											<td onclick="location.href='reports/gold4.html'">
-												<a class="LN1 LN2 LN3 LN4 LN5" href="reports/gold4.html">gold4</a>
+											<td onclick="location.href='gold_reports/gold4.html'">
+												<a class="LN1 LN2 LN3 LN4 LN5" href="gold_reports/gold4.html">gold4</a>
 											</td>
 										
 									
@@ -1367,7 +1375,7 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_bamSRR5210428.bam</td>
+												<td>SRA</td>
 											
 										
 									
@@ -1409,13 +1417,13 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210428_1.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210428_1.fastq.gz</td>
 											
 										
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210428_2.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210428_2.fastq.gz</td>
 											
 										
 									
@@ -1427,7 +1435,7 @@
 									
 										
 											
-												<td>paired</td>
+												<td>PAIRED</td>
 											
 										
 									
@@ -1457,13 +1465,13 @@
 									
 										
 											
-												<td>0</td>
+												<td>0.0</td>
 											
 										
 									
 										
 											
-												<td>14045392</td>
+												<td>14045392.0</td>
 											
 										
 									
@@ -1475,37 +1483,49 @@
 									
 										
 											
-												<td>85686081</td>
+												<td>7514112.0</td>
 											
 										
 									
 										
 											
-												<td>11021221</td>
+												<td>7.43</td>
 											
 										
 									
 										
 											
-												<td>74664860</td>
+												<td>78149573</td>
 											
 										
 									
 										
 											
-												<td>73.87</td>
+												<td>6702363</td>
 											
 										
 									
 										
 											
-												<td>73.87</td>
+												<td>71447210</td>
 											
 										
 									
 										
 											
-												<td>9685</td>
+												<td>70.69</td>
+											
+										
+									
+										
+											
+												<td>70.68</td>
+											
+										
+									
+										
+											
+												<td>6339</td>
 											
 										
 									
@@ -1523,55 +1543,43 @@
 									
 										
 											
-												<td>35.95</td>
+												<td>35.97</td>
 											
 										
 									
 										
 											
-												<td>1346067</td>
+												<td>1368463</td>
 											
 										
 									
 										
 											
-												<td>1085340</td>
+												<td>1038863</td>
 											
 										
 									
 										
 											
-												<td>73579520</td>
+												<td>70408347.0</td>
 											
 										
 									
 										
 											
-												<td>72.8</td>
+												<td>69.66</td>
 											
 										
 									
 										
 											
-												<td>72.79</td>
+												<td>69.66</td>
 											
 										
 									
 										
 											
-												<td>7.3</td>
-											
-										
-									
-										
-											
-												<td>77999</td>
-											
-										
-									
-										
-											
-												<td>0.11</td>
+												<td>42</td>
 											
 										
 									
@@ -1583,13 +1591,19 @@
 									
 										
 											
-												<td>1:07:05</td>
+												<td>0.9785</td>
 											
 										
 									
 										
 											
-												<td>03-04-11:43:10</td>
+												<td>7.7</td>
+											
+										
+									
+										
+											
+												<td>305045</td>
 											
 										
 									
@@ -1598,8 +1612,8 @@
 								<tr>
 									
 										
-											<td onclick="location.href='reports/gold5.html'">
-												<a class="LN1 LN2 LN3 LN4 LN5" href="reports/gold5.html">gold5</a>
+											<td onclick="location.href='gold_reports/gold5.html'">
+												<a class="LN1 LN2 LN3 LN4 LN5" href="gold_reports/gold5.html">gold5</a>
 											</td>
 										
 									
@@ -1629,7 +1643,7 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_bamSRR5210390.bam</td>
+												<td>SRA</td>
 											
 										
 									
@@ -1671,13 +1685,13 @@
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210390_1.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210390_1.fastq.gz</td>
 											
 										
 									
 										
 											
-												<td>/project/shefflab/data/sra_fastq/SRR5210390_2.fastq.gz</td>
+												<td>/project/shefflab/data/sra_fastq//SRR5210390_2.fastq.gz</td>
 											
 										
 									
@@ -1689,7 +1703,7 @@
 									
 										
 											
-												<td>paired</td>
+												<td>PAIRED</td>
 											
 										
 									
@@ -1719,13 +1733,13 @@
 									
 										
 											
-												<td>0</td>
+												<td>0.0</td>
 											
 										
 									
 										
 											
-												<td>19947382</td>
+												<td>19947382.0</td>
 											
 										
 									
@@ -1737,37 +1751,49 @@
 									
 										
 											
-												<td>83618352</td>
+												<td>5705260.0</td>
 											
 										
 									
 										
 											
-												<td>8986230</td>
+												<td>5.44</td>
 											
 										
 									
 										
 											
-												<td>74632122</td>
+												<td>77851214</td>
 											
 										
 									
 										
 											
-												<td>71.16</td>
+												<td>5811232</td>
 											
 										
 									
 										
 											
-												<td>71.16</td>
+												<td>72039982</td>
 											
 										
 									
 										
 											
-												<td>12703</td>
+												<td>68.69</td>
+											
+										
+									
+										
+											
+												<td>68.69</td>
+											
+										
+									
+										
+											
+												<td>8198</td>
 											
 										
 									
@@ -1785,55 +1811,43 @@
 									
 										
 											
-												<td>32.15</td>
+												<td>32.2</td>
 											
 										
 									
 										
 											
-												<td>1313948</td>
+												<td>1375826</td>
 											
 										
 									
 										
 											
-												<td>1302412</td>
+												<td>1264637</td>
 											
 										
 									
 										
 											
-												<td>73329710</td>
+												<td>70775345.0</td>
 											
 										
 									
 										
 											
-												<td>69.92</td>
+												<td>67.48</td>
 											
 										
 									
 										
 											
-												<td>69.92</td>
+												<td>67.48</td>
 											
 										
 									
 										
 											
-												<td>13.1</td>
-											
-										
-									
-										
-											
-												<td>118055</td>
-											
-										
-									
-										
-											
-												<td>0.25</td>
+												<td>42</td>
 											
 										
 									
@@ -1845,13 +1859,19 @@
 									
 										
 											
-												<td>1:06:57</td>
+												<td>0.9511</td>
 											
 										
 									
 										
 											
-												<td>03-04-11:43:03</td>
+												<td>13.6</td>
+											
+										
+									
+										
+											
+												<td>285312</td>
 											
 										
 									
@@ -1863,7 +1883,7 @@
 			</div>
 			<div class="row">
 				<div  class="col-3">
-					<div id="chartableColumns" style="margin: 20px;">
+					<div id="chartableColumns" style="margin: 20px;min-width: 350px;">
 						<div class="card border-light">
 							<div class="card-heading">
 								<h4 class="card-header">Plot a column</h4>
@@ -1928,6 +1948,16 @@
 									</a>
 								</figure>
 							
+								
+								<figure class="figure">
+									<a href='summary/gold_libComplexity.pdf'>
+										<img id="fig" src='summary/gold_libComplexity.png' class="figure-img img-fluid rounded" alt="">
+									</a>
+									<a href='summary/gold_libComplexity.pdf'>
+										<figcaption class="figure-caption text-center"><b>Fig.3 </b><i>Library complexity file</i></figcaption>
+									</a>
+								</figure>
+							
 						</div>
 					</div>
 				</div>
@@ -1938,14 +1968,14 @@
     <hr class="featurette-divider">
 	<footer class="text-muted">
         <div class="wrapper">
-Generated with <code>looper v0.12.6</code>
+Generated with <code>looper v1.2.0</code>
 <span style="float:right;">&copy; 2018-2020 <a href="http://databio.org/" target="_new">Sheffield Computational Biology Lab</a></span>
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
     var plotDict = {}; // variable containing column values (col_name:string -> col_values:list)
     var nameDict = {} // variable sample names (col_name:string -> sample_names:string)
-    var statsTable = {"0":{"0":"sample_name","1":"gold1","2":"gold2","3":"gold3","4":"gold4","5":"gold5"},"1":{"0":"sample_description","1":"ATAC-seq from dendritic cell (ENCLB065VMV)","2":"ATAC-seq from dendritic cell (ENCLB811FLK)","3":"ATAC-seq from dendritic cell (ENCLB887PKE)","4":"ATAC-seq from dendritic cell (ENCLB586KIS)","5":"ATAC-seq from dendritic cell (ENCLB384NOX)"},"2":{"0":"treatment_description","1":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours","2":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours","3":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours","4":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours","5":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours"},"3":{"0":"organism","1":"human","2":"human","3":"human","4":"human","5":"human"},"4":{"0":"protocol","1":"ATAC-seq","2":"ATAC-seq","3":"ATAC-seq","4":"ATAC-seq","5":"ATAC-seq"},"5":{"0":"data_source","1":"\/project\/shefflab\/data\/sra_bamSRR5210416.bam","2":"\/project\/shefflab\/data\/sra_bamSRR5210450.bam","3":"\/project\/shefflab\/data\/sra_bamSRR5210398.bam","4":"\/project\/shefflab\/data\/sra_bamSRR5210428.bam","5":"\/project\/shefflab\/data\/sra_bamSRR5210390.bam"},"6":{"0":"SRR","1":"SRR5210416","2":"SRR5210450","3":"SRR5210398","4":"SRR5210428","5":"SRR5210390"},"7":{"0":"SRX","1":"SRX2523872","2":"SRX2523906","3":"SRX2523862","4":"SRX2523884","5":"SRX2523854"},"8":{"0":"Sample_geo_accession","1":"GSM2471255","2":"GSM2471300","3":"GSM2471249","4":"GSM2471269","5":"GSM2471245"},"9":{"0":"Sample_series_id","1":"GSE94182","2":"GSE94222","3":"GSE94177","4":"GSE94196","5":"GSE94173"},"10":{"0":"read_type","1":"PAIRED","2":"PAIRED","3":"PAIRED","4":"PAIRED","5":"PAIRED"},"11":{"0":"Sample_instrument_model","1":"Illumina HiSeq 2000","2":"Illumina HiSeq 2000","3":"Illumina NextSeq 500","4":"Illumina HiSeq 2000","5":"Illumina HiSeq 2000"},"12":{"0":"read1","1":"\/project\/shefflab\/data\/sra_fastq\/SRR5210416_1.fastq.gz","2":"\/project\/shefflab\/data\/sra_fastq\/SRR5210450_1.fastq.gz","3":"\/project\/shefflab\/data\/sra_fastq\/SRR5210398_1.fastq.gz","4":"\/project\/shefflab\/data\/sra_fastq\/SRR5210428_1.fastq.gz","5":"\/project\/shefflab\/data\/sra_fastq\/SRR5210390_1.fastq.gz"},"13":{"0":"read2","1":"\/project\/shefflab\/data\/sra_fastq\/SRR5210416_2.fastq.gz","2":"\/project\/shefflab\/data\/sra_fastq\/SRR5210450_2.fastq.gz","3":"\/project\/shefflab\/data\/sra_fastq\/SRR5210398_2.fastq.gz","4":"\/project\/shefflab\/data\/sra_fastq\/SRR5210428_2.fastq.gz","5":"\/project\/shefflab\/data\/sra_fastq\/SRR5210390_2.fastq.gz"},"14":{"0":"File_mb","1":"6493","2":"1604","3":"4809","4":"3136","5":"3272"},"15":{"0":"Read_type","1":"paired","2":"paired","3":"paired","4":"paired","5":"paired"},"16":{"0":"Genome","1":"hg38","2":"hg38","3":"hg38","4":"hg38","5":"hg38"},"17":{"0":"Raw_reads","1":"137944752","2":"28408648","3":"166092252","4":"101078490","5":"104881014"},"18":{"0":"Fastq_reads","1":"137944752","2":"28408648","3":"166092252","4":"101078490","5":"104881014"},"19":{"0":"Trimmed_reads","1":"137924802","2":"28408460","3":"166090588","4":"101077540","5":"104879682"},"20":{"0":"Trim_loss_rate","1":"0.01","2":"0.0","3":"0.0","4":"0","5":"0"},"21":{"0":"Aligned_reads_rCRSd","1":"21049900.0","2":"11074130.0","3":"29229450.0","4":"14045392","5":"19947382"},"22":{"0":"Alignment_rate_rCRSd","1":"15.26","2":"38.98","3":"17.6","4":"13.9","5":"19.02"},"23":{"0":"Mapped_reads","1":"113463795","2":"17211404","3":"134533496","4":"85686081","5":"83618352"},"24":{"0":"QC_filtered_reads","1":"14136849","2":"1749252","3":"15314100","4":"11021221","5":"8986230"},"25":{"0":"Aligned_reads","1":"99326946","2":"15462152","3":"119219396","4":"74664860","5":"74632122"},"26":{"0":"Alignment_rate","1":"72.02","2":"54.43","3":"71.78","4":"73.87","5":"71.16"},"27":{"0":"Total_efficiency","1":"72.0","2":"54.43","3":"71.78","4":"73.87","5":"71.16"},"28":{"0":"Mitochondrial_reads","1":"19012","2":"859","3":"17337","4":"9685","5":"12703"},"29":{"0":"NRF","1":"0.94","2":"0.93","3":"0.9","4":"0.94","5":"0.94"},"30":{"0":"PBC1","1":"0.97","2":"0.96","3":"0.95","4":"0.97","5":"0.97"},"31":{"0":"PBC2","1":"31.83","2":"27.59","3":"18.9","4":"35.95","5":"32.15"},"32":{"0":"Unmapped_reads","1":"3411107","2":"122926","3":"2327642","4":"1346067","5":"1313948"},"33":{"0":"Duplicate_reads","1":"2084510","2":"282186","3":"3285703","4":"1085340","5":"1302412"},"34":{"0":"Dedup_aligned_reads","1":"97242436.0","2":"15179966.0","3":"115933693.0","4":"73579520","5":"73329710"},"35":{"0":"Dedup_alignment_rate","1":"70.5","2":"53.43","3":"69.8","4":"72.8","5":"69.92"},"36":{"0":"Dedup_total_efficiency","1":"70.49","2":"53.43","3":"69.8","4":"72.79","5":"69.92"},"37":{"0":"TSS_score","1":"8.9","2":"12.6","3":"10.5","4":"7.3","5":"13.1"},"38":{"0":"Peak_count","1":"97177","2":"50415","3":"100021","4":"77999","5":"118055"},"39":{"0":"FRiP","1":"0.14","2":"0.16","3":"0.15","4":"0.11","5":"0.25"},"40":{"0":"Genome_size","1":"3099922541","2":"3099922541","3":"3099922541","4":"3099922541","5":"3099922541"},"41":{"0":"Time","1":"5:29:28","2":"1:16:29","3":"5:34:46","4":"1:07:05","5":"1:06:57"},"42":{"0":"Success","1":"03-04-13:04:16","2":"03-04-08:51:16","3":"03-04-13:09:33","4":"03-04-11:43:10","5":"03-04-11:43:03"}}; // Jinja template variable
+    var statsTable = {"0":{"0":"sample_name","1":"gold1","2":"gold2","3":"gold3","4":"gold4","5":"gold5"},"1":{"0":"sample_description","1":"ATAC-seq from dendritic cell (ENCLB065VMV)","2":"ATAC-seq from dendritic cell (ENCLB811FLK)","3":"ATAC-seq from dendritic cell (ENCLB887PKE)","4":"ATAC-seq from dendritic cell (ENCLB586KIS)","5":"ATAC-seq from dendritic cell (ENCLB384NOX)"},"2":{"0":"treatment_description","1":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours","2":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours","3":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours","4":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours","5":"Homo sapiens dendritic in vitro differentiated cells treated with 0 ng\/mL Lipopolysaccharide for 0 hours"},"3":{"0":"organism","1":"human","2":"human","3":"human","4":"human","5":"human"},"4":{"0":"protocol","1":"ATAC-seq","2":"ATAC-seq","3":"ATAC-seq","4":"ATAC-seq","5":"ATAC-seq"},"5":{"0":"data_source","1":"SRA","2":"SRA","3":"SRA","4":"SRA","5":"SRA"},"6":{"0":"SRR","1":"SRR5210416","2":"SRR5210450","3":"SRR5210398","4":"SRR5210428","5":"SRR5210390"},"7":{"0":"SRX","1":"SRX2523872","2":"SRX2523906","3":"SRX2523862","4":"SRX2523884","5":"SRX2523854"},"8":{"0":"Sample_geo_accession","1":"GSM2471255","2":"GSM2471300","3":"GSM2471249","4":"GSM2471269","5":"GSM2471245"},"9":{"0":"Sample_series_id","1":"GSE94182","2":"GSE94222","3":"GSE94177","4":"GSE94196","5":"GSE94173"},"10":{"0":"read_type","1":"PAIRED","2":"PAIRED","3":"PAIRED","4":"PAIRED","5":"PAIRED"},"11":{"0":"Sample_instrument_model","1":"Illumina HiSeq 2000","2":"Illumina HiSeq 2000","3":"Illumina NextSeq 500","4":"Illumina HiSeq 2000","5":"Illumina HiSeq 2000"},"12":{"0":"read1","1":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210416_1.fastq.gz","2":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210450_1.fastq.gz","3":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210398_1.fastq.gz","4":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210428_1.fastq.gz","5":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210390_1.fastq.gz"},"13":{"0":"read2","1":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210416_2.fastq.gz","2":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210450_2.fastq.gz","3":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210398_2.fastq.gz","4":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210428_2.fastq.gz","5":"\/project\/shefflab\/data\/sra_fastq\/\/SRR5210390_2.fastq.gz"},"14":{"0":"File_mb","1":"6493","2":"1604","3":"4809","4":"3136","5":"3272"},"15":{"0":"Read_type","1":"PAIRED","2":"PAIRED","3":"PAIRED","4":"PAIRED","5":"PAIRED"},"16":{"0":"Genome","1":"hg38","2":"hg38","3":"hg38","4":"hg38","5":"hg38"},"17":{"0":"Raw_reads","1":"137944752","2":"28408648","3":"166092252","4":"101078490","5":"104881014"},"18":{"0":"Fastq_reads","1":"137944752","2":"28408648","3":"166092252","4":"101078490","5":"104881014"},"19":{"0":"Trimmed_reads","1":"137924802","2":"28408460","3":"166090588","4":"101077540","5":"104879682"},"20":{"0":"Trim_loss_rate","1":"0.01","2":"0.0","3":"0.0","4":"0.0","5":"0.0"},"21":{"0":"Aligned_reads_rCRSd","1":"21049900.0","2":"11074130.0","3":"29229450.0","4":"14045392.0","5":"19947382.0"},"22":{"0":"Alignment_rate_rCRSd","1":"15.26","2":"38.98","3":"17.6","4":"13.9","5":"19.02"},"23":{"0":"Aligned_reads_human_repeats","1":"9761740.0","2":"1147860.0","3":"10699930.0","4":"7514112.0","5":"5705260.0"},"24":{"0":"Alignment_rate_human_repeats","1":"7.08","2":"4.04","3":"6.44","4":"7.43","5":"5.44"},"25":{"0":"Mapped_reads","1":"103770862","2":"16069631","3":"123924925","4":"78149573","5":"77851214"},"26":{"0":"QC_filtered_reads","1":"8341982","2":"1124479","3":"9613401","4":"6702363","5":"5811232"},"27":{"0":"Aligned_reads","1":"95428880","2":"14945152","3":"114311524","4":"71447210","5":"72039982"},"28":{"0":"Alignment_rate","1":"69.19","2":"52.61","3":"68.82","4":"70.69","5":"68.69"},"29":{"0":"Total_efficiency","1":"69.18","2":"52.61","3":"68.82","4":"70.68","5":"68.69"},"30":{"0":"Mitochondrial_reads","1":"14500","2":"801","3":"14199","4":"6339","5":"8198"},"31":{"0":"NRF","1":"0.94","2":"0.93","3":"0.9","4":"0.94","5":"0.94"},"32":{"0":"PBC1","1":"0.97","2":"0.96","3":"0.95","4":"0.97","5":"0.97"},"33":{"0":"PBC2","1":"32.71","2":"27.69","3":"18.89","4":"35.97","5":"32.2"},"34":{"0":"Unmapped_reads","1":"3342300","2":"116839","3":"2236283","4":"1368463","5":"1375826"},"35":{"0":"Duplicate_reads","1":"2001987","2":"272965","3":"3152724","4":"1038863","5":"1264637"},"36":{"0":"Dedup_aligned_reads","1":"93426893.0","2":"14672187.0","3":"111158800.0","4":"70408347.0","5":"70775345.0"},"37":{"0":"Dedup_alignment_rate","1":"67.74","2":"51.65","3":"66.93","4":"69.66","5":"67.48"},"38":{"0":"Dedup_total_efficiency","1":"67.73","2":"51.65","3":"66.93","4":"69.66","5":"67.48"},"39":{"0":"Read_length","1":"76","2":"50","3":"40","4":"42","5":"42"},"40":{"0":"Genome_size","1":"3099922541","2":"3099922541","3":"3099922541","4":"3099922541","5":"3099922541"},"41":{"0":"Frac_exp_unique_at_10M","1":"0.9721","2":"0.9219","3":"0.9696","4":"0.9785","5":"0.9511"},"42":{"0":"TSS_score","1":"9.3","2":"13.1","3":"11.0","4":"7.7","5":"13.6"},"43":{"0":"Peak_count","1":"382788","2":"420249","3":"380540","4":"305045","5":"285312"}}; // Jinja template variable
     // make a list of the first column values, which are the names of the samples
     var all_names = [];
     var j = 1;

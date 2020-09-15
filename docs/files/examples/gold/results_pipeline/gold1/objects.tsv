@@ -1,9 +1,5 @@
-FastQC report r1	fastqc/gold1_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC
-FastQC report r2	fastqc/gold1_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC
+FastQC report r1	fastq/gold1_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC
+FastQC report r2	fastq/gold1_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC
+Library complexity	QC_hg38/gold1_preseq_plot.pdf	Library complexity	QC_hg38/gold1_preseq_plot.png	PEPATAC
 TSS enrichment	QC_hg38/gold1_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold1_TSS_enrichment.png	PEPATAC
 Fragment distribution	QC_hg38/gold1_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold1_fragLenDistribution.png	PEPATAC
-Peak chromosome distribution	QC_hg38/gold1_chromosome_distribution.pdf	Peak chromosome distribution	QC_hg38/gold1_chromosome_distribution.png	PEPATAC
-TSS distance distribution	QC_hg38/gold1_TSS_distribution.pdf	TSS distance distribution	QC_hg38/gold1_TSS_distribution.png	PEPATAC
-Peak partition distribution	QC_hg38/gold1_genomic_distribution.pdf	Peak partition distribution	QC_hg38/gold1_genomic_distribution.png	PEPATAC
-cFRiF	QC_hg38/gold1_cFRiF.pdf	cFRiF	QC_hg38/gold1_cFRiF.png	PEPATAC
-FRiF	QC_hg38/gold1_FRiF.pdf	FRiF	QC_hg38/gold1_FRiF.png	PEPATAC
