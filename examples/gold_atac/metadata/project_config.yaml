@@ -36,6 +36,6 @@ sample_modifiers:
         deduplicator: samblaster # Default. [options: picard]
         trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
         peak_type: fixed         # Default. [options: variable]
-        extend: 250              # Default. For fixed-width peaks, extend this distance up- and down-stream.
+        extend: "250"            # Default. For fixed-width peaks, extend this distance up- and down-stream.
         frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
         blacklist: $GENOMES/hg38/blacklist/default/hg38_blacklist.bed.gz
