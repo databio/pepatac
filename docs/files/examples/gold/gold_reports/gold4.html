@@ -174,6 +174,9 @@
                     <div class="dropdown-divider"></div>
                     
                       
+                      <a class="dropdown-item" href="frif.html">FRiF</a>
+                    
+                      
                       <a class="dropdown-item" href="fastqc_report_r1.html">FastQC report r1</a>
                     
                       
@@ -187,6 +190,9 @@
                     
                       
                       <a class="dropdown-item" href="tss_enrichment.html">TSS enrichment</a>
+                    
+                      
+                      <a class="dropdown-item" href="cfrif.html">cFRiF</a>
                     
                   </div>
                 </li>
@@ -230,7 +236,7 @@
             </div>
             <div class="container-fluid">
                 <p class="text-left">
-                <button type="button" class='btn btn-danger' disabled>STATUS: Failed</button>
+                <button type="button" class='btn btn-success' disabled>STATUS: Completed</button>
                 
                     <a class="btn btn-outline-dark ml-2" href='../results_pipeline/gold4/PEPATAC_log.md' role="button">Log file</a>
                 
@@ -351,27 +357,6 @@
     							</tr>
     						
     							<tr>
-    								<th>File_mb</th>
-                                    
-                                        <td class="text">3136</td>
-                                    
-    							</tr>
-    						
-    							<tr>
-    								<th>Read_type</th>
-                                    
-                                        <td class="text">PAIRED</td>
-                                    
-    							</tr>
-    						
-    							<tr>
-    								<th>Genome</th>
-                                    
-                                        <td class="text">hg38</td>
-                                    
-    							</tr>
-    						
-    							<tr>
     								<th>Raw_reads</th>
                                     
                                         <td class="text">101078490</td>
@@ -396,34 +381,6 @@
     								<th>Trim_loss_rate</th>
                                     
                                         <td class="text">0.0</td>
-                                    
-    							</tr>
-    						
-    							<tr>
-    								<th>Aligned_reads_rCRSd</th>
-                                    
-                                        <td class="text">14045392.0</td>
-                                    
-    							</tr>
-    						
-    							<tr>
-    								<th>Alignment_rate_rCRSd</th>
-                                    
-                                        <td class="text">13.9</td>
-                                    
-    							</tr>
-    						
-    							<tr>
-    								<th>Aligned_reads_human_repeats</th>
-                                    
-                                        <td class="text">7514112.0</td>
-                                    
-    							</tr>
-    						
-    							<tr>
-    								<th>Alignment_rate_human_repeats</th>
-                                    
-                                        <td class="text">7.43</td>
                                     
     							</tr>
     						
@@ -560,6 +517,69 @@
                                     
     							</tr>
     						
+    							<tr>
+    								<th>File_mb</th>
+                                    
+                                        <td class="text">3136</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Read_type</th>
+                                    
+                                        <td class="text">PAIRED</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Genome</th>
+                                    
+                                        <td class="text">hg38</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Aligned_reads_rCRSd</th>
+                                    
+                                        <td class="text">14045392.0</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Alignment_rate_rCRSd</th>
+                                    
+                                        <td class="text">13.9</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Aligned_reads_human_repeats</th>
+                                    
+                                        <td class="text">7514112.0</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Alignment_rate_human_repeats</th>
+                                    
+                                        <td class="text">7.43</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Time</th>
+                                    
+                                        <td class="text">0:11:41</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Success</th>
+                                    
+                                        <td class="text">09-15-12:29:13</td>
+                                    
+    							</tr>
+    						
     					</tbody>
     				</table>
     		    </div>
@@ -601,6 +621,26 @@
     		                </a>
     		                <a href='../results_pipeline/gold4/QC_hg38/gold4_fragLenDistribution.pdf'>
                                 <figcaption class="figure-caption text-center"><b>Fig.2 </b><i>Fragment distribution</i></figcaption>
+    		                </a>
+    		            </figure>
+            		
+                        
+    		            <figure class="figure">
+    		                <a href='../results_pipeline/gold4/QC_hg38/gold4_cFRiF.pdf'>
+    		                	<img id="fig" src='../results_pipeline/gold4/QC_hg38/gold4_cFRiF.png' class="figure-img img-fluid rounded" alt="">
+    		                </a>
+    		                <a href='../results_pipeline/gold4/QC_hg38/gold4_cFRiF.pdf'>
+                                <figcaption class="figure-caption text-center"><b>Fig.3 </b><i>cFRiF</i></figcaption>
+    		                </a>
+    		            </figure>
+            		
+                        
+    		            <figure class="figure">
+    		                <a href='../results_pipeline/gold4/QC_hg38/gold4_FRiF.pdf'>
+    		                	<img id="fig" src='../results_pipeline/gold4/QC_hg38/gold4_FRiF.png' class="figure-img img-fluid rounded" alt="">
+    		                </a>
+    		                <a href='../results_pipeline/gold4/QC_hg38/gold4_FRiF.pdf'>
+                                <figcaption class="figure-caption text-center"><b>Fig.4 </b><i>FRiF</i></figcaption>
     		                </a>
     		            </figure>
             		

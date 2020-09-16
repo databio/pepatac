@@ -4,23 +4,45 @@
 2	Library complexity	QC_hg38/gold1_preseq_plot.pdf	Library complexity	QC_hg38/gold1_preseq_plot.png	PEPATAC	gold1
 3	TSS enrichment	QC_hg38/gold1_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold1_TSS_enrichment.png	PEPATAC	gold1
 4	Fragment distribution	QC_hg38/gold1_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold1_fragLenDistribution.png	PEPATAC	gold1
-5	FastQC report r1	fastq/gold2_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC	gold2
-6	FastQC report r2	fastq/gold2_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC	gold2
-7	Library complexity	QC_hg38/gold2_preseq_plot.pdf	Library complexity	QC_hg38/gold2_preseq_plot.png	PEPATAC	gold2
-8	TSS enrichment	QC_hg38/gold2_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold2_TSS_enrichment.png	PEPATAC	gold2
-9	Fragment distribution	QC_hg38/gold2_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold2_fragLenDistribution.png	PEPATAC	gold2
-10	FastQC report r1	fastq/gold3_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC	gold3
-11	FastQC report r2	fastq/gold3_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC	gold3
-12	Library complexity	QC_hg38/gold3_preseq_plot.pdf	Library complexity	QC_hg38/gold3_preseq_plot.png	PEPATAC	gold3
-13	TSS enrichment	QC_hg38/gold3_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold3_TSS_enrichment.png	PEPATAC	gold3
-14	Fragment distribution	QC_hg38/gold3_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold3_fragLenDistribution.png	PEPATAC	gold3
-15	FastQC report r1	fastq/gold4_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC	gold4
-16	FastQC report r2	fastq/gold4_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC	gold4
-17	Library complexity	QC_hg38/gold4_preseq_plot.pdf	Library complexity	QC_hg38/gold4_preseq_plot.png	PEPATAC	gold4
-18	TSS enrichment	QC_hg38/gold4_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold4_TSS_enrichment.png	PEPATAC	gold4
-19	Fragment distribution	QC_hg38/gold4_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold4_fragLenDistribution.png	PEPATAC	gold4
-20	FastQC report r1	fastq/gold5_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC	gold5
-21	FastQC report r2	fastq/gold5_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC	gold5
-22	Library complexity	QC_hg38/gold5_preseq_plot.pdf	Library complexity	QC_hg38/gold5_preseq_plot.png	PEPATAC	gold5
-23	TSS enrichment	QC_hg38/gold5_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold5_TSS_enrichment.png	PEPATAC	gold5
-24	Fragment distribution	QC_hg38/gold5_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold5_fragLenDistribution.png	PEPATAC	gold5
+5	TSS enrichment	QC_hg38/gold1_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold1_TSS_enrichment.png	PEPATAC	gold1
+6	Fragment distribution	QC_hg38/gold1_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold1_fragLenDistribution.png	PEPATAC	gold1
+7	TSS enrichment	QC_hg38/gold1_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold1_TSS_enrichment.png	PEPATAC	gold1
+8	Fragment distribution	QC_hg38/gold1_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold1_fragLenDistribution.png	PEPATAC	gold1
+9	cFRiF	QC_hg38/gold1_cFRiF.pdf	cFRiF	QC_hg38/gold1_cFRiF.png	PEPATAC	gold1
+10	FRiF	QC_hg38/gold1_FRiF.pdf	FRiF	QC_hg38/gold1_FRiF.png	PEPATAC	gold1
+11	FastQC report r1	fastq/gold2_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC	gold2
+12	FastQC report r2	fastq/gold2_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC	gold2
+13	Library complexity	QC_hg38/gold2_preseq_plot.pdf	Library complexity	QC_hg38/gold2_preseq_plot.png	PEPATAC	gold2
+14	TSS enrichment	QC_hg38/gold2_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold2_TSS_enrichment.png	PEPATAC	gold2
+15	Fragment distribution	QC_hg38/gold2_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold2_fragLenDistribution.png	PEPATAC	gold2
+16	TSS enrichment	QC_hg38/gold2_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold2_TSS_enrichment.png	PEPATAC	gold2
+17	Fragment distribution	QC_hg38/gold2_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold2_fragLenDistribution.png	PEPATAC	gold2
+18	cFRiF	QC_hg38/gold2_cFRiF.pdf	cFRiF	QC_hg38/gold2_cFRiF.png	PEPATAC	gold2
+19	FRiF	QC_hg38/gold2_FRiF.pdf	FRiF	QC_hg38/gold2_FRiF.png	PEPATAC	gold2
+20	FastQC report r1	fastq/gold3_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC	gold3
+21	FastQC report r2	fastq/gold3_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC	gold3
+22	Library complexity	QC_hg38/gold3_preseq_plot.pdf	Library complexity	QC_hg38/gold3_preseq_plot.png	PEPATAC	gold3
+23	TSS enrichment	QC_hg38/gold3_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold3_TSS_enrichment.png	PEPATAC	gold3
+24	Fragment distribution	QC_hg38/gold3_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold3_fragLenDistribution.png	PEPATAC	gold3
+25	TSS enrichment	QC_hg38/gold3_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold3_TSS_enrichment.png	PEPATAC	gold3
+26	Fragment distribution	QC_hg38/gold3_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold3_fragLenDistribution.png	PEPATAC	gold3
+27	cFRiF	QC_hg38/gold3_cFRiF.pdf	cFRiF	QC_hg38/gold3_cFRiF.png	PEPATAC	gold3
+28	FRiF	QC_hg38/gold3_FRiF.pdf	FRiF	QC_hg38/gold3_FRiF.png	PEPATAC	gold3
+29	FastQC report r1	fastq/gold4_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC	gold4
+30	FastQC report r2	fastq/gold4_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC	gold4
+31	Library complexity	QC_hg38/gold4_preseq_plot.pdf	Library complexity	QC_hg38/gold4_preseq_plot.png	PEPATAC	gold4
+32	TSS enrichment	QC_hg38/gold4_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold4_TSS_enrichment.png	PEPATAC	gold4
+33	Fragment distribution	QC_hg38/gold4_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold4_fragLenDistribution.png	PEPATAC	gold4
+34	TSS enrichment	QC_hg38/gold4_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold4_TSS_enrichment.png	PEPATAC	gold4
+35	Fragment distribution	QC_hg38/gold4_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold4_fragLenDistribution.png	PEPATAC	gold4
+36	cFRiF	QC_hg38/gold4_cFRiF.pdf	cFRiF	QC_hg38/gold4_cFRiF.png	PEPATAC	gold4
+37	FRiF	QC_hg38/gold4_FRiF.pdf	FRiF	QC_hg38/gold4_FRiF.png	PEPATAC	gold4
+38	FastQC report r1	fastq/gold5_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC	gold5
+39	FastQC report r2	fastq/gold5_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC	gold5
+40	Library complexity	QC_hg38/gold5_preseq_plot.pdf	Library complexity	QC_hg38/gold5_preseq_plot.png	PEPATAC	gold5
+41	TSS enrichment	QC_hg38/gold5_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold5_TSS_enrichment.png	PEPATAC	gold5
+42	Fragment distribution	QC_hg38/gold5_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold5_fragLenDistribution.png	PEPATAC	gold5
+43	TSS enrichment	QC_hg38/gold5_TSS_enrichment.pdf	TSS enrichment	QC_hg38/gold5_TSS_enrichment.png	PEPATAC	gold5
+44	Fragment distribution	QC_hg38/gold5_fragLenDistribution.pdf	Fragment distribution	QC_hg38/gold5_fragLenDistribution.png	PEPATAC	gold5
+45	cFRiF	QC_hg38/gold5_cFRiF.pdf	cFRiF	QC_hg38/gold5_cFRiF.png	PEPATAC	gold5
+46	FRiF	QC_hg38/gold5_FRiF.pdf	FRiF	QC_hg38/gold5_FRiF.png	PEPATAC	gold5
