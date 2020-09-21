@@ -574,13 +574,23 @@ def main():
         if 'bwa' in opt_tools: opt_tools.remove('bwa')
         
     if args.trimmer == "trimmomatic":
-        if 'trimmomatic' in opt_tools: opt_tools.remove('trimmomatic')
+        if '${TRIMMOMATIC}' in opt_tools: opt_tools.remove('${TRIMMOMATIC}')
+        if not ngstk.check_command(tools.trimmomatic):
+            err_msg = ("Unable to call trimmomatic as specified in the " +
+                       "pipelines/pepatac.yaml configuration file: " +
+                       "".join(str(tools.trimmomatic)))
+            pm.fail_pipeline(RuntimeError(err_msg))
 
     if args.trimmer == "pyadapt":
         if 'pyadapt' in opt_tools: opt_tools.remove('pyadapt')
 
     if args.deduplicator == "picard":
         if '${PICARD}' in opt_tools: opt_tools.remove('${PICARD}')
+        if not ngstk.check_command(tools.picard):
+            err_msg = ("Unable to call picard as specified in the " +
+                       "pipelines/pepatac.yaml configuration file: " +
+                       "".join(str(tools.picard)))
+            pm.fail_pipeline(RuntimeError(err_msg))
 
     if args.peak_caller == "fseq":
         if 'fseq' in opt_tools: opt_tools.remove('fseq')
@@ -594,7 +604,10 @@ def main():
         if 'findMotifsGenome.pl' in opt_tools: opt_tools.remove('findMotifsGenome.pl')
 
     # Check that the required tools are callable by the pipeline
-    tool_list = [v for k,v in tools.items()]    # extract tool list
+    tool_list = [v for k,v in tools.items()]  # extract tool list
+    # Remove None values in list 
+    #tool_list = [i for i in full_tool_list if i]
+    pm.info(tool_list)
     tool_list = [t.replace('seqoutbias', 'seqOutBias') for t in tool_list]
     tool_list = dict((t,t) for t in tool_list)  # convert back to dict
 
