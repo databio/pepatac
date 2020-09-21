@@ -1752,6 +1752,7 @@ def main():
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
     peak_input_file = shift_bed
+    shift_bed_gz = shift_bed + ".gz"
     peak_bed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
     chr_order = os.path.join(peak_folder, "chr_order.txt")
     chr_keep = os.path.join(peak_folder, "chr_keep.txt")
@@ -1759,6 +1760,11 @@ def main():
     # TODO: add chr_keep file and the same logic as in PEPPRO
     sort_peak_bed = os.path.join(peak_folder, args.sample_name +
                                  "_peaks_sort.bed")
+
+    if os.path.isfile(shift_bed_gz):
+        cmd = (ngstk.ziptool + " -d -c " +
+               shift_bed_gz + " > " + peak_input_file)
+        pm.run(cmd, peak_input_file)
 
     if not os.path.isfile(peak_input_file):
         print("Cannot call peaks, {} does not exist.".format(peak_input_file))
@@ -1810,8 +1816,7 @@ def main():
         cmd = build_command(macs_cmd_base)
         pm.run(cmd, peak_output_file, follow=report_peak_count)
         
-        # Compress peak_input_file (i.e. the shift_bed file)
-        shift_bed_gz = shift_bed + ".gz"
+        # Compress peak_input_file (i.e. the shift_bed file) 
         cmd = (ngstk.ziptool + " " + peak_input_file + " > " + shift_bed_gz)
         pm.run(cmd, shift_bed_gz)
 
