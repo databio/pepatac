@@ -1,4 +1,4 @@
-# Run <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> in a container
+# Run <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> in a container
 
 Whether you are using `docker` or `singularity`, we have a solution to run the pipeline using containers that dramatically reduces the installation burden.
 
