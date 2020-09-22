@@ -68,15 +68,15 @@ This is an interactive display of exactly what results you'll get as output from
             * :fa-file-text-o: tutorial1_fragLen.txt
             * [:fa-file-pdf-o: tutorial1_FRiF.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_FRiF.pdf)
             * [:fa-file-image-o: tutorial1_FRiF.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_FRiF.png)
-            * [:fa-file-pdf-o: tutorial1_genomic_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_genomic_distribution.pdf)
-            * [:fa-file-image-o: tutorial1_genomic_distribution.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_genomic_distribution.png)
+            * [:fa-file-pdf-o: tutorial1_peak_genomic_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_peak_genomic_distribution.pdf)
+            * [:fa-file-image-o: tutorial1_peak_genomic_distribution.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_peak_genomic_distribution.png)
             * :fa-file-text-o: tutorial1_preseq_counts.txt
             * :fa-file-text-o: tutorial1_preseq_out.txt
             * [:fa-file-pdf-o: tutorial1_preseq_plot.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_preseq_plot.pdf)
             * [:fa-file-image-o: tutorial1_preseq_plot.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_preseq_plot.png)
             * :fa-file-text-o: tutorial1_preseq_yield.txt
-            * [:fa-file-pdf-o: tutorial1_TSS_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_TSS_distribution.pdf)
-            * [:fa-file-image-o: tutorial1_TSS_distribution.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_TSS_distribution.png)
+            * [:fa-file-pdf-o: tutorial1_peak_TSS_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_peak_TSS_distribution.pdf)
+            * [:fa-file-image-o: tutorial1_peak_TSS_distribution.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_peak_TSS_distribution.png)
             * [:fa-file-pdf-o: tutorial1_TSS_enrichment.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_TSS_enrichment.pdf)
             * [:fa-file-image-o: tutorial1_TSS_enrichment.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_TSS_enrichment.png)
             * :fa-file-text-o: tutorial1_TssEnrichment.txt
@@ -84,7 +84,7 @@ This is an interactive display of exactly what results you'll get as output from
         * :fa-file-code-o: PEPATAC_cleanup.sh
         * [:fa-file-code-o: PEPATAC_commands.sh](files/examples/tutorial/results_pipeline/tutorial1/PEPATAC_commands.sh)
         * :fa-file-o: PEPATAC_completed.flag
-        * [:fa-file-o: PEPATAC_log.md](files/examples/tutorial/results_pipeline/tutorial1/PEPATAC_log.md)
+        * [:fa-file-o: PEPATAC_log.md](files/examples/tutorial/results_pipeline/tutorial1/PEPATAC_log.txt)
         * [:fa-file-text-o: PEPATAC_profile.tsv](files/examples/tutorial/results_pipeline/tutorial1/PEPATAC_profile.tsv)
         * [:fa-file-text-o: stats.tsv](files/examples/tutorial/results_pipeline/tutorial1/stats.tsv)
     * ??? danger ":fa-folder-open-o: tutorial2/"
@@ -136,15 +136,11 @@ This is an interactive display of exactly what results you'll get as output from
             * :fa-file-text-o: tutorial2_fragLen.txt
             * [:fa-file-pdf-o: tutorial2_FRiF.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_FRiF.pdf)
             * [:fa-file-image-o: tutorial2_FRiF.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_FRiF.png)
-            * [:fa-file-pdf-o: tutorial2_genomic_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_genomic_distribution.pdf)
-            * [:fa-file-image-o: tutorial2_genomic_distribution.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_genomic_distribution.png)
-            * :fa-file-text-o: tutorial2_preseq_counts.txt
+            * [:fa-file-pdf-o: tutorial2_peak_genomic_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_peak_genomic_distribution.pdf)
+            * [:fa-file-image-o: tutorial2_peak_genomic_distribution.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_peak_genomic_distribution.png)
             * :fa-file-text-o: tutorial2_preseq_out.txt
-            * [:fa-file-pdf-o: tutorial2_preseq_plot.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_preseq_plot.pdf)
-            * [:fa-file-image-o: tutorial2_preseq_plot.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_preseq_plot.png)
-            * :fa-file-text-o: tutorial2_preseq_yield.txt
-            * [:fa-file-pdf-o: tutorial2_TSS_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_TSS_distribution.pdf)
-            * [:fa-file-image-o: tutorial2_TSS_distribution.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_TSS_distribution.png)
+            * [:fa-file-pdf-o: tutorial2_peak_TSS_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_peak_TSS_distribution.pdf)
+            * [:fa-file-image-o: tutorial2_peak_TSS_distribution.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_peak_TSS_distribution.png)
             * [:fa-file-pdf-o: tutorial2_TSS_enrichment.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_TSS_enrichment.pdf)
             * [:fa-file-image-o: tutorial2_TSS_enrichment.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_TSS_enrichment.png)
             * :fa-file-text-o: tutorial2_TssEnrichment.txt
@@ -152,7 +148,7 @@ This is an interactive display of exactly what results you'll get as output from
         * :fa-file-code-o: PEPATAC_cleanup.sh
         * [:fa-file-code-o: PEPATAC_commands.sh](files/examples/tutorial/results_pipeline/tutorial2/PEPATAC_commands.sh)
         * :fa-file-o: PEPATAC_completed.flag
-        * [:fa-file-o: PEPATAC_log.md](files/examples/tutorial/results_pipeline/tutorial2/PEPATAC_log.md)
+        * [:fa-file-o: PEPATAC_log.md](files/examples/tutorial/results_pipeline/tutorial2/PEPATAC_log.txt)
         * [:fa-file-text-o: PEPATAC_profile.tsv](files/examples/tutorial/results_pipeline/tutorial2/PEPATAC_profile.tsv)
         * [:fa-file-text-o: stats.tsv](files/examples/tutorial/results_pipeline/tutorial2/stats.tsv)
 * ??? danger ":fa-folder-open-o: submission/"
