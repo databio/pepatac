@@ -1,71 +1,70 @@
 ### Pipeline run code and environment:
 
-*              Command:  `/scratch/jps3dp/tools/databio//pepatac/pipelines/pepatac_collator.py --config /sfs/lustre/bahamut/scratch/jps3dp/tools/databio/pepatac/examples/tutorial/tutorial.yaml -O /home/jps3dp/tutorial/ -P 1 -M 4000 -n PEPATAC_tutorial -r /home/jps3dp/tutorial/results_pipeline`
+*              Command:  `/scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/pipelines/pepatac_collator.py --config /sfs/lustre/bahamut/scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/examples/tutorial/tutorial.yaml -O /scratch/jps3dp/data/tmp/pepatac_tutorial/processed/ -P 1 -M 16000 -n PEPATAC_tutorial -r /scratch/jps3dp/data/tmp/pepatac_tutorial/processed/results_pipeline`
 *         Compute host:  udc-ba35-36
-*          Working dir:  /sfs/lustre/bahamut/scratch/jps3dp/tools/databio/pepatac
-*            Outfolder:  /home/jps3dp/tutorial/summary/
-*  Pipeline started at:   (05-26 13:30:25) elapsed: 2.0 _TIME_
+*          Working dir:  /sfs/lustre/bahamut/scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac
+*            Outfolder:  /scratch/jps3dp/data/tmp/pepatac_tutorial/processed/summary/
+*  Pipeline started at:   (09-22 08:02:59) elapsed: 16.0 _TIME_
 
 ### Version log:
 
-*       Python version:  3.6.6
-*          Pypiper dir:  `/sfs/qumulo/qhome/jps3dp/.local/lib/python3.6/site-packages/pypiper`
+*       Python version:  3.7.4
+*          Pypiper dir:  `/sfs/qumulo/qhome/jps3dp/.local/lib/python3.7/site-packages/pypiper`
 *      Pypiper version:  0.12.1
-*         Pipeline dir:  `/sfs/lustre/bahamut/scratch/jps3dp/tools/databio/pepatac/pipelines`
+*         Pipeline dir:  `/sfs/lustre/bahamut/scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/pipelines`
 *     Pipeline version:  0.0.2
-*        Pipeline hash:  cbb01a4f15c4bb06ca2c6ba88a2907021c13bb5d
-*      Pipeline branch:  * cfg2
-*        Pipeline date:  2020-05-26 10:14:13 -0400
-*        Pipeline diff:  2 files changed, 44 insertions(+), 42 deletions(-)
+*        Pipeline hash:  ee6500ecf6fdc9cf3b1890635d7ee92206ddc58b
+*      Pipeline branch:  * master
+*        Pipeline date:  2020-09-21 10:57:52 -0400
+*        Pipeline diff:  2 files changed, 9 insertions(+), 9 deletions(-)
 
 ### Arguments passed to pipeline:
 
-*        `config_file`:  `/sfs/lustre/bahamut/scratch/jps3dp/tools/databio/pepatac/examples/tutorial/tutorial.yaml`
+*        `config_file`:  `/sfs/lustre/bahamut/scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/examples/tutorial/tutorial.yaml`
 *              `cores`:  `1`
 *              `dirty`:  `False`
 *       `force_follow`:  `False`
 *             `logdev`:  `False`
-*                `mem`:  `4000`
+*                `mem`:  `16000`
 *               `name`:  `PEPATAC_tutorial`
 *          `new_start`:  `False`
-*      `output_parent`:  `/home/jps3dp/tutorial/`
+*      `output_parent`:  `/scratch/jps3dp/data/tmp/pepatac_tutorial/processed/`
 *            `recover`:  `False`
-*            `results`:  `/home/jps3dp/tutorial/results_pipeline`
+*            `results`:  `/scratch/jps3dp/data/tmp/pepatac_tutorial/processed/results_pipeline`
 *             `silent`:  `False`
+*     `skip_consensus`:  `False`
+*         `skip_table`:  `False`
 *           `testmode`:  `False`
 *          `verbosity`:  `None`
 
 ----------------------------------------
 
-Target to produce: `/home/jps3dp/tutorial/summary/PEPATAC_tutorial_libComplexity.pdf`,`/home/jps3dp/tutorial/summary/PEPATAC_tutorial_*_consensusPeaks.narrowPea`,`/home/jps3dp/tutorial/summary/PEPATAC_tutorial_peaks_coverage.tsv`  
+Target to produce: `/scratch/jps3dp/data/tmp/pepatac_tutorial/processed/summary/PEPATAC_tutorial_libComplexity.pdf`,`/scratch/jps3dp/data/tmp/pepatac_tutorial/processed/summary/PEPATAC_tutorial_*_consensusPeaks.narrowPea`,`/scratch/jps3dp/data/tmp/pepatac_tutorial/processed/summary/PEPATAC_tutorial_peaks_coverage.tsv`  
 
-> `Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC_summarizer.R /sfs/lustre/bahamut/scratch/jps3dp/tools/databio/pepatac/examples/tutorial/tutorial.yaml /home/jps3dp/tutorial/ /home/jps3dp/tutorial/results_pipeline` (48176)
+> `Rscript /scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/tools/PEPATAC_summarizer.R /sfs/lustre/bahamut/scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/examples/tutorial/tutorial.yaml /scratch/jps3dp/data/tmp/pepatac_tutorial/processed/ /scratch/jps3dp/data/tmp/pepatac_tutorial/processed/results_pipeline` (23066)
 <pre>
-Loading config file: /sfs/lustre/bahamut/scratch/jps3dp/tools/databio/pepatac/examples/tutorial/tutorial.yaml
+Loading config file: /sfs/lustre/bahamut/scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/examples/tutorial/tutorial.yaml
 Creating assets summary...
-Summary (n=1): /home/jps3dp/tutorial//PEPATAC_tutorial_assets_summary.tsv
-1 of 1 library complexity files available.
-INFO: Found real counts for tutorial - Total (M): 1.752746 Unique (M): 1.752746
+Summary (n=2): /scratch/jps3dp/data/tmp/pepatac_tutorial/processed//PEPATAC_tutorial_assets_summary.tsv
+Creating summary plots...
+1 of 2 library complexity files available.
+INFO: Found real counts for tutorial1 - Total (M): 0.87693 Unique (M): 0.87693
 
 Successfully produced project summary plots.
 
-Creating consensus peak set...
-Warning message:
-In PEPATACr::consensusPeaks(prj, argv$output, argv$results, assets) :
-  Found only a single valid peak file for hg38.
-Creating gene count table...
-Counts table: /home/jps3dp/tutorial//summary/PEPATAC_tutorial_peaks_coverage.tsv
+Calculating hg38 consensus peak set from 2 samples...
+Consensus peak set: /scratch/jps3dp/data/tmp/pepatac_tutorial/processed//summary/PEPATAC_tutorial_hg38_consensusPeaks.narrowPeak
 
 Warning message:
 In PEPATACr::peakCounts(prj, argv$output, argv$results, assets) :
   Peak coverage files are not derived from a singular reference peak set.
 </pre>
-Command completed. Elapsed time: 0:00:21. Running peak memory: 0.62GB.  
-  PID: 48176;	Command: Rscript;	Return code: 0;	Memory used: 0.62GB
+Command completed. Elapsed time: 0:00:52. Running peak memory: 0.827GB.  
+  PID: 23066;	Command: Rscript;	Return code: 0;	Memory used: 0.827GB
 
 
 ### Pipeline completed. Epilogue
-*        Elapsed time (this run):  0:00:23
-*  Total elapsed time (all runs):  0:00:21
-*         Peak memory (this run):  0.6204 GB
-*        Pipeline completed time: 2020-05-26 13:30:47
+*        Elapsed time (this run):  0:01:09
+*  Total elapsed time (all runs):  0:00:52
+*         Peak memory (this run):  0.8265 GB
+*        Pipeline completed time: 2020-09-22 08:03:51

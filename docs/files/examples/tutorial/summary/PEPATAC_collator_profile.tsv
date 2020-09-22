@@ -1,4 +1,4 @@
-# Pipeline started at 05-26 13:30:24
+# Pipeline started at 09-22 08:02:42
 
 # pid	hash	cid	runtime	mem	cmd	lock
-48176	9291eb2437	1	0:00:21.040000	 0.6204	Rscript	lock.PEPATAC_tutorial_peaks_coverage.tsv
+23066	7811d2a39e	1	0:00:52.400000	 0.8265	Rscript	lock.PEPATAC_tutorial_peaks_coverage.tsv
