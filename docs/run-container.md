@@ -14,14 +14,14 @@ Check out [the `bulker` setup guide to install bulker](https://bulker.databio.or
 
 We've already produced a `bulker` crate for `PEPATAC` that requires all software needed to run the pipeline.  We can load this crate directly from the [`bulker registry`](http://hub.bulker.io/):
 ```
-bulker load databio/pepatac -r
+bulker load databio/pepatac_1.0.4 -r
 ```
 
 ### 3. Activate the `PEPATAC` crate
 
 Now that we've loaded the `PEPATAC` crate, we need to activate that specific crate so its included tools are available.
 ```
-bulker activate databio/pepatac
+bulker activate databio/pepatac:1.0.4
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!
 
