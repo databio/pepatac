@@ -1,6 +1,15 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.6] -- 2020-09-22
+
+### Changed
+ - Improve messaging for missing tool environment variables
+ - Update tutorial to show multiple sample handling
+ - Update example output to match updated tutorial
+ - Fix recovery mode after compressing the shifted_bed output
+ - Update gold example
+
 ## [0.9.5] -- 2020-09-08
 
 ### Changed
