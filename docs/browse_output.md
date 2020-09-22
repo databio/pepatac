@@ -59,8 +59,8 @@ This is an interactive display of exactly what results you'll get as output from
             * :fa-file-o: tutorial1_bamQC.tsv
             * [:fa-file-pdf-o: tutorial1_cFRiF.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_cFRiF.pdf)
             * [:fa-file-image-o: tutorial1_cFRiF.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_cFRiF.png)
-            * [:fa-file-pdf-o: tutorial1_chromosome_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_chromosome_distribution.pdf)
-            * [:fa-file-image-o: tutorial1_chromosome_distribution.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_chromosome_distribution.png)
+            * [:fa-file-pdf-o: tutorial1_peak_chromosome_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_peak_chromosome_distribution.pdf)
+            * [:fa-file-image-o: tutorial1_peak_chromosome_distribution.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_peak_chromosome_distribution.png)
             * :fa-file-text-o: tutorial1_fragCount.txt
             * [:fa-file-pdf-o: tutorial1_fragLenDistribution.pdf](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_fragLenDistribution.pdf)
             * [:fa-file-image-o: tutorial1_fragLenDistribution.png](files/examples/tutorial/results_pipeline/tutorial1/QC_hg38/tutorial1_fragLenDistribution.png)
@@ -127,8 +127,8 @@ This is an interactive display of exactly what results you'll get as output from
             * :fa-file-o: tutorial2_bamQC.tsv
             * [:fa-file-pdf-o: tutorial2_cFRiF.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_cFRiF.pdf)
             * [:fa-file-image-o: tutorial2_cFRiF.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_cFRiF.png)
-            * [:fa-file-pdf-o: tutorial2_chromosome_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_chromosome_distribution.pdf)
-            * [:fa-file-image-o: tutorial2_chromosome_distribution.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_chromosome_distribution.png)
+            * [:fa-file-pdf-o: tutorial2_peak_chromosome_distribution.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_peak_chromosome_distribution.pdf)
+            * [:fa-file-image-o: tutorial2_peak_chromosome_distribution.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_peak_chromosome_distribution.png)
             * :fa-file-text-o: tutorial2_fragCount.txt
             * [:fa-file-pdf-o: tutorial2_fragLenDistribution.pdf](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_fragLenDistribution.pdf)
             * [:fa-file-image-o: tutorial2_fragLenDistribution.png](files/examples/tutorial/results_pipeline/tutorial2/QC_hg38/tutorial2_fragLenDistribution.png)
