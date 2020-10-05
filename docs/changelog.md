@@ -1,6 +1,12 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.7] -- 2020-10-05
+
+### Changed
+ - Update requirements for looper pypi name
+ - Update docs
+
 ## [0.9.6] -- 2020-09-22
 
 ### Changed
