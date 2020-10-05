@@ -31,7 +31,7 @@ To customize your compute packages, you first create a `divvy` computing configu
 
 ```console
 export DIVCFG="divvy_config.yaml"
-divvy init -c $DIVCFG
+divvy init $DIVCFG
 ```
 
 Next, you edit that config file to add in any compute packages you need. PEPATAC will then give you access to any of your custom packages with `looper --package <compute_package>`. For complete instructions on how to create a custom compute package, read [how to configure divvy](https://divvy.databio.org/en/latest/configuration/). 
