@@ -1,13 +1,7 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.9.7] -- 2020-10-05
-
-### Changed
- - Update requirements for looper pypi name
- - Update docs
-
-## [0.9.6] -- 2020-09-22
+## [0.9.6] -- 2020-10-05
 
 ### Changed
  - Improve messaging for missing tool environment variables
@@ -15,6 +9,8 @@ All notable changes to this project will be documented in this file.
  - Update example output to match updated tutorial
  - Fix recovery mode after compressing the shifted_bed output
  - Update gold example
+ - Update requirements for looper pypi name
+ - Update docs
 
 ## [0.9.5] -- 2020-09-08
 
