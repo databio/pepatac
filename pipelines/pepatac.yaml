@@ -20,7 +20,11 @@ tools:  # absolute paths to required tools
   bedToBigBed: bedToBigBed
   # optional tools
   bwa: bwa
-  fseq: fseq  
+  fseq: fseq
+  genrich: Genrich
+  hmmratac: ${HMMRATAC}
+  homer_findpeaks: findPeaks
+  homer_motif: findMotifsGenome.pl
   trimmomatic: ${TRIMMOMATIC}
   picard: ${PICARD}
   pigz: pigz
@@ -75,4 +79,16 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     # -l: feature length.
     # -t: "threshold" (standard deviations).
     # -s: wiggle track step.
-    
+  genrich:
+    params: ''
+    # -j: ATAC-seq mode on by default
+  hmmratac:
+    params: ''
+    # --blacklist: Pipeline includes blacklist by default if the refgenie asset exists.
+  homer_findpeaks:
+    params: 'minDist 150 -region'
+    # Use region mode with minimum distance of 150
+  homer_motif:
+    params: '-size given -mask'
+    # -mask: mask repeats
+    # -size given: use the exact regions provided to homer

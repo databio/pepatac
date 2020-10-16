@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.6"
+__version__ = "0.9.7"
 
 
 from argparse import ArgumentParser
@@ -22,9 +22,9 @@ from refgenconf import RefGenConf as RGC, select_genome_config
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
 ALIGNERS = ["bowtie2", "bwa"]
-PEAK_CALLERS = ["fseq", "macs2"]
+PEAK_CALLERS = ["fseq", "genrich", "hmmratac", "homer", "macs2"]
 PEAK_TYPES = [ "fixed", "variable"]
-DEDUPLICATORS = ["picard", "samblaster"]
+DEDUPLICATORS = ["picard", "samblaster", "samtools"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
 GENOME_IDX_KEY = "bowtie2_index"
 
@@ -41,7 +41,7 @@ def parse_arguments():
         required=["input", "genome", "sample-name", "output-parent"])
 
     # Pipeline-specific arguments
-    parser.add_argument("--aligner", dest="aligner",
+    parser.add_argument("--aligner", dest="aligner", type=str.lower,
                         default="bowtie2", choices=ALIGNERS,
                         help="Name of read aligner")
                         
@@ -49,38 +49,38 @@ def parse_arguments():
                         default="macs2", choices=PEAK_CALLERS,
                         help="Name of peak caller")
 
-    parser.add_argument("-gs", "--genome-size", default="hs", type=str,
-                        help="MACS2 effective genome size. It can be 1.0e+9 "
-                        "or 1000000000 or shortcuts:'hs' for human (2.7e9), "
-                        "'mm' for mouse (1.87e9), 'ce' for C. elegans (9e7) "
-                        "or 'dm' for fruitfly (1.2e8), Default:hs")
+    parser.add_argument("-gs", "--genome-size", default="2.7e9", type=str.lower,
+                        help="Effective genome size. It can be 1.0e+9 "
+                        "or 1000000000: e.g. human (2.7e9), mouse (1.87e9), "
+                        "C. elegans (9e7), fruitfly (1.2e8). Default:2.7e9")
 
-    parser.add_argument("--trimmer", dest="trimmer",
+    parser.add_argument("--trimmer", dest="trimmer", type=str.lower,
                         default="skewer", choices=TRIMMERS,
                         help="Name of read trimming program")
 
-    parser.add_argument("--prealignments", default=[], type=str, nargs="+",
+    parser.add_argument("--prealignments", default=[], type=str,
+                        nargs="+",
                         help="Space-delimited list of reference genomes to "
                              "align to before primary alignment.")
 
-    parser.add_argument("--deduplicator", dest="deduplicator",
+    parser.add_argument("--deduplicator", dest="deduplicator", type=str.lower,
                         default="samblaster", choices=DEDUPLICATORS,
                         help="Name of deduplicator program")
 
     parser.add_argument("--TSS-name", default=None,
-                        dest="TSS_name", type=str,
+                        dest="TSS_name", type=str.lower,
                         help="Path to TSS annotation file.")
 
     parser.add_argument("--blacklist", default=None,
-                        dest="blacklist", type=str,
+                        dest="blacklist", type=str.lower,
                         help="Path to genomic region blacklist file")
 
     parser.add_argument("--anno-name", default=None,
-                        dest="anno_name", type=str,
+                        dest="anno_name", type=str.lower,
                         help="Path to reference annotation file (BED format) for calculating FRiF")
 
     parser.add_argument("--peak-type", default="fixed",
-                        dest="peak_type", choices=PEAK_TYPES, type=str,
+                        dest="peak_type", choices=PEAK_TYPES, type=str.lower,
                         help="Call variable or fixed width peaks.\n"
                              "Fixed width requires MACS2.")
 
@@ -90,7 +90,7 @@ def parse_arguments():
                              "downstream.")
 
     parser.add_argument("--frip-ref-peaks", default=None,
-                        dest="frip_ref_peaks", type=str,
+                        dest="frip_ref_peaks", type=str.lower,
                         help="Path to reference peak set (BED format) for calculating FRiP")
 
     parser.add_argument("--motif", action='store_true',
@@ -565,14 +565,15 @@ def main():
     ############################################################################
     #                Confirm required tools are all callable                   #
     ############################################################################
-    opt_tools = ["fseq", "${PICARD}", "${TRIMMOMATIC}", "pyadapt",
-                 "findMotifsGenome.pl", "seqOutBias", "bigWigMerge",
-                 "bedGraphToBigWig", "pigz", "bwa"]
+    opt_tools = ["fseq", "genrich", "${HMMRATAC}", "${PICARD}",
+                 "${TRIMMOMATIC}", "pyadapt", "findMotifsGenome.pl",
+                 "findPeaks", "seqOutBias", "bigWigMerge", "bedGraphToBigWig",
+                 "pigz", "bwa"]
 
     # If using optional tools, remove those from the skipped checks
     if args.aligner == "bwa":
         if 'bwa' in opt_tools: opt_tools.remove('bwa')
-        
+
     if args.trimmer == "trimmomatic":
         if '${TRIMMOMATIC}' in opt_tools: opt_tools.remove('${TRIMMOMATIC}')
         if not ngstk.check_command(tools.trimmomatic):
@@ -595,6 +596,20 @@ def main():
     if args.peak_caller == "fseq":
         if 'fseq' in opt_tools: opt_tools.remove('fseq')
 
+    if args.peak_caller == "genrich":
+        if 'genrich' in opt_tools: opt_tools.remove('genrich')
+
+    if args.peak_caller == "hmmratac":
+        if '${HMMRATAC}' in opt_tools: opt_tools.remove('${HMMRATAC}')
+        if not ngstk.check_command(tools.hmmratac):
+            err_msg = ("Unable to call hmmratac as specified in the " +
+                       "pipelines/pepatac.yaml configuration file: " +
+                       "".join(str(tools.hmmratac)))
+            pm.fail_pipeline(RuntimeError(err_msg))
+    
+    if args.peak_caller == "homer":
+        if 'findPeaks' in opt_tools: opt_tools.remove('findPeaks')
+
     if args.sob:
         if 'seqOutBias' in opt_tools: opt_tools.remove('seqOutBias')
         if 'bigWigMerge' in opt_tools: opt_tools.remove('bigWigMerge')
@@ -605,9 +620,10 @@ def main():
 
     # Check that the required tools are callable by the pipeline
     tool_list = [v for k,v in tools.items()]  # extract tool list
-    # Remove None values in list 
-    #tool_list = [i for i in full_tool_list if i]
-    pm.info(tool_list)
+    if args.peak_caller == "homer":
+        tool_list.append('makeTagDirectory')
+        tool_list.append('pos2bed.pl')
+    pm.info(tool_list)  # DEBUG
     tool_list = [t.replace('seqoutbias', 'seqOutBias') for t in tool_list]
     tool_list = dict((t,t) for t in tool_list)  # convert back to dict
 
@@ -639,7 +655,7 @@ def main():
          "required":True}
     ]
     # If user specifies TSS file, use that instead of the refgenie asset
-    if not (args.TSS_name):
+    if not args.TSS_name:
         check_list.append(
             {"asset_name":"refgene_anno", "seek_key":"refgene_tss",
              "tag_name":"default", "arg":"TSS_name", "user_arg":"TSS-name",
@@ -647,7 +663,7 @@ def main():
         )
     # If user specifies feature annotation file,
     # use that instead of the refgenie managed asset
-    if not (args.anno_name):
+    if not args.anno_name:
         check_list.append(
             {"asset_name":"feat_annotation", "seek_key":"feat_annotation",
             "tag_name":"default", "arg":"anno_name", "user_arg":"anno-name",
@@ -655,7 +671,7 @@ def main():
         )
     # If user specifies blacklist file,
     # use that instead of the refgenie managed asset
-    if not (args.blacklist):
+    if not args.blacklist:
         check_list.append(
             {"asset_name":"blacklist", "seek_key":"blacklist",
             "tag_name":"default", "arg":"blacklist", "user_arg":"blacklist",
@@ -664,16 +680,16 @@ def main():
     res, rgc = _add_resources(args, res, check_list)
 
     # If the user specifies optional files, add those to our resources
-    if ((args.blacklist) and os.path.isfile(args.blacklist) and
+    if (args.blacklist and os.path.isfile(args.blacklist) and
             os.stat(args.blacklist).st_size > 0):
         res.blacklist = args.blacklist
-    if ((args.frip_ref_peaks) and os.path.isfile(args.frip_ref_peaks) and
+    if (args.frip_ref_peaks and os.path.isfile(args.frip_ref_peaks) and
             os.stat(args.frip_ref_peaks).st_size > 0):
         res.frip_ref_peaks = args.frip_ref_peaks
-    if ((args.TSS_name) and os.path.isfile(args.TSS_name) and
+    if (args.TSS_name and os.path.isfile(args.TSS_name) and
             os.stat(args.TSS_name).st_size > 0):
         res.TSS_name = args.TSS_name
-    if ((args.anno_name) and os.path.isfile(args.anno_name) and
+    if (args.anno_name and os.path.isfile(args.anno_name) and
             os.stat(args.anno_name).st_size > 0):
         res.feat_annotation = args.anno_name
 
@@ -1197,6 +1213,9 @@ def main():
         elif args.deduplicator == "samblaster":
             cmd = ("grep 'Removed' " + dedup_log +
                    " | tr -s ' ' | cut -f 3 -d ' '")
+        elif args.deduplicator == "samtools":
+            cmd = ("grep 'DUPLICATE TOTAL' " + dedup_log +
+                   " | tr -s ' ' | cut -f 3 -d ' '")
         else:
             cmd = ("grep 'Removed' " + dedup_log +
                    " | tr -s ' ' | cut -f 3 -d ' '")
@@ -1209,6 +1228,8 @@ def main():
         if not dr and not dr.strip():
             pm.info("DEBUG: dr didn't work correctly")
             dr = ar
+        if args.deduplicator == "samtools":
+            dr = float(dr)/2
         
         pdar = float(ar) - float(dr)
         dar = round(float(pdar) * 100 / float(tr), 2)
@@ -1258,6 +1279,30 @@ def main():
         cmd1 = build_command(samblaster_cmd_chunks)
         cmd2 = tools.samtools + " index " + rmdup_bam
         # no separate metrics file with samblaster
+        metrics_file = dedup_log
+    elif args.deduplicator == "samtools":
+        nProc = max(int(pm.cores / 4), 1)
+        samtools_cmd_chunks = [
+            "{} sort -n -@ {} -T {}".format(tools.samtools, str(nProc),
+                                            tempdir),
+            mapping_genome_bam,
+            "|",
+            "{} fixmate -@ {} -m - - ".format(tools.samtools, str(nProc)),
+            "|",
+            "{} sort -@ {} -T {}".format(tools.samtools, str(nProc), tempdir),
+            "|",
+            "{} markdup -@ {} -T {} -rs -f {} - - ".format(tools.samtools,
+                                                           str(nProc),
+                                                           tempdir,
+                                                           dedup_log),
+            "|",
+            "{} view -b - -@ {}".format(tools.samtools, str(nProc)),
+            "|",
+            "{} sort - -@ {} -T {}".format(tools.samtools, str(nProc), tempdir),
+            ("-o", rmdup_bam)
+        ]
+        cmd1 = build_command(samtools_cmd_chunks)
+        cmd2 = tools.samtools + " index " + rmdup_bam
         metrics_file = dedup_log
     else:
         pm.info("PEPATAC could not determine a valid deduplicator tool")
@@ -1579,9 +1624,9 @@ def main():
             "|",
             "sort -k1,1 -k2,2n |",
             (tools.bedtools, "merge"),
-            "-s -c 5 -o sum -prec 10 -delim \"\\t\"",
+            "-s -c 5,6 -o sum,distinct -prec 10 -delim \"\\t\"",
             ("-i",  "stdin"),
-            " | awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $5, $4}' ",
+            " | awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $4, $5}' ",
             (">", shift_bed)
         ])
         pm.run(merge_cmd2, exact_target)
@@ -1758,6 +1803,9 @@ def main():
         num_peaksfile_lines = int(ngstk.count_lines(peak_output_file).strip())
         num_peaks = max(0, num_peaksfile_lines - 1)
         pm.report_result("Peak_count", num_peaks)
+        
+    name_sort_rmdup = os.path.join(map_genome_folder,
+                                   args.sample_name + "_namesort_dedup.bam")
 
     peak_folder = os.path.join(param.outfolder, "peak_calling_" +
                                args.genome_assembly)
@@ -1769,6 +1817,13 @@ def main():
     peak_bed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
     chr_order = os.path.join(peak_folder, "chr_order.txt")
     chr_keep = os.path.join(peak_folder, "chr_keep.txt")
+    
+    if not os.path.exists(chr_order) or args.new_start:
+        cmd = (tools.samtools + " view -H " + rmdup_bam +
+               " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
+               "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
+        pm.run(cmd, chr_order)
+        pm.clean_add(chr_order) 
 
     # TODO: add chr_keep file and the same logic as in PEPPRO
     sort_peak_bed = os.path.join(peak_folder, args.sample_name +
@@ -1812,10 +1867,36 @@ def main():
 
                 # Pypiper serially executes the commands.
                 cmd = [fseq_cmd, merge_chrom_peaks_files]
-        else:
-            # MACS2
-            # Note: required input file is non-positional ("treatment" file -t)
-            macs_cmd_base = [
+        # TODO: move fixed plus not macs check early on before pipeline starts!
+        elif args.peak_caller == "hmmratac" and args.paired_end:
+            if args.peak_type == "fixed":
+                err_msg = "Must use MACS2 when calling fixed width peaks."
+                pm.fail_pipeline(RuntimeError(err_msg))
+            else:
+                fixed_header_bam = os.path.join(map_genome_folder,
+                    args.sample_name + "_fixed_header.bam")
+                fixed_header_index = os.path.join(map_genome_folder,
+                    args.sample_name + "_fixed_header.bam.bai")
+                cmd1 = (tools.samtools + " view -H " + rmdup_bam +
+                        " | sed 's,^@RG.*,@RG\tID:" + args.sample_name +
+                        "\tSM:None\tLB:None\tPL:Illumina,g' | " +
+                        tools.samtools + " reheader - " + rmdup_bam +
+                        " > " + fixed_header_bam)
+                pm.run(cmd1, fixed_header_bam)
+                cmd2 = tools.samtools + " index " + fixed_header_bam
+                pm.run(cmd2, fixed_header_index)
+                cmd3 = (tools.java + " -jar " + tools.hmmratac)
+                cmd3 += " --bam " + fixed_header_bam
+                cmd3 += " --index " + fixed_header_index
+                cmd3 += " --genome " + chr_order
+                if os.path.exists(res.blacklist):
+                    cmd3 += " --blacklist " + res.blacklist
+                cmd3 += param.hmmratac.params
+                cmd3 += " --output " + peak_output_file
+                cmd = cmd3
+        elif args.peak_caller == "hmmratac" and not args.paired_end:
+            pm.info("HMMRATAC requires paired-end data. Defaulting to MACS2")
+            cmd_base = [
                 "{} callpeak".format(tools.macs2),
                 ("-t", peak_input_file),
                 ("-f", "BED"),
@@ -1823,11 +1904,70 @@ def main():
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
             ]
-            macs_cmd_base.extend(param.macs2.params.split())
+            cmd_base.extend(param.macs2.params.split())
+            cmd = build_command(cmd_base)
+        elif args.peak_caller == "genrich":
+            if args.peak_type == "fixed":
+                err_msg = "Must use MACS2 when calling fixed width peaks."
+                pm.fail_pipeline(RuntimeError(err_msg))
+            else:
+                cmd1 = (tools.samtools + " sort -n " + rmdup_bam + " > " +
+                        name_sort_rmdup)
+                cmd2 = tools.genrich + " -j -t " + name_sort_rmdup
+                if os.path.exists(res.blacklist):
+                    cmd2 += " -E " + res.blacklist
+                cmd2 += " -o " + peak_output_file
+                pm.clean_add(name_sort_rmdup)
+                cmd = [cmd1, cmd2]
+        elif args.peak_caller == "homer":
+            if args.peak_type == "fixed":
+                err_msg = "Must use MACS2 when calling fixed width peaks."
+                pm.fail_pipeline(RuntimeError(err_msg))
+            else:
+                tag_directory = os.path.join(peak_folder, "HOMER_tags")
+                homer_peaks = os.path.join(peak_folder, args.sample_name +
+                                           "_homer_peaks.tsv")
+                cmd1 = ('makeTagDirectory ' + tag_directory + " " + rmdup_bam)
+                cmd2 = (tools.homer_findpeaks + " " + tag_directory + " -o " +
+                        homer_peaks + " -gsize " + args.genome_size + " ")
+                cmd2 += param.homer_findpeaks.params
+                cmd3 = ('pos2bed.pl ' + homer_peaks + " | " + tools.bedtools +
+                        " sort | " + tools.bedtools + " merge > " + 
+                        peak_output_file)
+                pm.clean_add(homer_peaks)
+                pm.clean_add(tag_directory)
+                cmd = [cmd1, cmd2, cmd3]
+        else:
+            # MACS2
+            # Note: required input file is non-positional ("treatment" file -t)
+            cmd_base = [
+                "{} callpeak".format(tools.macs2),
+                ("-t", peak_input_file),
+                ("-f", "BED"),
+                ("--outdir", peak_folder),
+                ("-n", args.sample_name),
+                ("-g", args.genome_size)
+            ]
+            cmd_base.extend(param.macs2.params.split())
+            cmd = build_command(cmd_base)
 
         # Call peaks and report peak count.
-        cmd = build_command(macs_cmd_base)
-        pm.run(cmd, peak_output_file, follow=report_peak_count)
+        # nofail true conditional on hmmratac which fails on small samples
+        # TODO: there are downstream steps that require a peak file!
+        #       maybe it should just fail?
+        if args.peak_caller == "hmmratac":
+            pm.run(cmd, peak_output_file, nofail=True)
+            if os.path.exists(peak_output_file):
+                line_count = int(ngstk.count_lines(peak_output_file).strip())
+                num_peaks = max(0, line_count - 1)
+                pm.report_result("Peak_count", num_peaks)
+            else:
+                # TODO: could just touch an empty file? Homer creates an empty file...
+                cmd = "touch " +  peak_output_file
+                pm.run(cmd, peak_output_file)
+                pm.warning("HMMRATAC failed to identify any peaks.")
+        else:
+            pm.run(cmd, peak_output_file, follow=report_peak_count)
         
         # Compress peak_input_file (i.e. the shift_bed file) 
         cmd = (ngstk.ziptool + " " + peak_input_file + " > " + shift_bed_gz)
@@ -1857,13 +1997,19 @@ def main():
                              ("-c", res.chrom_sizes),
                              "--normalize"
                             ])
-        pm.run(cmd, norm_peak_file, nofail=False)
-        peak_output_file = norm_peak_file
+        if os.path.exists(peak_output_file):
+            if os.stat(peak_output_file).st_size > 0:
+                pm.run(cmd, norm_peak_file, nofail=False)
+                peak_output_file = norm_peak_file
+            else:
+                pm.info("{} contains no peaks.".format(peak_output_file))
         pm.clean_add(fixed_peak_file)
         
         # Filter peaks in blacklist.
         # TODO: improve documentation of using a blacklist
-        if os.path.exists(res.blacklist):
+        if (os.path.exists(res.blacklist) and
+                os.path.exists(peak_output_file) and
+                os.stat(peak_output_file).st_size > 0):
             filter_peak = os.path.join(peak_folder, args.sample_name +
                                        "_peaks_rmBlacklist.narrowPeak")
             if not os.path.exists(filter_peak) or args.new_start:
@@ -1926,13 +2072,31 @@ def main():
                              pipeline_manager=pm)
             pm.report_result("FRiP", round(frip, 2))
 
+        if pm.get_stat("FRiP_Q1") is None or args.new_start:
+            score_sorted_peaks = os.path.join(peak_folder, args.sample_name +
+                                              "_score_sorted_peaks.narrowPeak")
+            score_q1_peaks = os.path.join(peak_folder, args.sample_name +
+                                          "_score_sorted_q1_peaks.narrowPeak")
+            cmd1 = ("sort -nrk 5 " + peak_output_file + " > " +
+                    score_sorted_peaks)
+            cmd2 = ("split -n l/1/4 " + score_sorted_peaks + " > " +
+                    score_q1_peaks)
+            pm.run([cmd1, cmd2], score_q1_peaks)
+            pm.clean_add(score_sorted_peaks)
+            pm.clean_add(score_q1_peaks)
+            frip = calc_frip(rmdup_bam, score_q1_peaks,
+                             frip_func=ngstk.simple_frip,
+                             pipeline_manager=pm)
+            pm.report_result("FRiP_Q1", round(frip, 2))
+
         if os.path.exists(res.frip_ref_peaks):
-            # Use an external reference set of peaks instead of the peaks
-            # called from this run
-            frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
-                                 frip_func=ngstk.simple_frip,
-                                 pipeline_manager=pm)
-            pm.report_result("FRiP_ref", round(frip_ref, 2))
+            if pm.get_stat("FRiP_ref") is None or args.new_start:
+                # Use an external reference set of peaks instead of the peaks
+                # called from this run
+                frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
+                                     frip_func=ngstk.simple_frip,
+                                     pipeline_manager=pm)
+                pm.report_result("FRiP_ref", round(frip_ref, 2))
 
 
         ########################################################################
@@ -1951,13 +2115,6 @@ def main():
         norm_ref_peak_coverage = os.path.join(peak_folder, args.sample_name +
                                               "_norm_ref_peaks_coverage.bed")
         ref_coverage_flag = os.path.join(peak_folder, "ref_coverage.flag")
-
-        if not os.path.exists(chr_order) or args.new_start:
-            cmd = (tools.samtools + " view -H " + rmdup_bam +
-                   " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
-                   "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
-            pm.run(cmd, chr_order)
-            pm.clean_add(chr_order)        
 
         if not os.path.exists(coverage_flag) or args.new_start:
             cmd1 = ("cut -f 1-3 " + peak_output_file + " > " + peak_bed)
@@ -2150,7 +2307,8 @@ def main():
             # convert narrowPeak to BED6
             peak_bed_file = os.path.join(peak_folder,  args.sample_name +
                                          "_peaks.bed")
-            if os.path.exists(peak_output_file) and os.stat(peak_output_file).st_size > 0:
+            if (os.path.exists(peak_output_file) and
+                    os.stat(peak_output_file).st_size > 0):
                 cmd = ("cut -f 1-6 " + peak_output_file + " > " + peak_bed_file)
                 pm.run(cmd, peak_bed_file)
                 pm.clean_add(peak_bed_file) 
@@ -2159,10 +2317,11 @@ def main():
                 os.chmod(tempdir, 0o771)
                 pm.clean_add(tempdir)
                 # perform motif analysis
-                motif_HTML  = os.path.join(peak_folder, "homerResults.html")
-                cmd = ("findMotifsGenome.pl " + peak_bed_file + " " +
-                       args.genome_assembly + " " + peak_folder +
-                       " -size given -mask -preparsedDir " + tempdir)
+                motif_HTML  = os.path.join(peak_folder, "homer_motifs.html")
+                cmd = (tools.homer_motif + " " + peak_bed_file + " " +
+                       args.genome_assembly + " " + peak_folder)
+                cmd += " " + param.homer_motif.params
+                cmd += " -preparsedDir " + tempdir
                 pm.run(cmd, motif_HTML)
                 pm.report_object("Motif analysis", motif_HTML)
             elif not os.path.exists(peak_output_file):

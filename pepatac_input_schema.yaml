@@ -45,7 +45,7 @@ properties:
         peak_caller:
           type: string
           description: "Specify the peak calling tool"
-          enum: ["fseq", "macs2"]
+          enum: ["fseq", "genrich", "hmmratac", "homer", "macs2"]
         genome_size:
           type: string
           description: "MACS2 effective genome size"
@@ -56,7 +56,7 @@ properties:
         deduplicator:
           type: string
           description: "Specify the read deduplication tool"
-          enum: ["picard", "samblaster"]
+          enum: ["picard", "samblaster", "samtools"]
         peak_type:
           type: string
           description: "Call variable or fixed width peaks"
