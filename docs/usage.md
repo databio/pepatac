@@ -12,15 +12,15 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   INPUT_FILES [INPUT_FILES ...]
                   [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G GENOME_ASSEMBLY
                   [-Q SINGLE_OR_PAIRED] [--aligner {bowtie2,bwa}]
-                  [--peak-caller {fseq,macs2}] [-gs GENOME_SIZE]
-                  [--trimmer {trimmomatic,pyadapt,skewer}]
+                  [--peak-caller {fseq,genrich,hmmratac,homer,macs2}]
+                  [-gs GENOME_SIZE] [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]]
-                  [--deduplicator {picard,samblaster}] [--TSS-name TSS_NAME]
-                  [--blacklist BLACKLIST] [--anno-name ANNO_NAME]
-                  [--peak-type {fixed,variable}] [--extend EXTEND]
-                  [--frip-ref-peaks FRIP_REF_PEAKS] [--motif] [--sob]
-                  [--no-scale] [--prioritize] [--keep] [--noFIFO] [--lite]
-                  [--skipqc] [-V]
+                  [--deduplicator {picard,samblaster,samtools}]
+                  [--TSS-name TSS_NAME] [--blacklist BLACKLIST]
+                  [--anno-name ANNO_NAME] [--peak-type {fixed,variable}]
+                  [--extend EXTEND] [--frip-ref-peaks FRIP_REF_PEAKS]
+                  [--motif] [--sob] [--no-scale] [--prioritize] [--keep]
+                  [--noFIFO] [--lite] [--skipqc] [-V]
 
 PEPATAC version 0.9.7
 
@@ -49,19 +49,18 @@ optional arguments:
                         Single- or paired-end sequencing protocol
   --aligner {bowtie2,bwa}
                         Name of read aligner
-  --peak-caller {fseq,macs2}
+  --peak-caller {fseq,genrich,hmmratac,homer,macs2}
                         Name of peak caller
   -gs GENOME_SIZE, --genome-size GENOME_SIZE
-                        MACS2 effective genome size. It can be 1.0e+9 or
-                        1000000000 or shortcuts:'hs' for human (2.7e9), 'mm'
-                        for mouse (1.87e9), 'ce' for C. elegans (9e7) or 'dm'
-                        for fruitfly (1.2e8), Default:hs
+                        Effective genome size. It can be 1.0e+9 or 1000000000:
+                        e.g. human (2.7e9), mouse (1.87e9), C. elegans (9e7),
+                        fruitfly (1.2e8). Default:2.7e9
   --trimmer {trimmomatic,pyadapt,skewer}
                         Name of read trimming program
   --prealignments PREALIGNMENTS [PREALIGNMENTS ...]
                         Space-delimited list of reference genomes to align to
                         before primary alignment.
-  --deduplicator {picard,samblaster}
+  --deduplicator {picard,samblaster,samtools}
                         Name of deduplicator program
   --TSS-name TSS_NAME   Path to TSS annotation file.
   --blacklist BLACKLIST

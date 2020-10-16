@@ -1,6 +1,15 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.7] -- 2020-10-16
+
+### Added
+ - Add samtools as alternate, optional tool for deduplication
+ - Add HOMER, HMMRATAC, and Genrich as optional tools for peak calling
+
+### Changed
+ - Restore bedtools merge command for shifted bed files
+
 ## [0.9.6] -- 2020-10-05
 
 ### Changed
