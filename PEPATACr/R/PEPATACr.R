@@ -2663,16 +2663,29 @@ peakCounts <- function(project, output_dir, results_subdir, assets) {
     setDT(sample_table)[assets[asset == 'chrom_sizes', ],
                         c_path := i.path, on = 'sample_name']
 
+    # check if coverage files are compressed
+    if (any(file.exists(file.path(results_subdir,
+                        sample_names, paste0("peak_calling_", genomes),
+                        paste0(sample_names, "_ref_peaks_coverage.bed.gz"))))) {
+        ext <- ".bed.gz"
+    } else if (any(file.exists(file.path(results_subdir,
+                        sample_names, paste0("peak_calling_", genomes),
+                        paste0(sample_names, "_peaks_coverage.bed.gz"))))) {
+        ext <- ".bed.gz"
+    } else {
+        ext <- ".bed"
+    }
+
     # Use reference peak coverage file if available
     if (any(file.exists(file.path(results_subdir,
                         sample_names, paste0("peak_calling_", genomes),
-                        paste0(sample_names, "_ref_peaks_coverage.bed"))))) {
-        peak_file_name = "_ref_peaks_coverage.bed"
+                        paste0(sample_names, "_ref_peaks_coverage", ext))))) {
+        peak_file_name = paste0("_ref_peaks_coverage", ext)
         reference = TRUE
     } else {
         warning("Peak coverage files are not derived from a singular reference peak set.")
         reference = FALSE
-        peak_file_name = "_peaks_coverage.bed"
+        peak_file_name = paste0("_peaks_coverage", ext)
     }
     
     # generate paths to peak coverage files
