@@ -70,7 +70,7 @@ def main():
     complexity_file = os.path.join(
         outfolder, "{name}_libComplexity.pdf".format(name=args.name))
     consensus_peaks_file = os.path.join(
-        outfolder, "{name}_*_consensusPeaks.narrowPea".format(name=args.name))
+        outfolder, "{name}_*_consensusPeaks.narrowPeak".format(name=args.name))
     peak_coverage_file = os.path.join(
         outfolder, "{name}_peaks_coverage.tsv".format(name=args.name))
 
