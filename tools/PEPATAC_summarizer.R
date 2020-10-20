@@ -57,6 +57,14 @@ p <- add_argument(p, arg="--skip-consensus", short="-P", flag=TRUE,
                   help=paste0("Do not calculate consensus peaks."))
 p <- add_argument(p, arg="--skip-table", short="-T", flag=TRUE,
                   help=paste0("Do not calculate peak counts table."))
+p <- add_argument(p, arg="--poverlap", short="-V", flag=TRUE,
+                  help=paste0("Calculate the percentage overlap of reads ",
+                              "in peaks for the counts table."))
+p <- add_argument(p, arg="--normalized", short="-Z", flag=TRUE,
+                  help=paste0("Use normalized read counts in peak table."))
+p <- add_argument(p, arg="cutoff", short="-m", default=2,
+                  help=paste0("Only keep peaks present in at least this ",
+                              "number of samples."))
 # Parse the command line arguments
 argv <- parse_args(p)
 
@@ -227,7 +235,9 @@ for (genome in unique(genomes)) {
 # Create count matrix
 if (!file.exists(counts_path) || argv$new_start && !argv$skip_table) {
     #write(paste0("Creating peak count table(s)..."), stdout())
-    counts_paths <- PEPATACr::peakCounts(prj, argv$output, argv$results, assets)
+    counts_paths <- PEPATACr::peakCounts(prj, argv$output, argv$results, assets,
+                                         argv$poverlap, argv$normalized,
+                                         argv$cutoff)
     if (!length(counts_paths) == 0) {
         for (counts_table in counts_paths) {
             if (file.exists(counts_table)) {
