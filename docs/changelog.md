@@ -1,6 +1,16 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.8] -- 2020-10-19
+
+### Added
+ - Add Q1 FRiP for improved cross protocol QC comparisons
+ - Determine the nucleosome-free, mono-, di-, tri-, and poly-nucleosome read fractions
+
+### Changed
+ - Update peak coverage table calculation to handle compressed files
+ - Keep the non-normalized peak coverage table for some downstream analyses
+
 ## [0.9.7] -- 2020-10-16
 
 ### Added
