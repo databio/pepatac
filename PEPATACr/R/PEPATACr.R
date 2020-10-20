@@ -2643,9 +2643,13 @@ readPepatacPeakCounts = function(prj, results_subdir) {
 #' @param output_dir A PEP project output directory path
 #' @param results_subdir A PEP project results subdirectory path
 #' @param assets A data.table containing file assets
+#' @param poverlap Weight counts by the percentage overlap with peak
+#' @param norm Use normalized read counts
+#' @param cutoff Only keep peaks present in the `cutoff` number of samples
 #' @keywords project peak counts
 #' @export
-peakCounts <- function(project, output_dir, results_subdir, assets) {
+peakCounts <- function(project, output_dir, results_subdir, assets,
+                       poverlap=FALSE, norm=FALSE, cutoff=2) {
     # Set the output directory
     summary_dir <- suppressMessages(file.path(output_dir, "summary"))
     # Produce output directory (if needed)
@@ -2759,10 +2763,10 @@ peakCounts <- function(project, output_dir, results_subdir, assets) {
                 # Produce counts table
                 new_list <- lapply(names(peaks), function(x){
                     colnames(peaks[[x]]) <- c("chr", "start", "end", "name",
-                                                  "score", "strand", "signalValue",
-                                                  "pValue", "qValue", "peak",
-                                                  "read_count", "base_count",
-                                                  "width", "frac", x)
+                                              "score", "strand", "signalValue",
+                                              "pValue", "qValue", "peak",
+                                              "read_count", "base_count",
+                                              "width", "frac", x)
                     peaks[[x]]
                 })
                 names(new_list) <- names(peaks)
@@ -2843,8 +2847,21 @@ peakCounts <- function(project, output_dir, results_subdir, assets) {
                     olap   <- pintersect(reduceGR[queryHits(hitsGR)],
                                          peaksGR[subjectHits(hitsGR)])
                     polap  <- width(olap) / width(peaksGR[subjectHits(hitsGR)])
-                    counts <- data.table(index=rep(1:nrow(p)),
-                                         counts=p$norm*polap)
+
+                    if (poverlap & norm) {
+                        counts <- data.table(index=rep(1:nrow(p)),
+                                             counts=p$norm*polap)
+                    } else if (!poverlap & norm) {
+                        counts <- data.table(index=rep(1:nrow(p)),
+                                             counts=p$norm)
+                    } else if (poverlap & !norm) {
+                        counts <- data.table(index=rep(1:nrow(p)),
+                                             counts=p$read_count*polap)
+                    } else {
+                        counts <- data.table(index=rep(1:nrow(p)),
+                                             counts=p$read_count)
+                    }
+
                     hits   <- data.table(xid=queryHits(hitsGR),
                                          yid=subjectHits(hitsGR))
                     setkey(hits, yid)
@@ -2874,8 +2891,8 @@ peakCounts <- function(project, output_dir, results_subdir, assets) {
             reduce_dt$count <- apply(reduce_dt[, ..columnIndices], 1,
                                      function(x) sum(x > 0))
             if (length(st_list[[g]]$peak_files) > 1) {
-                # keep peaks present in 2 or more individual peak sets
-                reduce_dt <- reduce_dt[count >= 2,]
+                # keep peaks present in `cutoff` or more individual peak sets
+                reduce_dt <- reduce_dt[count >= cutoff,]
             }
             reduce_dt[,count := NULL]
         }
