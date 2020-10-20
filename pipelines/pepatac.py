@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.7"
+__version__ = "0.9.8"
 
 
 from argparse import ArgumentParser
@@ -570,6 +570,14 @@ def main():
                  "findPeaks", "seqOutBias", "bigWigMerge", "bedGraphToBigWig",
                  "pigz", "bwa"]
 
+    # Confirm compatible peak calling settings
+    if args.peak_type == "fixed" and not args.peak_caller == "macs2":
+        err_msg = ("Must use MACS2 with `--peak-type fixed` width peaks. " +
+                   "Either change the " +
+                   "`--peak-caller {}` or ".format(PEAK_CALLERS) +
+                   "use `--peak-type variable`.")
+        pm.fail_pipeline(RuntimeError(err_msg))
+
     # If using optional tools, remove those from the skipped checks
     if args.aligner == "bwa":
         if 'bwa' in opt_tools: opt_tools.remove('bwa')
@@ -623,7 +631,7 @@ def main():
     if args.peak_caller == "homer":
         tool_list.append('makeTagDirectory')
         tool_list.append('pos2bed.pl')
-    pm.info(tool_list)  # DEBUG
+    pm.debug(tool_list)  # DEBUG
     tool_list = [t.replace('seqoutbias', 'seqOutBias') for t in tool_list]
     tool_list = dict((t,t) for t in tool_list)  # convert back to dict
 
@@ -1310,7 +1318,68 @@ def main():
 
     pm.run([cmd1, cmd2], rmdup_bam,
            follow=lambda: post_dup_aligned_reads(metrics_file))
+    
+    
+    ############################################################################
+    #           Determine distribution of reads across nucleosomes             #
+    ############################################################################
+    pm.timestamp("### Calculate distribution of reads across nucleosomes")
 
+    # Use cutoff method original proposed in Buenrostro et al. 2013
+    NFR_bam = os.path.join(map_genome_folder, args.sample_name + "_NFR.bam")
+    mono_bam = os.path.join(map_genome_folder, args.sample_name + "_mono.bam")
+    di_bam = os.path.join(map_genome_folder, args.sample_name + "_di.bam")
+    tri_bam = os.path.join(map_genome_folder, args.sample_name + "_tri.bam")
+    poly_bam = os.path.join(map_genome_folder, args.sample_name + "_poly.bam")
+    
+    # Need parenthesis outside of substr for pypiper split_shell_cmd parsing
+    cmd1 = (tools.samtools + " view -h " + rmdup_bam + " | awk " +
+            "'(substr($0,1,1)==\"@\" || ($9>= -100 && $9<=100))' | " +
+            tools.samtools + " view -b > " + NFR_bam)
+    cmd2 = (tools.samtools + " view -h " + rmdup_bam + " | awk " +
+            "'(substr($0,1,1)==\"@\" || ($9>= 180 && $9<=247) || " +
+            "($9<=-180 && $9>=-247))' | " + tools.samtools + " view -b > " +
+            mono_bam)
+    cmd3 = (tools.samtools + " view -h " + rmdup_bam + " | awk " +
+            "'(substr($0,1,1)==\"@\" || ($9>= 315 && $9<=473) || " +
+            "($9<=-315 && $9>=-473))' | " + tools.samtools + " view -b > " +
+            di_bam)
+    cmd4 = (tools.samtools + " view -h " + rmdup_bam + " | awk " +
+            "'(substr($0,1,1)==\"@\" || ($9>= 558 && $9<=615) || " +
+            "($9<=-558 && $9>=-615))' | " + tools.samtools + " view -b > " +
+            tri_bam)        
+    cmd5 = (tools.samtools + " view -h " + rmdup_bam + " | awk " +
+            "'(substr($0,1,1)==\"@\" || ($9>= 615 || $9<=-615))' | " +
+            tools.samtools + " view -b > " + poly_bam)
+    pm.run(cmd1, NFR_bam)
+    pm.run(cmd2, mono_bam)
+    pm.run(cmd3, di_bam)
+    pm.run(cmd4, tri_bam)
+    pm.run(cmd5, poly_bam)
+    
+    cmd1 = tools.samtools + " view -c " + NFR_bam
+    cmd2 = tools.samtools + " view -c " + mono_bam
+    cmd3 = tools.samtools + " view -c " + di_bam
+    cmd4 = tools.samtools + " view -c " + tri_bam
+    cmd5 = tools.samtools + " view -c " + poly_bam
+    nfr = pm.checkprint(cmd1)
+    mono = pm.checkprint(cmd2)
+    di = pm.checkprint(cmd3)
+    tri = pm.checkprint(cmd4)
+    poly = pm.checkprint(cmd5)
+    
+    dar = float(pm.get_stat("Dedup_aligned_reads"))
+    NFR_frac = round(float(nfr) / float(dar), 2)
+    mono_frac = round(float(mono) / float(dar), 2)
+    di_frac = round(float(di) / float(dar), 2)
+    tri_frac = round(float(tri) / float(dar), 2)
+    poly_frac = round(float(poly) / float(dar), 2)
+    
+    pm.report_result("NFR_frac", NFR_frac)
+    pm.report_result("mono_frac", mono_frac)
+    pm.report_result("di_frac", di_frac)
+    pm.report_result("tri_frac", tri_frac)
+    pm.report_result("poly_frac", poly_frac)
 
     ############################################################################
     #       Determine maximum read length and add seqOutBias resource          #
@@ -2158,14 +2227,17 @@ def main():
                 "print $1, $2, $3, $4, $5, $6, $7, ($5/sum*1000000)}' " +
                 peak_coverage + " " + peak_coverage + " > " +
                 norm_peak_coverage)
-        cmd3 = ("mv " + norm_peak_coverage + " " + peak_coverage)
-        cmd4 = ("touch " + coverage_flag)
-        pm.run([cmd1, cmd2, cmd3, cmd4], coverage_flag, nofail=True)
+        #cmd3 = ("mv " + norm_peak_coverage + " " + peak_coverage)  # Keep unnormalized coverage
+        cmd3 = ("touch " + coverage_flag)
+        pm.run([cmd1, cmd2, cmd3], coverage_flag, nofail=True)
 
         # Compress coverage file
         peak_coverage_gz = peak_coverage + ".gz"
-        cmd = (ngstk.ziptool + " " + peak_coverage + " > " + peak_coverage_gz)
-        pm.run(cmd, peak_coverage_gz)
+        norm_peak_coverage_gz = norm_peak_coverage + ".gz"
+        cmd1 = (ngstk.ziptool + " " + peak_coverage + " > " + peak_coverage_gz)
+        cmd2 = (ngstk.ziptool + " " + norm_peak_coverage + " > " +
+                norm_peak_coverage_gz)
+        pm.run([cmd1, cmd2], norm_peak_coverage_gz)
 
         pm.clean_add(peak_bed)
         pm.clean_add(chr_keep)
@@ -2573,58 +2645,6 @@ def main():
 
 
     ############################################################################
-    #                             Plot FRiF or FRiP                            #
-    ############################################################################
-    # TODO: Calculate coverage and plot using GenomicDistributions
-    #       *Currently much too memory intensive*
-    # pm.timestamp("### Calculate cumulative and expected fraction of reads in features (cFRiF/FRiF)")
-
-    # # Cummulative Fraction of Reads in Features (cFRiF)
-    # cFRiF_PDF = os.path.join(QC_folder, args.sample_name + "_cFRiF.pdf")
-    # cFRiF_PNG = os.path.join(QC_folder, args.sample_name + "_cFRiF.png")
-
-    # # Fraction of Reads in Feature (FRiF)
-    # FRiF_PDF = os.path.join(QC_folder, args.sample_name + "_FRiF.pdf")
-    # FRiF_PNG = os.path.join(QC_folder, args.sample_name + "_FRiF.png")
-
-    # if not os.path.exists(cFRiF_PDF) and not os.path.exists(FRiF_PDF) or args.new_start:
-        # if (not os.path.exists(anno_local) and
-            # os.path.exists(res.feat_annotation) or
-            # args.new_start):
-
-            # if res.feat_annotation.endswith(".gz"):
-                # cmd1 = ("ln -sf " + res.feat_annotation + " " + anno_zip)
-                # cmd2 = (ngstk.ziptool + " -d -c " + anno_zip +
-                        # " > " + anno_local)
-                # pm.run([cmd1, cmd2], anno_local)
-                # pm.clean_add(anno_local)
-            # elif res.feat_annotation.endswith(".bed"):
-                # cmd = ("ln -sf " + res.feat_annotation + " " + anno_local)
-                # pm.run(cmd, anno_local)
-                # pm.clean_add(anno_local)
-            # else:
-                # print("Skipping read and peak annotation...")
-                # print("This requires a {} annotation file."
-                      # .format(args.genome_assembly))
-                # print("Could not find {}.`"
-                      # .format(str(os.path.dirname(res.feat_annotation))))
-
-        # cFRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
-                     # "-i", mapping_genome_bam, "-f", "bam", "-p", anno_local,
-                     # "-t", "cumulative", "-o", cFRiF_PDF]
-        # cmd = build_command(cFRiF_cmd)
-        # pm.run(cmd, cFRiF_PDF, nofail=False)
-        # pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
-        
-        # FRiF_cmd = [tools.Rscript, tool_path("PEPATAC.R"), "frif",
-                    # "-i", mapping_genome_bam, "-f", "bam", "-p", anno_local,
-                    # "-t", "expected", "-o", FRiF_PDF]
-        # cmd = build_command(FRiF_cmd)
-        # pm.run(cmd, FRiF_PDF, nofail=False)
-        # pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
-
-
-    ############################################################################
     #            Remove all but final output files to save space               #
     ############################################################################
     if args.lite:
@@ -2639,6 +2659,10 @@ def main():
         pm.clean_add(mapping_genome_index)
         pm.clean_add(failQC_genome_bam)
         pm.clean_add(unmap_genome_bam)
+        pm.clean_add(NFR_bam)
+        pm.clean_add(mono_bam)
+        pm.clean_add(di_bam)
+        pm.clean_add(tri_bam)
         for unmapped_fq in to_compress:
             if not unmapped_fq:
                 pm.clean_add(unmapped_fq + ".gz")
