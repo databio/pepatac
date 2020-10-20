@@ -2227,17 +2227,18 @@ def main():
                 "print $1, $2, $3, $4, $5, $6, $7, ($5/sum*1000000)}' " +
                 peak_coverage + " " + peak_coverage + " > " +
                 norm_peak_coverage)
-        #cmd3 = ("mv " + norm_peak_coverage + " " + peak_coverage)  # Keep unnormalized coverage
-        cmd3 = ("touch " + coverage_flag)
-        pm.run([cmd1, cmd2, cmd3], coverage_flag, nofail=True)
+        cmd3 = ("mv " + norm_peak_coverage + " " + peak_coverage)
+        cmd4 = ("touch " + coverage_flag)
+        pm.run([cmd1, cmd2, cmd3, cmd4], coverage_flag, nofail=True)
 
         # Compress coverage file
         peak_coverage_gz = peak_coverage + ".gz"
-        norm_peak_coverage_gz = norm_peak_coverage + ".gz"
+        #norm_peak_coverage_gz = norm_peak_coverage + ".gz"
         cmd1 = (ngstk.ziptool + " " + peak_coverage + " > " + peak_coverage_gz)
-        cmd2 = (ngstk.ziptool + " " + norm_peak_coverage + " > " +
-                norm_peak_coverage_gz)
-        pm.run([cmd1, cmd2], norm_peak_coverage_gz)
+        # cmd2 = (ngstk.ziptool + " " + norm_peak_coverage + " > " +
+                # norm_peak_coverage_gz)
+        #pm.run([cmd1, cmd2], norm_peak_coverage_gz)
+        pm.run(cmd1, peak_coverage_gz)
 
         pm.clean_add(peak_bed)
         pm.clean_add(chr_keep)
