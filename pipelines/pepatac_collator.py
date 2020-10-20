@@ -5,7 +5,7 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 from argparse import ArgumentParser
 import os
@@ -44,6 +44,16 @@ def parse_arguments():
     parser.add_argument("--skip-table", action='store_true',
                         dest="skip_table", default=False,
                         help="Do not calculate peak counts table.")
+    parser.add_argument("--poverlap", action='store_true',
+                        dest="poverlap", default=False,
+                        help="Calculate the percentage overlap of reads " +
+                             "in peaks for the counts table.")
+    parser.add_argument("--normalized", action='store_true',
+                        dest="normalized", default=False,
+                        help="Use normalized read counts in peak table.")
+    parser.add_argument("-m", "--cutoff", default=2,
+                        help="Only keep peaks present in at least this " +
+                             "number of samples.")
     args = parser.parse_args()
     return args
 
@@ -55,17 +65,22 @@ def main():
     pm = pypiper.PipelineManager(name="PEPATAC_collator", outfolder=outfolder,
                                  args=args, version=__version__)
 
-    cmd = "Rscript {R_file} {config_file} {output_dir} {results_subdir}".format(
+    cmd = "Rscript {R_file} {cfg_file} {out_dir} {results_dir} {cutoff}".format(
         R_file=tool_path("PEPATAC_summarizer.R"),
-        config_file=args.config_file,
-        output_dir=args.output_parent,
-        results_subdir=args.results)
+        cfg_file=args.config_file,
+        out_dir=args.output_parent,
+        results_dir=args.results,
+        cutoff=args.cutoff)
     if args.new_start:
         cmd += " --new-start"
     if args.skip_consensus:
         cmd += " --skip-consensus"
     if args.skip_table:
         cmd += " --skip-table"
+    if args.poverlap:
+        cmd += " --poverlap"
+    if args.normalized:
+        cmd += " --normalized"
 
     complexity_file = os.path.join(
         outfolder, "{name}_libComplexity.pdf".format(name=args.name))
