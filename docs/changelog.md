@@ -1,7 +1,7 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.9.8] -- 2020-10-19
+## [0.9.8] -- 2020-10-22
 
 ### Added
  - Add Q1 FRiP for improved cross protocol QC comparisons
@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
  - Update peak coverage table calculation to handle compressed files
  - Keep the non-normalized peak coverage table for some downstream analyses
+ - Enable the peak counts table to adjust the minimum number of samples a peak must be present in to be kept (`--cutoff`)
+ - Enable the peak count table to use raw read counts (default), weight the read count by the percentage overlap of the read in a peak (`--poverlap`), use the normalized read count (`--normalized`), or weight the normalized read count by the percentage overlap (`--poverlap --normalized`)
 
 ## [0.9.7] -- 2020-10-16
 
