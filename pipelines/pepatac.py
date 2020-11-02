@@ -696,7 +696,7 @@ def main():
         res.frip_ref_peaks = args.frip_ref_peaks
     if (args.TSS_name and os.path.isfile(args.TSS_name) and
             os.stat(args.TSS_name).st_size > 0):
-        res.TSS_name = args.TSS_name
+        res.refgene_tss = args.TSS_name
     if (args.anno_name and os.path.isfile(args.anno_name) and
             os.stat(args.anno_name).st_size > 0):
         res.feat_annotation = args.anno_name
