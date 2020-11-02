@@ -1859,7 +1859,7 @@ def main():
             print("Skipping read and peak annotation...")
             print("This requires a {} annotation file."
                   .format(args.genome_assembly))
-            print("Could not find {}.`"
+            print("Could not find the feat_annotation asset {}.`"
                   .format(str(os.path.dirname(res.feat_annotation))))
 
 
