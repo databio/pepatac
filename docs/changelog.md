@@ -1,6 +1,12 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.9.9] -- 2020-11-02
+
+### Changed
+ - Improved messaging on missing feature annotation asset
+ - Fixed resource name for manual TSS file
+
 ## [0.9.8] -- 2020-10-22
 
 ### Added
