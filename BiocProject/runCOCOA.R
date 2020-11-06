@@ -2,7 +2,8 @@ runCOCOA = function(project, results_subdir, summary_dir,
                     genome, conditions, lolaPath) {
     # verify condition table
     if(!all(c("sample_name", "condition") %in% tolower(colnames(conditions)))) {
-        quit("Conditions must include 'sample_name' and 'condition' columns.")
+        warning("Conditions must include 'sample_name' and 'condition' columns.")
+        return(1)
     }
     # load required packages
     required_packages <- c("COCOA", "LOLA", "PEPATACr", "tidyr")
@@ -15,7 +16,7 @@ runCOCOA = function(project, results_subdir, summary_dir,
             error=function(e) {
                 message("Error: Install the \"", package,
                         "\" library before proceeding.")
-                return(NULL)
+                return(1)
             },
             warning=function(e) {
                 message(e)
