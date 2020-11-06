@@ -25,7 +25,8 @@ runCOCOA = function(project, results_subdir, summary_dir,
         if (length(loadLibrary)!=0) {
             suppressWarnings(library(package, character.only=TRUE))
         } else {
-            quit()
+            warning()
+            return(1)
         }
     }
     # Load peak count table
@@ -35,7 +36,8 @@ runCOCOA = function(project, results_subdir, summary_dir,
     if(file.exists(count_table_path)) {
         ct <- fread(count_table_path)
     } else {
-        quit(paste0("Could not load ", count_table_path))
+        warning(paste0("Could not load ", count_table_path))
+        return(1)
     }
     # Subset count table by condition table
     cols <- colnames(ct)[c(TRUE ,colnames(ct) %in% conditions$sample_name)]
