@@ -631,6 +631,7 @@ calcFRiF <- function(bedFile, total, reads) {
     }
 
     bedFile <- bedFile[apply(bedFile != 0, 1, all),]
+    # if no regions have coverage, file is now empty
 
     if (reads) {
         bedFile <- cbind(bedFile, cumsum=cumsum(bedFile$count))
@@ -640,8 +641,11 @@ calcFRiF <- function(bedFile, total, reads) {
 
     bedFile <- cbind(bedFile, cumSize=cumsum(bedFile$size))
     bedFile <- cbind(bedFile, frip=bedFile$cumsum/as.numeric(total))
-    bedFile <- cbind(bedFile, numfeats=as.numeric(1:nrow(bedFile)))
-    return(bedFile)
+    if (is.empty(bedFile)) {
+        return(cbind(bedFile, numfeats=as.numeric()))
+    } else {
+        return(cbind(bedFile, numfeats=as.numeric(1:nrow(bedFile))))
+    }
 }
 
 
@@ -692,12 +696,18 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
         bed        <- get(bedFile[1])
         bedCov     <- calcFRiF(bed, num_reads, reads)
         name       <- bedFile[1]
-        labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
-                        name, round(max(bedCov$frip),2), "#FF0703")
-        feature_dist[1,] <- c(name, nrow(bed),
-                              as.numeric(sum(abs(bed$V3-bed$V2))),
-                              as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
-        bedCov$feature <- name
+        if (is.empty(bedCov)) {
+            labels[1,] <- c(0, 0, name,0, "#FF0703")
+            bedCov$feature <- as.character()
+        } else {
+            labels[1,] <- c(0.95*max(log10(bedCov$cumSize)),
+                max(bedCov$frip)+0.001, name,
+                round(max(bedCov$frip),2), "#FF0703")
+            bedCov$feature <- name
+        }
+        feature_dist[1,] <- c(name,
+                nrow(bed), as.numeric(sum(abs(bed$V3-bed$V2))),
+                as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
     } else if (file.exists(file.path(bedFile[1])) && info$size != 0) {
         bed <- read.table(file.path(bedFile[1]))
         if (nrow(bed[which(bed$V5 != 0),]) == 0) {
@@ -709,12 +719,18 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
             name       <- gsub("^.*?_", "", name)
             numFields  <- 1
             for(i in 1:numFields) name <- gsub("_[^_]*$", "", name)
-            labels[1,] <- c(0.95*max(log10(bedCov$cumSize)), max(bedCov$frip)+0.001,
-                            name, round(max(bedCov$frip),2), "#FF0703")
+            if (is.empty(bedCov)) {
+                labels[1,] <- c(0, 0, name, 0, "#FF0703")
+                bedCov$feature <- as.character()
+            } else {
+                labels[1,] <- c(0.95*max(log10(bedCov$cumSize)),
+                    max(bedCov$frip)+0.001, name,
+                    round(max(bedCov$frip),2), "#FF0703")
+                bedCov$feature <- name
+            }
             feature_dist[1,] <- c(name, nrow(bed),
-                                  as.numeric(sum(abs(bed$V3-bed$V2))),
-                                  as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
-            bedCov$feature <- name
+                as.numeric(sum(abs(bed$V3-bed$V2))),
+                as.numeric((sum(abs(bed$V3-bed$V2))/genome_size)))
         }
     }  else {
         if (is.na(info[1])) {
@@ -1234,6 +1250,15 @@ plotFLD <- function(fragL,
     return(p)
 }
 
+
+#' Check if a data frame is empty.
+#'
+#' Return TRUE if provided data frame is NULL, has no rows, or has no columns.
+#'
+#' @param df A data frame to check for emptiness
+is.empty <- function(df) {
+  (is.null(df) || nrow(df) == 0 || ncol(df) == 0)
+}
 
 
 #' Calculate mode(s) of data
