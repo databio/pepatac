@@ -13,9 +13,9 @@ command_template: >
   -P {compute.cores}
   -M {compute.mem}
   {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
+  {% if sample.aligner is defined %} --aligner {sample.aligner} {% endif %}
   {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
   {% if sample.macs_genome_size is defined %} --genome-size {sample.macs_genome_size} {% endif %}
-  {% if sample.aligner is defined %} --aligner {sample.aligner} {% endif %}
   {% if sample.trimmer is defined %} --trimmer {sample.trimmer} {% endif %}
   {% if sample.prealignments is defined %} --prealignments {sample.prealignments} {% endif %}
   {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
@@ -26,12 +26,13 @@ command_template: >
   {% if sample.extend is defined %} --extend {sample.extend} {% endif %}
   {% if sample.frip_ref_peaks is defined %} --frip-ref-peaks {sample.frip_ref_peaks} {% endif %}
   {% if sample.motif is defined %} --motif {% endif %}
-  {% if sample.no_scale is defined %} --no-scale {% endif %}
   {% if sample.sob is defined %} --sob {% endif %}
+  {% if sample.no_scale is defined %} --no-scale {% endif %}
   {% if sample.prioritize is defined %} --prioritize {% endif %}
   {% if sample.keep is defined %} --keep {% endif %}
   {% if sample.no_fifo is defined %} --noFIFO {% endif %}
   {% if sample.lite is defined %} --lite {% endif %}
+  {% if sample.skipqc is defined %} --skipqc {% endif %}
 compute:
   singularity_image: ${SIMAGES}pepatac
   docker_image: databio/pepatac
@@ -39,5 +40,5 @@ compute:
   size_dependent_variables: resources-sample.tsv
 
 bioconductor:
-  readFunName: readPepatacPeakBeds
-  readFunPath: BiocProject/readPepatacPeakBeds.R
+  readFunName: runCOCOA
+  readFunPath: BiocProject/runCOCOA.R
