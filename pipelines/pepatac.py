@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.9"
+__version__ = "0.9.10"
 
 
 from argparse import ArgumentParser
@@ -991,14 +991,17 @@ def main():
         return wc1 == wc2
 
     if args.paired_end:
-        checks = 1
-        while not check_pairing(unmap_fq1, unmap_fq2) and checks < 100:
-            checks += 1
-            pm.debug("Check count: {}".format(str(checks)))
-        if checks > 100 and not check_pairing(unmap_fq1, unmap_fq2):
-            err_msg = ("Fastq filter_paired_fq.pl function did not complete "
-                       "successfully. Try running the pipeline with `--keep`.")
-            pm.fail_pipeline(IOError(err_msg))
+        if (not pypiper.is_gzipped_fastq(unmap_fq1) and
+            not pypiper.is_gzipped_fastq(unmap_fq2)):
+            checks = 1
+            while not check_pairing(unmap_fq1, unmap_fq2) and checks < 100:
+                checks += 1
+                pm.debug("Check count: {}".format(str(checks)))
+            if checks > 100 and not check_pairing(unmap_fq1, unmap_fq2):
+                err_msg = ("Fastq filter_paired_fq.pl function did not "
+                           "complete successfully. Try running the pipeline "
+                           "with `--keep`.")
+                pm.fail_pipeline(IOError(err_msg))
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
         if not pypiper.is_gzipped_fastq(unmapped_fq) and not unmapped_fq == '':
