@@ -1,6 +1,14 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+
+## [0.9.10] -- 2020-11-16
+
+### Changed
+ - Added check for rare lagging filter_paired_fq.pl command
+ - Fixed calcFRiF bug on zero coverage files
+ - Updated BiocProject examples
+
 ## [0.9.9] -- 2020-11-02
 
 ### Changed

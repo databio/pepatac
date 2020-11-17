@@ -1,0 +1,6 @@
+sample_name,organism,protocol,SRR,read_type,read1,read2
+gold1,human,ATAC-seq,SRR5210416,PAIRED,SRA_1,SRA_2
+gold2,human,ATAC-seq,SRR5210450,PAIRED,SRA_1,SRA_2
+gold3,human,ATAC-seq,SRR5210398,PAIRED,SRA_1,SRA_2
+gold4,human,ATAC-seq,SRR5210428,PAIRED,SRA_1,SRA_2
+gold5,human,ATAC-seq,SRR5210390,PAIRED,SRA_1,SRA_2

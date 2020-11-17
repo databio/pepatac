@@ -1,4 +1,4 @@
-description: objects produced by PEPPRO pipeline.
+description: objects produced by PEPATAC pipeline.
 properties:
   samples:
     type: array
@@ -8,23 +8,27 @@ properties:
         smooth_bw: 
           path: "aligned_{genome}/{sample_name}_smooth.bw"
           type: string
-          description: "Test sample property"
+          description: "Smoothed signal track"
         exact_bw:
           path: "aligned_{genome}_exact/{sample_name}_exact.bw"
           type: string
-          description: "Test sample property"
+          description: "Nucleotide-resolution signal track"
         aligned_bam: 
-          path: "aligned_{genome}/{sample_name}_sort.bam"
+          path: "aligned_{genome}/{sample_name}_sort_dedup.bam"
           type: string
-          description: "Test sample property"
-        peaks_bed: 
-          path: "peak_calling_{genome}/{sample_name}_peaks.bed"
+          description: "Coordinate sorted deduplicated, aligned BAM file"
+        peak_file: 
+          path: "peak_calling_{genome}/{sample_name}_peaks_normalized.narrowPeak"
           type: string
-          description: "Test sample property"
+          description: "Sample peak file"
+        coverage_file:
+          path: "peak_calling_{genome}/{sample_name}_peaks_coverage.bed.gz"
+          type: string
+          description: "Sample peak coverage table"
         summits_bed: 
           path: "peak_calling_{genome}/{sample_name}_summits.bed"
           type: string
-          description: "Test sample property"
+          description: "Peak summit file"
   alignment_percent_file:
     title: "Alignment percent file"
     description: "Plots percent of total alignment to all pre-alignments and primary genome."
