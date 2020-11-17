@@ -565,7 +565,7 @@ def main():
     ############################################################################
     #                Confirm required tools are all callable                   #
     ############################################################################
-    opt_tools = ["fseq", "genrich", "${HMMRATAC}", "${PICARD}",
+    opt_tools = ["fseq", "Genrich", "${HMMRATAC}", "${PICARD}",
                  "${TRIMMOMATIC}", "pyadapt", "findMotifsGenome.pl",
                  "findPeaks", "seqOutBias", "bigWigMerge", "bedGraphToBigWig",
                  "pigz", "bwa"]
@@ -605,7 +605,7 @@ def main():
         if 'fseq' in opt_tools: opt_tools.remove('fseq')
 
     if args.peak_caller == "genrich":
-        if 'genrich' in opt_tools: opt_tools.remove('genrich')
+        if 'Genrich' in opt_tools: opt_tools.remove('Genrich')
 
     if args.peak_caller == "hmmratac":
         if '${HMMRATAC}' in opt_tools: opt_tools.remove('${HMMRATAC}')
