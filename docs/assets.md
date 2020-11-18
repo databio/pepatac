@@ -1,6 +1,6 @@
 # Genome assets
 
-`PEPATAC` relies on `refgenie` managed assets to streamline sample processing, where once these assets are built by refgenie there is no need to specify them in calls to `PEPATAC`. These managed assets include the following: 
+`PEPATAC` relies on `refgenie` managed assets to streamline sample processing, where once these assets are built by refgenie there is no need to specify them in calls to `PEPATAC`. These managed assets include the following:  
 - [`bowtie2_index`](http://refgenie.databio.org/en/latest/available_assets/#bowtie2_index)
 - [`blacklist`](http://refgenie.databio.org/en/latest/available_assets/#blacklist)
 - `chrom_sizes` - built by default when you build/pull the `fasta` asset
