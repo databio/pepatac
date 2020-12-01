@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.9.12] -- 2020-12-01
+
+### Changed
+ - Update bulker crate and version
+
 ## [0.9.11] -- 2020-12-01
 
 ### Changed
