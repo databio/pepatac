@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.9.11] -- 2020-12-01
+
+### Changed
+ - Updated chromosome plot function to handle warnings and still return value
+
 ## [0.9.10] -- 2020-11-16
 
 ### Changed
