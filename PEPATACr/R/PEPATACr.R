@@ -1440,7 +1440,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
 
     if (tolower(plot) == "chromosome") {
         # Chromosome distribution plot
-        x <- chromBins(query, genome)
+        x <- tryCatchChromBins(query, genome)
 
         if (x$msg != "") {
             message(x$msg)
