@@ -36,7 +36,7 @@ command_template: >
 compute:
   singularity_image: ${SIMAGES}pepatac
   docker_image: databio/pepatac
-  bulker_crate: databio/pepatac:1.0.5
+  bulker_crate: databio/pepatac:1.0.6
   size_dependent_variables: resources-sample.tsv
 
 bioconductor:
