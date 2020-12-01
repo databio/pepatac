@@ -1350,6 +1350,34 @@ sampleName <- function(path, num_fields=2, delim='_') {
 }
 
 
+#' Handle warnings and errors while returning value from calcChromBinsRef()
+#'
+#' @param x A GenomicRanges or GenomicRangesList object with query regions
+#' @param y A character vector representing a known genome that will be used
+#'     to grab chromosome sizes with \code{getChromSizes}
+tryCatchChromBins <- function(x, y) {
+  z <- 
+    tryCatch(
+      withCallingHandlers(
+        {
+          msg <- ""
+          list(value = calcChromBinsRef(x, y), msg = msg)
+        }, 
+        warning = function(e) {
+          msg <<- trimws(paste0("WARNING: ", e))
+          invokeRestart("muffleWarning")
+        }
+      ), 
+      error = function(e) {
+        return(list(value = NA, msg = trimws(paste0("ERROR: ", e))))
+      }, 
+      finally = {
+      }
+    )
+  return(z)
+}
+
+
 #' Plot read and peak annotations and distributions
 #'
 #' This function is meant to annotate called peaks or aligned reads by known or
@@ -1412,28 +1440,20 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
 
     if (tolower(plot) == "chromosome") {
         # Chromosome distribution plot
-        x <- tryCatch(
-            {
-                suppressMessages(calcChromBinsRef(query, genome))
-            },
-            error=function(e) {
-                message("calcChromBinsRef(): ", e)
-                return(NULL)
-            },
-            warning=function(e) {
-                message("calcChromBinsRef(): ", e)
-                return(NULL)
-            }
-        )
+        x <- chromBins(query, genome)
+
+        if (x$msg != "") {
+            message(x$msg)
+        }
         
-        if (is.null(x)) {
+        if (x$value == "" || is.na(x$value) || is.null(x$value)) {
             return(ggplot())
         }
         # Don't plot lowest 10% represented chromosomes
-        tbl    <- data.frame(table(x$chr))
+        tbl    <- data.frame(table(x$value$chr))
         cutoff <- quantile(tbl$Freq, 0.1)
         keep   <- tbl[tbl$Freq > cutoff, 1]
-        x      <- x[x$chr %in% keep,]
+        x      <- x$value[x$value$chr %in% keep,]
         if (nrow(x) > 0) {
             ga_plot <- plotChromBins(x)
             return(ga_plot)
@@ -1505,27 +1525,21 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
     } else {
         # Default to chromosome distribution plot
         # Chromosome distribution plot
-        x <- tryCatch(
-            {
-                suppressMessages(calcChromBinsRef(query, genome))
-            },
-            error=function(e) {
-                message("calcChromBinsRef(): ", e)
-                return(NULL)
-            },
-            warning=function(e) {
-                message("calcChromBinsRef(): ", e)
-                return(NULL)
-            }
-        )
-        if (is.null(x)) {
+        # Chromosome distribution plot
+        x <- chromBins(query, genome)
+
+        if (x$msg != "") {
+            message(x$msg)
+        }
+        
+        if (x$value == "" || is.na(x$value) || is.null(x$value)) {
             return(ggplot())
         }
         # Don't plot lowest 10% represented chromosomes
-        tbl    <- data.frame(table(x$chr))
+        tbl    <- data.frame(table(x$value$chr))
         cutoff <- quantile(tbl$Freq, 0.1)
         keep   <- tbl[tbl$Freq > cutoff, 1]
-        x      <- x[x$chr %in% keep,]
+        x      <- x$value[x$value$chr %in% keep,]
         if (nrow(x) > 0) {
             ga_plot <- plotChromBins(x)
             return(ga_plot)
