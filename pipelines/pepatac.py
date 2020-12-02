@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.12"
+__version__ = "0.9.13"
 
 
 from argparse import ArgumentParser
@@ -933,6 +933,16 @@ def main():
 
     # We recommend mapping to chrM (i.e. rCRSd) before primary genome alignment
     pm.timestamp("### Prealignments")
+    # Set up mapped bam file names
+    mapping_genome_bam = os.path.join(
+        map_genome_folder, args.sample_name + "_sort.bam")
+    mapping_genome_bam_temp = os.path.join(
+        map_genome_folder, args.sample_name + "_temp.bam")
+    failQC_genome_bam = os.path.join(
+        map_genome_folder, args.sample_name + "_fail_qc.bam")
+    unmap_genome_bam = os.path.join(
+        map_genome_folder, args.sample_name + "_unmap.bam")
+
     # Keep track of the unmapped files in order to compress them after final
     # alignment.
     to_compress = []
@@ -990,7 +1000,7 @@ def main():
         pm.debug("Return value: {}".format(str(wc1 == wc2)))
         return wc1 == wc2
 
-    if args.paired_end:
+    if args.paired_end and not os.path.exists(mapping_genome_bam):
         if (not pypiper.is_gzipped_fastq(unmap_fq1) and
             not pypiper.is_gzipped_fastq(unmap_fq2)):
             checks = 1
@@ -1015,14 +1025,7 @@ def main():
     #                           Map to primary genome                          #
     ############################################################################
     pm.timestamp("### Map to genome")
-    mapping_genome_bam = os.path.join(
-        map_genome_folder, args.sample_name + "_sort.bam")
-    mapping_genome_bam_temp = os.path.join(
-        map_genome_folder, args.sample_name + "_temp.bam")
-    failQC_genome_bam = os.path.join(
-        map_genome_folder, args.sample_name + "_fail_qc.bam")
-    unmap_genome_bam = os.path.join(
-        map_genome_folder, args.sample_name + "_unmap.bam")
+    
 
     if args.aligner.lower() == "bwa":
         if not param.bwa.params:
