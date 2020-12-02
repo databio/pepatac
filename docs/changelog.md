@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.9.13] -- 2020-12-02
+
+### Changed
+ - Fix recovery mode for modified fastq repairing checks
+
 ## [0.9.12] -- 2020-12-01
 
 ### Changed
