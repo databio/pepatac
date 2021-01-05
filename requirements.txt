@@ -24,4 +24,3 @@ refgenconf>=0.7.0
 refgenie
 ubiquerg>=0.6.1
 yacman>=0.6.7
-
