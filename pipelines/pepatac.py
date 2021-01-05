@@ -1414,11 +1414,11 @@ def main():
     poly = pm.checkprint(cmd5)
     
     dar = float(pm.get_stat("Dedup_aligned_reads"))
-    NFR_frac = round(float(nfr) / float(dar), 2)
-    mono_frac = round(float(mono) / float(dar), 2)
-    di_frac = round(float(di) / float(dar), 2)
-    tri_frac = round(float(tri) / float(dar), 2)
-    poly_frac = round(float(poly) / float(dar), 2)
+    NFR_frac = round(float(nfr) / float(dar), 4)
+    mono_frac = round(float(mono) / float(dar), 4)
+    di_frac = round(float(di) / float(dar), 4)
+    tri_frac = round(float(tri) / float(dar), 4)
+    poly_frac = round(float(poly) / float(dar), 4)
     
     pm.report_result("NFR_frac", NFR_frac)
     pm.report_result("mono_frac", mono_frac)
