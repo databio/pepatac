@@ -14,6 +14,8 @@ import re
 import sys
 import tempfile
 import pypiper
+from pathlib import Path
+import psutil
 import pandas as pd
 import numpy as np
 from pypiper import build_command
@@ -992,26 +994,45 @@ def main():
 
     pm.timestamp("### Compress all unmapped read files")
     # Confirm pairing is complete
-    def check_pairing(fq1, fq2):
-        wc1 = ngstk.count_reads(fq1, args.paired_end)
-        wc2 = ngstk.count_reads(fq2, args.paired_end)
-        pm.debug("wc1: {}".format(str(wc1)))
-        pm.debug("wc2: {}".format(str(wc2)))
-        pm.debug("Return value: {}".format(str(wc1 == wc2)))
-        return wc1 == wc2
-
+    # Confirm pairing is complete
+    def no_handle(fq):
+        fpath = str(Path(fq).resolve())
+        pm.debug("fq: {}".format(fpath))
+        for proc in psutil.process_iter():
+            try:
+                for item in proc.open_files():
+                    pm.debug("item.path: {}".format(item.path))
+                    if fpath == item.path:
+                        pm.debug("{} is held. \n".format(fpath))
+                        return False
+            except Exception:
+                pass
+        pm.debug("{} is released! \n".format(os.path.abspath(fq)))
+        return True
+    
     if args.paired_end and not os.path.exists(mapping_genome_bam):
-        if (not pypiper.is_gzipped_fastq(unmap_fq1) and
-            not pypiper.is_gzipped_fastq(unmap_fq2)):
+        if not pypiper.is_gzipped_fastq(unmap_fq1):
             checks = 1
-            while not check_pairing(unmap_fq1, unmap_fq2) and checks < 100:
+            # Check unmap_fq1
+            while not no_handle(unmap_fq1) and checks < 1000:
                 checks += 1
-                pm.debug("Check count: {}".format(str(checks)))
-            if checks > 100 and not check_pairing(unmap_fq1, unmap_fq2):
+                pm.debug("Check count fq1: {}".format(str(checks)))
+            if checks > 100 and not no_handle(unmap_fq1):
+                err_msg = ("Fastq filter_paired_fq.pl function did not "
+                           "complete successfully. Try running the pipeline "
+                           "with `--keep`.")
+        if not pypiper.is_gzipped_fastq(unmap_fq2):
+            checks = 1
+            # Check unmap_fq2
+            while not no_handle(unmap_fq2) and checks < 1000:
+                checks += 1
+                pm.debug("Check count fq2: {}".format(str(checks)))
+            if checks > 100 and not no_handle(unmap_fq2):
                 err_msg = ("Fastq filter_paired_fq.pl function did not "
                            "complete successfully. Try running the pipeline "
                            "with `--keep`.")
                 pm.fail_pipeline(IOError(err_msg))
+
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
         if not pypiper.is_gzipped_fastq(unmapped_fq) and not unmapped_fq == '':
