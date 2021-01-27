@@ -81,15 +81,7 @@ refgenie pull human_repeats/bowtie2_index
 
 ## 4: Run an example project through `PEPATAC`
 
-Start by running the example project (`test_config.yaml`) in the `examples/test_project/` folder. `PEPATAC` uses a project management tool called `looper` to run the pipeline across samples in a project. For flexibility, the example configuration file includes two environment variables: 1) `PROCESSED`, which points to the parent output directory where you want the example output to be written, and 2) `CODE`, which is the path to the parent directory that contains the `pepatac/` repository. These need to be set for your environment.
-
-For example:
-```
-export PROCESSED="/path/to/output_dir
-export CODE="/path/to/pepatac_parent_dir"
-```
-
-Now we're ready to run the example project. Let's use the `-d` argument to first try a dry run, which will create job scripts for every sample in a project, but will not execute them:
+Start by running the example project (`test_config.yaml`) in the `examples/test_project/` folder. `PEPATAC` uses a project management tool called `looper` to run the pipeline across samples in a project. Let's use the `-d` argument to first try a dry run, which will create job scripts for every sample in a project, but will not execute them:
 
 From the `pepatac/` folder:
 ```
