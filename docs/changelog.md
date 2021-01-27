@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.9.14] -- 2021-01-28
+
+### Changed
+ - Update F-Seq to F-Seq2
+ - Add the option to install using conda
+ - Add script for easing installation of seqOutBias
+ 
 ## [0.9.13] -- 2020-12-02
 
 ### Changed
