@@ -1014,7 +1014,7 @@ def main():
         if not pypiper.is_gzipped_fastq(unmap_fq1):
             checks = 1
             # Check unmap_fq1
-            while not no_handle(unmap_fq1) and checks < 1000:
+            while not no_handle(unmap_fq1) and checks < 10000:
                 checks += 1
                 pm.debug("Check count fq1: {}".format(str(checks)))
             if checks > 100 and not no_handle(unmap_fq1):
@@ -1024,7 +1024,7 @@ def main():
         if not pypiper.is_gzipped_fastq(unmap_fq2):
             checks = 1
             # Check unmap_fq2
-            while not no_handle(unmap_fq2) and checks < 1000:
+            while not no_handle(unmap_fq2) and checks < 10000:
                 checks += 1
                 pm.debug("Check count fq2: {}".format(str(checks)))
             if checks > 100 and not no_handle(unmap_fq2):
@@ -1964,23 +1964,29 @@ def main():
             else:
                 fseq_cmd_chunks = [
                     tools.fseq,
-                    ("-o", peak_folder),
-                    param.fseq.params
+                    "callpeak",
+                    peak_input_file,
+                    param.fseq.params,
+                    ("-name", args.sample_name),
+                    ("-cpus", pm.cores)
                 ]
+                if args.paired_end:
+                    fseq_cmd_chunks.append("-pe")
+                    fseq_cmd_chunks.append("-pe_fragment_size_range auto")
                 # Create the peak calling command
-                fseq_cmd_chunks.append(peak_input_file)
                 fseq_cmd = build_command(fseq_cmd_chunks)
 
-                # Create the file merge/delete commands.
-                chrom_peak_files = os.path.join(peak_folder, "*.npf")
-                merge_chrom_peaks_files = (
-                    "cat {peakfiles} > {combined_peak_file}"
-                    .format(peakfiles=chrom_peak_files,
-                            combined_peak_file=peak_output_file))
-                pm.clean_add(chrom_peak_files)
+                # Create the file merge/delete commands. # F-seq1
+                # chrom_peak_files = os.path.join(peak_folder, "*.npf")
+                # merge_chrom_peaks_files = (
+                    # "cat {peakfiles} > {combined_peak_file}"
+                    # .format(peakfiles=chrom_peak_files,
+                            # combined_peak_file=peak_output_file))
+                # pm.clean_add(chrom_peak_files)
 
                 # Pypiper serially executes the commands.
-                cmd = [fseq_cmd, merge_chrom_peaks_files]
+                #cmd = [fseq_cmd, merge_chrom_peaks_files] # F-seq1
+                cmd = fseq_cmd
         # TODO: move fixed plus not macs check early on before pipeline starts!
         elif args.peak_caller == "hmmratac" and args.paired_end:
             if args.peak_type == "fixed":
@@ -2082,10 +2088,6 @@ def main():
                 pm.warning("HMMRATAC failed to identify any peaks.")
         else:
             pm.run(cmd, peak_output_file, follow=report_peak_count)
-        
-        # Compress peak_input_file (i.e. the shift_bed file) 
-        cmd = (ngstk.ziptool + " " + peak_input_file + " > " + shift_bed_gz)
-        pm.run(cmd, shift_bed_gz)
 
         fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
             "_peaks_fixedWidth.narrowPeak")
@@ -2173,8 +2175,9 @@ def main():
                             ])
                 cmd2 = ("touch " + blacklist_target)
                 pm.run([cmd1, cmd2], blacklist_target)
-
-
+                peak_output_file = filter_peak
+        
+        
         ########################################################################
         #                Determine the fraction of reads in peaks              #
         ########################################################################
@@ -2186,22 +2189,22 @@ def main():
                              pipeline_manager=pm)
             pm.report_result("FRiP", round(frip, 2))
 
-        if pm.get_stat("FRiP_Q1") is None or args.new_start:
-            score_sorted_peaks = os.path.join(peak_folder, args.sample_name +
-                                              "_score_sorted_peaks.narrowPeak")
-            score_q1_peaks = os.path.join(peak_folder, args.sample_name +
-                                          "_score_sorted_q1_peaks.narrowPeak")
-            cmd1 = ("sort -nrk 5 " + peak_output_file + " > " +
-                    score_sorted_peaks)
-            cmd2 = ("split -n l/1/4 " + score_sorted_peaks + " > " +
-                    score_q1_peaks)
-            pm.run([cmd1, cmd2], score_q1_peaks)
-            pm.clean_add(score_sorted_peaks)
-            pm.clean_add(score_q1_peaks)
-            frip = calc_frip(rmdup_bam, score_q1_peaks,
-                             frip_func=ngstk.simple_frip,
-                             pipeline_manager=pm)
-            pm.report_result("FRiP_Q1", round(frip, 2))
+        # if pm.get_stat("FRiP_Q1") is None or args.new_start:
+            # score_sorted_peaks = os.path.join(peak_folder, args.sample_name +
+                                              # "_score_sorted_peaks.narrowPeak")
+            # score_q1_peaks = os.path.join(peak_folder, args.sample_name +
+                                          # "_score_sorted_q1_peaks.narrowPeak")
+            # cmd1 = ("sort -nrk 5 " + peak_output_file + " > " +
+                    # score_sorted_peaks)
+            # cmd2 = ("split -n l/1/4 " + score_sorted_peaks + " > " +
+                    # score_q1_peaks)
+            # pm.run([cmd1, cmd2], score_q1_peaks)
+            # pm.clean_add(score_sorted_peaks)
+            # pm.clean_add(score_q1_peaks)
+            # frip = calc_frip(rmdup_bam, score_q1_peaks,
+                             # frip_func=ngstk.simple_frip,
+                             # pipeline_manager=pm)
+            # pm.report_result("FRiP_Q1", round(frip, 2))
 
         if os.path.exists(res.frip_ref_peaks):
             if pm.get_stat("FRiP_ref") is None or args.new_start:
