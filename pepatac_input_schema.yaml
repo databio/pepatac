@@ -1,6 +1,7 @@
 description: A PEP for ATAC-seq samples for the PEPATAC pipeline.
 imports: 
-  - http://schema.databio.org/pep/2.0.0.yaml
+  #- https://schema.databio.org/pep/2.0.0.yaml  # Use a web-based schema source file
+  - PEP_schema.yaml
 properties:
   samples:
     type: array
