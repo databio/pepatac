@@ -124,7 +124,7 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 
 ## 2. Install optional software
 
-`PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/dev/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
+`PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
 
 ```
 Rscript -e 'install.packages("devtools")'
