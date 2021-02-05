@@ -1,4 +1,4 @@
-# Download raw data from SRA for use in <img src="../../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
+# Download raw data from SRA for use in <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px">
 
 This guide walks you through downloading data from SRA that can go directly into `PEPATAC`.
 
