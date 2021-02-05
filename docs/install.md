@@ -104,7 +104,7 @@ There are lots of other cool things you can do with looper, like dry runs, repor
 
 ## 5: Configure your project files
 
-To run your own samples, you'll need to organize them in **PEP format**, which is explained in [how to create a PEP](https://pepkit.github.io/docs/home/) and is universal to all pipelines that read PEPs, including `PEPATAC`. To get you started, there are multiple examples you can adapt in the `examples/` folder (*e.g.* [example test PEP](https://github.com/databio/pepatac/tree/master/examples/test_project)). In short, you need two files for your project:
+To run your own samples, you'll need to organize them in **PEP format**, which is explained in [how to create a PEP](http://pep.databio.org/en/latest/simple_example/) and is universal to all pipelines that read PEPs, including `PEPATAC`. To get you started, there are multiple examples you can adapt in the `examples/` folder (*e.g.* [example test PEP](https://github.com/databio/pepatac/tree/master/examples/test_project)). In short, you need two files for your project:
 
   1. project config file -- describes output locations, pointers to data, etc.
   2. sample annotation file -- comma-separated value (CSV) list of your samples.
