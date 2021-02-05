@@ -13,4 +13,4 @@ pipelines/pepatac.py --single-or-paired paired \
   -O $HOME/pepatac_test
 ```
 
-This example should take about 15 minutes to complete.  See [other example commands](https://github.com/databio/pepatac/blob/master/example_cmd.txt) that use test data.
+This example should take about 15 minutes to complete.  
