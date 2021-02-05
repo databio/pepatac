@@ -37,7 +37,7 @@ python -m pip install --ignore-installed --upgrade -r requirements.txt
 
 ### R packages
 
-`PEPATAC` uses `R` to generate quality control and read/peak annotation plots. We have packaged the `pepatac` specific `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/dev/PEPATACr). The `PEPATACr` package relies on a few additional packages which can be installed to the `conda` environment.
+`PEPATAC` uses `R` to generate quality control and read/peak annotation plots. We have packaged the `pepatac` specific `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `PEPATACr` package relies on a few additional packages which can be installed to the `conda` environment.
 
 To ensure these packages are installed to the `pepatac` `conda` environment, make sure to point your `R_LIBS` environment variable to the `conda` environment `R` library. For example:
 ```{bash}
