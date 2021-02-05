@@ -20,6 +20,7 @@ _site
 .sass-cache
 _site/
 /_site/
+_build/
 .sass-cache/
 .jekyll-metadata
 
@@ -32,3 +33,17 @@ anno/mm9_annotations.bed.gz
 # Tutorial files
 examples/data/tutorial_r1.fastq.gz
 examples/data/tutorial_r2.fastq.gz
+examples/gold_atac/metadata/distinct.bed
+examples/gold_atac/metadata/distinct_only.bed
+examples/gold_atac/metadata/gold_fseq.yaml
+examples/gold_atac/metadata/gold_genrich.yaml
+examples/gold_atac/metadata/gold_hmmratac.yaml
+examples/gold_atac/metadata/gold_homer.yaml
+examples/gold_atac/metadata/gold_picard_dedup.yaml
+examples/gold_atac/metadata/gold_samtools_dedup.yaml
+examples/test_project/test_bwa.yaml
+examples/test_project/test_fseq.yaml
+examples/test_project/test_genrich.yaml
+examples/test_project/test_hmmratac.yaml
+examples/test_project/test_homer.yaml
+examples/test_project/test_macs.yaml

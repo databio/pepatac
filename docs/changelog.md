@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.9.14] -- 2021-02-05
+
+### Changed
+ - Update F-Seq to F-Seq2
+ - Add the option to install using conda
+ - Add script for easing installation of seqOutBias
+ - Use https for PEP schema; list alternative local PEP schema approach
+ 
 ## [0.9.13] -- 2020-12-02
 
 ### Changed
