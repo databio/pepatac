@@ -64,7 +64,7 @@ geofetch -i GSE### -m /path/to/metadata/folder -n PROJECT_NAME
 
 Next we're going to convert those downloaded `.sra` files using `looper`. If you haven't installed `looper`, do that now before moving forward ([see `looper` docs](https://looper.readthedocs.io/en/latest/)).
 
-`Looper` requires a few variables and configuration files to work for a specific user. One of those is an environment variable called `DIVCFG` that points to the `looper` environment configuration file. For more detailed information regarding this file, check out the [`looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing.html).
+`Looper` requires a few variables and configuration files to work for a specific user. One of those is an environment variable called `DIVCFG` that points to the `looper` environment configuration file. For more detailed information regarding this file, check out the [`looper` docs](http://looper.databio.org/en/latest/faq/#how-can-i-run-my-jobs-on-a-cluster).
 
 Create a `compute_config.yaml` file and edit this file for your own setup (see [`looper` docs for more information](https://looper.readthedocs.io/en/latest/index.html)).
 
