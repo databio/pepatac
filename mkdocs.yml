@@ -28,6 +28,8 @@ nav:
     - Download SRA data: 'download.md'
     - Use custom reference data: 'annotation.md'
     - Use reference peaks: 'reference_peaks.md'
+    - Generate count table: 'count_table.md'
+    - Generate consensus peaks: 'consensus_peaks.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
     - "Example summary: gold project": 'files/examples/gold/gold_summary.html'
