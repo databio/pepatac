@@ -28,9 +28,9 @@ Pull requests welcome. Active development should occur in a development or featu
 
 ## Contributors
 
-* Jin Xu, jinxu9@stanford.edu
-* Nathan Sheffield, nathan@code.databio.org
 * Jason Smith, jasonsmith@virginia.edu
+* Nathan Sheffield, nathan@code.databio.org
+* Jin Xu, jinxu9@stanford.edu
 * Ryan Corces, rcorces@stanford.edu
 * Vince Reuter, vreuter@protonmail.com
 * Others... (add your name)
