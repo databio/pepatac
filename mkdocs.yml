@@ -24,6 +24,7 @@ nav:
     - Run using containers: 'run-container.md'
     - Configure assets: 'assets.md'
     - Configure prealignments: 'prealignments.md'
+    - Configure project files: 'peps.md'
     - Configure seqOutBias assets: 'sob.md'   
     - Download SRA data: 'download.md'
     - Use custom reference data: 'annotation.md'
