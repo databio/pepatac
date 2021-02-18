@@ -1,6 +1,8 @@
 # How to specify a set of reference peaks
 
-PEPATAC automatically calls peaks and will report the fraction of reads in peaks (FRiP) for that set of peaks. You may also specify a set of reference peaks and report the fraction of reads in those *reference* peaks.  To do so, simply point the pipeline to your set of reference peaks, either at the command line using `--frip-ref-peaks /path/to/your_reference_peaks.bed`, or in a PEP configuration file like so:
+PEPATAC automatically calls peaks and will report the fraction of reads in peaks (FRiP) for that set of peaks. The project processing pipeline will also produce a count table with the individual sample peaks.  
+
+You may also specify a set of reference peaks and report the fraction of reads in those *reference* peaks **and** produce a count table using this reference peak set.  To do so, simply point the pipeline to your set of reference peaks, either at the command line using `--frip-ref-peaks /path/to/your_reference_peaks.bed`, or in a PEP configuration file like so:
 ```
 name: PEPATAC_tutorial
 
@@ -22,9 +24,9 @@ sample_modifiers:
       R1: "${TUTORIAL}/tools/pepatac/examples/data/{sample_name}_r1.fastq.gz"
       R2: "${TUTORIAL}/tools/pepatac/examples/data/{sample_name}_r2.fastq.gz"
   imply:
-    - if:
+    - if: 
         organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
-      then:
+      then: 
         genome: hg38
         macs_genome_size: hs
         prealignments: rCRSd human_repeats
@@ -34,4 +36,3 @@ sample_modifiers:
         extend: "250"            # Default. For fixed-width peaks, extend this distance up- and down-stream.
         frip_ref_peaks: /path/to/your_reference_peaks.bed     
 ```
-
