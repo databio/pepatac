@@ -2472,8 +2472,10 @@ countReproduciblePeaks <- function(peak_list, peak_DT) {
 #' @param sample_table A data.table object that includes paths to
 #'                     valid peak files.
 #' @param chrom_sizes A data.table of genome chromosome sizes.
-#' @param min_score A minimum peak score to keep.
-collapsePeaks <- function(sample_table, chrom_sizes, min_score=5) {
+#' @param min_samples A minimum number of samples a peak must be present
+#'                    in to keep.
+#' @param min_score A minimum peak score to keep an individual peak.
+collapsePeaks <- function(sample_table, chrom_sizes, min_samples=2, min_score=5) {
     final <- data.table(chr=character(),
                         start=integer(),
                         end=integer(),
@@ -2529,7 +2531,7 @@ collapsePeaks <- function(sample_table, chrom_sizes, min_score=5) {
 
     # keep peaks present in 2 or more individual peak sets
     # keep peaks with score per million >= 5
-    final <- final[count >= 2 & score >= min_score,]
+    final <- final[count >= min_samples & score >= min_score,]
     final[,count := NULL]
     return(final)
 }
