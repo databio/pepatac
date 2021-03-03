@@ -79,9 +79,9 @@ refgenie pull rCRSd/bowtie2_index
 refgenie pull human_repeats/bowtie2_index
 ```
 
-## 4: Run an example project through `PEPATAC`
+## 4: Use `looper` to run the sample processing pipeline
 
-Start by running the example project (`test_config.yaml`) in the `examples/test_project/` folder. `PEPATAC` uses a project management tool called `looper` to run the pipeline across samples in a project. Let's use the `-d` argument to first try a dry run, which will create job scripts for every sample in a project, but will not execute them:
+Start by running the example project (`test_config.yaml`) in the `examples/test_project/` folder. `PEPATAC` uses a project management tool called `looper` to run the sample-level pipeline across each sample in a project. Let's use the `-d` argument to first try a dry run, which will create job scripts for every sample in a project, but will not execute them:
 
 From the `pepatac/` folder:
 ```
@@ -102,28 +102,25 @@ looper run examples/test_project/test_config.yaml
 
 There are lots of other cool things you can do with looper, like dry runs, report results, check on pipeline run status, clean intermediate files to save disk space, lump multiple samples into one job, and more. For details, consult the [looper docs](http://looper.databio.org/).
 
-## 5: Configure your project files
+## 5: Use `looper` to run the project level pipeline
 
-To run your own samples, you'll need to organize them in **PEP format**, which is explained in [how to create a PEP](http://pep.databio.org/en/latest/simple_example/) and is universal to all pipelines that read PEPs, including `PEPATAC`. To get you started, there are multiple examples you can adapt in the `examples/` folder (*e.g.* [example test PEP](https://github.com/databio/pepatac/tree/master/examples/test_project)). In short, you need two files for your project:
+`PEPATAC` also includes a project-level processing pipeline to do things like: 
+ - [Plot alignment statistics](files/examples/gold/summary/gold_alignmentPercent.pdf) for all samples in the project together for easy visualization
+ - [Plot TSS enrichment scores](files/examples/gold/summary/gold_TSSEnrichment.pdf) for all the samples in the project in a single figure
+ - [Produce a consensus peak set](consensus_peaks.md) for the project
+ - [Produce a count table](count_table.md) using the consensus peak set for all the samples in a project
 
-  1. project config file -- describes output locations, pointers to data, etc.
-  2. sample annotation file -- comma-separated value (CSV) list of your samples.
+`looper runp examples/test_project/test_config.yaml`
 
-The sample annotation file must specify these columns:
-
-- sample_name
-- library ('ATAC' or 'ATACSEQ' or 'ATAC-seq')
-- organism (may be 'human' or 'mouse')
-- read1
-- read2
-- whatever else you want
+This should take < a minute on the test sample and will generate a summary/ directory containing project level output in the parent project directory. In this small example, there won't be a consensus peak set or count table because it is only a single sample. To see more, you can [run through the extended tutorial](tutorial.md) to see this in action.
 
 # Next steps
 
 This is just the beginning. For your next step, take a look at one of these user guides:
 
-- [Extended tutorial for running a single sample](tutorial.md)
-- [Running the pipeline directly in a container](run-container.md)
+- [Configuring custom project files](peps.md)
+- [Extended tutorial for running multiple samples](tutorial.md)
+- [Running the pipeline with containers](run-container.md)
 - See other detailed user guide links in the side menu
 
 Any questions? Feel free to [reach out to us](contact.md). Otherwise, go analyze some ATAC-seq!

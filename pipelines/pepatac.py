@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.14"
+__version__ = "0.9.15"
 
 
 from argparse import ArgumentParser
@@ -47,7 +47,7 @@ def parse_arguments():
                         default="bowtie2", choices=ALIGNERS,
                         help="Name of read aligner")
                         
-    parser.add_argument("--peak-caller", dest="peak_caller",
+    parser.add_argument("--peak-caller", dest="peak_caller", type=str.lower,
                         default="macs2", choices=PEAK_CALLERS,
                         help="Name of peak caller")
 
@@ -70,15 +70,15 @@ def parse_arguments():
                         help="Name of deduplicator program")
 
     parser.add_argument("--TSS-name", default=None,
-                        dest="TSS_name", type=str.lower,
+                        dest="TSS_name", type=str,
                         help="Path to TSS annotation file.")
 
     parser.add_argument("--blacklist", default=None,
-                        dest="blacklist", type=str.lower,
+                        dest="blacklist", type=str,
                         help="Path to genomic region blacklist file")
 
     parser.add_argument("--anno-name", default=None,
-                        dest="anno_name", type=str.lower,
+                        dest="anno_name", type=str,
                         help="Path to reference annotation file (BED format) for calculating FRiF")
 
     parser.add_argument("--peak-type", default="fixed",
@@ -92,7 +92,7 @@ def parse_arguments():
                              "downstream.")
 
     parser.add_argument("--frip-ref-peaks", default=None,
-                        dest="frip_ref_peaks", type=str.lower,
+                        dest="frip_ref_peaks", type=str,
                         help="Path to reference peak set (BED format) for calculating FRiP")
 
     parser.add_argument("--motif", action='store_true',

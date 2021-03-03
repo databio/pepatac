@@ -24,10 +24,13 @@ nav:
     - Run using containers: 'run-container.md'
     - Configure assets: 'assets.md'
     - Configure prealignments: 'prealignments.md'
+    - Configure project files: 'peps.md'
     - Configure seqOutBias assets: 'sob.md'   
     - Download SRA data: 'download.md'
     - Use custom reference data: 'annotation.md'
     - Use reference peaks: 'reference_peaks.md'
+    - Generate count table: 'count_table.md'
+    - Generate consensus peaks: 'consensus_peaks.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
     - "Example summary: gold project": 'files/examples/gold/gold_summary.html'

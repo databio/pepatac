@@ -12,7 +12,7 @@
 
 `PEPATAC` has many [nice features](features), such as scalability, restartability, copious logging, portability, standardized reference genome assembly, nice QC plots, and beautiful HTML reports. But what really sets it apart from others are these key advantages:
 
-- **Standard project organization**: `PEPATAC` reads sample data formatted in [standard PEP format](http://pepkit.github.io). This means  `PEPATAC` projects are compatible with other PEP tools, such as `R` analysis with [`pepr`](http://code.databio.org/pepr/) or `Python` using [`peppy`](https://peppy.readthedocs.io/en/latest/). 
+- **Standard project organization**: `PEPATAC` reads sample data formatted in [standard PEP format](http://pep.databio.org/en/latest/). This means  `PEPATAC` projects are compatible with other PEP tools, such as `R` analysis with [`pepr`](http://code.databio.org/pepr/) or `Python` using [`peppy`](https://peppy.readthedocs.io/en/latest/). 
 - **Speed and memory use**: `PEPATAC` is employs several speed optimizations, such as using [GenomicDistributions](http://code.databio.org/GenomicDistributions/). It requires substantially lower time and memory than other pipelines.
 - **Prealignments**: `PEPATAC` pioneers a *prealignment* strategy to filter mitochondrial reads, leading to faster runtime and more accurate alignment statistics.
 - **Flexibility**: Choose from multiple adapter trimmers, peak callers, and output options. Or, just use the defaults.
