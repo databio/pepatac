@@ -160,7 +160,7 @@ This is an interactive display of exactly what results you'll get as output from
 * ??? danger ":fa-folder-open-o: summary/"
     * [:fa-file-code-o: PEPATAC_collator_commands.sh](files/examples/tutorial/summary/PEPATAC_collator_commands.sh)
     * :fa-file-text-o: PEPATAC_collator_completed.flag
-    * [:fa-file-o: PEPATAC_collator_log.md](files/examples/tutorial/summary/PEPATAC_collator_log.md)
+    * [:fa-file-o: PEPATAC_collator_log.md](files/examples/tutorial/summary/PEPATAC_collator_log.txt)
     * [:fa-file-text-o: PEPATAC_collator_profile.tsv](files/examples/tutorial/summary/PEPATAC_collator_profile.tsv)
     * [:fa-file-pdf-o: PEPATAC_tutorial_alignmentPercent.pdf](files/examples/tutorial/summary/PEPATAC_tutorial_alignmentPercent.pdf)
     * [:fa-file-image-o: PEPATAC_tutorial_alignmentPercent.png](files/examples/tutorial/summary/PEPATAC_tutorial_alignmentPercent.png)
