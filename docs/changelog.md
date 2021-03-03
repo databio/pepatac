@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.9.15] -- 2021-03-03
+
+### Added
+ - Add PEP, count table, consensus peak generation documentation
+ - Add license
+
+### Changed
+ - Fix documentation page links
+ - Updated argument types case
+ - Added ability to adjust minimum sample count when creating consensus peaks
+
 ## [0.9.14] -- 2021-02-05
 
 ### Changed
