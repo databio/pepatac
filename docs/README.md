@@ -48,3 +48,9 @@ pepatac.py --input reads.fq.gz [options...]
 ## Availability
 
 The latest version is posted on [GitHub releases](https://github.com/databio/pepatac/releases), with changes in the [CHANGELOG](changelog).
+
+## Citing
+
+If you find PEPATAC useful in your research, please cite: 
+
+Jason P. Smith, M. Ryan Corces, Jin Xu, Vincent P. Reuter, Howard Y. Chang, and Nathan C. Sheffield. <b>PEPATAC: An optimized ATAC-seq pipeline with serial alignments.</b><i>bioRxiv</i> (2021). <a href="https://doi.org/10.1101/2020.10.21.347054">DOI: 10.1101/2020.10.21.347054</a>
