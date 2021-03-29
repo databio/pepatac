@@ -6,17 +6,17 @@ For example: `looper runp examples/test_project/test_config.yaml`
 
 ## Count table *without* a reference peak set
 
-For any run without a (reference peak set)[reference_peaks.md] included, the project processing pipeline *will* produce a counts table, but this will be on a simplified consensus peak set.  This simplified approach is utilized for its speed and low memory use, and is helpful if users do not want nor need a count table for their downstream analysis or they choose to implement their own approach. For this simplified consensus peak set, the reduce method from the `R` package `GenomicRanges` aligns and merges overlapping ranges to produce the simplified/reduced set. With this reduced peak set, sample's individual peak files are overlapped and the counts are calculated in one of four ways:
-1) (`poverlap = FALSE, norm = FALSE`): total read count from the sample peak if it overlaps the reduced peak by >= 1 bp,
-2) (`poverlap = TRUE, norm = FALSE`): fractional read count adjusted by the percent overlap by which the sample peak overlaps the reduced peak,
-3) (`poverlap = FALSE, norm = TRUE`): normalized (RPM) read count from the sample peak if it overlaps the reduced peak by >= 1 bp,
-4) (`poverlap = TRUE, norm = TRUE`): normalized, fractional read count adjusted by the percent overlap by which the sample peak overlaps the reduced peak.
+For any run without a [reference peak set](reference_peaks.md) included, the project processing pipeline *will* produce a counts table, but this will be on a simplified consensus peak set.  This simplified approach is utilized for its speed and low memory use, and is helpful if users do not want nor need a count table for their downstream analysis or they choose to implement their own approach. For this simplified consensus peak set, the reduce method from the `R` package `GenomicRanges` aligns and merges overlapping ranges to produce the simplified/reduced set. With this reduced peak set, sample's individual peak files are overlapped and the counts are calculated in one of four ways:  
+1. (`poverlap = FALSE, norm = FALSE`): total read count from the sample peak if it overlaps the reduced peak by >= 1 bp,
+2. (`poverlap = TRUE, norm = FALSE`): fractional read count adjusted by the percent overlap by which the sample peak overlaps the reduced peak,
+3. (`poverlap = FALSE, norm = TRUE`): normalized (RPM) read count from the sample peak if it overlaps the reduced peak by >= 1 bp,
+4. (`poverlap = TRUE, norm = TRUE`): normalized, fractional read count adjusted by the percent overlap by which the sample peak overlaps the reduced peak.
 
 The **default** setting is to report the total, unnormalized read count to allow downstream tools to implement their own normalization procedures and which often expect integer counts for input.
 
 ## Count table *with* a reference peak set
 
-For a run with a (reference peak set)[reference_peaks.md] the project processing pipeline will produce the counts table from all the samples reference peak coverage files. Because these files all share the same peaks, it simply aggregates each samples' counts into a single count table.
+For a run with a [reference peak set](reference_peaks.md) the project processing pipeline will produce the counts table from all the samples reference peak coverage files. Because these files all share the same peaks, it simply aggregates each samples' counts into a single count table.
 
 ## Count table *with* a PEPATAC produced consensus peak set
 
