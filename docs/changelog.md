@@ -2,6 +2,35 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.9.15] -- 2021-03-03
+
+### Added
+ - Add PEP, count table, consensus peak generation documentation
+ - Add license
+
+### Changed
+ - Fix documentation page links
+ - Updated argument types case
+ - Added ability to adjust minimum sample count when creating consensus peaks
+
+## [0.9.14] -- 2021-02-05
+
+### Changed
+ - Update F-Seq to F-Seq2
+ - Add the option to install using conda
+ - Add script for easing installation of seqOutBias
+ - Use https for PEP schema; list alternative local PEP schema approach
+ 
+## [0.9.13] -- 2020-12-02
+
+### Changed
+ - Fix recovery mode for modified fastq repairing checks
+
+## [0.9.12] -- 2020-12-01
+
+### Changed
+ - Update bulker crate and version
+
 ## [0.9.11] -- 2021-03-04
 
 ### Changed
