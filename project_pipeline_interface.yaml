@@ -3,7 +3,6 @@ pipeline_type: project
 path: pipelines/pepatac_collator.py
 output_schema: pepatac_output_schema.yaml
 command_template: >
-  looper table {looper.pep_config} &&
   {pipeline.path} 
   --config {looper.pep_config}
   -O {looper.output_dir}
