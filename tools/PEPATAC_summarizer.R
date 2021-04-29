@@ -102,7 +102,8 @@ pep <- argv$config
 # Load the project
 prj <- invisible(suppressWarnings(pepr::Project(pep)))
 # Convenience
-project_name <- config(prj)$name
+project_name    <- config(prj)$name
+project_samples <- pepr::sampleTable(prj)$sample_name
 
 # Set the output directory
 summary_dir <- suppressMessages(file.path(argv$output, "summary"))
@@ -121,23 +122,37 @@ if (dir.exists(argv$results)) {
     quit()
 }
 
+
 # Generate stats summary
-assets  <- PEPATACr::createStatsSummary(prj, argv$output, results_subdir)
+stats  <- PEPATACr::createStatsSummary(project_samples, results_subdir)
 if (nrow(assets) == 0) {
     quit()
 }
+project_stats_file <- file.path(argv$output,
+                                paste0(project_name, '_stats_summary.tsv'))
+message(sprintf("Summary (n=%s): %s",
+        length(unique(stats$sample_name)), project_stats_file))
+fwrite(stats, project_stats_file, sep="\t", col.names=FALSE)
+
 
 # Generate assets
-assets  <- PEPATACr::createAssetsSummary(prj, argv$output, results_subdir)
+assets <- PEPATACr::createAssetsSummary(project_samples, results_subdir)
 if (nrow(assets) == 0) {
     quit()
 }
+project_assets_file <- file.path(argv$output,
+                                 paste0(project_name, '_assets_summary.tsv'))
+message(sprintf("Summary (n=%s): %s",
+        length(unique(assets$sample_name)), project_assets_file))
+fwrite(assets, project_assets_file, sep="\t", col.names=FALSE)
+
 
 # Produce project summary plots
 summarizer_flag <- PEPATACr::summarizer(prj, argv$output)
 if (is.null(summarizer_flag)) {
     summarizer_flag <- FALSE
 }
+
 
 # Produce library complexity summary plots
 complexity_path <- file.path(summary_dir,
@@ -195,6 +210,7 @@ if (summarizer_flag && complexity_flag) {
     message("Successfully produced project summary plots.\n")
 }
 
+
 # Report existing consensus peaks
 for (genome in unique(genomes)) {
     file_name      <- paste0("_", genome,"_consensusPeaks.narrowPeak")
@@ -204,6 +220,7 @@ for (genome in unique(genomes)) {
                        consensus_path, "\n"))
     }
 }
+
 
 # Calculate consensus peaks
 if (!file.exists(consensus_path) || argv$new_start && !argv$skip_consensus) {
@@ -227,6 +244,7 @@ if (!file.exists(consensus_path) || argv$new_start && !argv$skip_consensus) {
     }
 }
 
+
 # Report existing counts tables
 # TODO: move genome handling out of the called function?
 for (genome in unique(genomes)) {
@@ -237,6 +255,7 @@ for (genome in unique(genomes)) {
                        counts_path, "\n"))
     }
 }
+
 
 # Create count matrix
 if (!file.exists(counts_path) || argv$new_start && !argv$skip_table) {

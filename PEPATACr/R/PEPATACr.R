@@ -2973,18 +2973,61 @@ peakCounts <- function(project, output_dir, results_subdir, assets,
 }
 
 
-#' Create and return assets spreadsheet and save the spreadsheet to file
+#' Create and return sample statistics summary data table
 #'
-#' @param project A PEPr project object
-#' @param output_dir A PEP project output directory path
+#' @param samples A PEP project character vector of sample names
 #' @param results_subdir A PEP project results subdirectory path
 #' @export
-createAssetsSummary <- function(project, output_dir, results_subdir) {
-    # Convenience
-    project_name <- pepr::config(project)$name
-    
+createStatsSummary <- function(samples, results_subdir) {  
+    # Create stats_summary file
+    missing_files   <- 0
+    write(paste0("Creating stats summary..."), stdout())
+
+    for (sample in samples) {
+        sample_output_folder <- file.path(results_subdir, sample)
+        sample_assets_file   <- file.path(sample_output_folder, "stats.tsv")
+
+        if (!file.exists(sample_assets_file)) {
+            missing_files <- missing_files + 1
+            next
+        }
+
+        t <- fread(sample_assets_file, header=FALSE,
+                   col.names=c('stat', 'val', 'annotation'))
+        # Remove complete duplicates
+        t <- t[!duplicated(t[, c('stat', 'val', 'annotation')],
+               fromLast=TRUE),]
+        max_time <- max(t[stat=="Time",]$val)
+        # Keep max(Time) and last(Success)
+        t <- t[!duplicated(t[, c('stat', 'annotation')],
+               fromLast=TRUE),]
+        t[stat=="Time",]$val <- max_time
+
+        t2 <- data.table(t(t$val))
+        colnames(t2) <- t$stat
+        t2 <- cbind(data.table(sample_name=sample), t2)
+        if (exists("stats")) {
+            stats <- rbind(stats, t2, fill=TRUE)
+        } else {
+            stats <- t2
+        }
+    }
+
+    if (missing_files > 0) {
+        warning(sprintf("Stats files missing for %s samples.", missing_files))
+    }
+
+    return(stats)
+}
+
+
+#' Create and return assets summary data table
+#'
+#' @param samples A PEP project character vector of sample names
+#' @param results_subdir A PEP project results subdirectory path
+#' @export
+createAssetsSummary <- function(samples, results_subdir) {  
     # Create assets_summary file
-    project_samples <- pepr::sampleTable(project)$sample_name
     missing_files   <- 0
     assets  <- data.table(sample_name=character(),
                           asset=character(),
@@ -2992,7 +3035,7 @@ createAssetsSummary <- function(project, output_dir, results_subdir) {
                           annotation=character())
     write(paste0("Creating assets summary..."), stdout())
 
-    for (sample in project_samples) {
+    for (sample in samples) {
         sample_output_folder <- file.path(results_subdir, sample)
         sample_assets_file   <- file.path(sample_output_folder, "assets.tsv")
 
@@ -3008,16 +3051,11 @@ createAssetsSummary <- function(project, output_dir, results_subdir) {
         t[,sample_name:=sample]
         assets = rbind(assets, t)
     }
-    project_assets_file <- file.path(output_dir,
-        paste0(project_name, '_assets_summary.tsv'))
+    
     if (missing_files > 0) {
         warning(sprintf("Assets files missing for %s samples.", missing_files))
     }
 
-    fwrite(assets, project_assets_file, sep="\t", col.names=FALSE)
-
-    message(sprintf("Summary (n=%s): %s",
-        length(unique(assets$sample_name)), project_assets_file))
     return(assets)
 }
 
