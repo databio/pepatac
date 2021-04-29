@@ -125,14 +125,14 @@ if (dir.exists(argv$results)) {
 
 # Generate stats summary
 stats  <- PEPATACr::createStatsSummary(project_samples, results_subdir)
-if (nrow(assets) == 0) {
+if (nrow(stats) == 0) {
     quit()
 }
 project_stats_file <- file.path(argv$output,
                                 paste0(project_name, '_stats_summary.tsv'))
 message(sprintf("Summary (n=%s): %s",
         length(unique(stats$sample_name)), project_stats_file))
-fwrite(stats, project_stats_file, sep="\t", col.names=FALSE)
+fwrite(stats, project_stats_file, sep="\t", col.names=TRUE)
 
 
 # Generate assets

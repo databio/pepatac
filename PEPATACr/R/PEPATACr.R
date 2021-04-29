@@ -2755,7 +2755,9 @@ peakCounts <- function(project, output_dir, results_subdir, assets,
     file_list   <- sample_table$peak_files
     file_exists <- character()
     for (i in 1:length(file_list)) {
-        if(file.exists(file.path(file_list[i]))) {
+        # Check if file exists and is not empty
+        info <- file.info(file.path(file_list[i]))
+        if(file.exists(file.path(file_list[i])) & info$size != 0) {
             file_exists <- append(file_exists, file.path(file_list[i]))
         }
     }
@@ -2840,8 +2842,29 @@ peakCounts <- function(project, output_dir, results_subdir, assets,
                                    width=as.numeric(),
                                    frac=as.numeric(),
                                    norm=as.numeric())
-                                  
-            peaks           <- rbindlist(lapply(st_list[[g]]$peak_files, fread))
+
+            peaks <- tryCatch(
+                {
+                    suppressMessages(
+                        rbindlist(lapply(st_list[[g]]$peak_files, fread)))
+                },
+                error=function(e) {
+                    message("peakCounts() peak coverage file fread(): ", e)
+                    return(NULL)
+                },
+                warning=function(e) {
+                    message("peakCounts() peak coverage file fread(): ", e)
+                    return(NULL)
+                }
+            )
+
+            if (is.null(peaks)) {
+                warning(strwrap(prefix = " ", initial = "",
+                    "Unable to produce a peak coverage file. Check that 
+                     individual peak coverage files are not empty."))
+                return(NULL)
+            }
+
             colnames(peaks) <- c("chr", "start", "end", "read_count",
                                  "base_count", "width", "frac", "norm")
             setkey(peaks, chr, start, end)
@@ -2851,7 +2874,8 @@ peakCounts <- function(project, output_dir, results_subdir, assets,
                                                   keep.extra.columns=TRUE)
             reduceGR  <- reduce(peaksGR)
             
-            # instead, different column for each sample is the counts columns, plural
+            # instead, different column for each sample is the counts columns,
+            # plural
             reduce_dt <- data.table(chr=as.character(seqnames(reduceGR)),
                                     start=start(reduceGR),
                                     end=end(reduceGR))

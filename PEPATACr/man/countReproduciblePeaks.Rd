@@ -5,13 +5,13 @@
 \title{Internal helper function for \code{collapsePeaks}
 Count the number of times a peak appears across a list of peak files}
 \usage{
-countReproduciblePeaks(peakList, peakDT)
+countReproduciblePeaks(peak_list, peak_DT)
 }
 \arguments{
-\item{peakList}{A list of data.table objects representing
+\item{peak_list}{A list of data.table objects representing
 narrowPeak files}
 
-\item{peakDT}{A single data.table of peaks}
+\item{peak_DT}{A single data.table of peaks}
 }
 \description{
 Internal helper function for \code{collapsePeaks}

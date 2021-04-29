@@ -6,7 +6,7 @@
 Take a set of peak files and identify only the reproducible minimally
 scoring peaks.}
 \usage{
-collapsePeaks(sample_table, chrom_sizes, min_score = 5)
+collapsePeaks(sample_table, chrom_sizes, min_samples = 2, min_score = 5)
 }
 \arguments{
 \item{sample_table}{A data.table object that includes paths to
@@ -14,7 +14,10 @@ valid peak files.}
 
 \item{chrom_sizes}{A data.table of genome chromosome sizes.}
 
-\item{min_score}{A minimum peak score to keep.}
+\item{min_samples}{A minimum number of samples a peak must be present
+in to keep.}
+
+\item{min_score}{A minimum peak score to keep an individual peak.}
 }
 \description{
 Internal helper function for \code{consensusPeaks}

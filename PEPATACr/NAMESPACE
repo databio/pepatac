@@ -2,6 +2,7 @@
 
 export(consensusPeaks)
 export(createAssetsSummary)
+export(createStatsSummary)
 export(fileIcon)
 export(getPrealignments)
 export(narrowPeakToBigBed)
