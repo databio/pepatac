@@ -85,7 +85,7 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     params: ''
     # --blacklist: Pipeline includes blacklist by default if the refgenie asset exists.
   homer_findpeaks:
-    params: 'minDist 150 -region'
+    params: '-minDist 150 -region'
     # Use region mode with minimum distance of 150
   homer_motif:
     params: '-size given -mask'

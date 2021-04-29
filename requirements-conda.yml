@@ -66,5 +66,6 @@ dependencies:
  - pyyaml>=3.13
  - refgenconf>=0.7.0
  - refgenie>=0.9.3
+ - typing_extensions>=3.7.4.1
  - ubiquerg>=0.6.1
  - yacman>=0.6.7

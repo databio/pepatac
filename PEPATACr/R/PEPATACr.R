@@ -1641,7 +1641,7 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 #'
 #' @param input Path to narrowPeak file
 #' @param chr_sizes Genome chromosome sizes file. <Chr> <Size>
-#' @param output Output file.
+#' @param output Output file name.
 #' @param normalize Remove overlaps and normalize the score.
 #' @keywords reduce fixed peaks
 #' @export
@@ -1649,9 +1649,18 @@ reducePeaks <- function(input, chr_sizes, output=NA, normalize=FALSE) {
     info <- file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
         peaks           <- fread(file.path(input))
-        colnames(peaks) <- c("chr", "start", "end",
-                             "name", "score", "strand",
-                             "signalValue", "pValue", "qValue", "peak")
+        if (ncol(peaks) == 6) {
+            colnames(peaks) <- c("chr", "start", "end",
+                                 "name", "score", "strand")
+        } else if (ncol(peaks) == 10) {
+            colnames(peaks) <- c("chr", "start", "end",
+                                 "name", "score", "strand",
+                                 "signalValue", "pValue", "qValue", "peak")
+        } else {
+            warning(paste0(input, " did not contain a recognizable number", 
+                           " of columns (", ncol(peaks), ")"))
+            rm(peaks)
+        }
         setkey(peaks, chr, start, end)
     } else {
         if (info$size == 0) {
@@ -1711,7 +1720,9 @@ reducePeaks <- function(input, chr_sizes, output=NA, normalize=FALSE) {
         }
 
     } else {
-        message("PEPATACr reducePeaks() failed. Check peak and chrom.sizes files.")
+        err_msg = paste0("PEPATACr reducePeaks() failed. ", 
+                         "Check peak and chrom.sizes files.")
+        warning(err_msg)
     }
 }
 

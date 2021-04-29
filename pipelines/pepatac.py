@@ -771,7 +771,16 @@ def main():
     cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
         local_input_files, args.sample_name, args.paired_end, fastq_folder,
         zipmode=True)
-    print(cmd)
+
+    #print(f"{cmd}")  # DEBUG
+
+    # flatten nested list
+    if any(isinstance(i, list) for i in unaligned_fastq):
+        unaligned_fastq = [i for e in unaligned_fastq for i in e]
+    # maintain order and remove duplicate entries
+    if any(isinstance(i, dict) for i in local_input_files):
+        unaligned_fastq = list(dict.fromkeys(unaligned_fastq))
+
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
                local_input_files, unaligned_fastq, args.paired_end))
@@ -2049,11 +2058,16 @@ def main():
                                            "_homer_peaks.tsv")
                 cmd1 = ('makeTagDirectory ' + tag_directory + " " + rmdup_bam)
                 cmd2 = (tools.homer_findpeaks + " " + tag_directory + " -o " +
-                        homer_peaks + " -gsize " + args.genome_size + " ")
+                        homer_peaks + " -gsize " + str(genome_size) + " ")
                 cmd2 += param.homer_findpeaks.params
-                cmd3 = ('pos2bed.pl ' + homer_peaks + " | " + tools.bedtools +
-                        " sort | " + tools.bedtools + " merge > " + 
+                cmd3 = ("awk 'BEGIN{OFS=\"\t\";} /^[^#]/ " +
+                        "{ print $2,$3,$4,$1,$8,$5 }' " + homer_peaks +
+                        " | sort -k1,1 -k2,2n | " + tools.bedtools + " merge " + 
+                        "-c 4,5,6 -o distinct,sum,distinct > " +
                         peak_output_file)
+                # cmd3 = ('pos2bed.pl ' + homer_peaks + " | " + tools.bedtools +
+                        # " sort | " + tools.bedtools + " merge > " + 
+                        # peak_output_file)
                 pm.clean_add(homer_peaks)
                 pm.clean_add(tag_directory)
                 cmd = [cmd1, cmd2, cmd3]
@@ -2072,7 +2086,7 @@ def main():
             cmd = build_command(cmd_base)
 
         # Call peaks and report peak count.
-        # nofail true conditional on hmmratac which fails on small samples
+        # nofail true conditional on hmmratac/fseq2 which fails on small samples
         # TODO: there are downstream steps that require a peak file!
         #       maybe it should just fail?
         if args.peak_caller == "hmmratac":
@@ -2082,10 +2096,21 @@ def main():
                 num_peaks = max(0, line_count - 1)
                 pm.report_result("Peak_count", num_peaks)
             else:
-                # TODO: could just touch an empty file? Homer creates an empty file...
+                # just touch an empty file? Homer creates an empty file...
                 cmd = "touch " +  peak_output_file
                 pm.run(cmd, peak_output_file)
                 pm.warning("HMMRATAC failed to identify any peaks.")
+        elif args.peak_caller == "fseq":
+            pm.run(cmd, peak_output_file, nofail=True)
+            if os.path.exists(peak_output_file):
+                line_count = int(ngstk.count_lines(peak_output_file).strip())
+                num_peaks = max(0, line_count - 1)
+                pm.report_result("Peak_count", num_peaks)
+            else:
+                # just touch an empty file? Homer creates an empty file...
+                cmd = "touch " +  peak_output_file
+                pm.run(cmd, peak_output_file)
+                pm.warning("FSeq2 failed to identify any peaks.")
         else:
             pm.run(cmd, peak_output_file, follow=report_peak_count)
 

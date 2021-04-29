@@ -121,7 +121,13 @@ if (dir.exists(argv$results)) {
     quit()
 }
 
-# Get assets
+# Generate stats summary
+assets  <- PEPATACr::createStatsSummary(prj, argv$output, results_subdir)
+if (nrow(assets) == 0) {
+    quit()
+}
+
+# Generate assets
 assets  <- PEPATACr::createAssetsSummary(prj, argv$output, results_subdir)
 if (nrow(assets) == 0) {
     quit()
