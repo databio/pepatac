@@ -24,7 +24,7 @@ from refgenconf import RefGenConf as RGC, select_genome_config
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
 ALIGNERS = ["bowtie2", "bwa"]
-PEAK_CALLERS = ["fseq", "genrich", "hmmratac", "homer", "macs2"]
+PEAK_CALLERS = ["fseq", "fseq2", "genrich", "hmmratac", "homer", "macs2"]
 PEAK_TYPES = [ "fixed", "variable"]
 DEDUPLICATORS = ["picard", "samblaster", "samtools"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
@@ -567,7 +567,7 @@ def main():
     ############################################################################
     #                Confirm required tools are all callable                   #
     ############################################################################
-    opt_tools = ["fseq", "Genrich", "${HMMRATAC}", "${PICARD}",
+    opt_tools = ["fseq", "fseq2", "Genrich", "${HMMRATAC}", "${PICARD}",
                  "${TRIMMOMATIC}", "pyadapt", "findMotifsGenome.pl",
                  "findPeaks", "seqOutBias", "bigWigMerge", "bedGraphToBigWig",
                  "pigz", "bwa"]
@@ -605,6 +605,9 @@ def main():
 
     if args.peak_caller == "fseq":
         if 'fseq' in opt_tools: opt_tools.remove('fseq')
+
+    if args.peak_caller == "fseq2":
+        if 'fseq2' in opt_tools: opt_tools.remove('fseq2')
 
     if args.peak_caller == "genrich":
         if 'Genrich' in opt_tools: opt_tools.remove('Genrich')
@@ -1059,14 +1062,14 @@ def main():
 
     if args.aligner.lower() == "bwa":
         if not param.bwa.params:
-            bwa_options = " -M"
+            bwa_options = " -M "
         else:
             bwa_options = param.bwa.params
     else:
         if not param.bowtie2.params:
-            bt2_options = " --very-sensitive"
+            bt2_options = " --very-sensitive "
             if args.paired_end:
-                bt2_options += " -X 2000"
+                bt2_options += " -X 2000 "
         else:
             bt2_options = param.bowtie2.params    
 
@@ -1973,9 +1976,33 @@ def main():
             else:
                 fseq_cmd_chunks = [
                     tools.fseq,
+                    ("-o", peak_folder),
+                    param.fseq.params
+                ]
+                # Create the peak calling command
+                fseq_cmd_chunks.append(peak_input_file)
+                fseq_cmd = build_command(fseq_cmd_chunks)
+
+                # Create the file merge/delete commands.
+                chrom_peak_files = os.path.join(peak_folder, "*.npf")
+                merge_chrom_peaks_files = (
+                    "cat {peakfiles} > {combined_peak_file}"
+                    .format(peakfiles=chrom_peak_files,
+                            combined_peak_file=peak_output_file))
+                pm.clean_add(chrom_peak_files)
+
+                # Pypiper serially executes the commands.
+                cmd = [fseq_cmd, merge_chrom_peaks_files]
+        elif args.peak_caller == "fseq2":
+            if args.peak_type == "fixed":
+                err_msg = "Must use MACS2 when calling fixed width peaks."
+                pm.fail_pipeline(RuntimeError(err_msg))
+            else:
+                fseq_cmd_chunks = [
+                    tools.fseq,
                     "callpeak",
                     peak_input_file,
-                    param.fseq.params,
+                    param.fseq2.params,
                     ("-name", args.sample_name),
                     ("-cpus", pm.cores)
                 ]
@@ -1984,19 +2011,7 @@ def main():
                     fseq_cmd_chunks.append("-pe_fragment_size_range auto")
                 # Create the peak calling command
                 fseq_cmd = build_command(fseq_cmd_chunks)
-
-                # Create the file merge/delete commands. # F-seq1
-                # chrom_peak_files = os.path.join(peak_folder, "*.npf")
-                # merge_chrom_peaks_files = (
-                    # "cat {peakfiles} > {combined_peak_file}"
-                    # .format(peakfiles=chrom_peak_files,
-                            # combined_peak_file=peak_output_file))
-                # pm.clean_add(chrom_peak_files)
-
-                # Pypiper serially executes the commands.
-                #cmd = [fseq_cmd, merge_chrom_peaks_files] # F-seq1
                 cmd = fseq_cmd
-        # TODO: move fixed plus not macs check early on before pipeline starts!
         elif args.peak_caller == "hmmratac" and args.paired_end:
             if args.peak_type == "fixed":
                 err_msg = "Must use MACS2 when calling fixed width peaks."
@@ -2045,6 +2060,7 @@ def main():
                 cmd2 = tools.genrich + " -j -t " + name_sort_rmdup
                 if os.path.exists(res.blacklist):
                     cmd2 += " -E " + res.blacklist
+                cmd2 += param.genrich.params
                 cmd2 += " -o " + peak_output_file
                 pm.clean_add(name_sort_rmdup)
                 cmd = [cmd1, cmd2]

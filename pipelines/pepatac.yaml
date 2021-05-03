@@ -20,7 +20,8 @@ tools:  # absolute paths to required tools
   bedToBigBed: bedToBigBed
   # optional tools
   bwa: bwa
-  fseq: fseq2
+  fseq: fseq
+  fseq2: fseq2
   genrich: Genrich
   hmmratac: ${HMMRATAC}
   homer_findpeaks: findPeaks
@@ -74,6 +75,12 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     # --shift:  Assign an arbitrary shift in bp. See MACS documentation.
     # --nomodel: Will bybass building the shifting model.
   fseq:
+    params: '-of npf -l 600 -t 4.0 -s 1'
+    # -of: narrowPeak as output format.
+    # -l: feature length.
+    # -t: "threshold" (standard deviations).
+    # -s: wiggle track step.
+  fseq2:
     params: '-f 0 -l 600 -t 4.0'
     # -f: fragment size of treatment data
     # -l: feature length.
