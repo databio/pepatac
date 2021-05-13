@@ -6,6 +6,7 @@ site_url: http://pepatac.databio.org/en/latest/
 site_logo: img/pepatac_logo_white.svg
 repo_url: https://github.com/databio/pepatac/
 google_analytics: ['UA-127092878-1', 'pepatac.databio.org']
+paper_link: https://doi.org/10.1101/2020.10.21.347054
 
 markdown_extensions:
   - fontawesome_markdown  # pip install --user fontawesome-markdown
