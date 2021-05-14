@@ -2017,6 +2017,8 @@ def main():
                 err_msg = "Must use MACS2 when calling fixed width peaks."
                 pm.fail_pipeline(RuntimeError(err_msg))
             else:
+                gapped_peak_file = os.path.join(peak_folder, args.sample_name +
+                                                "_peaks.gappedPeak")
                 fixed_header_bam = os.path.join(map_genome_folder,
                     args.sample_name + "_fixed_header.bam")
                 fixed_header_index = os.path.join(map_genome_folder,
@@ -2035,9 +2037,16 @@ def main():
                 cmd3 += " --genome " + chr_order
                 if os.path.exists(res.blacklist):
                     cmd3 += " --blacklist " + res.blacklist
-                cmd3 += param.hmmratac.params
-                cmd3 += " --output " + peak_output_file
-                cmd = cmd3
+                cmd3 += " " + param.hmmratac.params
+                cmd3 += " --output " 
+                cmd3 += os.path.join(peak_folder,  args.sample_name)
+                # Drop HighCoveragePeaks [$13(e.g. the score)>1]
+                # Use the score as the qValue for compatibility downstream
+                cmd4 = ("awk -v OFS='\t' '$13>1 {print $1, $2, $3, $4, " +
+                        "$13, $5, \".\", \".\", $13, \".\"}' " +
+                        gapped_peak_file + " | sort -k1,1n -k2,2n > " +
+                        peak_output_file)
+                cmd = [cmd3, cmd4]
         elif args.peak_caller == "hmmratac" and not args.paired_end:
             pm.info("HMMRATAC requires paired-end data. Defaulting to MACS2")
             cmd_base = [

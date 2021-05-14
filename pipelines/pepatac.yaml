@@ -89,7 +89,7 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     params: ''
     # -j: ATAC-seq mode on by default
   hmmratac:
-    params: ''
+    params: '--fragmem True --upper 10 --lower 5 --peaks True --window 500000'
     # --blacklist: Pipeline includes blacklist by default if the refgenie asset exists.
   homer_findpeaks:
     params: '-minDist 150 -region'
