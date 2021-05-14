@@ -19,6 +19,7 @@ RUN apt-get update && \
     curl \
     default-jre \
     default-jdk \
+    openjdk-8-jdk \
     git \
     libcommons-math3-java \
     libcurl4-gnutls-dev \ 
@@ -119,13 +120,6 @@ RUN Rscript -e "install.packages('argparser')" && \
     Rscript -e "install.packages('stringr')" && \
     Rscript -e "devtools::install_github('databio/pepatac/PEPATACr/')"
 
-# Install MACS from github
-# Must install this way due to bug using easy_install in MACS setup.py with pip
-WORKDIR /home/tools/
-RUN git clone https://github.com/macs3-project/MACS.git --recurse-submodules && \
-    cd /home/tools/MACS && \
-    python3 setup.py install
-
 # Install bedtools
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
     ant \
@@ -147,6 +141,10 @@ RUN wget https://github.com/samtools/htslib/releases/download/1.12/htslib-1.12.t
     ./configure --prefix /home/src/ && \
     make && \
     make install
+
+# Install MACS2 from PyPi
+WORKDIR /home/tools/
+RUN pip install MACS2
 
 # Install samtools
 WORKDIR /home/src/
@@ -223,7 +221,7 @@ RUN wget -O bwa-0.7.17.tar.bz2  'https://downloads.sourceforge.net/project/bio-b
     make && \
     ln -s /home/src/bwa-0.7.17/bwa /usr/bin/
 
-# Install F-seq
+# Install F-seq2
 WORKDIR /home/src/
 RUN pip install pyBigWig
 RUN wget https://github.com/Boyle-Lab/F-Seq2/archive/master.zip && \
@@ -258,6 +256,12 @@ RUN wget http://homer.ucsd.edu/homer/configureHomer.pl && \
     perl /home/tools/bin/configureHomer.pl -install human && \
     perl /home/tools/bin/configureHomer.pl -install mouse
 
+# Install MACS3 from github
+WORKDIR /home/tools/
+RUN git clone https://github.com/macs3-project/MACS.git --recurse-submodules && \
+    cd /home/tools/MACS && \
+    python3 setup.py install
+
 # Install picard
 WORKDIR /home/tools/bin
 RUN wget https://github.com/broadinstitute/picard/releases/download/2.25.2/picard.jar && \
@@ -269,13 +273,24 @@ RUN wget -O seqOutBias-v1.3.0.tar.gz 'https://github.com/guertinlab/seqOutBias/a
     tar xf seqOutBias-v1.3.0.tar.gz && \
     cd seqOutBias-1.3.0 && \
     cargo build --release && \
-    ln -s /home/tools/seqOutBias-v1.3.0/target/release/seqOutBias /usr/bin/
+    ln -s /home/tools/seqOutBias-1.3.0/target/release/seqOutBias /usr/bin/
 
 # Install Trimmomatic
 WORKDIR /home/src/
 RUN wget https://github.com/usadellab/Trimmomatic/files/5854859/Trimmomatic-0.39.zip && \
     unzip Trimmomatic-0.39.zip && \
     chmod +x Trimmomatic-0.39/trimmomatic-0.39.jar
+
+# Install F-seq
+WORKDIR /home/src/
+RUN git clone https://github.com/aboyle/F-seq.git
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/ \
+    PATH=$PATH:$JAVA_HOME/bin
+RUN cd /home/src/F-seq && \
+    ant && \
+    cd dist~/ && \
+    tar xf fseq.tgz && \
+    ln -s /home/src/F-seq/dist~/fseq/bin/fseq /usr/bin/
 
 # Set environment variables
 ENV PATH=/home/tools/bin:/home/tools/:/home/tools/bin/kentUtils/:/home/src/bowtie2-2.4.2:/home/src/skewer:/home/src/samtools-1.12:/home/src/Trimmomatic-0.39/:/home/src/htslib-1.12:$PATH \
@@ -284,6 +299,13 @@ ENV PATH=/home/tools/bin:/home/tools/:/home/tools/bin/kentUtils/:/home/src/bowti
     HMMRATAC=/home/tools/bin/HMMRATAC_V1.2.10_exe.jar \
     R_LIBS_USER=/usr/local/lib/R/site-library/ \
     PYTHONPATH=/usr/local/lib/python3.8/dist-packages:$PYTHONPATH
+
+# Create python alias
+RUN echo 'alias python="/usr/bin/python3"' >> /root/.bashrc && \
+    /bin/bash -c "source /root/.bashrc"
+
+# Make python3 default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 
 # Define default command
 WORKDIR /home/
