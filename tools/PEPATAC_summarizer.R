@@ -11,7 +11,7 @@
 # ))
 #
 # Created: 5/18/17
-# Last updated: 03/12/2020
+# Last updated: 05/10/2021
 #
 # usage: Rscript /path/to/Rscript/PEPATAC_summarizer.R 
 #        /path/to/project_config.yaml
@@ -65,6 +65,9 @@ p <- add_argument(p, arg="--normalized", short="-Z", flag=TRUE,
 p <- add_argument(p, arg="cutoff", short="-m", default=2,
                   help=paste0("Only keep peaks present in at least this ",
                               "number of samples."))
+p <- add_argument(p, arg="min-score", short="-s", default=5,
+                  help=paste0("A minimum peak score to keep an",
+                              " individual peak."))
 # Parse the command line arguments
 argv <- parse_args(p)
 
@@ -104,6 +107,8 @@ prj <- invisible(suppressWarnings(pepr::Project(pep)))
 # Convenience
 project_name    <- config(prj)$name
 project_samples <- pepr::sampleTable(prj)$sample_name
+sample_table    <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
+                              genome=pepr::sampleTable(prj)$genome)
 
 # Set the output directory
 summary_dir <- suppressMessages(file.path(argv$output, "summary"))
@@ -225,8 +230,12 @@ for (genome in unique(genomes)) {
 # Calculate consensus peaks
 if (!file.exists(consensus_path) || argv$new_start && !argv$skip_consensus) {
     #write(paste0("Creating consensus peak set..."), stdout())
-    consensus_paths <- PEPATACr::consensusPeaks(prj, argv$output,
-                                                argv$results, assets)
+    consensus_paths <- PEPATACr::consensusPeaks(sample_table,
+                                                summary_dir,
+                                                argv$results,
+                                                assets,
+                                                argv$cutoff,
+                                                argv$min_score)
     if (!length(consensus_paths) == 0) {
         for (consensus_file in consensus_paths) {
             if (file.exists(consensus_file)) {
@@ -259,9 +268,15 @@ for (genome in unique(genomes)) {
 
 # Create count matrix
 if (!file.exists(counts_path) || argv$new_start && !argv$skip_table) {
-    #write(paste0("Creating peak count table(s)..."), stdout())
-    counts_paths <- PEPATACr::peakCounts(prj, argv$output, argv$results, assets,
-                                         argv$poverlap, argv$normalized,
+    sample_table <- data.table::data.table(
+        sample_name=pepr::sampleTable(prj)$sample_name,
+        genome=pepr::sampleTable(prj)$genome)
+    counts_paths <- PEPATACr::peakCounts(sample_table,
+                                         summary_dir,
+                                         argv$results,
+                                         assets,
+                                         argv$poverlap,
+                                         argv$normalized,
                                          argv$cutoff)
     if (!length(counts_paths) == 0) {
         for (counts_table in counts_paths) {

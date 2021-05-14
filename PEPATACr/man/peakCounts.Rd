@@ -5,8 +5,8 @@
 \title{Produce a project level peak counts table}
 \usage{
 peakCounts(
-  project,
-  output_dir,
+  sample_table,
+  summary_dir,
   results_subdir,
   assets,
   poverlap = FALSE,
@@ -15,9 +15,10 @@ peakCounts(
 )
 }
 \arguments{
-\item{project}{A PEPr project object}
+\item{sample_table}{A data.table containing sample names and their 
+corresponding genome}
 
-\item{output_dir}{A PEP project output directory path}
+\item{summary_dir}{A PEP project summary directory path}
 
 \item{results_subdir}{A PEP project results subdirectory path}
 
