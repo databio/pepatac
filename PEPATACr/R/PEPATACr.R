@@ -2495,32 +2495,14 @@ countReproduciblePeaks <- function(peak_list, peak_DT) {
 #' @param min_score A minimum peak score to keep an individual peak.
 collapsePeaks <- function(sample_table, chr_sizes, min_samples=2, min_score=5) {
     # create combined peaks
-    peaks           <- rbindlist(lapply(sample_table$peak_files, fread))
-    if (ncol(peaks) == 6) {
-        colnames(peaks) <- c("chr", "start", "end",
+    peaks <- rbindlist(lapply(sample_table$peak_files, fread), idcol="file")
+    if (ncol(peaks) == 7) {
+        colnames(peaks) <- c("file", "chr", "start", "end",
                              "name", "score", "strand")
-        bedOnly <- TRUE
-        final <- data.table(chr=character(),
-                            start=integer(),
-                            end=integer(),
-                            name=character(),
-                            score=numeric(),
-                            strand=character())
-    } else if (ncol(peaks) == 10) {
-        colnames(peaks) <- c("chr", "start", "end",
+    } else if (ncol(peaks) == 11) {
+        colnames(peaks) <- c("file", "chr", "start", "end",
                              "name", "score", "strand",
                              "signalValue", "pValue", "qValue", "peak")
-        bedOnly <- FALSE
-        final <- data.table(chr=character(),
-                            start=integer(),
-                            end=integer(),
-                            name=character(),
-                            score=numeric(),
-                            strand=character(),
-                            signalValue=numeric(),
-                            pValue=numeric(),
-                            qValue=numeric(),
-                            peak=integer())
     } else {
         warning(paste0("Peak files did not contain a recognizable number", 
                        " of columns (", ncol(peaks), ")"))
@@ -2542,6 +2524,7 @@ collapsePeaks <- function(sample_table, chr_sizes, min_samples=2, min_score=5) {
     # split by chromosome to minimize memory requirements
     peaks_by_chr   <- split(peaks, peaks$chr)
     hit_aggregator <- function(x) {
+        #message(paste0("x: ", unique(x$chr)))  # DEBUG
         peaksGR <- makeGRangesFromDataFrame(x, keep.extra.columns=FALSE)
         hitsGR  <- suppressWarnings(
             findOverlaps(peaksGR, peaksGR, ignore.strand=TRUE))
@@ -2553,9 +2536,9 @@ collapsePeaks <- function(sample_table, chr_sizes, min_samples=2, min_score=5) {
         out     <- hits[scores, nomatch=0]
         keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
         indices <- unique(keep$xid)
-        final   <- x[indices,]
-        final[start < 0, start := 0]
-        return(final)
+        reduced <- x[indices,]
+        reduced[start < 0, start := 0]
+        return(reduced)
     }
     final <- rbindlist(lapply(peaks_by_chr, hit_aggregator))
 
@@ -2566,7 +2549,9 @@ collapsePeaks <- function(sample_table, chr_sizes, min_samples=2, min_score=5) {
     }
 
     # identify reproducible peaks
-    peaks[,group := gsub("_peak.*","",name)]
+    peaks[,group := sample_table$sample_name[file]]
+    peaks[,file:=NULL]
+    final[,file:=NULL]
     peak_list <- splitDataTable(peaks, "group")
     rm(peaks)
     invisible(gc())
