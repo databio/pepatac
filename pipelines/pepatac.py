@@ -412,6 +412,22 @@ def tool_path(tool_name):
                         TOOLS_FOLDER, tool_name)
 
 
+def rescale(n, after=[0,1], before=[]):
+    """
+    Helper function to rescale a vector between specified range of values
+    
+    :param numpy array n: a vector of numbers to be rescale 
+    :param list after: range of values to which to scale n 
+    :param list before: range of values in which n is contained
+    """
+    if not before:
+        before=[min(n), max(n)]
+    if (before[1] - before[0]) == 0:
+        return n
+    return (((after[1] - after[0]) * (n - before[0]) / 
+             (before[1] - before[0])) + after[0])
+
+
 def check_commands(commands, ignore=''):
     """
     Check if command(s) can be called
@@ -2125,9 +2141,27 @@ def main():
                 cmd = "touch " +  peak_output_file
                 pm.run(cmd, peak_output_file)
                 pm.warning("HMMRATAC failed to identify any peaks.")
-        elif args.peak_caller == "fseq":
+        elif args.peak_caller == "fseq" or args.peak_caller == "fseq2":
             pm.run(cmd, peak_output_file, nofail=True)
-            if os.path.exists(peak_output_file):
+            if (os.path.exists(peak_output_file) and 
+                    os.stat(peak_output_file).st_size > 0):
+                df = pd.read_csv(peak_output_file, sep='\t', header=None,
+                                 names=("chr", "start", "end", "name", "score",
+                                        "strand", "signalValue", "pValue",
+                                        "qValue", "peak"))
+                nineNine = df['signalValue'].quantile(q=0.99)
+                df.loc[df['signalValue'] > nineNine, 'signalValue'] = nineNine
+
+                # rescale score to be between 100 and 1000. 
+                # See https://fureylab.web.unc.edu/software/fseq/
+                df['score'] = rescale(np.log(df['signalValue']), [100, 1000])
+
+                # ensure score is a whole integer value
+                df['score'] = pd.to_numeric(df['score'].round(),
+                                            downcast='integer')
+                df.to_csv(peak_output_file, sep='\t',
+                          header=False, index=False)
+
                 line_count = int(ngstk.count_lines(peak_output_file).strip())
                 num_peaks = max(0, line_count - 1)
                 pm.report_result("Peak_count", num_peaks)
@@ -2135,7 +2169,10 @@ def main():
                 # just touch an empty file? Homer creates an empty file...
                 cmd = "touch " +  peak_output_file
                 pm.run(cmd, peak_output_file)
-                pm.warning("FSeq2 failed to identify any peaks.")
+                if args.peak_caller == "fseq":
+                    pm.warning("FSeq failed to identify any peaks.")
+                else:
+                    pm.warning("FSeq2 failed to identify any peaks.")
         else:
             pm.run(cmd, peak_output_file, follow=report_peak_count)
 
@@ -2360,13 +2397,6 @@ def main():
                 nineNine = df['V5'].quantile(q=0.99)
                 df.loc[df['V5'] > nineNine, 'V5'] = nineNine
 
-                def rescale(n, after=[0,1], before=[]):
-                    if not before:
-                        before=[min(n), max(n)]
-                    if (before[1] - before[0]) == 0:
-                        return n
-                    return (((after[1] - after[0]) * (n - before[0]) / 
-                             (before[1] - before[0])) + after[0])
                 # rescale score to be between 0 and 1000
                 df['V5'] = rescale(np.log(df['V5']), [0, 1000])
 
