@@ -30,7 +30,7 @@ sample_table    <- data.table::data.table(
 
 # Specify file locations
 output_dir  <- "pepatac_test/"
-results_dir <- "pepatac_test/results_pipeline"
+results_dir <- file.path(output_dir, "results_pipeline")
 summary_dir <- file.path(output_dir, "summary")
 # Produce output directory (if needed)
 dir.create(summary_dir, showWarnings = FALSE)
