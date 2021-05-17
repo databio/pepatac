@@ -11,7 +11,8 @@ peakCounts(
   assets,
   poverlap = FALSE,
   norm = FALSE,
-  cutoff = 2
+  cutoff = 2,
+  min_olap = 1
 )
 }
 \arguments{
@@ -29,6 +30,9 @@ corresponding genome}
 \item{norm}{Use normalized read counts}
 
 \item{cutoff}{Only keep peaks present in the `cutoff` number of samples}
+
+\item{min_olap}{A minimum number of bases between peaks to be 
+considered overlapping.}
 }
 \description{
 Produce a project level peak counts table

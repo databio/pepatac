@@ -6,7 +6,13 @@
 Take a set of peak files and identify only the reproducible minimally
 scoring peaks.}
 \usage{
-collapsePeaks(sample_table, chr_sizes, min_samples = 2, min_score = 5)
+collapsePeaks(
+  sample_table,
+  chr_sizes,
+  min_samples = 2,
+  min_score = 5,
+  min_olap = 1
+)
 }
 \arguments{
 \item{sample_table}{A data.table object that includes paths to
@@ -18,6 +24,9 @@ valid peak files.}
 in to keep.}
 
 \item{min_score}{A minimum peak score to keep an individual peak.}
+
+\item{min_olap}{A minimum number of bases between peaks to be 
+considered overlapping.}
 }
 \description{
 Internal helper function for \code{consensusPeaks}

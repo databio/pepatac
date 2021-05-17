@@ -57,6 +57,9 @@ def parse_arguments():
     parser.add_argument("-s", "--min-score", default=5,
                         help="A minimum peak score to keep an " +
                              "individual peak.")
+    parser.add_argument("-l", "--min-olap", default=1,
+                        help="A minimum number of overlapping bases to " +
+                             "defined peaks as overlapping.")
     args = parser.parse_args()
     return args
 
@@ -70,7 +73,7 @@ def main():
 
     cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
            f"{args.config_file} {args.output_parent} "
-           f"{args.results} {args.cutoff} {args.min_score}")
+           f"{args.results} {args.cutoff} {args.min_score} {args.min_olap}")
     if args.new_start:
         cmd += " --new-start"
     if args.skip_consensus:

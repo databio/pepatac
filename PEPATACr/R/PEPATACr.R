@@ -2493,7 +2493,10 @@ countReproduciblePeaks <- function(peak_list, peak_DT) {
 #' @param min_samples A minimum number of samples a peak must be present
 #'                    in to keep.
 #' @param min_score A minimum peak score to keep an individual peak.
-collapsePeaks <- function(sample_table, chr_sizes, min_samples=2, min_score=5) {
+#' @param min_olap  A minimum number of bases between peaks to be 
+#'					considered overlapping.
+collapsePeaks <- function(sample_table, chr_sizes,
+						  min_samples=2, min_score=5, min_olap=1) {
     # create combined peaks
     peaks <- rbindlist(lapply(sample_table$peak_files, fread), idcol="file")
     if (ncol(peaks) == 7) {
@@ -2527,7 +2530,8 @@ collapsePeaks <- function(sample_table, chr_sizes, min_samples=2, min_score=5) {
         #message(paste0("x: ", unique(x$chr)))  # DEBUG
         peaksGR <- makeGRangesFromDataFrame(x, keep.extra.columns=FALSE)
         hitsGR  <- suppressWarnings(
-            findOverlaps(peaksGR, peaksGR, ignore.strand=TRUE))
+            findOverlaps(peaksGR, peaksGR,
+						 ignore.strand=TRUE, minoverlap=min_olap))
         hits    <- data.table::data.table(xid=queryHits(hitsGR),
                                           yid=subjectHits(hitsGR))
         setkey(hits, xid)
@@ -2575,10 +2579,12 @@ collapsePeaks <- function(sample_table, chr_sizes, min_samples=2, min_score=5) {
 #' @param min_samples A minimum number of samples a peak must be present
 #'                    in to keep.
 #' @param min_score A minimum peak score to keep an individual peak.
+#' @param min_olap  A minimum number of bases between peaks to be 
+#'					considered overlapping.
 #' @keywords consensus peaks
 #' @export
 consensusPeaks <- function(sample_table, summary_dir, results_subdir, assets,
-                           min_samples=2, min_score=5) {    
+                           min_samples=2, min_score=5, min_olap=1) {    
 
     # Produce summary output directory (if needed)
     dir.create(summary_dir, showWarnings = FALSE)
@@ -2638,7 +2644,8 @@ consensusPeaks <- function(sample_table, summary_dir, results_subdir, assets,
         }
         message(paste0("Calculating ", g, " consensus peak set from ",
                        nrow(st_list[[g]]), " samples..."))
-        final <- collapsePeaks(st_list[[g]], c_size, min_samples, min_score)
+        final <- collapsePeaks(st_list[[g]], c_size,
+							   min_samples, min_score, min_olap)
 
         if (!is.null(final)) {
             # save consensus peak set
@@ -2717,10 +2724,12 @@ readPepatacPeakCounts = function(prj, results_subdir) {
 #' @param poverlap Weight counts by the percentage overlap with peak
 #' @param norm Use normalized read counts
 #' @param cutoff Only keep peaks present in the `cutoff` number of samples
+#' @param min_olap  A minimum number of bases between peaks to be 
+#'					considered overlapping.
 #' @keywords project peak counts
 #' @export
 peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
-                       poverlap=FALSE, norm=FALSE, cutoff=2) {
+                       poverlap=FALSE, norm=FALSE, cutoff=2, min_olap=1) {
     # Produce output directory (if needed)
     dir.create(summary_dir, showWarnings = FALSE)
 
@@ -2925,7 +2934,8 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                     
                     reduceGR <- makeGRangesFromDataFrame(reduce_dt)
                     peaksGR  <- makeGRangesFromDataFrame(p)
-                    hitsGR   <- findOverlaps(query=reduceGR, subject=peaksGR)
+                    hitsGR   <- findOverlaps(query=reduceGR, subject=peaksGR,
+											 minoverlap=min_olap)
 
                     # Weight counts by percent overlap
                     olap   <- pintersect(reduceGR[queryHits(hitsGR)],

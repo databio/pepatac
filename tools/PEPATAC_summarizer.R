@@ -68,6 +68,9 @@ p <- add_argument(p, arg="cutoff", short="-m", default=2,
 p <- add_argument(p, arg="min-score", short="-s", default=5,
                   help=paste0("A minimum peak score to keep an",
                               " individual peak."))
+p <- add_argument(p, arg="min-olap", short="-l", default=1,
+                  help=paste0("A minimum number of overlapping bases to",
+                              " defined peaks as overlapping."))
 # Parse the command line arguments
 argv <- parse_args(p)
 
@@ -235,7 +238,8 @@ if (!file.exists(consensus_path) || argv$new_start && !argv$skip_consensus) {
                                                 argv$results,
                                                 assets,
                                                 argv$cutoff,
-                                                argv$min_score)
+                                                argv$min_score,
+												argv$min_olap)
     if (!length(consensus_paths) == 0) {
         for (consensus_file in consensus_paths) {
             if (file.exists(consensus_file)) {
@@ -277,7 +281,8 @@ if (!file.exists(counts_path) || argv$new_start && !argv$skip_table) {
                                          assets,
                                          argv$poverlap,
                                          argv$normalized,
-                                         argv$cutoff)
+                                         argv$cutoff,
+										 argv$min_olap)
     if (!length(counts_paths) == 0) {
         for (counts_table in counts_paths) {
             if (file.exists(counts_table)) {
