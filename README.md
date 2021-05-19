@@ -1,4 +1,4 @@
-<img src="img/pepatac_logo_white.svg" alt="pepatac logo" height="70" align="left"/>
+<img src="https://github.com/databio/pepatac/blob/master/docs/img/pepatac_logo_white.svg" alt="pepatac logo" height="70" align="left"/>
 
 <br></br>
 
