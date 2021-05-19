@@ -103,7 +103,7 @@ That's it! Let's analyze that sample!
 
 
 ## 4: Using `looper` to run the sample processing pipeline
-Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. `Looper` uses [`divvy`](http://code.databio.org/divvy) to manage computing resource configuration so that projects and pipelines can easily travel among environments. For more detailed information, [check out the `looper` docs](http://looper.databio.org/en/latest/faq/#how-can-i-run-my-jobs-on-a-cluster). Let's set it up.
+Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. `Looper` uses [`divvy`](http://code.databio.org/divvy) to manage computing resource configuration so that projects and pipelines can easily travel among environments. For more detailed information, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing/). Let's set it up.
 
 We should still be in the `tools/` subdirectory, but let's move up one level.
 ```console

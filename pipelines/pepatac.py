@@ -787,6 +787,12 @@ def main():
     # sequencing lanes in a single pipeline run.
     local_input_files = ngstk.merge_or_link(
         [args.input, args.input2], raw_folder, args.sample_name)
+    # flatten nested list
+    if any(isinstance(i, list) for i in local_input_files):
+        local_input_files = [i for e in local_input_files for i in e]
+    # maintain order and remove duplicate entries
+    local_input_files = list(dict.fromkeys(local_input_files))
+
     cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
         local_input_files, args.sample_name, args.paired_end, fastq_folder,
         zipmode=True)
@@ -802,7 +808,7 @@ def main():
 
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
-               local_input_files, unaligned_fastq, args.paired_end))
+            local_input_files, unaligned_fastq, args.paired_end))
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 
     if args.paired_end:
