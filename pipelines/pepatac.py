@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.15"
+__version__ = "0.9.16"
 
 
 from argparse import ArgumentParser
@@ -24,7 +24,7 @@ from refgenconf import RefGenConf as RGC, select_genome_config
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
 ALIGNERS = ["bowtie2", "bwa"]
-PEAK_CALLERS = ["fseq", "genrich", "hmmratac", "homer", "macs2"]
+PEAK_CALLERS = ["fseq", "fseq2", "genrich", "hmmratac", "homer", "macs2"]
 PEAK_TYPES = [ "fixed", "variable"]
 DEDUPLICATORS = ["picard", "samblaster", "samtools"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
@@ -412,6 +412,22 @@ def tool_path(tool_name):
                         TOOLS_FOLDER, tool_name)
 
 
+def rescale(n, after=[0,1], before=[]):
+    """
+    Helper function to rescale a vector between specified range of values
+    
+    :param numpy array n: a vector of numbers to be rescale 
+    :param list after: range of values to which to scale n 
+    :param list before: range of values in which n is contained
+    """
+    if not before:
+        before=[min(n), max(n)]
+    if (before[1] - before[0]) == 0:
+        return n
+    return (((after[1] - after[0]) * (n - before[0]) / 
+             (before[1] - before[0])) + after[0])
+
+
 def check_commands(commands, ignore=''):
     """
     Check if command(s) can be called
@@ -567,7 +583,7 @@ def main():
     ############################################################################
     #                Confirm required tools are all callable                   #
     ############################################################################
-    opt_tools = ["fseq", "Genrich", "${HMMRATAC}", "${PICARD}",
+    opt_tools = ["fseq", "fseq2", "Genrich", "${HMMRATAC}", "${PICARD}",
                  "${TRIMMOMATIC}", "pyadapt", "findMotifsGenome.pl",
                  "findPeaks", "seqOutBias", "bigWigMerge", "bedGraphToBigWig",
                  "pigz", "bwa"]
@@ -605,6 +621,9 @@ def main():
 
     if args.peak_caller == "fseq":
         if 'fseq' in opt_tools: opt_tools.remove('fseq')
+
+    if args.peak_caller == "fseq2":
+        if 'fseq2' in opt_tools: opt_tools.remove('fseq2')
 
     if args.peak_caller == "genrich":
         if 'Genrich' in opt_tools: opt_tools.remove('Genrich')
@@ -777,18 +796,19 @@ def main():
     cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(
         local_input_files, args.sample_name, args.paired_end, fastq_folder,
         zipmode=True)
-    #print(cmd)  # DEBUG
+
+    #print(f"{cmd}")  # DEBUG
 
     # flatten nested list
     if any(isinstance(i, list) for i in unaligned_fastq):
         unaligned_fastq = [i for e in unaligned_fastq for i in e]
     # maintain order and remove duplicate entries
-    unaligned_fastq = list(dict.fromkeys(unaligned_fastq))
+    if any(isinstance(i, dict) for i in local_input_files):
+        unaligned_fastq = list(dict.fromkeys(unaligned_fastq))
 
     pm.run(cmd, unaligned_fastq,
            follow=ngstk.check_fastq(
             local_input_files, unaligned_fastq, args.paired_end))
-
     pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 
     if args.paired_end:
@@ -1064,14 +1084,14 @@ def main():
 
     if args.aligner.lower() == "bwa":
         if not param.bwa.params:
-            bwa_options = " -M"
+            bwa_options = " -M "
         else:
             bwa_options = param.bwa.params
     else:
         if not param.bowtie2.params:
-            bt2_options = " --very-sensitive"
+            bt2_options = " --very-sensitive "
             if args.paired_end:
-                bt2_options += " -X 2000"
+                bt2_options += " -X 2000 "
         else:
             bt2_options = param.bowtie2.params    
 
@@ -1978,9 +1998,33 @@ def main():
             else:
                 fseq_cmd_chunks = [
                     tools.fseq,
+                    ("-o", peak_folder),
+                    param.fseq.params
+                ]
+                # Create the peak calling command
+                fseq_cmd_chunks.append(peak_input_file)
+                fseq_cmd = build_command(fseq_cmd_chunks)
+
+                # Create the file merge/delete commands.
+                chrom_peak_files = os.path.join(peak_folder, "*.npf")
+                merge_chrom_peaks_files = (
+                    "cat {peakfiles} > {combined_peak_file}"
+                    .format(peakfiles=chrom_peak_files,
+                            combined_peak_file=peak_output_file))
+                pm.clean_add(chrom_peak_files)
+
+                # Pypiper serially executes the commands.
+                cmd = [fseq_cmd, merge_chrom_peaks_files]
+        elif args.peak_caller == "fseq2":
+            if args.peak_type == "fixed":
+                err_msg = "Must use MACS2 when calling fixed width peaks."
+                pm.fail_pipeline(RuntimeError(err_msg))
+            else:
+                fseq_cmd_chunks = [
+                    tools.fseq,
                     "callpeak",
                     peak_input_file,
-                    param.fseq.params,
+                    param.fseq2.params,
                     ("-name", args.sample_name),
                     ("-cpus", pm.cores)
                 ]
@@ -1989,24 +2033,14 @@ def main():
                     fseq_cmd_chunks.append("-pe_fragment_size_range auto")
                 # Create the peak calling command
                 fseq_cmd = build_command(fseq_cmd_chunks)
-
-                # Create the file merge/delete commands. # F-seq1
-                # chrom_peak_files = os.path.join(peak_folder, "*.npf")
-                # merge_chrom_peaks_files = (
-                    # "cat {peakfiles} > {combined_peak_file}"
-                    # .format(peakfiles=chrom_peak_files,
-                            # combined_peak_file=peak_output_file))
-                # pm.clean_add(chrom_peak_files)
-
-                # Pypiper serially executes the commands.
-                #cmd = [fseq_cmd, merge_chrom_peaks_files] # F-seq1
                 cmd = fseq_cmd
-        # TODO: move fixed plus not macs check early on before pipeline starts!
         elif args.peak_caller == "hmmratac" and args.paired_end:
             if args.peak_type == "fixed":
                 err_msg = "Must use MACS2 when calling fixed width peaks."
                 pm.fail_pipeline(RuntimeError(err_msg))
             else:
+                gapped_peak_file = os.path.join(peak_folder, args.sample_name +
+                                                "_peaks.gappedPeak")
                 fixed_header_bam = os.path.join(map_genome_folder,
                     args.sample_name + "_fixed_header.bam")
                 fixed_header_index = os.path.join(map_genome_folder,
@@ -2025,9 +2059,16 @@ def main():
                 cmd3 += " --genome " + chr_order
                 if os.path.exists(res.blacklist):
                     cmd3 += " --blacklist " + res.blacklist
-                cmd3 += param.hmmratac.params
-                cmd3 += " --output " + peak_output_file
-                cmd = cmd3
+                cmd3 += " " + param.hmmratac.params
+                cmd3 += " --output " 
+                cmd3 += os.path.join(peak_folder,  args.sample_name)
+                # Drop HighCoveragePeaks [$13(e.g. the score)>1]
+                # Use the score as the qValue for compatibility downstream
+                cmd4 = ("awk -v OFS='\t' '$13>1 {print $1, $2, $3, $4, " +
+                        "$13, $5, \".\", \".\", $13, \".\"}' " +
+                        gapped_peak_file + " | sort -k1,1n -k2,2n > " +
+                        peak_output_file)
+                cmd = [cmd3, cmd4]
         elif args.peak_caller == "hmmratac" and not args.paired_end:
             pm.info("HMMRATAC requires paired-end data. Defaulting to MACS2")
             cmd_base = [
@@ -2050,6 +2091,7 @@ def main():
                 cmd2 = tools.genrich + " -j -t " + name_sort_rmdup
                 if os.path.exists(res.blacklist):
                     cmd2 += " -E " + res.blacklist
+                cmd2 += param.genrich.params
                 cmd2 += " -o " + peak_output_file
                 pm.clean_add(name_sort_rmdup)
                 cmd = [cmd1, cmd2]
@@ -2063,11 +2105,16 @@ def main():
                                            "_homer_peaks.tsv")
                 cmd1 = ('makeTagDirectory ' + tag_directory + " " + rmdup_bam)
                 cmd2 = (tools.homer_findpeaks + " " + tag_directory + " -o " +
-                        homer_peaks + " -gsize " + args.genome_size + " ")
+                        homer_peaks + " -gsize " + str(genome_size) + " ")
                 cmd2 += param.homer_findpeaks.params
-                cmd3 = ('pos2bed.pl ' + homer_peaks + " | " + tools.bedtools +
-                        " sort | " + tools.bedtools + " merge > " + 
+                cmd3 = ("awk 'BEGIN{OFS=\"\t\";} /^[^#]/ " +
+                        "{ print $2,$3,$4,$1,$8,$5 }' " + homer_peaks +
+                        " | sort -k1,1 -k2,2n | " + tools.bedtools + " merge " + 
+                        "-c 4,5,6 -o distinct,sum,distinct > " +
                         peak_output_file)
+                # cmd3 = ('pos2bed.pl ' + homer_peaks + " | " + tools.bedtools +
+                        # " sort | " + tools.bedtools + " merge > " + 
+                        # peak_output_file)
                 pm.clean_add(homer_peaks)
                 pm.clean_add(tag_directory)
                 cmd = [cmd1, cmd2, cmd3]
@@ -2086,7 +2133,7 @@ def main():
             cmd = build_command(cmd_base)
 
         # Call peaks and report peak count.
-        # nofail true conditional on hmmratac which fails on small samples
+        # nofail true conditional on hmmratac/fseq2 which fails on small samples
         # TODO: there are downstream steps that require a peak file!
         #       maybe it should just fail?
         if args.peak_caller == "hmmratac":
@@ -2096,10 +2143,42 @@ def main():
                 num_peaks = max(0, line_count - 1)
                 pm.report_result("Peak_count", num_peaks)
             else:
-                # TODO: could just touch an empty file? Homer creates an empty file...
+                # just touch an empty file? Homer creates an empty file...
                 cmd = "touch " +  peak_output_file
                 pm.run(cmd, peak_output_file)
                 pm.warning("HMMRATAC failed to identify any peaks.")
+        elif args.peak_caller == "fseq" or args.peak_caller == "fseq2":
+            pm.run(cmd, peak_output_file, nofail=True)
+            if (os.path.exists(peak_output_file) and 
+                    os.stat(peak_output_file).st_size > 0):
+                df = pd.read_csv(peak_output_file, sep='\t', header=None,
+                                 names=("chr", "start", "end", "name", "score",
+                                        "strand", "signalValue", "pValue",
+                                        "qValue", "peak"))
+                nineNine = df['signalValue'].quantile(q=0.99)
+                df.loc[df['signalValue'] > nineNine, 'signalValue'] = nineNine
+
+                # rescale score to be between 100 and 1000. 
+                # See https://fureylab.web.unc.edu/software/fseq/
+                df['score'] = rescale(np.log(df['signalValue']), [100, 1000])
+
+                # ensure score is a whole integer value
+                df['score'] = pd.to_numeric(df['score'].round(),
+                                            downcast='integer')
+                df.to_csv(peak_output_file, sep='\t',
+                          header=False, index=False)
+
+                line_count = int(ngstk.count_lines(peak_output_file).strip())
+                num_peaks = max(0, line_count - 1)
+                pm.report_result("Peak_count", num_peaks)
+            else:
+                # just touch an empty file? Homer creates an empty file...
+                cmd = "touch " +  peak_output_file
+                pm.run(cmd, peak_output_file)
+                if args.peak_caller == "fseq":
+                    pm.warning("FSeq failed to identify any peaks.")
+                else:
+                    pm.warning("FSeq2 failed to identify any peaks.")
         else:
             pm.run(cmd, peak_output_file, follow=report_peak_count)
 
@@ -2324,13 +2403,6 @@ def main():
                 nineNine = df['V5'].quantile(q=0.99)
                 df.loc[df['V5'] > nineNine, 'V5'] = nineNine
 
-                def rescale(n, after=[0,1], before=[]):
-                    if not before:
-                        before=[min(n), max(n)]
-                    if (before[1] - before[0]) == 0:
-                        return n
-                    return (((after[1] - after[0]) * (n - before[0]) / 
-                             (before[1] - before[0])) + after[0])
                 # rescale score to be between 0 and 1000
                 df['V5'] = rescale(np.log(df['V5']), [0, 1000])
 

@@ -5,7 +5,7 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 from argparse import ArgumentParser
 import os
@@ -54,6 +54,12 @@ def parse_arguments():
     parser.add_argument("-m", "--cutoff", default=2,
                         help="Only keep peaks present in at least this " +
                              "number of samples.")
+    parser.add_argument("-s", "--min-score", default=5,
+                        help="A minimum peak score to keep an " +
+                             "individual peak.")
+    parser.add_argument("-l", "--min-olap", default=1,
+                        help="A minimum number of overlapping bases to " +
+                             "defined peaks as overlapping.")
     args = parser.parse_args()
     return args
 
@@ -65,12 +71,9 @@ def main():
     pm = pypiper.PipelineManager(name="PEPATAC_collator", outfolder=outfolder,
                                  args=args, version=__version__)
 
-    cmd = "Rscript {R_file} {cfg_file} {out_dir} {results_dir} {cutoff}".format(
-        R_file=tool_path("PEPATAC_summarizer.R"),
-        cfg_file=args.config_file,
-        out_dir=args.output_parent,
-        results_dir=args.results,
-        cutoff=args.cutoff)
+    cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
+           f"{args.config_file} {args.output_parent} "
+           f"{args.results} {args.cutoff} {args.min_score} {args.min_olap}")
     if args.new_start:
         cmd += " --new-start"
     if args.skip_consensus:

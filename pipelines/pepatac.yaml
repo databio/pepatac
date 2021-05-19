@@ -20,7 +20,8 @@ tools:  # absolute paths to required tools
   bedToBigBed: bedToBigBed
   # optional tools
   bwa: bwa
-  fseq: fseq2
+  fseq: fseq
+  fseq2: fseq2
   genrich: Genrich
   hmmratac: ${HMMRATAC}
   homer_findpeaks: findPeaks
@@ -74,6 +75,12 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     # --shift:  Assign an arbitrary shift in bp. See MACS documentation.
     # --nomodel: Will bybass building the shifting model.
   fseq:
+    params: '-of npf -l 600 -t 4.0 -s 1'
+    # -of: narrowPeak as output format.
+    # -l: feature length.
+    # -t: "threshold" (standard deviations).
+    # -s: wiggle track step.
+  fseq2:
     params: '-f 0 -l 600 -t 4.0'
     # -f: fragment size of treatment data
     # -l: feature length.
@@ -82,10 +89,10 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     params: ''
     # -j: ATAC-seq mode on by default
   hmmratac:
-    params: ''
+    params: '--fragmem True --upper 10 --lower 5 --peaks True --window 500000'
     # --blacklist: Pipeline includes blacklist by default if the refgenie asset exists.
   homer_findpeaks:
-    params: 'minDist 150 -region'
+    params: '-minDist 150 -region'
     # Use region mode with minimum distance of 150
   homer_motif:
     params: '-size given -mask'

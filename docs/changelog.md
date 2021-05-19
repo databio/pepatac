@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.9.16] -- 2021-05-18
+
+### Changed
+ - Updated consensus peak documentation
+ - Reintroduced single container images and corresponding documentation
+ - Added minimum score and minimum overlap parameters to consensus peak generation
+ - Restore use of original F-seq as optional peak caller
+ - Updated peak calling using F-seq, HOMER, and HMMRATAC
+ - Updated PEPATACr package to rely less on PEPs within functions
+ - Move stats summary generation to R and outside of looper table
+
 ## [0.9.15] -- 2021-03-03
 
 ### Added

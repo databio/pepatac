@@ -4,16 +4,35 @@
 \alias{peakCounts}
 \title{Produce a project level peak counts table}
 \usage{
-peakCounts(project, output_dir, results_subdir, assets)
+peakCounts(
+  sample_table,
+  summary_dir,
+  results_subdir,
+  assets,
+  poverlap = FALSE,
+  norm = FALSE,
+  cutoff = 2,
+  min_olap = 1
+)
 }
 \arguments{
-\item{project}{A PEPr project object}
+\item{sample_table}{A data.table containing sample names and their 
+corresponding genome}
 
-\item{output_dir}{A PEP project output directory path}
+\item{summary_dir}{A PEP project summary directory path}
 
 \item{results_subdir}{A PEP project results subdirectory path}
 
 \item{assets}{A data.table containing file assets}
+
+\item{poverlap}{Weight counts by the percentage overlap with peak}
+
+\item{norm}{Use normalized read counts}
+
+\item{cutoff}{Only keep peaks present in the `cutoff` number of samples}
+
+\item{min_olap}{A minimum number of bases between peaks to be 
+considered overlapping.}
 }
 \description{
 Produce a project level peak counts table

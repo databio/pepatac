@@ -12,7 +12,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   INPUT_FILES [INPUT_FILES ...]
                   [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G GENOME_ASSEMBLY
                   [-Q SINGLE_OR_PAIRED] [--aligner {bowtie2,bwa}]
-                  [--peak-caller {fseq,genrich,hmmratac,homer,macs2}]
+                  [--peak-caller {fseq,fseq2,genrich,hmmratac,homer,macs2}]
                   [-gs GENOME_SIZE] [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--prealignments PREALIGNMENTS [PREALIGNMENTS ...]]
                   [--deduplicator {picard,samblaster,samtools}]
@@ -22,7 +22,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [--motif] [--sob] [--no-scale] [--prioritize] [--keep]
                   [--noFIFO] [--lite] [--skipqc] [-V]
 
-PEPATAC version 0.9.15
+PEPATAC version 0.9.16
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -49,7 +49,7 @@ optional arguments:
                         Single- or paired-end sequencing protocol
   --aligner {bowtie2,bwa}
                         Name of read aligner
-  --peak-caller {fseq,genrich,hmmratac,homer,macs2}
+  --peak-caller {fseq,fseq2,genrich,hmmratac,homer,macs2}
                         Name of peak caller
   -gs GENOME_SIZE, --genome-size GENOME_SIZE
                         Effective genome size. It can be 1.0e+9 or 1000000000:

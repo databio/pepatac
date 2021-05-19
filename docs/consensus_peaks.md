@@ -19,15 +19,30 @@ From the `PEPATAC` repository after you've run the test sample:
 R
 library(PEPATACr)
 pep <- "examples/test_project/test_config.yaml"
+
 # Load the project metadata
 prj <- pepr::Project(pep)
-project_name  <- config(prj)$name
-output_dir    <- "pepatac_test/"
-results_dir   <- "pepatac_test/results_pipeline/"
-# Identify which chrom_sizes file to use
-assets        <- createAssetsSummary(prj, output_dir, results_dir)
+project_name    <- pepr::config(prj)$name
+project_samples <- pepr::sampleTable(prj)$sample_name
+sample_table    <- data.table::data.table(
+    sample_name=pepr::sampleTable(prj)$sample_name,
+    genome=pepr::sampleTable(prj)$genome)
+
+# Specify file locations
+output_dir  <- "pepatac_test/"
+results_dir <- file.path(output_dir, "results_pipeline")
+summary_dir <- file.path(output_dir, "summary")
+# Produce output directory (if needed)
+dir.create(summary_dir, showWarnings = FALSE)
+
+# Identify which chrom_sizes file was used from the project assets
+assets <- createAssetsSummary(project_samples, results_dir)
+
 # Generate consensus peaks and write to project output directory
-peak_filepath <- consensusPeaks(prj, output_dir, results_dir, assets)
+min_samples <- 2
+min_score   <- 5
+peak_filepath <- consensusPeaks(sample_table, summary_dir, results_dir, assets,
+                                min_samples, min_score)
 # Load the peak file into R
-peaks         <- fread(peak_filepath[[1]])
+peaks         <- data.table::fread(peak_filepath[[1]])
 ```

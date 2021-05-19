@@ -8,7 +8,7 @@ git clone https://github.com/databio/pepatac.git
 
 ## 2: Install required software
 
-You have two options for software prerequisites: 1) use containers, or 2) install all prerequisites natively. If you want to use containers, you need the [multi-container environment manager, `bulker`](https://bulker.databio.org/en/latest/), and either `docker` or `singularity` -- please see instructions in [how to run PEPATAC with containers](run-container.md). Otherwise, follow these instructions to install the requirements natively:
+You have a few options for software prerequisites: 1) use containers, 2) install via `conda`, or 3) install all prerequisites natively. If you want to use containers, you can use either the [multi-container environment manager, `bulker`](https://bulker.databio.org/en/latest/) with `docker` or `singularity`, or just use either `docker` or `singularity` -- see instructions in [how to run PEPATAC with containers](run-container.md). Otherwise, follow these instructions to install the requirements with `conda`:
 
 ### Tools
 
