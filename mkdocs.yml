@@ -16,32 +16,38 @@ nav:
   - Getting Started:
     - Introduction: 'README.md'
     - Features: 'features.md'
-    - Install and run: 'install.md'
+    - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
-    - Run PEPPRO directly: 'run_direct.md'
-    - Run PEPPRO on a cluster: 'cluster.md'
-    - Run PEPPRO in containers: 'container.md'
+    - Detailed install guide: 'detailed-install.md'
+    - Run directly: 'run-directly.md'
+    - Run on cluster: 'run-cluster.md'
+    - Run using containers: 'run-container.md'
+    - Configure assets: 'assets.md'
     - Configure prealignments: 'prealignments.md'
-    - Configure seqOutBias assets: 'sob.md'
-    - Configure UMI: 'umi.md'
-    - Configure custom adapters: 'custom_adapters.md'
-    - Detailed install guide: 'detailed_install.md'
+    - Configure project files: 'peps.md'
+    - Configure seqOutBias assets: 'sob.md'   
+    - Download SRA data: 'download.md'
     - Use custom reference data: 'annotation.md'
+    - Use reference peaks: 'reference_peaks.md'
+    - Generate count table: 'count_table.md'
+    - Generate consensus peaks: 'consensus_peaks.md'
   - Reference: 
-    - FAQ: 'faq.md'
+    - Example output file structure: 'browse_output.md'
+    - "Example summary: gold project": 'files/examples/gold/gold_summary.html'
+    - "Example summary: tutorial project": 'files/examples/tutorial/PEPATAC_tutorial_summary.html'
     - Usage: 'usage.md'
-    - Changelog: 'changelog.md'
-    - Support: 'https://github.com/databio/peppro/issues'
-    - PEPPRO paper output file structure: 'browse_output.md'
-    - PEPPRO paper summary: 'files/examples/paper/PEPPRO_summary.html'
+    - FAQ: faq.md
+    - Glossary: 'glossary.md'
+    - Changelog: changelog.md
+    - Support: contact.md
 
 plugins:
   - search
   - databio:
       usage_template: "docs/usage_template.md"
       usage_cmds:
-        -"$CODEBASE/databio/peppro/pipelines/peppro.py --help
+        -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help
 
 navbar:
   right:
