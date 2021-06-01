@@ -104,7 +104,8 @@ There are lots of other cool things you can do with looper, like dry runs, repor
 
 ## 5: Use `looper` to run the project level pipeline
 
-`PEPATAC` also includes a project-level processing pipeline to do things like: 
+`PEPATAC` also includes a project-level processing pipeline to do things like:
+
  - [Plot alignment statistics](files/examples/gold/summary/gold_alignmentPercent.pdf) for all samples in the project together for easy visualization
  - [Plot TSS enrichment scores](files/examples/gold/summary/gold_TSSEnrichment.pdf) for all the samples in the project in a single figure
  - [Produce a consensus peak set](consensus_peaks.md) for the project
