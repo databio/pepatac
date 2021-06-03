@@ -316,7 +316,7 @@ if [ $? -eq 0 ]; then
 fi
 
 isActivatable=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
-echo "isActivatable: ${isActivatable}"
+#echo "isActivatable: ${isActivatable}"
 if [ -v "$isActivatable" ]; then
     printf "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/."
     printf "\n"
