@@ -165,130 +165,136 @@ done
 echo -e "Checking conda installation..."
 CONDA_INSTALL=0
 
-eval "$(conda shell.bash hook)"
-conda activate pepatac
-
-unset PYTHONPATH
-unset R_LIBS
-
-# Check Python
-if ! is_executable "python"; then
-    printf "WARNING: PEPATAC requires python 3.0 or greater. Install python and checkinstall again."
+if ! is_executable "conda"; then
+    printf "WARNING: Install conda to use conda environments and checkinstall again."
     printf "\n"
     CONDA_INSTALL=1
 else
-    #echo "which python: $(which python)"
-    ver=$(python -V 2>&1 | sed 's/.* \([0-9]\).\([0-9]\).*/\1\2/')
-    if [ "$ver" -lt "30" ]; then
-        printf "WARNING: PEPATAC requires python 3.0 or greater. Update python and checkinstall again."
-        printf "\n"
-        CONDA_INSTALL=1
-    fi
-fi
+    eval "$(conda shell.bash hook)"
+    conda activate pepatac
 
-# Check Python packages
-if ! is_executable "pip"; then
-    printf "WARNING: PEPATAC requires pip. Please install pip and checkinstall again."
-    printf "\n"
-    CONDA_INSTALL=1
-fi
+    unset PYTHONPATH
+    unset R_LIBS
 
-while IFS= read -r line; do
-    [ "${line:0:1}" = "#" ] && continue
-    IFS='>=' read -r -a array <<< "$line"
-    package=${array[0]}
-    required=${array[2]}
-    required=$(trim ${required})
-    IFS='.' read -r -a required_version <<< "$required"
-    declare -i rmajor
-    declare -i rminor
-    declare -i rpatch
-    rmajor=$(echo "${required_version[0]}" | awk '{ print $1+0; exit }')
-    rminor=$(echo "${required_version[1]}" | awk '{ print $1+0; exit }')
-    rpatch=$(echo "${required_version[2]}" | awk '{ print $1+0; exit }')
-
-    if ! pip_show "${package}"; then
-        printf "WARNING: PEPATAC requires the Python package, $package, >= $required. Try pip install $package and checkinstall again."
+    # Check Python
+    if ! is_executable "python"; then
+        printf "WARNING: PEPATAC requires python 3.0 or greater. Install python and checkinstall again."
         printf "\n"
         CONDA_INSTALL=1
     else
-        installed=$(pip show ${package} | grep -iw 'Version' | awk -F':' '{print $2}' | tr -d '\n')
-        installed=$(trim ${installed})
-        IFS='.' read -r -a installed_version <<< "$installed"
-        declare -i imajor
-        declare -i iminor
-        declare -i ipatch
-        imajor=$(echo "${installed_version[0]}" | awk '{ print $1+0; exit }')
-        iminor=$(echo "${installed_version[1]}" | awk '{ print $1+0; exit }')
-        ipatch=$(echo "${installed_version[2]}" | awk '{ print $1+0; exit }')
-
-        if ! [ -z "$required" ]; then
-            if [ $imajor -lt $rmajor ]; then
-                #echo -e "Installed major: ${imajor}\tRequired major: ${rmajor}"
-                printf "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again."
-                printf "\n"
-                CONDA_INSTALL=1
-            elif [ $imajor -eq $rmajor ] && [ $iminor -lt $rminor ]; then
-                #echo -e "Installed minor: ${iminor}\tRequired minor: ${rminor}"
-                printf "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again."
-                printf "\n"
-                CONDA_INSTALL=1
-            elif [ $imajor -eq $rmajor ] && [ $iminor -eq $rminor ] && [ $ipatch -lt $rpatch ]; then
-                #echo -e "Installed patch: ${ipatch}\tRequired patch: ${rpatch}"
-                printf "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again."
-                printf "\n"
-                CONDA_INSTALL=1
-            else
-                echo -e "SUCCESS\tPython package ${package}\trequired: ${required}\tinstalled: ${installed}"
-            fi
-        else
-            echo -e "SUCCESS\tPython package ${package}\trequired: any\tinstalled: ${installed_version}"
+        #echo "which python: $(which python)"
+        ver=$(python -V 2>&1 | sed 's/.* \([0-9]\).\([0-9]\).*/\1\2/')
+        if [ "$ver" -lt "30" ]; then
+            printf "WARNING: PEPATAC requires python 3.0 or greater. Update python and checkinstall again."
+            printf "\n"
+            CONDA_INSTALL=1
         fi
     fi
-done < "requirements.txt"
 
-# Check tool installation
-declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fseq" "macs2" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "bigWigCat" "wigToBigWig" "Rscript")
-
-for cmd in ${requiredCommands[@]}; do
-    if ! is_executable $cmd; then
-        printf "WARNING: Please install $cmd and checkinstall again."
+    # Check Python packages
+    if ! is_executable "pip"; then
+        printf "WARNING: PEPATAC requires pip. Please install pip and checkinstall again."
         printf "\n"
         CONDA_INSTALL=1
+    fi
+
+    while IFS= read -r line; do
+        [ "${line:0:1}" = "#" ] && continue
+        IFS='>=' read -r -a array <<< "$line"
+        package=${array[0]}
+        required=${array[2]}
+        required=$(trim ${required})
+        IFS='.' read -r -a required_version <<< "$required"
+        declare -i rmajor
+        declare -i rminor
+        declare -i rpatch
+        rmajor=$(echo "${required_version[0]}" | awk '{ print $1+0; exit }')
+        rminor=$(echo "${required_version[1]}" | awk '{ print $1+0; exit }')
+        rpatch=$(echo "${required_version[2]}" | awk '{ print $1+0; exit }')
+
+        if ! pip_show "${package}"; then
+            printf "WARNING: PEPATAC requires the Python package, $package, >= $required. Try pip install $package and checkinstall again."
+            printf "\n"
+            CONDA_INSTALL=1
+        else
+            installed=$(pip show ${package} | grep -iw 'Version' | awk -F':' '{print $2}' | tr -d '\n')
+            installed=$(trim ${installed})
+            IFS='.' read -r -a installed_version <<< "$installed"
+            declare -i imajor
+            declare -i iminor
+            declare -i ipatch
+            imajor=$(echo "${installed_version[0]}" | awk '{ print $1+0; exit }')
+            iminor=$(echo "${installed_version[1]}" | awk '{ print $1+0; exit }')
+            ipatch=$(echo "${installed_version[2]}" | awk '{ print $1+0; exit }')
+
+            if ! [ -z "$required" ]; then
+                if [ $imajor -lt $rmajor ]; then
+                    #echo -e "Installed major: ${imajor}\tRequired major: ${rmajor}"
+                    printf "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again."
+                    printf "\n"
+                    CONDA_INSTALL=1
+                elif [ $imajor -eq $rmajor ] && [ $iminor -lt $rminor ]; then
+                    #echo -e "Installed minor: ${iminor}\tRequired minor: ${rminor}"
+                    printf "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again."
+                    printf "\n"
+                    CONDA_INSTALL=1
+                elif [ $imajor -eq $rmajor ] && [ $iminor -eq $rminor ] && [ $ipatch -lt $rpatch ]; then
+                    #echo -e "Installed patch: ${ipatch}\tRequired patch: ${rpatch}"
+                    printf "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again."
+                    printf "\n"
+                    CONDA_INSTALL=1
+                else
+                    echo -e "SUCCESS\tPython package ${package}\trequired: ${required}\tinstalled: ${installed}"
+                fi
+            else
+                echo -e "SUCCESS\tPython package ${package}\trequired: any\tinstalled: ${installed_version}"
+            fi
+        fi
+    done < "requirements.txt"
+
+    # Check tool installation
+    declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fseq" "macs2" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "bigWigCat" "wigToBigWig" "Rscript")
+
+    for cmd in ${requiredCommands[@]}; do
+        if ! is_executable $cmd; then
+            printf "WARNING: Please install $cmd and checkinstall again."
+            printf "\n"
+            CONDA_INSTALL=1
+        else
+            echo -e "SUCCESS\t${cmd}"
+        fi
+    done
+
+    ## Check R packages
+    if ! is_executable "R"; then
+        printf "WARNING: PEPATAC requires R 3.5 or greater.\n Please install R>=3.5 and checkinstall again."
+        printf "\n"
+        exit 1
     else
-        echo -e "SUCCESS\t${cmd}"
+        rVer=$(R --version 2>&1 | grep 'R version' | awk '{print $3}')
+        rVer=$(echo "${rVer//.}")
+        if [ "$rVer" -lt "350" ]; then
+            printf "WARNING: PEPATAC requires R 3.5 or greater. Update R and checkinstall again."
+            printf "\n"
+            CONDA_INSTALL=1
+        fi
     fi
-done
 
-## Check R packages
-if ! is_executable "R"; then
-    printf "WARNING: PEPATAC requires R 3.5 or greater.\n Please install R>=3.5 and checkinstall again."
-    printf "\n"
-    exit 1
-else
-    rVer=$(R --version 2>&1 | grep 'R version' | awk '{print $3}')
-    rVer=$(echo "${rVer//.}")
-    if [ "$rVer" -lt "350" ]; then
-        printf "WARNING: PEPATAC requires R 3.5 or greater. Update R and checkinstall again."
-        printf "\n"
-        CONDA_INSTALL=1
-    fi
+    declare -a requiredRPackages=("optigrab" "devtools" "GenomicDistributions" "PEPATACr" "data.table" "pepr" "gplots" "grid" "ggplot2" "scales" "IRanges" "GenomicRanges")
+    for package in ${requiredRPackages[@]}; do
+        cmd=$(echo "Rscript -e 'library(\"$package\")'")
+        packageInstalled=$(eval $cmd 2>&1)
+        if [[ "$packageInstalled" == *Error* ]]; then
+            printf "WARNING: Please install the R package, $package, and checkinstall again."
+            printf "\n"
+            CONDA_INSTALL=1
+        else
+            echo -e "SUCCESS\tR package: ${package}"
+        fi
+    done
+
+    conda deactivate
 fi
-
-declare -a requiredRPackages=("optigrab" "devtools" "GenomicDistributions" "PEPATACr" "data.table" "pepr" "gplots" "grid" "ggplot2" "scales" "IRanges" "GenomicRanges")
-for package in ${requiredRPackages[@]}; do
-    cmd=$(echo "Rscript -e 'library(\"$package\")'")
-    packageInstalled=$(eval $cmd 2>&1)
-    if [[ "$packageInstalled" == *Error* ]]; then
-        printf "WARNING: Please install the R package, $package, and checkinstall again."
-        printf "\n"
-        CONDA_INSTALL=1
-    else
-        echo -e "SUCCESS\tR package: ${package}"
-    fi
-done
-
-conda deactivate
 
 ################################################################################
 echo -e "Checking bulker installation..."
