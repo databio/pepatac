@@ -158,10 +158,10 @@ while IFS= read -r line; do
                 NATIVE_INSTALL=1
                 BULKER_INSTALL=1
             else
-                echo -e echo $(success "SUCCESS: Python package ${package}\trequired: ${required}\tinstalled: ${installed}")
+                echo -e $(success "SUCCESS: Python package ${package}\trequired: ${required}\tinstalled: ${installed}")
             fi
         else
-            echo -e echo $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
+            echo -e $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
         fi
     fi
 done < "requirements.txt"
@@ -175,7 +175,7 @@ for cmd in ${requiredCommands[@]}; do
         printf "\n"
         NATIVE_INSTALL=1
     else
-        echo -e echo $(success "SUCCESS: ${cmd}")
+        echo -e $(success "SUCCESS: ${cmd}")
     fi
 done
 
@@ -203,7 +203,7 @@ for package in ${requiredRPackages[@]}; do
         printf "\n"
         NATIVE_INSTALL=1
     else
-        echo -e echo $(success "SUCCESS: R package: ${package}")
+        echo -e $(success "SUCCESS: R package: ${package}")
     fi
 done
 
@@ -292,10 +292,10 @@ else
                     printf "\n"
                     CONDA_INSTALL=1
                 else
-                    echo -e echo $(success "SUCCESS: Python package ${package}\trequired: ${required}\tinstalled: ${installed}")
+                    echo -e $(success "SUCCESS: Python package ${package}\trequired: ${required}\tinstalled: ${installed}")
                 fi
             else
-                echo -e echo $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
+                echo -e $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
             fi
         fi
     done < "requirements.txt"
@@ -309,7 +309,7 @@ else
             printf "\n"
             CONDA_INSTALL=1
         else
-            echo -e echo $(success "SUCCESS: ${cmd}")
+            echo -e $(success "SUCCESS: ${cmd}")
         fi
     done
 
@@ -337,7 +337,7 @@ else
             printf "\n"
             CONDA_INSTALL=1
         else
-            echo -e echo $(success "SUCCESS: R package: ${package}")
+            echo -e $(success "SUCCESS: R package: ${package}")
         fi
     done
 
@@ -356,7 +356,7 @@ if ! is_executable "bulker"; then
     BULKER_INSTALL=1
 else
     BULKER_INSTALL=0
-    echo -e echo $(success "SUCCESS: bulker")
+    echo -e $(success "SUCCESS: bulker")
 fi
 
 CWD=$(pwd)
@@ -379,7 +379,7 @@ if [ -v "$isActivatable" ]; then
     BULKER_INSTALL=1
 else
     BULKER_INSTALL=0
-    echo -e echo $(success "SUCCESS: bulker run ${crate}")
+    echo -e $(success "SUCCESS: bulker run ${crate}")
 fi
 
 ################################################################################
