@@ -37,6 +37,28 @@ pip_show() {
     fi
 }
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+function fail {
+    printf "${RED}\u2716 $@${NC}\n"
+}
+
+function success {
+    printf "${GREEN}\xE2\x9C\x94 $@${NC}\n"
+}
+
+function warn {
+    printf "${YELLOW}$@${NC}\n"
+}
+
+# echo $(fail "This is a failure")
+# echo $(success "This is a success")
+
+
+
 ################################################################################
 echo -e "Checking native installation..."
 NATIVE_INSTALL=0
@@ -338,24 +360,24 @@ echo -e "             PEPATAC checkinstall results                  "
 echo -e "                                                           "
 
 if [ "$NATIVE_INSTALL" -eq 0 ]; then
-    echo -e "SUCCESS: PEPATAC can be run utilizing native installations!"
+    echo -e $(success "SUCCESS: PEPATAC can be run utilizing native installations!")
 else
-    echo -e "WARNING: PEPATAC cannot be run utilizing native installations!"
+    echo -e $(fail "WARNING: PEPATAC cannot be run utilizing native installations!")
 fi
 
 if [ "$CONDA_INSTALL" -eq 0  ]; then
-    echo -e "SUCCESS: PEPATAC can be run utilizing conda installation!"
+    echo -e $(success "SUCCESS: PEPATAC can be run utilizing conda installation!")
 else
-    echo -e "WARNING: PEPATAC cannot be run via conda!"
+    echo -e $(fail "WARNING: PEPATAC cannot be run via conda!")
 fi
 
 if [ "$BULKER_INSTALL" -eq 0  ]; then
-    echo -e "SUCCESS: PEPATAC can be run utilizing bulker!"
+    echo -e $(success "SUCCESS: PEPATAC can be run utilizing bulker!")
 else
-    echo -e "WARNING: PEPATAC cannot be run utilizing bulker!"
+    echo -e $(fail "WARNING: PEPATAC cannot be run utilizing bulker!")
 fi
 
-if [ "$NATIVE_INSTALL" -eq 1 ] && [ "$NATIVE_INSTALL" -eq 1 ] && [ "$NATIVE_INSTALL" -eq 1 ]; then
+if [ "$NATIVE_INSTALL" -eq 1 ] && [ "$CONDA_INSTALL" -eq 1 ] && [ "$BULKER_INSTALL" -eq 1 ]; then
     echo -e "ERROR: PEPATAC is not successfully installed. Check the above output for direction on missing tools or packages."
 fi
 
