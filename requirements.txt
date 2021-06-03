@@ -1,5 +1,5 @@
 attmap>=0.12.9
-Bio>=0.2.4
+bio>=0.2.4
 codecov>=2.0
 colorama>=0.3.9
 Cython>=0.29
