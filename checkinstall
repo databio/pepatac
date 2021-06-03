@@ -337,26 +337,26 @@ echo -e "-----------------------------------------------------------"
 echo -e "             PEPATAC checkinstall results                  "
 echo -e "                                                           "
 
-if [ $NATIVE_INSTALL -eq 0 ]; then
+if [ "$NATIVE_INSTALL" -eq 0 ]; then
     echo -e "SUCCESS: PEPATAC can be run utilizing native installations!"
 else
     echo -e "WARNING: PEPATAC cannot be run utilizing native installations!"
 fi
 
-if [ $CONDA_INSTALL -eq 0  ]; then
+if [ "$CONDA_INSTALL" -eq 0  ]; then
     echo -e "SUCCESS: PEPATAC can be run utilizing conda installation!"
 else
     echo -e "WARNING: PEPATAC cannot be run via conda!"
 fi
 
-if [ $BULKER_INSTALL -eq 0  ]; then
+if [ "$BULKER_INSTALL" -eq 0  ]; then
     echo -e "SUCCESS: PEPATAC can be run utilizing bulker!"
 else
     echo -e "WARNING: PEPATAC cannot be run utilizing bulker!"
 fi
 
-if [ $NATIVE_INSTALL -eq 1 ] && [ $NATIVE_INSTALL -eq 1 ] && [ $NATIVE_INSTALL -eq 1 ]; then
-    echo -e "ERROR: PEPATAC is not fully installed. Check output for help"
+if [ "$NATIVE_INSTALL" -eq 1 ] && [ "$NATIVE_INSTALL" -eq 1 ] && [ "$NATIVE_INSTALL" -eq 1 ]; then
+    echo -e "ERROR: PEPATAC is not successfully installed. Check the above output for direction on missing tools or packages."
 fi
 
 echo -e "-----------------------------------------------------------"
