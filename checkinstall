@@ -10,8 +10,6 @@ fi
 
 set -o pipefail
 
-exec 1> checkinstall_log.txt
-
 ################################################################################
 # Helpful functions
 trim() {
@@ -45,14 +43,14 @@ NATIVE_INSTALL=0
 
 # Check Python
 if ! is_executable "python"; then
-    printf " Python is not installed.\n PEPATAC requires python 3.0 or greater.\n Please install python and checkinstall again."
+    printf "WARNING: Python is not installed.\n PEPATAC requires python 3.0 or greater.\n Please install python and checkinstall again."
     printf "\n"
     NATIVE_INSTALL=1
     BULKER_INSTALL=1
 else
     ver=$(python -V 2>&1 | sed 's/.* \([0-9]\).\([0-9]\).*/\1\2/')
     if [ "$ver" -lt "30" ]; then
-        printf " PEPATAC requires python 3.0 or greater.\n Please update python and checkinstall again."
+        printf "WARNING: PEPATAC requires python 3.0 or greater.\n Please update python and checkinstall again."
         printf "\n"
         NATIVE_INSTALL=1
         BULKER_INSTALL=1
@@ -61,7 +59,7 @@ fi
 
 # Check Python packages
 if ! is_executable "pip"; then
-    printf " $1 is not installed.\n PEPATAC requires $1.\n Please install $1 and checkinstall again."
+    printf "WARNING: pip is not installed.\n PEPATAC requires pip.\n Please install pip and checkinstall again."
     printf "\n"
     NATIVE_INSTALL=1
     BULKER_INSTALL=1
@@ -82,7 +80,7 @@ while IFS= read -r line; do
     rpatch=$(echo "${required_version[2]}" | awk '{ print $1+0; exit }')
 
     if ! pip_show "${package}"; then
-        printf " $package is not installed.\n PEPATAC requires $package >= $required.\n Please pip install $package and checkinstall again."
+        printf "WARNING: Python package, $package, is not installed.\n PEPATAC requires $package >= $required.\n Please pip install $package and checkinstall again."
         printf "\n"
         NATIVE_INSTALL=1
         BULKER_INSTALL=1
@@ -99,28 +97,28 @@ while IFS= read -r line; do
 
         if ! [ -z "$required" ]; then
             if [ $imajor -lt $rmajor ]; then
-                echo -e "Installed major: ${imajor}\tRequired major: ${rmajor}"
-                printf " $package installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
+                #echo -e "Installed major: ${imajor}\tRequired major: ${rmajor}"
+                printf "WARNING: Python package, $package, installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
                 printf "\n"
                 NATIVE_INSTALL=1
                 BULKER_INSTALL=1
             elif [ $imajor -eq $rmajor ] && [ $iminor -lt $rminor ]; then
-                echo -e "Installed minor: ${iminor}\tRequired minor: ${rminor}"
-                printf " $package installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
+                #echo -e "Installed minor: ${iminor}\tRequired minor: ${rminor}"
+                printf "WARNING: Python package, $package, installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
                 printf "\n"
                 NATIVE_INSTALL=1
                 BULKER_INSTALL=1
             elif [ $imajor -eq $rmajor ] && [ $iminor -eq $rminor ] && [ $ipatch -lt $rpatch ]; then
-                echo -e "Installed patch: ${ipatch}\tRequired patch: ${rpatch}"
-                printf " $package installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
+                #echo -e "Installed patch: ${ipatch}\tRequired patch: ${rpatch}"
+                printf "WARNING: Python package, $package, installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
                 printf "\n"
                 NATIVE_INSTALL=1
                 BULKER_INSTALL=1
             else
-                echo -e "${package}\trequired: ${required}\tinstalled: ${installed}"
+                echo -e "SUCCESS\tPython package ${package}\trequired: ${required}\tinstalled: ${installed}"
             fi
         else
-            echo -e "${package}\trequired: any\tinstalled: ${installed_version}"
+            echo -e "SUCCESS\tPython package ${package}\trequired: any\tinstalled: ${installed_version}"
         fi
     fi
 done < "requirements.txt"
@@ -130,24 +128,24 @@ declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fse
 
 for cmd in ${requiredCommands[@]}; do
     if ! is_executable $cmd; then
-        printf " $cmd is not installed.\n Please install $cmd and checkinstall again."
+        printf "WARNING: $cmd is not installed.\n Please install $cmd and checkinstall again."
         printf "\n"
         NATIVE_INSTALL=1
     else
-        echo -e "${cmd}\tSUCCESS"
+        echo -e "SUCCESS\t${cmd}"
     fi
 done
 
 ## Check R packages
 if ! is_executable "R"; then
-    printf " R is not installed.\n PEPATAC requires R 3.5 or greater.\n Please install R and checkinstall again."
+    printf "WARNING: R is not installed.\n PEPATAC requires R 3.5 or greater.\n Please install R and checkinstall again."
     printf "\n"
     NATIVE_INSTALL=1
 else
     rVer=$(R --version 2>&1 | grep 'R version' | awk '{print $3}')
     rVer=$(echo "${rVer//.}")
     if [ "$rVer" -lt "350" ]; then
-        printf " PEPATAC requires R 3.5 or greater.\n Please update R and checkinstall again."
+        printf "WARNING: PEPATAC requires R 3.5 or greater.\n Please update R and checkinstall again."
         printf "\n"
         NATIVE_INSTALL=1
     fi
@@ -158,11 +156,11 @@ for package in ${requiredRPackages[@]}; do
     cmd=$(echo "Rscript -e 'library(\"$package\")'")
     packageInstalled=$(eval $cmd 2>&1)
     if [[ "$packageInstalled" == *Error* ]]; then
-        printf " The R package, $package, is not installed.\n Please install $package and checkinstall again."
+        printf "WARNING: The R package, $package, is not installed.\n Please install $package and checkinstall again."
         printf "\n"
         NATIVE_INSTALL=1
     else
-        echo -e "R package: ${package}\tSUCCESS"
+        echo -e "SUCCESS\tR package: ${package}"
     fi
 done
 
@@ -178,14 +176,14 @@ unset R_LIBS
 
 # Check Python
 if ! is_executable "python"; then
-    printf " Python is not installed.\n PEPATAC requires python 3.0 or greater.\n Please install python and checkinstall again."
+    printf "WARNING: Python is not installed.\n PEPATAC requires python 3.0 or greater.\n Please install python and checkinstall again."
     printf "\n"
     CONDA_INSTALL=1
 else
     #echo "which python: $(which python)"
     ver=$(python -V 2>&1 | sed 's/.* \([0-9]\).\([0-9]\).*/\1\2/')
     if [ "$ver" -lt "30" ]; then
-        printf " PEPATAC requires python 3.0 or greater.\n Please update python and checkinstall again."
+        printf "WARNING: PEPATAC requires python 3.0 or greater.\n Please update python and checkinstall again."
         printf "\n"
         CONDA_INSTALL=1
     fi
@@ -193,7 +191,7 @@ fi
 
 # Check Python packages
 if ! is_executable "pip"; then
-    printf " $1 is not installed.\n PEPATAC requires $1.\n Please install $1 and checkinstall again."
+    printf "WARNING: pip is not installed.\n PEPATAC requires pip.\n Please install pip and checkinstall again."
     printf "\n"
     CONDA_INSTALL=1
 fi
@@ -213,7 +211,7 @@ while IFS= read -r line; do
     rpatch=$(echo "${required_version[2]}" | awk '{ print $1+0; exit }')
 
     if ! pip_show "${package}"; then
-        printf " $package is not installed.\n PEPATAC requires $package >= $required.\n Please pip install $package and checkinstall again."
+        printf "WARNING: Python package, $package, is not installed.\n PEPATAC requires $package >= $required.\n Please pip install $package and checkinstall again."
         printf "\n"
         CONDA_INSTALL=1
     else
@@ -229,25 +227,25 @@ while IFS= read -r line; do
 
         if ! [ -z "$required" ]; then
             if [ $imajor -lt $rmajor ]; then
-                echo -e "Installed major: ${imajor}\tRequired major: ${rmajor}"
-                printf " $package installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
+                #echo -e "Installed major: ${imajor}\tRequired major: ${rmajor}"
+                printf "WARNING: Python package, $package, installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
                 printf "\n"
                 CONDA_INSTALL=1
             elif [ $imajor -eq $rmajor ] && [ $iminor -lt $rminor ]; then
-                echo -e "Installed minor: ${iminor}\tRequired minor: ${rminor}"
-                printf " $package installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
+                #echo -e "Installed minor: ${iminor}\tRequired minor: ${rminor}"
+                printf "WARNING: Python package, $package, installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
                 printf "\n"
                 CONDA_INSTALL=1
             elif [ $imajor -eq $rmajor ] && [ $iminor -eq $rminor ] && [ $ipatch -lt $rpatch ]; then
-                echo -e "Installed patch: ${ipatch}\tRequired patch: ${rpatch}"
-                printf " $package installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
+                #echo -e "Installed patch: ${ipatch}\tRequired patch: ${rpatch}"
+                printf "WARNING: Python package, $package, installed version is $installed.\n PEPATAC requires $package >= $required.\n Please pip install --upgrade $package and checkinstall again."
                 printf "\n"
                 CONDA_INSTALL=1
             else
-                echo -e "${package}\trequired: ${required}\tinstalled: ${installed}"
+                echo -e "SUCCESS\tPython package ${package}\trequired: ${required}\tinstalled: ${installed}"
             fi
         else
-            echo -e "${package}\trequired: any\tinstalled: ${installed_version}"
+            echo -e "SUCCESS\tPython package ${package}\trequired: any\tinstalled: ${installed_version}"
         fi
     fi
 done < "requirements.txt"
@@ -257,24 +255,24 @@ declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fse
 
 for cmd in ${requiredCommands[@]}; do
     if ! is_executable $cmd; then
-        printf " $cmd is not installed.\n Please install $cmd and checkinstall again."
+        printf "WARNING: $cmd is not installed.\n Please install $cmd and checkinstall again."
         printf "\n"
         CONDA_INSTALL=1
     else
-        echo -e "${cmd}\tSUCCESS"
+        echo -e "SUCCESS\t${cmd}"
     fi
 done
 
 ## Check R packages
 if ! is_executable "R"; then
-    printf " R is not installed.\n PEPATAC requires R 3.5 or greater.\n Please install R and checkinstall again."
+    printf "R is not installed.\n PEPATAC requires R 3.5 or greater.\n Please install R and checkinstall again."
     printf "\n"
     exit 1
 else
     rVer=$(R --version 2>&1 | grep 'R version' | awk '{print $3}')
     rVer=$(echo "${rVer//.}")
     if [ "$rVer" -lt "350" ]; then
-        printf " PEPATAC requires R 3.5 or greater.\n Please update R and checkinstall again."
+        printf "WARNING: PEPATAC requires R 3.5 or greater.\n Please update R and checkinstall again."
         printf "\n"
         CONDA_INSTALL=1
     fi
@@ -285,11 +283,11 @@ for package in ${requiredRPackages[@]}; do
     cmd=$(echo "Rscript -e 'library(\"$package\")'")
     packageInstalled=$(eval $cmd 2>&1)
     if [[ "$packageInstalled" == *Error* ]]; then
-        printf " The R package, $package, is not installed.\n Please install $package and checkinstall again."
+        printf "WARNING: The R package, $package, is not installed.\n Please install $package and checkinstall again."
         printf "\n"
         CONDA_INSTALL=1
     else
-        echo -e "R package: ${package}\tSUCCESS"
+        echo -e "SUCCESS\tR package: ${package}"
     fi
 done
 
@@ -300,12 +298,12 @@ echo -e "Checking bulker installation..."
 BULKER_INSTALL=0
 
 if ! is_executable "bulker"; then
-    printf " Bulker is not installed.\n To use bulker, pip install bulker and checkinstall again."
+    printf "WARNING: Bulker is not installed.\n To use bulker, pip install bulker and checkinstall again."
     printf "\n"
     BULKER_INSTALL=1
 else
     BULKER_INSTALL=0
-    echo -e "bulker\tSUCCESS"
+    echo -e "SUCCESS\tbulker"
 fi
 
 CWD=$(pwd)
@@ -315,7 +313,7 @@ echo "crate: ${crate}"
 yes n | bulker load $crate
 
 if [ $? -eq 0 ]; then
-    printf " ERROR: Could not bulker load ${crate}.\n Check out https://bulker.databio.org/en/latest/install/."
+    printf "WARNING: Could not bulker load ${crate}.\n Check out https://bulker.databio.org/en/latest/install/."
     printf "\n"
     BULKER_INSTALL=1
 fi
@@ -323,12 +321,12 @@ fi
 isActivatable=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
 echo "isActivatable: ${isActivatable}"
 if [ -v "$isActivatable" ]; then
-    printf " Could not activate the bulker crate, ${crate}.\n Check out https://bulker.databio.org/en/latest/install/."
+    printf "WARNING: Could not activate the bulker crate, ${crate}.\n Check out https://bulker.databio.org/en/latest/install/."
     printf "\n"
     BULKER_INSTALL=1
 else
     BULKER_INSTALL=0
-    echo -e "bulker run ${crate}\nSUCCESS"
+    echo -e "SUCCESS\tbulker run ${crate}"
 fi
 
 ################################################################################
@@ -352,6 +350,10 @@ if [ $BULKER_INSTALL -eq 0  ]; then
     echo -e "SUCCESS: PEPATAC can be run utilizing bulker!"
 else
     echo -e "WARNING: PEPATAC cannot be run utilizing bulker!"
+fi
+
+if [ $NATIVE_INSTALL -eq 1 ] && [ $NATIVE_INSTALL -eq 1 ] && [ $NATIVE_INSTALL -eq 1 ]; then
+    echo -e "ERROR: PEPATAC is not fully installed. Check output for help"
 fi
 
 echo -e "-----------------------------------------------------------"
