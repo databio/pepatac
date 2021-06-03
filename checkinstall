@@ -309,7 +309,7 @@ fi
 
 crate=$(grep 'bulker_crate' sample_pipeline_interface.yaml | awk '{print $2}')
 isLoadable=$(yes n | bulker load ${crate} 2>&1)
-echo "isLoadable: ${isLoadable}"
+
 if ! [[ "$isLoadable" == *Overwrite* ]]; then
     if [[ "$isLoadable" == *not found* ]]; then
         printf " Could not identify the bulker crate, ${crate}.\n Check out https://bulker.databio.org/en/latest/install/."
