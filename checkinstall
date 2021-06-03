@@ -8,7 +8,7 @@ if [[ $# -gt 0 ]] ; then
   exit 1
 fi
 
-set -eo pipefail
+set -o pipefail
 
 exec 1> checkinstall_log.txt
 
@@ -304,57 +304,51 @@ if ! is_executable "bulker"; then
     printf "\n"
     BULKER_INSTALL=1
 else
+    BULKER_INSTALL=0
     echo -e "bulker\tSUCCESS"
 fi
 
-crate=$(grep 'bulker_crate' sample_pipeline_interface.yaml | awk '{print $2}')
-isLoadable=$(yes n | bulker load ${crate} 2>&1)
+CWD=$(pwd)
+crate=$(grep 'bulker_crate' $CWD/sample_pipeline_interface.yaml | awk '{print $2}')
+echo "crate: ${crate}"
 
-if ! [[ "$isLoadable" == *Overwrite* ]]; then
-    if [[ "$isLoadable" == *not found* ]]; then
-        printf " Could not identify the bulker crate, ${crate}.\n Check out https://bulker.databio.org/en/latest/install/."
-        printf "\n"
-        BULKER_INSTALL=1
-    fi
-    if [[ "$isLoadable" == *missing* ]]; then
-        printf " Bulker configuration file was missing.\n Did you set the environment variable BULKERCFG to point to your bulker configuration file?\n Check out https://bulker.databio.org/en/latest/install/."
-        printf "\n"
-        BULKER_INSTALL=1
-    fi
-else
-    echo -e "bulker load ${crate}\nSUCCESS"
+yes n | bulker load $crate
+
+if [ $? -eq 0 ]; then
+    printf " ERROR: Could not bulker load ${crate}.\n Check out https://bulker.databio.org/en/latest/install/."
+    printf "\n"
+    BULKER_INSTALL=1
 fi
 
-isActivatable=$(bulker run ${crate} pipelines/pepatac.py --help)
-if ! [ -v "$isActivatable" ]]; then
+isActivatable=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
+echo "isActivatable: ${isActivatable}"
+if [ -v "$isActivatable" ]; then
     printf " Could not activate the bulker crate, ${crate}.\n Check out https://bulker.databio.org/en/latest/install/."
     printf "\n"
     BULKER_INSTALL=1
 else
+    BULKER_INSTALL=0
     echo -e "bulker run ${crate}\nSUCCESS"
 fi
 
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "             PEPATAC checkinstall results                  "
+echo -e "                                                           "
 
-echo -e "Native: ${NATIVE_INSTALL}"
-echo -e "Conda: ${CONDA_INSTALL}"
-echo -e "Bulker: ${BULKER_INSTALL}"
-
-if [ $NATIVE_INSTALL ]; then
+if [ $NATIVE_INSTALL -eq 0 ]; then
     echo -e "SUCCESS: PEPATAC can be run utilizing native installations!"
 else
     echo -e "WARNING: PEPATAC cannot be run utilizing native installations!"
 fi
 
-if [ $CONDA_INSTALL ]; then
+if [ $CONDA_INSTALL -eq 0  ]; then
     echo -e "SUCCESS: PEPATAC can be run utilizing conda installation!"
 else
     echo -e "WARNING: PEPATAC cannot be run via conda!"
 fi
 
-if [ $BULKER_INSTALL ]; then
+if [ $BULKER_INSTALL -eq 0  ]; then
     echo -e "SUCCESS: PEPATAC can be run utilizing bulker!"
 else
     echo -e "WARNING: PEPATAC cannot be run utilizing bulker!"
