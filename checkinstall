@@ -10,6 +10,13 @@ fi
 
 set -o pipefail
 
+echo -e "-----------------------------------------------------------"
+echo -e "                                                           "
+echo -e "             PEPATAC installation check                    "
+echo -e "                                                           "
+echo -e "-----------------------------------------------------------"
+
+
 ################################################################################
 # Helpful functions
 trim() {
@@ -55,7 +62,29 @@ function warn {
 }
 
 ################################################################################
-echo -e "Checking native installation..."
+echo -e "Checking base requirements...                              "
+echo -e "                                                           "
+BASE_REQS=0
+
+declare -a requiredPkgs=("refgenie" "looper")
+
+for package in ${requiredPkgs[@]}; do
+    if ! pip_show $package; then
+        echo $(fail "ERROR: PEPATAC requires the Python package, $package. Try pip install $package and checkinstall again.")
+        printf "\n"
+        exit 1
+    fi
+done
+
+if [ $BASE_REQS -eq 0 ]; then
+    echo $(success "SUCCESS: Minimum requirements met.")
+fi  
+
+
+################################################################################
+echo -e "-----------------------------------------------------------"
+echo -e "Checking native installation...                            "
+echo -e "                                                           "
 NATIVE_INSTALL=0
 
 # Check Python
@@ -179,7 +208,9 @@ for package in ${requiredRPackages[@]}; do
 done
 
 ################################################################################
-echo -e "Checking conda installation..."
+echo -e "-----------------------------------------------------------"
+echo -e "Checking conda installation...                             "
+echo -e "                                                           "
 CONDA_INSTALL=0
 
 if ! is_executable "conda"; then
@@ -314,7 +345,9 @@ else
 fi
 
 ################################################################################
-echo -e "Checking bulker installation..."
+echo -e "-----------------------------------------------------------"
+echo -e "Checking bulker installation...                            "
+echo -e "                                                           "
 BULKER_INSTALL=0
 
 if ! is_executable "bulker"; then
