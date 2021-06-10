@@ -3,12 +3,13 @@
 # PEPATAC pipeline installation check
 #
 
-if [[ $# -gt 0 ]] ; then
+if [ $# -gt 0 ] ; then
   echo "Usage: checkinstall"
   exit 1
 fi
 
 set -o pipefail
+# set -e
 
 echo -e "-----------------------------------------------------------"
 echo -e "                                                           "
@@ -49,28 +50,28 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-function fail {
+fail() {
     printf "${RED}\u2716 $@${NC}\n"
 }
 
-function success {
+success() {
     printf "${GREEN}\xE2\x9C\x94 $@${NC}\n"
 }
 
-function warn {
-    printf "${YELLOW}$@${NC}\n"
+warn() {
+    printf "${YELLOW}\u26A0 $@${NC}\n"
 }
 
 ################################################################################
 echo -e "Checking base requirements...                              "
-echo -e "                                                           "
+
 BASE_REQS=0
 
 declare -a requiredPkgs=("refgenie" "looper")
 
 for package in ${requiredPkgs[@]}; do
     if ! pip_show $package; then
-        echo $(fail "ERROR: PEPATAC requires the Python package, $package. Try pip install $package and checkinstall again.")
+        echo $(fail "ERROR: PEPATAC requires the Python package, $package. Try pip install $package.")
         printf "\n"
         exit 1
     fi
@@ -84,7 +85,6 @@ fi
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "Checking native installation...                            "
-echo -e "                                                           "
 NATIVE_INSTALL=0
 
 # Check Python
@@ -125,9 +125,9 @@ while IFS= read -r line; do
     rminor=$(echo "${required_version[1]}" | awk '{ print $1+0; exit }')
     rpatch=$(echo "${required_version[2]}" | awk '{ print $1+0; exit }')
 
-    if ! pip_show "${package}"; then
-        echo $(warn "WARNING: PEPATAC requires the Python package, $package, >= $required. Try pip install $package and checkinstall again.")
-        printf "\n"
+    if ! pip_show "${package}" 2&>/dev/null ; then
+        echo $(warn "WARNING: PEPATAC requires the Python package, $package, >= $required. Try pip install $package.")
+        # printf "\n"
         NATIVE_INSTALL=1
         BULKER_INSTALL=1
     else
@@ -172,7 +172,7 @@ declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fse
 for cmd in ${requiredCommands[@]}; do
     if ! is_executable $cmd; then
         echo $(warn "WARNING: Install $cmd and checkinstall again.")
-        printf "\n"
+        # printf "\n"
         NATIVE_INSTALL=1
     else
         echo -e $(success "SUCCESS: ${cmd}")
@@ -210,7 +210,6 @@ done
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "Checking conda installation...                             "
-echo -e "                                                           "
 CONDA_INSTALL=0
 
 if ! is_executable "conda"; then
@@ -347,7 +346,6 @@ fi
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "Checking bulker installation...                            "
-echo -e "                                                           "
 BULKER_INSTALL=0
 
 if ! is_executable "bulker"; then
@@ -385,24 +383,23 @@ fi
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "             PEPATAC checkinstall results                  "
-echo -e "                                                           "
 
 if [ "$NATIVE_INSTALL" -eq 0 ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run utilizing native installations!")
+    echo -e $(success "SUCCESS: PEPATAC can be run using native installations!")
 else
-    echo -e $(fail "WARNING: PEPATAC cannot be run utilizing native installations!")
+    echo -e $(fail "ERROR: PEPATAC cannot be run using native installations.")
 fi
 
 if [ "$CONDA_INSTALL" -eq 0  ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run utilizing conda installation!")
+    echo -e $(success "SUCCESS: PEPATAC can be run using conda installation!")
 else
-    echo -e $(fail "WARNING: PEPATAC cannot be run via conda!")
+    echo -e $(fail "ERROR: PEPATAC cannot be run via conda.")
 fi
 
 if [ "$BULKER_INSTALL" -eq 0  ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run utilizing bulker!")
+    echo -e $(success "SUCCESS: PEPATAC can be run using bulker!")
 else
-    echo -e $(fail "WARNING: PEPATAC cannot be run utilizing bulker!")
+    echo -e $(fail "ERROR: PEPATAC cannot be run using bulker.")
 fi
 
 if [ "$NATIVE_INSTALL" -eq 1 ] && [ "$CONDA_INSTALL" -eq 1 ] && [ "$BULKER_INSTALL" -eq 1 ]; then
