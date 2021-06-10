@@ -1,6 +1,7 @@
 description: A PEP for ATAC-seq samples for the PEPATAC pipeline.
 imports: 
-  - http://schema.databio.org/pep/2.0.0.yaml
+  - https://schema.databio.org/pep/2.0.0.yaml  # Use a web-based schema source file
+  #- PEP_schema.yaml # Use a local (current directory) schema source file
 properties:
   samples:
     type: array
@@ -19,6 +20,9 @@ properties:
         genome:
           type: string
           description: "Refgenie genome registry identifier"
+        prealignments:
+          type: ["string", "array"]
+          descrption: "Refgenie genome registry identifiers"
         read_type:
           type: string
           description: "Is this single or paired-end data?"
@@ -29,6 +33,68 @@ properties:
         read2:
           type: string
           description: "Fastq file for read 2 (for paired-end experiments)"
+        extend:
+          type: string
+          description: "Length to extend fixed width peaks around summit"
+        frip_ref_peaks:
+          type: string
+          description: "Path to a reference peak set"
+        aligner:
+          type: string
+          description: "Specify the read alignment tool"
+          enum: ["bowtie2", "bwa"]
+        peak_caller:
+          type: string
+          description: "Specify the peak calling tool"
+          enum: ["fseq", "genrich", "hmmratac", "homer", "macs2"]
+        genome_size:
+          type: string
+          description: "MACS2 effective genome size"
+        trimmer:
+          type: string
+          description: "Specify the read trimming tool"
+          enum: ["trimmomatic", "pyadapt", "skewer"]
+        deduplicator:
+          type: string
+          description: "Specify the read deduplication tool"
+          enum: ["picard", "samblaster", "samtools"]
+        peak_type:
+          type: string
+          description: "Call variable or fixed width peaks"
+          enum: ["fixed", "variable"]
+        anno_name:
+          type: string
+          description: "Genomic partitions annotation file (by default uses Refgenie asset)"
+        blacklist:
+          type: string
+          description: "Path to file of blacklisted genomic regions (by default uses Refgenie asset)"
+        TSS_name:
+          type: string
+          description: "TSS annotation file (by default uses Refgenie asset)"
+        motif:
+          type: boolean
+          description: "Use HOMER to perform motif enrichment analysis"
+        sob:
+          type: boolean
+          description: "Use seqOutBias to generate signal tracks"
+        no_scale:
+          type: boolean
+          description: "Do not scale signal tracks"
+        prioritize:
+          type: boolean
+          description: "Plot cFRiF/FRiF using mutually exclusive priority ranked features based on the order of feature appearance in the feature annotation asset"
+        keep:
+          type: boolean
+          description: "Keep prealignment BAM files"
+        noFIFO:
+          type: boolean
+          description: "Do NOT use named pipes during prealignments"
+        lite:
+          type: boolean
+          description: "Remove all intermediate file types"
+        skipqc:
+          type: boolean
+          description: "Do not use FastQC even if available"
       required:
         - sample_name
         - protocol

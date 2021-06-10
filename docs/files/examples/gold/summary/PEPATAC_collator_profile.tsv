@@ -1,0 +1,4 @@
+# Pipeline started at 09-15 06:45:26
+
+# pid	hash	cid	runtime	mem	cmd	lock
+9246	e10bae666c	1	0:00:13.410000	 0.0821	Rscript	lock.gold_peaks_coverage.tsv

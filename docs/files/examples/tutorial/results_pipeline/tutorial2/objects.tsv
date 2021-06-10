@@ -1,0 +1,9 @@
+FastQC report r1	fastq/tutorial2_R1_trim_fastqc.html	FastQC report r1	None	PEPATAC
+FastQC report r2	fastq/tutorial2_R2_trim_fastqc.html	FastQC report r2	None	PEPATAC
+TSS enrichment	QC_hg38/tutorial2_TSS_enrichment.pdf	TSS enrichment	QC_hg38/tutorial2_TSS_enrichment.png	PEPATAC
+Fragment distribution	QC_hg38/tutorial2_fragLenDistribution.pdf	Fragment distribution	QC_hg38/tutorial2_fragLenDistribution.png	PEPATAC
+Peak chromosome distribution	QC_hg38/tutorial2_peak_chromosome_distribution.pdf	Peak chromosome distribution	QC_hg38/tutorial2_peak_chromosome_distribution.png	PEPATAC
+TSS distance distribution	QC_hg38/tutorial2_peak_TSS_distribution.pdf	TSS distance distribution	QC_hg38/tutorial2_peak_TSS_distribution.png	PEPATAC
+Peak partition distribution	QC_hg38/tutorial2_peak_genomic_distribution.pdf	Peak partition distribution	QC_hg38/tutorial2_peak_genomic_distribution.png	PEPATAC
+cFRiF	QC_hg38/tutorial2_cFRiF.pdf	cFRiF	QC_hg38/tutorial2_cFRiF.png	PEPATAC
+FRiF	QC_hg38/tutorial2_FRiF.pdf	FRiF	QC_hg38/tutorial2_FRiF.png	PEPATAC

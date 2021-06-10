@@ -1,6 +1,6 @@
 ---
 title: "PEPATAC BiocProject"
-author: "Michal Stolarczyk"
+author: c("Michal Stolarczyk", "Jason Smith")
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -35,7 +35,7 @@ The way the output files are read is defined in a [function](https://github.com/
 
 ```{r echo=T, message=FALSE}
 library(BiocProject)
-ProjectConfig = "gold_hg19.yaml"
+ProjectConfig = "gold_config.yaml"
 ```
 
 ## Run the `BiocProject` function

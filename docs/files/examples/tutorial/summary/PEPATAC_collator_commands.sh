@@ -1,3 +1,3 @@
-# Pipeline started at 05-26 13:30:24
+# Pipeline started at 09-22 08:02:42
 
-Rscript /scratch/jps3dp/tools/databio//pepatac/tools/PEPATAC_summarizer.R /sfs/lustre/bahamut/scratch/jps3dp/tools/databio/pepatac/examples/tutorial/tutorial.yaml /home/jps3dp/tutorial/ /home/jps3dp/tutorial/results_pipeline
+Rscript /scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/tools/PEPATAC_summarizer.R /sfs/lustre/bahamut/scratch/jps3dp/data/tmp/pepatac_tutorial/tools/pepatac/examples/tutorial/tutorial.yaml /scratch/jps3dp/data/tmp/pepatac_tutorial/processed/ /scratch/jps3dp/data/tmp/pepatac_tutorial/processed/results_pipeline

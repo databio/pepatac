@@ -43,7 +43,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         "\n",
         "Usage:   PEPATAC.R [command] {args}\n",
         "Version: ", version, "\n\n",
-        "Command: preseq\t\t plot preseq complexity curves\n", 
+        "Command: preseq\t\t plot preseq complexity curves\n",
         "\t frif\t plot fraction of reads in features\n",
         "\t tss\t plot TSS enrichment\n",
         "\t frag\t plot fragment length distribution\n",
@@ -248,7 +248,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         # }
         # anno <- data.table::fread(partitions)
         # colnames(anno) <- c("chr", "start", "end", "name", "score", "strand")
-        # anno$strand    <- ifelse(anno$strand == '.', '*', anno$strand) 
+        # anno$strand    <- ifelse(anno$strand == '.', '*', anno$strand)
         # partition_list <- lapply(split(anno, anno$name), function(i){
             # GenomicRanges::GRanges(
                     # seqnames = i$chr,
@@ -529,7 +529,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
             width = 7, height = 7, useDingbats=F)
         suppressMessages(suppressWarnings(print(p)))
         invisible(dev.off())
-             
+
         # Save plot to png file
         png(filename = paste0(tools::file_path_sans_ext(output_name), ".png"),
             width = 480, height = 480)
@@ -609,11 +609,12 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         chr_sizes <- opt_get(name = c("chr_sizes", "c"), required=TRUE,
                              description="Genome chromosome sizes file. <Chr> <Size>.")
         output    <- opt_get(name = c("output", "o"), required=FALSE,
-                             default=NULL, description="Output file.")
+                             description="Output file.")
         normalize <- opt_get(name = c("normalize", "n"), required=FALSE,
                              default=FALSE,
                              description="Normalize scores.")
-        print(message(paste0("Normalize: ", normalize)))
+        #print(message(paste0("Normalize: ", normalize)))
+        if (is.na(output)) {output <- NA}
         PEPATACr::reducePeaks(input=input,
                               chr_sizes=chr_sizes,
                               output=output,
@@ -649,7 +650,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         "\n",
         "Usage:   PEPATAC.R [command] {args}\n",
         "Version: ", version, "\n\n",
-        "Command: preseq\t\t plot preseq complexity curves\n", 
+        "Command: preseq\t\t plot preseq complexity curves\n",
         "\t frif\t plot fraction of reads in features\n",
         "\t tss\t plot TSS enrichment\n",
         "\t frag\t plot fragment length distribution\n",

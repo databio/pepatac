@@ -11,7 +11,7 @@
 # ))
 #
 # Created: 5/18/17
-# Last updated: 03/12/2020
+# Last updated: 05/10/2021
 #
 # usage: Rscript /path/to/Rscript/PEPATAC_summarizer.R 
 #        /path/to/project_config.yaml
@@ -53,9 +53,26 @@ p <- add_argument(p, arg="--new-start", short="-N", flag=TRUE,
                   help=paste0("New start mode. This flag will tell the ",
                        "summarizer to start over, and run every command, even ",
                        "if its target output already exists."))
+p <- add_argument(p, arg="--skip-consensus", short="-P", flag=TRUE,
+                  help=paste0("Do not calculate consensus peaks."))
+p <- add_argument(p, arg="--skip-table", short="-T", flag=TRUE,
+                  help=paste0("Do not calculate peak counts table."))
+p <- add_argument(p, arg="--poverlap", short="-V", flag=TRUE,
+                  help=paste0("Calculate the percentage overlap of reads ",
+                              "in peaks for the counts table."))
+p <- add_argument(p, arg="--normalized", short="-Z", flag=TRUE,
+                  help=paste0("Use normalized read counts in peak table."))
+p <- add_argument(p, arg="cutoff", short="-m", default=2,
+                  help=paste0("Only keep peaks present in at least this ",
+                              "number of samples."))
+p <- add_argument(p, arg="min-score", short="-s", default=5,
+                  help=paste0("A minimum peak score to keep an",
+                              " individual peak."))
+p <- add_argument(p, arg="min-olap", short="-l", default=1,
+                  help=paste0("A minimum number of overlapping bases to",
+                              " defined peaks as overlapping."))
 # Parse the command line arguments
 argv <- parse_args(p)
-#print(argv)  # DEBUG
 
 ###############################################################################
 ##### LOAD DEPENDENCIES #####
@@ -91,7 +108,10 @@ pep <- argv$config
 # Load the project
 prj <- invisible(suppressWarnings(pepr::Project(pep)))
 # Convenience
-project_name <- config(prj)$name
+project_name    <- config(prj)$name
+project_samples <- pepr::sampleTable(prj)$sample_name
+sample_table    <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
+                              genome=pepr::sampleTable(prj)$genome)
 
 # Set the output directory
 summary_dir <- suppressMessages(file.path(argv$output, "summary"))
@@ -110,17 +130,37 @@ if (dir.exists(argv$results)) {
     quit()
 }
 
-# Get assets
-assets  <- PEPATACr::createAssetsSummary(prj, argv$output, results_subdir)
+
+# Generate stats summary
+stats  <- PEPATACr::createStatsSummary(project_samples, results_subdir)
+if (nrow(stats) == 0) {
+    quit()
+}
+project_stats_file <- file.path(argv$output,
+                                paste0(project_name, '_stats_summary.tsv'))
+message(sprintf("Summary (n=%s): %s",
+        length(unique(stats$sample_name)), project_stats_file))
+fwrite(stats, project_stats_file, sep="\t", col.names=TRUE)
+
+
+# Generate assets
+assets <- PEPATACr::createAssetsSummary(project_samples, results_subdir)
 if (nrow(assets) == 0) {
     quit()
 }
+project_assets_file <- file.path(argv$output,
+                                 paste0(project_name, '_assets_summary.tsv'))
+message(sprintf("Summary (n=%s): %s",
+        length(unique(assets$sample_name)), project_assets_file))
+fwrite(assets, project_assets_file, sep="\t", col.names=FALSE)
+
 
 # Produce project summary plots
 summarizer_flag <- PEPATACr::summarizer(prj, argv$output)
 if (is.null(summarizer_flag)) {
     summarizer_flag <- FALSE
 }
+
 
 # Produce library complexity summary plots
 complexity_path <- file.path(summary_dir,
@@ -132,14 +172,12 @@ if (!file.exists(complexity_path) || argv$new_start) {
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_yield.txt"),
                 sep="/")
-    #cc <- system(paste0("echo ", cc), intern = TRUE)
     rc <- paste(results_subdir,
                 suppressMessages(pepr::sampleTable(prj)$sample_name),
                 paste0("QC_", suppressMessages(pepr::sampleTable(prj)$genome)),
                 paste0(suppressMessages(pepr::sampleTable(prj)$sample_name),
                        "_preseq_counts.txt"),
                 sep="/")
-    #rc <- system(paste0("echo ", rc), intern = TRUE)
 
     hasBoth <- file.exists(cc) & file.exists(rc)
     ccSub   <- cc[hasBoth]
@@ -180,6 +218,7 @@ if (summarizer_flag && complexity_flag) {
     message("Successfully produced project summary plots.\n")
 }
 
+
 # Report existing consensus peaks
 for (genome in unique(genomes)) {
     file_name      <- paste0("_", genome,"_consensusPeaks.narrowPeak")
@@ -190,11 +229,17 @@ for (genome in unique(genomes)) {
     }
 }
 
+
 # Calculate consensus peaks
-if (!file.exists(consensus_path) || argv$new_start) {
+if (!file.exists(consensus_path) || argv$new_start && !argv$skip_consensus) {
     #write(paste0("Creating consensus peak set..."), stdout())
-    consensus_paths <- PEPATACr::consensusPeaks(prj, argv$output,
-                                                argv$results, assets)
+    consensus_paths <- PEPATACr::consensusPeaks(sample_table,
+                                                summary_dir,
+                                                argv$results,
+                                                assets,
+                                                argv$cutoff,
+                                                argv$min_score,
+												argv$min_olap)
     if (!length(consensus_paths) == 0) {
         for (consensus_file in consensus_paths) {
             if (file.exists(consensus_file)) {
@@ -212,6 +257,7 @@ if (!file.exists(consensus_path) || argv$new_start) {
     }
 }
 
+
 # Report existing counts tables
 # TODO: move genome handling out of the called function?
 for (genome in unique(genomes)) {
@@ -223,10 +269,20 @@ for (genome in unique(genomes)) {
     }
 }
 
+
 # Create count matrix
-if (!file.exists(counts_path) || argv$new_start) {
-    #write(paste0("Creating peak count table(s)..."), stdout())
-    counts_paths <- PEPATACr::peakCounts(prj, argv$output, argv$results, assets)
+if (!file.exists(counts_path) || argv$new_start && !argv$skip_table) {
+    sample_table <- data.table::data.table(
+        sample_name=pepr::sampleTable(prj)$sample_name,
+        genome=pepr::sampleTable(prj)$genome)
+    counts_paths <- PEPATACr::peakCounts(sample_table,
+                                         summary_dir,
+                                         argv$results,
+                                         assets,
+                                         argv$poverlap,
+                                         argv$normalized,
+                                         argv$cutoff,
+										 argv$min_olap)
     if (!length(counts_paths) == 0) {
         for (counts_table in counts_paths) {
             if (file.exists(counts_table)) {

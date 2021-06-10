@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="stylesheet" type="text/css" href="https://netdna.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.3.1.js" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+<script src="https://netdna.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+<style type="text/css">
+    p#footer {
+        margin-left: 10px;
+        margin-right: 10px;
+        padding-bottom: 10px;
+        padding-top: 10px;
+    }
+
+    html, body {
+        height: 100%;
+    }
+
+    th {
+        background-color: white;
+    }
+
+    #footer {
+        position: relative;
+        margin-top: -40px;
+        /* negative value of footer height */
+        height: 40px;
+        padding-top: 10px;
+        padding-left: 10px;
+    }
+
+    .container {
+        overflow: auto;
+        padding-bottom: 40px;
+        padding-left: 25px;
+        margin-top: 20px;
+        min-height: 100%;
+        margin-left: 0px;
+        margin-right: 0px;
+        max-width: none;
+        min-width: none;
+        /* must be same height as the footer */
+    }
+
+    .container-fluid {
+        padding-top: 5px;
+    }
+
+    tr.footer {
+      padding: 3px;
+    }
+
+    th.footer {
+      font-size:12px;
+      padding: 3px;
+      font-weight: bold;
+      text-align: center;
+      background-color: #464c56;
+      color: white
+    }
+
+    td.footer {
+      font-size:12px;
+      padding: 3px;
+      text-align: center;
+      color: #464c56;
+      font-weight: bold;
+      font-family: Courier New
+    }
+
+    code.footer {
+      color:#464c56
+    }
+
+    .left_footer {
+      width: 30%;
+      text-align: left;
+      float: left;
+      display: inline-block;
+    }
+
+    .right_footer {
+      width: 30%;
+      padding-top: 10px;
+      float: right;
+      text-align:right;
+      display: inline-block;
+    }
+
+    .center_footer {
+      width: 40%;
+      padding-top: 10px;
+      overflow: hidden;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .wrapper {
+      padding: 20px;
+      padding-top: 10px;
+      clear: both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    figure {
+      margin-bottom: 35px;
+      margin-right: 15px;
+    }
+
+    img#fig {
+      width: 200px;
+      height: 200px
+    }
+
+    .list-group-item {
+      padding: 3px 10px
+    }
+
+    .list-group {
+      margin-left: 5px; margin-bottom: 10px;
+      display: inline-block;
+    }
+
+    .list-group#plot-cols {
+        margin-left: 5px; margin-bottom: 10px;
+        max-height: 300px;
+        overflow:scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    div#navbar_links {
+      display: flex;
+    }
+</style>
+        <script>
+            $.noConflict();
+            jQuery(function ($) {
+                $('[data-toggle="popover"]').popover();
+            });
+        </script>
+        <title>Looper: gold3</title>
+    </head>
+            <div id="top"></div>
+        <nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-dark">
+          <a class="navbar-left" href="../gold_summary.html"><img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iCiAgIHhtbG5zOmNjPSJodHRwOi8vY3JlYXRpdmVjb21tb25zLm9yZy9ucyMiCiAgIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIKICAgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiCiAgIHhtbG5zOmlua3NjYXBlPSJodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy9uYW1lc3BhY2VzL2lua3NjYXBlIgogICB3aWR0aD0iNjMuODg1MTM2bW0iCiAgIGhlaWdodD0iNTguNTA0NzA3bW0iCiAgIHZpZXdCb3g9IjAgMCAyMjYuMzY0NjUgMjA3LjMwMDEzIgogICBpZD0ic3ZnNDE5OCIKICAgdmVyc2lvbj0iMS4xIgogICBpbmtzY2FwZTp2ZXJzaW9uPSIwLjkxIHIxMzcyNSIKICAgc29kaXBvZGk6ZG9jbmFtZT0ibG9nb19sb29wZXIuc3ZnIj4KICA8ZGVmcwogICAgIGlkPSJkZWZzNDIwMCIgLz4KICA8c29kaXBvZGk6bmFtZWR2aWV3CiAgICAgaWQ9ImJhc2UiCiAgICAgcGFnZWNvbG9yPSIjZmZmZmZmIgogICAgIGJvcmRlcmNvbG9yPSIjNjY2NjY2IgogICAgIGJvcmRlcm9wYWNpdHk9IjEuMCIKICAgICBpbmtzY2FwZTpwYWdlb3BhY2l0eT0iMC4wIgogICAgIGlua3NjYXBlOnBhZ2VzaGFkb3c9IjIiCiAgICAgaW5rc2NhcGU6em9vbT0iMi44Mjg0MjcxIgogICAgIGlua3NjYXBlOmN4PSI4MC45NTQ1MzIiCiAgICAgaW5rc2NhcGU6Y3k9IjIyOS42MjgxOCIKICAgICBpbmtzY2FwZTpkb2N1bWVudC11bml0cz0icHgiCiAgICAgaW5rc2NhcGU6Y3VycmVudC1sYXllcj0ibGF5ZXIxIgogICAgIHNob3dncmlkPSJmYWxzZSIKICAgICBmaXQtbWFyZ2luLXRvcD0iMiIKICAgICBmaXQtbWFyZ2luLWxlZnQ9IjMiCiAgICAgZml0LW1hcmdpbi1yaWdodD0iMyIKICAgICBmaXQtbWFyZ2luLWJvdHRvbT0iMiIgLz4KICA8bWV0YWRhdGEKICAgICBpZD0ibWV0YWRhdGE0MjAzIj4KICAgIDxyZGY6UkRGPgogICAgICA8Y2M6V29yawogICAgICAgICByZGY6YWJvdXQ9IiI+CiAgICAgICAgPGRjOmZvcm1hdD5pbWFnZS9zdmcreG1sPC9kYzpmb3JtYXQ+CiAgICAgICAgPGRjOnR5cGUKICAgICAgICAgICByZGY6cmVzb3VyY2U9Imh0dHA6Ly9wdXJsLm9yZy9kYy9kY21pdHlwZS9TdGlsbEltYWdlIiAvPgogICAgICAgIDxkYzp0aXRsZT48L2RjOnRpdGxlPgogICAgICA8L2NjOldvcms+CiAgICA8L3JkZjpSREY+CiAgPC9tZXRhZGF0YT4KICA8ZwogICAgIGlua3NjYXBlOmxhYmVsPSJMYXllciAxIgogICAgIGlua3NjYXBlOmdyb3VwbW9kZT0ibGF5ZXIiCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMjc4LjI0NjI0LC04NTQuNDI2NDIpIj4KICAgIDxwYXRoCiAgICAgICBzdHlsZT0iZmlsbDojNWY4ZGQzO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDoxLjU7c3Ryb2tlLW1pdGVybGltaXQ6NDtzdHJva2UtZGFzaGFycmF5Om5vbmUiCiAgICAgICBpZD0icGF0aDQxNDYiCiAgICAgICBkPSJtIDM0NS40MjUyNCw5OTMuMDc5MDQgYyA2LjE1MSwwIDEyLjQwOCwtMS4wMTQgMTguNTM2LC0zLjE0NyBsIC00LjYwOCwtMTMuMjIxIGMgLTIyLjEyNiw3LjcwMyAtNDYuMzk5LC00LjAyMSAtNTQuMTA1LC0yNi4xNCAtNy43MTEsLTIyLjEyMDAxIDQuMDE1LC00Ni4zOTEwMSAyNi4xMzcsLTU0LjEwMzAxIDguMzI3LC0yLjkwMiAxNy4xNzcsLTMuMTM1IDI1LjUxMywtMC43NyBsIC0xNS4yNiw4LjA4MyA2LjU1NCwxMi4zNzIgMzYuNTQ4MDEsLTE5LjM2IC0yMi4yMDMwMSwtMzUuMjggLTExLjg0OSw3LjQ1NiA4LjAwMywxMi43MTkgYyAtMTAuNDg3LC0yLjU2MyAtMjEuNTA5LC0yLjA2NCAtMzEuOTE1LDEuNTYyIC0yOS40MTIsMTAuMjUzIC00NS4wMDAwMSw0Mi41MjEgLTM0Ljc0OTAxLDcxLjkzMDAxIDguMTEyMDEsMjMuMjggMzAuMDIyMDEsMzcuODk5IDUzLjM5ODAxLDM3Ljg5OSB6IgogICAgICAgaW5rc2NhcGU6Y29ubmVjdG9yLWN1cnZhdHVyZT0iMCIKICAgICAgIHNvZGlwb2RpOm5vZGV0eXBlcz0ic2NjY2NjY2NjY2NjY2NzIiAvPgogICAgPHJlY3QKICAgICAgIHN0eWxlPSJjb2xvcjojMDAwMDAwO2NsaXAtcnVsZTpub256ZXJvO2Rpc3BsYXk6aW5saW5lO292ZXJmbG93OnZpc2libGU7dmlzaWJpbGl0eTp2aXNpYmxlO29wYWNpdHk6MTtpc29sYXRpb246YXV0bzttaXgtYmxlbmQtbW9kZTpub3JtYWw7Y29sb3ItaW50ZXJwb2xhdGlvbjpzUkdCO2NvbG9yLWludGVycG9sYXRpb24tZmlsdGVyczpsaW5lYXJSR0I7c29saWQtY29sb3I6IzAwMDAwMDtzb2xpZC1vcGFjaXR5OjE7ZmlsbDojNWY4ZGQzO2ZpbGwtb3BhY2l0eToxO2ZpbGwtcnVsZTpub256ZXJvO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDoxLjU7c3Ryb2tlLWxpbmVjYXA6YnV0dDtzdHJva2UtbGluZWpvaW46bWl0ZXI7c3Ryb2tlLW1pdGVybGltaXQ6NDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLWRhc2hvZmZzZXQ6MDtzdHJva2Utb3BhY2l0eToxO21hcmtlcjpub25lO2NvbG9yLXJlbmRlcmluZzphdXRvO2ltYWdlLXJlbmRlcmluZzphdXRvO3NoYXBlLXJlbmRlcmluZzphdXRvO3RleHQtcmVuZGVyaW5nOmF1dG87ZW5hYmxlLWJhY2tncm91bmQ6YWNjdW11bGF0ZSIKICAgICAgIGlkPSJyZWN0NDE1NyIKICAgICAgIHdpZHRoPSI0NC4wMzc0NDkiCiAgICAgICBoZWlnaHQ9IjExLjAwOTgxMiIKICAgICAgIHg9IjMyNC4xMTgxIgogICAgICAgeT0iOTIyLjc4NjMyIiAvPgogICAgPHJlY3QKICAgICAgIHk9IjkzOS41NTQyNiIKICAgICAgIHg9IjMyNC4xMTgxIgogICAgICAgaGVpZ2h0PSIxMS4wMDk4MTIiCiAgICAgICB3aWR0aD0iNDQuMDM3NDQ5IgogICAgICAgaWQ9InJlY3Q0MTU5IgogICAgICAgc3R5bGU9ImNvbG9yOiMwMDAwMDA7Y2xpcC1ydWxlOm5vbnplcm87ZGlzcGxheTppbmxpbmU7b3ZlcmZsb3c6dmlzaWJsZTt2aXNpYmlsaXR5OnZpc2libGU7b3BhY2l0eToxO2lzb2xhdGlvbjphdXRvO21peC1ibGVuZC1tb2RlOm5vcm1hbDtjb2xvci1pbnRlcnBvbGF0aW9uOnNSR0I7Y29sb3ItaW50ZXJwb2xhdGlvbi1maWx0ZXJzOmxpbmVhclJHQjtzb2xpZC1jb2xvcjojMDAwMDAwO3NvbGlkLW9wYWNpdHk6MTtmaWxsOiM1ZjhkZDM7ZmlsbC1vcGFjaXR5OjE7ZmlsbC1ydWxlOm5vbnplcm87c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjEuNTtzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1saW5lam9pbjptaXRlcjtzdHJva2UtbWl0ZXJsaW1pdDo0O3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2UtZGFzaG9mZnNldDowO3N0cm9rZS1vcGFjaXR5OjE7bWFya2VyOm5vbmU7Y29sb3ItcmVuZGVyaW5nOmF1dG87aW1hZ2UtcmVuZGVyaW5nOmF1dG87c2hhcGUtcmVuZGVyaW5nOmF1dG87dGV4dC1yZW5kZXJpbmc6YXV0bztlbmFibGUtYmFja2dyb3VuZDphY2N1bXVsYXRlIiAvPgogICAgPHJlY3QKICAgICAgIHN0eWxlPSJjb2xvcjojMDAwMDAwO2NsaXAtcnVsZTpub256ZXJvO2Rpc3BsYXk6aW5saW5lO292ZXJmbG93OnZpc2libGU7dmlzaWJpbGl0eTp2aXNpYmxlO29wYWNpdHk6MTtpc29sYXRpb246YXV0bzttaXgtYmxlbmQtbW9kZTpub3JtYWw7Y29sb3ItaW50ZXJwb2xhdGlvbjpzUkdCO2NvbG9yLWludGVycG9sYXRpb24tZmlsdGVyczpsaW5lYXJSR0I7c29saWQtY29sb3I6IzAwMDAwMDtzb2xpZC1vcGFjaXR5OjE7ZmlsbDojNWY4ZGQzO2ZpbGwtb3BhY2l0eToxO2ZpbGwtcnVsZTpub256ZXJvO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDoxLjU7c3Ryb2tlLWxpbmVjYXA6YnV0dDtzdHJva2UtbGluZWpvaW46bWl0ZXI7c3Ryb2tlLW1pdGVybGltaXQ6NDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLWRhc2hvZmZzZXQ6MDtzdHJva2Utb3BhY2l0eToxO21hcmtlcjpub25lO2NvbG9yLXJlbmRlcmluZzphdXRvO2ltYWdlLXJlbmRlcmluZzphdXRvO3NoYXBlLXJlbmRlcmluZzphdXRvO3RleHQtcmVuZGVyaW5nOmF1dG87ZW5hYmxlLWJhY2tncm91bmQ6YWNjdW11bGF0ZSIKICAgICAgIGlkPSJyZWN0NDE2MSIKICAgICAgIHdpZHRoPSI0NC4wMzc0NDkiCiAgICAgICBoZWlnaHQ9IjExLjAwOTgxMiIKICAgICAgIHg9IjMyNC4xMTgxIgogICAgICAgeT0iOTU2LjMyMjIiIC8+CiAgICA8cGF0aAogICAgICAgc3R5bGU9ImZpbGw6IzVmOGRkMztzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MS41O3N0cm9rZS1taXRlcmxpbWl0OjQ7c3Ryb2tlLWRhc2hhcnJheTpub25lIgogICAgICAgaWQ9InBhdGg0MTY3IgogICAgICAgZD0ibSA0OTIuMDAzODQsMTAzMi41MjM2IGMgLTQuMDAwMjYsLTguNjkwMiAtOC45MjAxMSwtMjIuODA2MSAtOS43MDE3NywtMzMuOTMzMjMgbCAtMC41MDU3OCwtNy4wODA5MSAtNy44NjI1OCwxNi43ODI2NCAtMTcuMTA0NTQsLTE3LjEwNDUgOS4wODA5MSwwIGMgNi41NzUxNCwwIDExLjk1NDc5LC01LjM3OTY2IDExLjk1NDc5LC0xMS45NTQ3OSBsIDAsLTU5LjYxNDQ0IGMgMCwtNi41NzUxMyAtNS4zNzk2NSwtMTEuOTU0NzkgLTExLjk1NDc5LC0xMS45NTQ3OSBsIC03Ni45Mjg4NCwwIGMgLTYuNTc1MTMsMCAtMTEuOTU0NzksNS4zNzk2NiAtMTEuOTU0NzksMTEuOTU0NzkgbCAwLDU5LjYxNDQ0IGMgMCw2LjU3NTEzIDUuMzc5NjYsMTEuOTU0NzkgMTEuOTU0NzksMTEuOTU0NzkgbCAzLjMxMDU2LDAgLTE3LjEwNDU0LDE3LjEwNDUgLTcuODYyNTgsLTE2Ljc4MjY0IC0wLjUwNTc4LDcuMDgwOTEgYyAtMC43ODE2NiwxMS4xMjcxMyAtNS43MDE1MiwyNS4yNDMwMyAtOS43MDE3NywzMy45MzMyMyBsIC0yLjA2OTEsNC41MDYgNC41MDYwNCwtMi4wNjkxIGMgOC42OTAyMSwtNC4wMDAyIDIyLjgwNjA2LC04LjkyMDEgMzMuOTMzMjEsLTkuNzAxNyBsIDcuMDgwOTEsLTAuNTA1OCAtMTYuNzgyNjgsLTcuODYyNiAyNS4yNDMsLTI1LjI0MyBjIDAuMTM3OTQsLTAuMTM3OTQgMC4yNzU4OCwtMC4zMjE4NiAwLjQxMzgyLC0wLjUwNTc4IGwgOS4xNTIzMiwwIDAsMjguOTY3MzggLTE3LjQyNjQsLTYuMjk5MyA0LjY4OTk1LDUuMzMzNyBjIDcuMzEwODIsOC40MTQzIDEzLjc5Mzk5LDIxLjg0MDUgMTcuMTUwNTMsMzAuODUyNiBsIDEuNzQ3MjQsNC42NDM5IDEuNzAxMjYsLTQuNjQzOSBjIDMuMzEwNTUsLTguOTY2MSA5Ljc5MzczLC0yMi40MzgzIDE3LjE1MDUyLC0zMC44NTI2IGwgNC42ODk5NiwtNS4zMzM3IC0xNy40MjY0MSw2LjI5OTMgMCwtMjguOTY3MzggOC43MTUzOCwwIGMgMC4xMzc5NCwwLjE4MzkyIDAuMjc1ODgsMC4zMjE4NiAwLjQxMzgyLDAuNTA1NzggbCAyNS4yNDMsMjUuMjQzIC0xNi43ODI2OSw3Ljg2MjYgNy4wODA5MiwwLjUwNTggYyAxMS4xMjcxNSwwLjc4MTYgMjUuMjQzLDUuNzAxNSAzMy45MzMyMSw5LjcwMTcgbCA0LjUwNjA0LDIuMDY5MSB6IG0gLTEwMi4xMDMsLTExMS45ODU2MyA3NS4xMzU2MiwwIDAsNTcuNzc1MjQgLTc1LjEzNTYyLDAgeiIKICAgICAgIGlua3NjYXBlOmNvbm5lY3Rvci1jdXJ2YXR1cmU9IjAiCiAgICAgICBzb2RpcG9kaTpub2RldHlwZXM9ImNjY2Njc3Nzc3Nzc3NjY2NjY2NjY2Njc2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2MiIC8+CiAgPC9nPgo8L3N2Zz4K" class="d-inline-block align-middle img-responsive" alt="LOOPER" height="60"></a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item active">
+                <a class="nav-link" href="../gold_summary.html">Summary<span class="sr-only">(current)</span></a>
+              </li>
+                            
+              <!-- if the status_page_name is not defined, the status page link is omitted -->
+                  <li class="nav-item active">
+                    <a class="nav-link" href="status.html">Status</a>
+                  </li>
+              
+              
+               <!-- there is less than 20 objects -->
+                <li class="nav-item dropdown active">
+                  <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Objects
+                  </a>
+                  <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <a class="dropdown-item" href="objects.html">All objects</a>
+                    <div class="dropdown-divider"></div>
+                    
+                      
+                      <a class="dropdown-item" href="frif.html">FRiF</a>
+                    
+                      
+                      <a class="dropdown-item" href="fastqc_report_r1.html">FastQC report r1</a>
+                    
+                      
+                      <a class="dropdown-item" href="fastqc_report_r2.html">FastQC report r2</a>
+                    
+                      
+                      <a class="dropdown-item" href="fragment_distribution.html">Fragment distribution</a>
+                    
+                      
+                      <a class="dropdown-item" href="library_complexity.html">Library complexity</a>
+                    
+                      
+                      <a class="dropdown-item" href="tss_enrichment.html">TSS enrichment</a>
+                    
+                      
+                      <a class="dropdown-item" href="cfrif.html">cFRiF</a>
+                    
+                  </div>
+                </li>
+              
+              
+                <!-- there is less than 20 samples -->
+                <li class="nav-item dropdown active">
+                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Samples
+                  </a>
+                  <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <a class="dropdown-item" href="samples.html">All samples</a>
+                    <div class="dropdown-divider"></div>
+                    
+                      
+                      <a class="dropdown-item" href="gold1.html">gold1</a>
+                    
+                      
+                      <a class="dropdown-item" href="gold2.html">gold2</a>
+                    
+                      
+                      <a class="dropdown-item" href="gold3.html">gold3</a>
+                    
+                      
+                      <a class="dropdown-item" href="gold4.html">gold4</a>
+                    
+                      
+                      <a class="dropdown-item" href="gold5.html">gold5</a>
+                    
+                  </div>
+                </li>
+              
+            </ul>
+          </div>
+        </nav>
+ 
+    <body>
+    	<div class="container">
+            <div class="container-fluid">
+        	   <h3>Sample name: <code>gold3</code></h3>
+            </div>
+            <div class="container-fluid">
+                <p class="text-left">
+                <button type="button" class='btn btn-success' disabled>STATUS: Completed</button>
+                
+                    <a class="btn btn-outline-dark ml-2" href='../results_pipeline/gold3/PEPATAC_log.txt' role="button">Log file</a>
+                
+                
+                    <a class="btn btn-outline-dark ml-2" href='../results_pipeline/gold3/PEPATAC_profile.tsv' role="button">Pipeline profile</a>
+                
+                
+                    <a class="btn btn-outline-dark ml-2" href='../results_pipeline/gold3/PEPATAC_commands.sh' role="button">Pipeline commands</a>
+                
+                
+                    <a class="btn btn-outline-dark ml-2" href='../results_pipeline/gold3/stats.tsv' role="button">Stats summary file</a>
+                
+                </p>
+            </div>
+            <hr>
+            <div class='container-fluid'>
+    	      	<h3>Looper stats summary</h3>
+    	        <div class="table-responsive-sm">
+    				<table class="table table-sm table-hover table-bordered table-condensed" style="white-space: nowrap; width: 1%;">             
+    					<tbody>
+    						
+    							<tr>
+    								<th>sample_name</th>
+                                    
+                                        <td class="text">gold3</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>sample_description</th>
+                                    
+                                        <td class="text">ATAC-seq from dendritic cell (ENCLB887PKE)</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>treatment_description</th>
+                                    
+    								    <td class="text">Homo sapiens dendritic in vitro differentiated cells trea... <a data-html="true" data-toggle="popover" data-placement="top" data-trigger="click" data-content="Homo sapiens dendritic in vitro differentiated cells treated with 0 ng/mL Lipopolysaccharide for 0 hours" href="javascript:void(0)"><i class="fa fa-caret-square-o-right" aria-hidden="true"></i></a></td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>organism</th>
+                                    
+                                        <td class="text">human</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>protocol</th>
+                                    
+                                        <td class="text">ATAC-seq</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>data_source</th>
+                                    
+                                        <td class="text">SRA</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>SRR</th>
+                                    
+                                        <td class="text">SRR5210398</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>SRX</th>
+                                    
+                                        <td class="text">SRX2523862</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Sample_geo_accession</th>
+                                    
+                                        <td class="text">GSM2471249</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Sample_series_id</th>
+                                    
+                                        <td class="text">GSE94177</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>read_type</th>
+                                    
+                                        <td class="text">PAIRED</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Sample_instrument_model</th>
+                                    
+                                        <td class="text">Illumina NextSeq 500</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>read1</th>
+                                    
+                                        <td class="text">/project/shefflab/data/sra_fastq//SRR5210398_1.fastq.gz</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>read2</th>
+                                    
+                                        <td class="text">/project/shefflab/data/sra_fastq//SRR5210398_2.fastq.gz</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Raw_reads</th>
+                                    
+                                        <td class="text">166092252</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Fastq_reads</th>
+                                    
+                                        <td class="text">166092252</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Trimmed_reads</th>
+                                    
+                                        <td class="text">166090588</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Trim_loss_rate</th>
+                                    
+                                        <td class="text">0.0</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Mapped_reads</th>
+                                    
+                                        <td class="text">123924925</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>QC_filtered_reads</th>
+                                    
+                                        <td class="text">9613401</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Aligned_reads</th>
+                                    
+                                        <td class="text">114311524</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Alignment_rate</th>
+                                    
+                                        <td class="text">68.82</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Total_efficiency</th>
+                                    
+                                        <td class="text">68.82</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Mitochondrial_reads</th>
+                                    
+                                        <td class="text">14199</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>NRF</th>
+                                    
+                                        <td class="text">0.9</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>PBC1</th>
+                                    
+                                        <td class="text">0.95</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>PBC2</th>
+                                    
+                                        <td class="text">18.89</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Unmapped_reads</th>
+                                    
+                                        <td class="text">2236283</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Duplicate_reads</th>
+                                    
+                                        <td class="text">3152724</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Dedup_aligned_reads</th>
+                                    
+                                        <td class="text">111158800.0</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Dedup_alignment_rate</th>
+                                    
+                                        <td class="text">66.93</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Dedup_total_efficiency</th>
+                                    
+                                        <td class="text">66.93</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Read_length</th>
+                                    
+                                        <td class="text">40</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Genome_size</th>
+                                    
+                                        <td class="text">3099922541</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Frac_exp_unique_at_10M</th>
+                                    
+                                        <td class="text">0.9696</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>TSS_score</th>
+                                    
+                                        <td class="text">11.0</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Peak_count</th>
+                                    
+                                        <td class="text">380540</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>File_mb</th>
+                                    
+                                        <td class="text">4809</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Read_type</th>
+                                    
+                                        <td class="text">PAIRED</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Genome</th>
+                                    
+                                        <td class="text">hg38</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Aligned_reads_rCRSd</th>
+                                    
+                                        <td class="text">29229450.0</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Alignment_rate_rCRSd</th>
+                                    
+                                        <td class="text">17.6</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Aligned_reads_human_repeats</th>
+                                    
+                                        <td class="text">10699930.0</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Alignment_rate_human_repeats</th>
+                                    
+                                        <td class="text">6.44</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Time</th>
+                                    
+                                        <td class="text">0:16:01</td>
+                                    
+    							</tr>
+    						
+    							<tr>
+    								<th>Success</th>
+                                    
+                                        <td class="text">09-15-12:33:34</td>
+                                    
+    							</tr>
+    						
+    					</tbody>
+    				</table>
+    		    </div>
+            </div>
+            <div class='container-fluid'>
+            	
+            		<hr>
+            		<h3><code>gold3</code> objects</h3>
+            	
+            	<!-- Expects a 2 lists of lists: figures and links -->
+            	
+            	
+                    <h5>Figures</h5>
+            		
+                        
+    		            <figure class="figure">
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_preseq_plot.pdf'>
+    		                	<img id="fig" src='../results_pipeline/gold3/QC_hg38/gold3_preseq_plot.png' class="figure-img img-fluid rounded" alt="">
+    		                </a>
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_preseq_plot.pdf'>
+                                <figcaption class="figure-caption text-center"><b>Fig.0 </b><i>Library complexity</i></figcaption>
+    		                </a>
+    		            </figure>
+            		
+                        
+    		            <figure class="figure">
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_TSS_enrichment.pdf'>
+    		                	<img id="fig" src='../results_pipeline/gold3/QC_hg38/gold3_TSS_enrichment.png' class="figure-img img-fluid rounded" alt="">
+    		                </a>
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_TSS_enrichment.pdf'>
+                                <figcaption class="figure-caption text-center"><b>Fig.1 </b><i>TSS enrichment</i></figcaption>
+    		                </a>
+    		            </figure>
+            		
+                        
+    		            <figure class="figure">
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_fragLenDistribution.pdf'>
+    		                	<img id="fig" src='../results_pipeline/gold3/QC_hg38/gold3_fragLenDistribution.png' class="figure-img img-fluid rounded" alt="">
+    		                </a>
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_fragLenDistribution.pdf'>
+                                <figcaption class="figure-caption text-center"><b>Fig.2 </b><i>Fragment distribution</i></figcaption>
+    		                </a>
+    		            </figure>
+            		
+                        
+    		            <figure class="figure">
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_cFRiF.pdf'>
+    		                	<img id="fig" src='../results_pipeline/gold3/QC_hg38/gold3_cFRiF.png' class="figure-img img-fluid rounded" alt="">
+    		                </a>
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_cFRiF.pdf'>
+                                <figcaption class="figure-caption text-center"><b>Fig.3 </b><i>cFRiF</i></figcaption>
+    		                </a>
+    		            </figure>
+            		
+                        
+    		            <figure class="figure">
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_FRiF.pdf'>
+    		                	<img id="fig" src='../results_pipeline/gold3/QC_hg38/gold3_FRiF.png' class="figure-img img-fluid rounded" alt="">
+    		                </a>
+    		                <a href='../results_pipeline/gold3/QC_hg38/gold3_FRiF.pdf'>
+                                <figcaption class="figure-caption text-center"><b>Fig.4 </b><i>FRiF</i></figcaption>
+    		                </a>
+    		            </figure>
+            		
+            	
+        	</div>
+        </div>
+    </body>
+    <hr class="featurette-divider">
+    <footer class="text-muted">
+        <div class="wrapper">
+Generated with <code>looper v1.2.0</code>
+<span style="float:right;">&copy; 2018-2020 <a href="http://databio.org/" target="_new">Sheffield Computational Biology Lab</a></span>
+    </footer>
+</html>

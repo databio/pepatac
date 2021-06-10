@@ -1,4 +1,4 @@
-<img src="docs/img/pepatac_logo_white.svg" alt="pepatac logo" height="70" align="left"/>
+<img src="https://github.com/databio/pepatac/blob/master/docs/img/pepatac_logo_white.svg" alt="pepatac logo" height="70" align="left"/>
 
 <br></br>
 
@@ -6,7 +6,7 @@
 
 [![PEP compatible](http://pepkit.github.io/img/PEP-compatible-green.svg)](http://pepkit.github.io)
 
-PEPATAC is a pipeline designed to process ATAC-seq data. For more information see: http://code.databio.org/PEPATAC/
+PEPATAC is a pipeline designed to process ATAC-seq data. For more information see: http://pepatac.databio.org/
 
 ## Docs
 
@@ -28,9 +28,9 @@ Pull requests welcome. Active development should occur in a development or featu
 
 ## Contributors
 
-* Jin Xu, jinxu9@stanford.edu
-* Nathan Sheffield, nathan@code.databio.org
 * Jason Smith, jasonsmith@virginia.edu
+* Nathan Sheffield, nathan@code.databio.org
+* Jin Xu, jinxu9@stanford.edu
 * Ryan Corces, rcorces@stanford.edu
 * Vince Reuter, vreuter@protonmail.com
 * Others... (add your name)

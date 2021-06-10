@@ -9,11 +9,12 @@ To change the prealignments, you just need to add a `prealignment` sample attrib
 For example, adding this to your PEP project config yaml file will instruct the pipeline to pre-align to `human_rDNA`, then `rCRSd`, before doing the primary alignment to `hg38`:
 
 ```
-implied_attributes:
-  organism:
-    human:
-      genome: hg38
-      prealignments: human_rDNA rCRSd
+sample_modifiers:
+  imply:
+    - if: 
+        organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
+      then:
+        prealignments: human_rDNA rCRSd
 ```
 
 You could accomplish the same thing in a less elegant way by adding these columns to your sample 

@@ -2,17 +2,15 @@
 % Please edit documentation in R/PEPATACr.R
 \name{createAssetsSummary}
 \alias{createAssetsSummary}
-\title{Create and return assets spreadsheet and save the spreadsheet to file}
+\title{Create and return assets summary data table}
 \usage{
-createAssetsSummary(project, output_dir, results_subdir)
+createAssetsSummary(samples, results_subdir)
 }
 \arguments{
-\item{project}{A PEPr project object}
-
-\item{output_dir}{A PEP project output directory path}
+\item{samples}{A PEP project character vector of sample names}
 
 \item{results_subdir}{A PEP project results subdirectory path}
 }
 \description{
-Create and return assets spreadsheet and save the spreadsheet to file
+Create and return assets summary data table
 }

@@ -4,16 +4,29 @@
 \alias{consensusPeaks}
 \title{This function is meant to identify a project level set of consensus peaks.}
 \usage{
-consensusPeaks(project, output_dir, results_subdir, assets)
+consensusPeaks(
+  sample_table,
+  summary_dir,
+  results_subdir,
+  assets,
+  min_samples = 2,
+  min_score = 5
+)
 }
 \arguments{
-\item{project}{A PEPr Project object}
+\item{sample_table}{A data.table containing sample names and corresponding
+genomes.}
 
-\item{output_dir}{A PEP project output directory path}
+\item{summary_dir}{A directory path to place results of this analysis}
 
-\item{results_subdir}{A PEP project results subdirectory path}
+\item{results_subdir}{A project results subdirectory path}
 
 \item{assets}{A data.table containing file assets}
+
+\item{min_samples}{A minimum number of samples a peak must be present
+in to keep.}
+
+\item{min_score}{A minimum peak score to keep an individual peak.}
 }
 \description{
 This function is meant to identify a project level set of consensus peaks.

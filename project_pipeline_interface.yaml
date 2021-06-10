@@ -3,7 +3,6 @@ pipeline_type: project
 path: pipelines/pepatac_collator.py
 output_schema: pepatac_output_schema.yaml
 command_template: >
-  looper table {looper.pep_config} &&
   {pipeline.path} 
   --config {looper.pep_config}
   -O {looper.output_dir}
@@ -14,7 +13,7 @@ command_template: >
 compute:
   singularity_image: ${SIMAGES}pepatac
   docker_image: databio/pepatac
-  bulker_crate: databio/pepatac
+  bulker_crate: databio/pepatac:1.0.7
   size_dependent_variables: resources-project.tsv
 
 bioconductor:

@@ -1,0 +1,8 @@
+genome_config	/project/shefflab/genomes/genomes.yaml	PEPATAC
+adapters	/scratch/jps3dp/tools/databio//pepatac/tools/NexteraPE-PE.fa	PEPATAC
+bowtie2_index	/project/shefflab/genomes/hg38/bowtie2_index/default/.	PEPATAC
+chrom_sizes	/project/shefflab/genomes/hg38/fasta/default/hg38.chrom.sizes	PEPATAC
+fasta	/project/shefflab/genomes/hg38/fasta/default/hg38.fa	PEPATAC
+refgene_tss	/project/shefflab/genomes/hg38/refgene_anno/default/hg38_TSS.bed	PEPATAC
+feat_annotation	/project/shefflab/genomes/hg38/feat_annotation/default/hg38_annotations.bed.gz	PEPATAC
+genome	hg38	PEPATAC

@@ -2,10 +2,11 @@ theme: databio
 
 site_name: PEPATAC
 site_author: Jason Smith
-site_url: http://pepatac.databio.org/
+site_url: http://pepatac.databio.org/en/latest/
 site_logo: img/pepatac_logo_white.svg
 repo_url: https://github.com/databio/pepatac/
 google_analytics: ['UA-127092878-1', 'pepatac.databio.org']
+paper_link: https://doi.org/10.1101/2020.10.21.347054
 
 markdown_extensions:
   - fontawesome_markdown  # pip install --user fontawesome-markdown
@@ -18,14 +19,19 @@ nav:
     - Install and run test example: 'install.md'
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
+    - Detailed install guide: 'detailed-install.md'
     - Run directly: 'run-directly.md'
     - Run on cluster: 'run-cluster.md'
     - Run using containers: 'run-container.md'
-    - Download SRA data: 'download.md'
+    - Configure assets: 'assets.md'
     - Configure prealignments: 'prealignments.md'
-    - Configure seqOutBias assets: 'sob.md'
-    - Detailed install guide: 'detailed-install.md'
+    - Configure project files: 'peps.md'
+    - Configure seqOutBias assets: 'sob.md'   
+    - Download SRA data: 'download.md'
     - Use custom reference data: 'annotation.md'
+    - Use reference peaks: 'reference_peaks.md'
+    - Generate count table: 'count_table.md'
+    - Generate consensus peaks: 'consensus_peaks.md'
   - Reference: 
     - Example output file structure: 'browse_output.md'
     - "Example summary: gold project": 'files/examples/gold/gold_summary.html'
