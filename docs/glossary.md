@@ -4,6 +4,22 @@ Information regarding universal ATAC-seq [terms and definitions](https://www.enc
 
 Additional information relevant to `PEPATAC` output and interpretation includes:
 
+## Alignment statistics
+
+- **Raw reads**: The original number of reads in the input files.
+- **Trimmed reads**: The number of reads remaining after trimming.
+- **Trim loss rate**: The percentage of total reads that was trimmed. i.e. $\frac{(Raw\_reads - Trimmed\_reads)\times100}{Raw\_reads}$
+- **Mapped reads**: The number of reads mapped to primary genome.
+- **QC filtered reads**: The number of reads removed due to poor MAPQ values (i.e. &lt;10).
+- **Aligned reads**: (Mapped_reads - QC_filtered_reads)
+- **Alignment rate**: The percentage of trimmed reads that mapped to the primary genome. i.e. $\frac{Aligned\_reads}{Trimmed\_reads}$ $\times$ 100. In this case, trimmed reads represent the maximum number of reads that even have the potential to be mapped.
+- **Total efficiency** - The percentage of raw reads that mapped to the primary genome. i.e. $\frac{Aligned\_reads}{Raw\_reads}$ $\times$ 100. Here we're looking at even reads that necessitated trimming, which gives an idea of how well your sample preparation was if, for example, a large number of reads had required trimming. If the efficiency is very poor but you had a high alignment rate, it would suggest an issue with sample prep because so many reads were trimmed.
+- **Unmapped reads**: The number of trimmed reads that remains unmapped following prealignment and primary alignment. i.e. Trimmed_reads - Aligned_reads(prealignments) - Mapped_reads
+- **Duplicate reads**: The number of duplicate reads removed from the mapped reads.
+- **Dedup aligned reads**: The number of aligned reads following duplicate removal. i.e. Aligned_reads - Duplicate_reads
+- **Dedup alignment rate**: The number of deduplicated, aligned reads out of the number of trimmed reads. i.e. $\frac{Dedup\_aligned\_reads}{Trimmed\_reads}$
+- **Dedup total efficiency**: The number of deduplicated, aligned reads out of the number of raw reads. i.e. $\frac{Dedup\_aligned\_reads}{Raw\_reads}$
+
 ## Peak calling output
 
 The pipeline's default peak caller is `MACS2`.  More [detailed descriptions regarding `MACS2` output](https://github.com/taoliu/MACS) may be discovered in the `MACS2` repository.
