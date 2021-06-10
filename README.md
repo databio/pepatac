@@ -1,4 +1,4 @@
-<img src="https://github.com/databio/pepatac/blob/master/docs/img/pepatac_logo_white.svg" alt="pepatac logo" height="70" align="left"/>
+<img src="docs/img/pepatac_logo_white.svg" alt="pepatac logo" height="70" align="left"/>
 
 <br></br>
 
@@ -34,4 +34,10 @@ Pull requests welcome. Active development should occur in a development or featu
 * Ryan Corces, rcorces@stanford.edu
 * Vince Reuter, vreuter@protonmail.com
 * Others... (add your name)
+
+## Citing
+
+If you find PEPATAC useful in your research, please cite: 
+
+Jason P. Smith, M. Ryan Corces, Jin Xu, Vincent P. Reuter, Howard Y. Chang, and Nathan C. Sheffield. <b>PEPATAC: An optimized ATAC-seq pipeline with serial alignments.</b> <i>bioRxiv</i> (2021). <a href="https://doi.org/10.1101/2020.10.21.347054">DOI: 10.1101/2020.10.21.347054</a>
 
