@@ -4,42 +4,52 @@ path: pipelines/pepatac.py
 input_schema: pepatac_input_schema.yaml
 output_schema: pepatac_output_schema.yaml
 command_template: >
-  {pipeline.path}
+  python {pipeline.path}
   --sample-name {sample.sample_name}
   --genome {sample.genome}
   --input {sample.read1}
   --single-or-paired {sample.read_type}
+  --chrom-sizes {refgenie.fasta.chrom_sizes}
   -O {looper.results_subdir}
   -P {compute.cores}
   -M {compute.mem}
   {% if sample.read2 is defined %} --input2 {sample.read2} {% endif %}
+  {% if sample.trimmer is defined %} --trimmer {sample.trimmer} {% endif %}
   {% if sample.aligner is defined %} --aligner {sample.aligner} {% endif %}
+  {% if sample.aligner == "bowtie2" %} --bowtie2-index {refgenie.bowtie2_index.dir} {% endif %}
+  {% if sample.aligner == "bwa" %} --bwa-index {refgenie.bwa_index.dir} {% endif %}
+  {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
   {% if sample.peak_caller is defined %} --peak-caller {sample.peak_caller} {% endif %}
   {% if sample.macs_genome_size is defined %} --genome-size {sample.macs_genome_size} {% endif %}
-  {% if sample.trimmer is defined %} --trimmer {sample.trimmer} {% endif %}
-  {% if sample.prealignments is defined %} --prealignments {sample.prealignments} {% endif %}
-  {% if sample.deduplicator is defined %} --deduplicator {sample.deduplicator} {% endif %}
-  {% if sample.TSS_name is defined %} --TSS-name {sample.TSS_name} {% endif %}
-  {% if sample.blacklist is defined %} --blacklist {sample.blacklist} {% endif %}
-  {% if sample.anno_name is defined %} --anno-name {sample.anno_name} {% endif %}
   {% if sample.peak_type is defined %} --peak-type {sample.peak_type} {% endif %}
   {% if sample.extend is defined %} --extend {sample.extend} {% endif %}
   {% if sample.frip_ref_peaks is defined %} --frip-ref-peaks {sample.frip_ref_peaks} {% endif %}
   {% if sample.motif is defined %} --motif {% endif %}
   {% if sample.sob is defined %} --sob {% endif %}
+  {% if sample.sob is defined %} --search-file {refgenie.tallymer_index.search_file} {% endif %}
   {% if sample.no_scale is defined %} --no-scale {% endif %}
   {% if sample.prioritize is defined %} --prioritize {% endif %}
   {% if sample.keep is defined %} --keep {% endif %}
   {% if sample.no_fifo is defined %} --noFIFO {% endif %}
   {% if sample.lite is defined %} --lite {% endif %}
   {% if sample.skipqc is defined %} --skipqc {% endif %}
+  {% if sample.prealignment_bowtie2_index is defined %} --prealignment-bowtie2-index {refgenie.bowtie2_index.dir} {% endif %}
+  {% if sample.prealignment_bwa_index is defined %} --prealignment-bwa-index {refgenie.bwa_index.bwa_index} {% endif %}
+  --TSS-name {refgenie.refgene_anno.refgene_tss}
+  --blacklist {refgenie.blacklist}
+  --anno-name {refgenie.feat_annotation}
+
 compute:
   singularity_image: ${SIMAGES}pepatac
   conda_env: pepatac
   docker_image: databio/pepatac
   bulker_crate: databio/pepatac:1.0.7
   size_dependent_variables: resources-sample.tsv
-
 bioconductor:
   readFunName: runCOCOA
   readFunPath: BiocProject/runCOCOA.R
+var_templates:
+  refgenie_config: "$REFGENIE"
+pre_submit:
+  python_functions:
+  - refgenconf.looper_refgenie_populate

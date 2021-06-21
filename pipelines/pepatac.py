@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.9.16"
+__version__ = "0.10.0"
 
 
 from argparse import ArgumentParser
@@ -40,46 +40,30 @@ def parse_arguments():
     parser = ArgumentParser(description='PEPATAC version ' + __version__)
     parser = pypiper.add_pypiper_args(parser, groups=
         ['pypiper', 'looper', 'ngs'],
-        required=["input", "genome", "sample-name", "output-parent"])
+        required=["input", "genome", "sample-name", "output-parent",
+                  "chrom-sizes", "primary-index"])
 
     # Pipeline-specific arguments
+    parser.add_argument("--trimmer", dest="trimmer", type=str.lower,
+                        default="skewer", choices=TRIMMERS,
+                        help="Name of read trimming program.")
+
     parser.add_argument("--aligner", dest="aligner", type=str.lower,
                         default="bowtie2", choices=ALIGNERS,
-                        help="Name of read aligner")
-                        
+                        help="Name of read aligner.")
+
+    parser.add_argument("--deduplicator", dest="deduplicator", type=str.lower,
+                        default="samblaster", choices=DEDUPLICATORS,
+                        help="Name of deduplicator program.")
+
     parser.add_argument("--peak-caller", dest="peak_caller", type=str.lower,
                         default="macs2", choices=PEAK_CALLERS,
-                        help="Name of peak caller")
+                        help="Name of peak caller.")
 
     parser.add_argument("-gs", "--genome-size", default="2.7e9", type=str.lower,
                         help="Effective genome size. It can be 1.0e+9 "
                         "or 1000000000: e.g. human (2.7e9), mouse (1.87e9), "
                         "C. elegans (9e7), fruitfly (1.2e8). Default:2.7e9")
-
-    parser.add_argument("--trimmer", dest="trimmer", type=str.lower,
-                        default="skewer", choices=TRIMMERS,
-                        help="Name of read trimming program")
-
-    parser.add_argument("--prealignments", default=[], type=str,
-                        nargs="+",
-                        help="Space-delimited list of reference genomes to "
-                             "align to before primary alignment.")
-
-    parser.add_argument("--deduplicator", dest="deduplicator", type=str.lower,
-                        default="samblaster", choices=DEDUPLICATORS,
-                        help="Name of deduplicator program")
-
-    parser.add_argument("--TSS-name", default=None,
-                        dest="TSS_name", type=str,
-                        help="Path to TSS annotation file.")
-
-    parser.add_argument("--blacklist", default=None,
-                        dest="blacklist", type=str,
-                        help="Path to genomic region blacklist file")
-
-    parser.add_argument("--anno-name", default=None,
-                        dest="anno_name", type=str,
-                        help="Path to reference annotation file (BED format) for calculating FRiF")
 
     parser.add_argument("--peak-type", default="fixed",
                         dest="peak_type", choices=PEAK_TYPES, type=str.lower,
@@ -93,11 +77,12 @@ def parse_arguments():
 
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
-                        help="Path to reference peak set (BED format) for calculating FRiP")
+                        help="Path to reference peak set (BED format) "
+                             "for calculating FRiP.")
 
     parser.add_argument("--motif", action='store_true',
                         dest="motif",
-                        help="Perform motif enrichment analysis")
+                        help="Perform motif enrichment analysis.")
 
     parser.add_argument("--sob", action='store_true',
                         dest="sob", default=False,
@@ -120,11 +105,11 @@ def parse_arguments():
 
     parser.add_argument("--keep", action='store_true',
                         dest="keep",
-                        help="Enable this flag to keep prealignment BAM files")
+                        help="Enable this flag to keep prealignment BAM files.")
                     
     parser.add_argument("--noFIFO", action='store_true',
                         dest="no_fifo",
-                        help="Do NOT use named pipes during prealignments")
+                        help="Do NOT use named pipes during prealignments.")
 
     parser.add_argument("--lite", dest="lite", action='store_true',
                         help="Only keep minimal, essential output to conserve "
@@ -134,15 +119,56 @@ def parse_arguments():
                         help="Skip FastQC. Useful for bugs in FastQC "
                              "that appear with some sequence read files.")
 
+    # Genome assets
+    prealignment_index = parser.add_mutually_exclusive_group(required=False)
+    prealignment_index.add_argument("--prealignment-bowtie2-index",
+        default=[], type=str, nargs="+", dest="prealignment_bowtie2_index",
+        help="Space-delimited list of paths to bowtie2 "
+             "prefixes to align to before primary alignment "
+             "(minus trailing .X.bt2).")
+    prealignment_index.add_argument("--prealignment-bwa-index", default=[],
+        type=str, nargs="+", dest="prealignment_bwa_index",
+        help="Space-delimited list of paths to bwa "
+             "index directories to align to before primary alignment.")
+
+    primary_index = parser.add_mutually_exclusive_group(required=True)
+    primary_index.add_argument("--bowtie2-index", default=None,
+                               dest="bowtie2_index", type=str,
+                               help="Path to primary genome bowtie2 prefix "
+                                    "(minus trailing .X.bt2).")
+    primary_index.add_argument("--bwa-index", default=None,
+                               dest="bwa_index", type=str,
+                               help="Path to primary genome bwa index "
+                                    "directory.")
+
+    parser.add_argument("--chrom-sizes", default=None, required=True,
+                        dest="chrom_sizes", type=str,
+                        help="Path to primary genome chromosome sizes file.")
+
+    parser.add_argument("--TSS-name", default=None,
+                        dest="TSS_name", type=str,
+                        help="Path to TSS annotation file.")
+
+    parser.add_argument("--blacklist", default=None,
+                        dest="blacklist", type=str,
+                        help="Path to genomic region blacklist file.")
+
+    parser.add_argument("--anno-name", default=None,
+                        dest="anno_name", type=str,
+                        help="Path to reference annotation file (BED format) "
+                             "for calculating FRiF.")
+
+    parser.add_argument("--search-file", default=None,
+                        dest="search_file", type=str,
+                        help="Required for seqOutBias (--sob). "
+                             "Path to tallymer index search file built "
+                             "with the same read length as the input.")
+
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {v}".format(v=__version__))
 
     args = parser.parse_args()
 
-    # TODO: determine if it's safe to handle this requirement with argparse.
-    # It may be that communication between pypiper and a pipeline via
-    # the pipeline interface (and/or) looper, and how the partial argument
-    # parsing is handled, that makes this more favorable.
     if not args.input:
         parser.print_help()
         raise SystemExit
@@ -234,7 +260,7 @@ def _align(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
         sub_outdir = os.path.join(outfolder, aligndir)
 
     ngstk.make_dir(sub_outdir)
-    bamname = "{}_{}.bam".format(args.sample_name, assembly_identifier)
+    bamname = f"{args.sample_name}_{assembly_identifier}.bam"
     all_mapped_bam = os.path.join(sub_outdir, 
         args.sample_name + "_" + assembly_identifier + "_all.bam")
     mapped_bam = os.path.join(sub_outdir, bamname)
@@ -466,92 +492,6 @@ def check_commands(commands, ignore=''):
         return False
 
 
-def _add_resources(args, res, asset_dict=None):
-    """
-    Add additional resources needed for pipeline.
-
-    :param argparse.Namespace args: binding between option name and argument,
-        e.g. from parsing command-line options
-    :param pm.config.resources res: pipeline manager resources list
-    :param asset_dict list: list of dictionary of assets to add
-    """
-
-    rgc = RGC(select_genome_config(res.get("genome_config")))
-
-    key_errors = []
-    exist_errors = []
-    required_list = []
-
-    # Check that bowtie2/bwa indicies exist for specified prealignments
-    for reference in args.prealignments:
-        for asset in [GENOME_IDX_KEY]:
-            try:
-                res[asset] = rgc.seek(reference, asset)
-            except KeyError:
-                err_msg = "{} for {} is missing from REFGENIE config file."
-                pm.fail_pipeline(KeyError(err_msg.format(asset, reference)))
-            except:
-                err_msg = "{} for {} does not exist."
-                pm.fail_pipeline(IOError(err_msg.format(asset, reference)))
-
-    # Check specified assets
-    if not asset_dict:
-        return res, rgc
-    else:
-        for item in asset_dict:
-            pm.debug("item: {}".format(item))  # DEBUG
-            asset = item["asset_name"]
-            seek_key = item["seek_key"] or item["asset_name"]
-            tag = item["tag_name"] or "default"
-            arg = item["arg"]
-            user_arg = item["user_arg"]
-            req = item["required"]
-
-            if arg and hasattr(args, arg) and getattr(args, arg):
-                res[seek_key] = os.path.abspath(getattr(args, arg))
-            else:
-                try:
-                    pm.debug("{} - {}.{}:{}".format(args.genome_assembly,
-                                                    asset,
-                                                    seek_key,
-                                                    tag))  # DEBUG
-                    res[seek_key] = rgc.seek(args.genome_assembly,
-                                             asset_name=str(asset),
-                                             tag_name=str(tag),
-                                             seek_key=str(seek_key))
-                except KeyError:
-                    key_errors.append(item)
-                    if req:
-                        required_list.append(item)
-                except:
-                    exist_errors.append(item)
-                    if req:
-                        required_list.append(item)
-
-        if len(key_errors) > 0 or len(exist_errors) > 0:
-            pm.info("Some assets are not found. You can update your REFGENIE "
-                    "config file or point directly to the file using the noted "
-                    "command-line arguments:")
-
-        if len(key_errors) > 0:
-            if required_list:
-                err_msg = "Required assets missing from REFGENIE config file: {}"
-                pm.fail_pipeline(IOError(err_msg.format(", ".join(["{asset_name}.{seek_key}:{tag_name}".format(**x) for x in required_list]))))
-            else:
-                warning_msg = "Optional assets missing from REFGENIE config file: {}"
-                pm.info(warning_msg.format(", ".join(["{asset_name}.{seek_key}:{tag_name}".format(**x) for x in key_errors])))
-
-        if len(exist_errors) > 0:
-            if required_list:
-                err_msg = "Required assets not existing: {}"
-                pm.fail_pipeline(IOError(err_msg.format(", ".join(["{asset_name}.{seek_key}:{tag_name} (--{user_arg})".format(**x) for x in required_list]))))
-            else:
-                warning_msg = "Optional assets not existing: {}"
-                pm.info(warning_msg.format(", ".join(["{asset_name}.{seek_key}:{tag_name} (--{user_arg})".format(**x) for x in exist_errors])))
-
-        return res, rgc
-
-
 ################################################################################
 #                                 Pipeline MAIN                                #
 ################################################################################
@@ -661,66 +601,111 @@ def main():
         pm.fail_pipeline(RuntimeError(err_msg))
 
     if args.input2 and not args.paired_end:
-        err_msg = "Incompatible settings: You specified single-end, but provided --input2."
+        err_msg = (f"Incompatible settings: You specified single-end, "
+                   f"but provided --input2.")
         pm.fail_pipeline(RuntimeError(err_msg))
 
- 
     ############################################################################
-    #          Set up reference resources according to primary genome.         #
+    #                       Set up reference resources                         #
     ############################################################################
     if args.aligner.lower() == "bwa":
         GENOME_IDX_KEY = "bwa_index"
     else:
         GENOME_IDX_KEY = "bowtie2_index"
-    check_list = [
-        {"asset_name":"fasta", "seek_key":"chrom_sizes",
-         "tag_name":"default", "arg":None, "user_arg":None,
-         "required":True},
-        {"asset_name":"fasta", "seek_key":None,
-         "tag_name":"default", "arg":None, "user_arg":None,
-         "required":True},
-        {"asset_name":GENOME_IDX_KEY, "seek_key":None,
-         "tag_name":"default", "arg":None, "user_arg":None,
-         "required":True}
-    ]
-    # If user specifies TSS file, use that instead of the refgenie asset
-    if not args.TSS_name:
-        check_list.append(
-            {"asset_name":"refgene_anno", "seek_key":"refgene_tss",
-             "tag_name":"default", "arg":"TSS_name", "user_arg":"TSS-name",
-             "required":False}
-        )
-    # If user specifies feature annotation file,
-    # use that instead of the refgenie managed asset
-    if not args.anno_name:
-        check_list.append(
-            {"asset_name":"feat_annotation", "seek_key":"feat_annotation",
-            "tag_name":"default", "arg":"anno_name", "user_arg":"anno-name",
-            "required":False}
-        )
-    # If user specifies blacklist file,
-    # use that instead of the refgenie managed asset
-    if not args.blacklist:
-        check_list.append(
-            {"asset_name":"blacklist", "seek_key":"blacklist",
-            "tag_name":"default", "arg":"blacklist", "user_arg":"blacklist",
-            "required":False}
-        )
-    res, rgc = _add_resources(args, res, check_list)
 
-    # If the user specifies optional files, add those to our resources
+    # Add prealignment genome annotation files to resources
+    res.prealignment_index = []
+    if args.prealignment_bowtie2_index and args.prealignment_bwa_index:
+        err_msg = (f"Incompatible prealignment settings: You specified a "
+                   f"bowtie2 and bwa index.")
+        pm.fail_pipeline(RuntimeError(err_msg))
+    elif args.prealignment_bowtie2_index:
+        if args.aligner.lower() == "bwa":
+            err_msg = (f"Incompatible settings: You specified bwa as your "
+                       f"aligner but are using --prealignment-bowtie2-index "
+                       f"to pass indices.")
+            pm.fail_pipeline(RuntimeError(err_msg))
+        for index in args.prealignment_bowtie2_index:
+            if not os.path.exists(os.path.dirname(index)):
+                err_msg = (f"Could not find {index}.")
+                pm.info(IOError(err_msg))
+            else:
+                res.prealignment_index.append(index)
+    elif args.prealignment_bwa_index:
+        if args.aligner.lower() == "bowtie2":
+            err_msg = (f"Incompatible settings: You specified bowtie2 as your "
+                       f"aligner but are using --prealignment-bwa "
+                       f"to pass indices.")
+            pm.fail_pipeline(RuntimeError(err_msg))
+        for index in args.prealignment_bwa_index:
+            if not os.path.exists(os.path.dirname(index)):
+                err_msg = (f"Could not find {index}.")
+                pm.info(IOError(err_msg))
+            else:
+                res.prealignment_index.append(index)
+    else:
+        pm.warning(f"Unable to find any prealignment indices. If this appears "
+                   f"incorrect, confirm you passed the full path to each "
+                   f"index directory prefix.")
+
+    # Add primary genome annotation files to resources
+    if (args.bowtie2_index and args.bwa_index):
+        err_msg = (f"Incompatible settings: You specified a bowtie2 and "
+                   f"bwa index.")
+        pm.fail_pipeline(RuntimeError(err_msg))
+    elif (os.path.exists(os.path.dirname(args.bowtie2_index)) and not
+            args.bwa_index):
+        if args.aligner.lower() == "bwa":
+            err_msg = (f"Incompatible settings: You specified bwa as your "
+                       f"aligner but are using --bwa-index "
+                       f"to specify the index.")
+            pm.fail_pipeline(RuntimeError(err_msg))
+        else:
+            res.genome_index = args.bowtie2_index
+    elif (os.path.exists(os.path.dirname(args.bwa_index)) and not
+            args.bowtie2_index):
+        if args.aligner.lower() == "bowtie2":
+            err_msg = (f"Incompatible settings: You specified bowtie2 as your "
+                       f"aligner but are using --bowtie2-index "
+                       f"to specify the index.")
+            pm.fail_pipeline(RuntimeError(err_msg))
+        else:
+            res.genome_index = args.bwa_index
+    else:
+        err_msg = (f"A genome index file for {args.genome_assembly} "
+                   f"for {args.aligner} is required.")
+        pm.fail_pipeline(IOError(err_msg))
+
+    if (args.chrom_sizes and os.path.isfile(args.chrom_sizes) and
+            os.stat(args.chrom_sizes).st_size > 0):
+        res.chrom_sizes = args.chrom_sizes
+    else:
+        err_msg = (f"A chromosome sizes file for {args.genome_assembly} "
+                   f"is required.")
+        pm.fail_pipeline(IOError(err_msg))
+
+    # Add optional files to resources
+    if args.sob and not args.search_file:
+        err_msg = (f"You specified --sob but did not include the path to"
+                   f"the tallymer index search file. Specify this with"
+                   f"--search-file <path to search file>")
+        pm.fail_pipeline(RuntimeError(err_msg))
+    if (args.search_file and os.path.isfile(args.search_file) and
+            os.stat(args.search_file).st_size > 0):
+        res.search_file = args.search_file
+    
     if (args.blacklist and os.path.isfile(args.blacklist) and
             os.stat(args.blacklist).st_size > 0):
         res.blacklist = args.blacklist
-    if (args.frip_ref_peaks and os.path.isfile(args.frip_ref_peaks) and
-            os.stat(args.frip_ref_peaks).st_size > 0):
-        res.frip_ref_peaks = args.frip_ref_peaks
     if (args.TSS_name and os.path.isfile(args.TSS_name) and
             os.stat(args.TSS_name).st_size > 0):
         res.refgene_tss = args.TSS_name
     if (args.anno_name and os.path.isfile(args.anno_name) and
             os.stat(args.anno_name).st_size > 0):
         res.feat_annotation = args.anno_name
+    if (args.frip_ref_peaks and os.path.isfile(args.frip_ref_peaks) and
+            os.stat(args.frip_ref_peaks).st_size > 0):
+        res.frip_ref_peaks = args.frip_ref_peaks
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
@@ -728,9 +713,16 @@ def main():
     # Report utilized assets
     assets_file = os.path.join(param.outfolder, "assets.tsv")
     for asset in res:
-        message = "{}\t{}".format(asset, os.path.expandvars(res[asset]))
-        report_message(pm, assets_file, message)
-        
+        if isinstance(res[asset], list):
+            for a in res[asset]:
+                message = "{}\t{}".format(asset, os.path.expandvars(a))
+                pm.debug(message)
+                report_message(pm, assets_file, message)
+        else:
+            message = "{}\t{}".format(asset, os.path.expandvars(res[asset]))
+            pm.debug(message)
+            report_message(pm, assets_file, message)
+
     # Report primary genome
     message = "genome\t{}".format(args.genome_assembly)
     report_message(pm, assets_file, message)
@@ -982,52 +974,42 @@ def main():
     # Keep track of the unmapped files in order to compress them after final
     # alignment.
     to_compress = []
-    if len(args.prealignments) == 0:
-        print("You may use `--prealignments` to align to references before "
-              "the genome alignment step. See docs.")
+    if len(res.prealignment_index) == 0:
+        print("You may use `--prealignment-bowtie2-index` or "
+              "`--prealignment-bwa-index` to align to references before "
+              "the genome alignment step. "
+              "See http://pepatac.databio.org/en/latest/ for documentation.")
     else:
-        print("Prealignment assemblies: " + str(args.prealignments))
         # Loop through any prealignment references and map to them sequentially
-        for reference in args.prealignments:
-            genome_index = os.path.join(rgc.seek(reference, GENOME_IDX_KEY))
-            if not os.path.exists(os.path.dirname(genome_index)):
-                msg = "No {} index found in {}; skipping.".format(
-                reference, os.path.dirname(genome_index))
-                print(msg)
-            else:            
-                if not genome_index.endswith(reference):
-                    genome_index = os.path.join(
-                        os.path.dirname(rgc.seek(reference, GENOME_IDX_KEY)),
-                        reference)
-                    if args.aligner.lower() == "bwa":
-                        genome_index += ".fa"
-                if args.no_fifo:
-                    unmap_fq1, unmap_fq2 = _align(
-                        args, tools, args.paired_end, False,
-                        unmap_fq1, unmap_fq2, reference,
-                        assembly=genome_index,
-                        outfolder=param.outfolder,
-                        aligndir="prealignments",
-                        bt2_opts_txt=param.bowtie2_pre.params,
-                        bwa_opts_txt=param.bwa_pre.params)
-                    to_compress.append(unmap_fq1)
-                    if args.paired_end:
-                        to_compress.append(unmap_fq2)
-                else:
-                    unmap_fq1, unmap_fq2 = _align(
-                        args, tools, args.paired_end, True,
-                        unmap_fq1, unmap_fq2, reference,
-                        assembly=genome_index, 
-                        outfolder=param.outfolder,
-                        aligndir="prealignments",
-                        bt2_opts_txt=param.bowtie2_pre.params,
-                        bwa_opts_txt=param.bwa_pre.params)
-                    to_compress.append(unmap_fq1)
-                    if args.paired_end:
-                        to_compress.append(unmap_fq2)
+        for count, genome_index in enumerate(res.prealignment_index):
+            pm.info(f"Aligning with {args.aligner} to {genome_index}.")
+            assembly_identifier = f"prealignment_{count}"
+            if args.no_fifo:
+                unmap_fq1, unmap_fq2 = _align(
+                    args, tools, args.paired_end, False,
+                    unmap_fq1, unmap_fq2, assembly_identifier,
+                    assembly=genome_index,
+                    outfolder=param.outfolder,
+                    aligndir="prealignments",
+                    bt2_opts_txt=param.bowtie2_pre.params,
+                    bwa_opts_txt=param.bwa_pre.params)
+                to_compress.append(unmap_fq1)
+                if args.paired_end:
+                    to_compress.append(unmap_fq2)
+            else:
+                unmap_fq1, unmap_fq2 = _align(
+                    args, tools, args.paired_end, True,
+                    unmap_fq1, unmap_fq2, assembly_identifier,
+                    assembly=genome_index, 
+                    outfolder=param.outfolder,
+                    aligndir="prealignments",
+                    bt2_opts_txt=param.bowtie2_pre.params,
+                    bwa_opts_txt=param.bwa_pre.params)
+                to_compress.append(unmap_fq1)
+                if args.paired_end:
+                    to_compress.append(unmap_fq2)
 
     pm.timestamp("### Compress all unmapped read files")
-    # Confirm pairing is complete
     # Confirm pairing is complete
     def no_handle(fq):
         fpath = str(Path(fq).resolve())
@@ -1080,7 +1062,6 @@ def main():
     #                           Map to primary genome                          #
     ############################################################################
     pm.timestamp("### Map to genome")
-    
 
     if args.aligner.lower() == "bwa":
         if not param.bwa.params:
@@ -1106,18 +1087,10 @@ def main():
     if os.path.exists(unmap_fq2 + ".gz"):
         unmap_fq2 = unmap_fq2 + ".gz"
 
-    genome_index = os.path.join(rgc.seek(args.genome_assembly, GENOME_IDX_KEY))          
-    if not genome_index.endswith(args.genome_assembly):
-        genome_index = os.path.join(
-            os.path.dirname(rgc.seek(args.genome_assembly, GENOME_IDX_KEY)),
-            args.genome_assembly)
-        if args.aligner.lower() == "bwa":
-            genome_index += ".fa"
-
     if args.aligner.lower() == "bwa":
         cmd = tools.bwa + " mem -t " + str(pm.cores)
         cmd += " " + bwa_options
-        cmd += " " + genome_index
+        cmd += " " + res.genome_index
         cmd += " " + unmap_fq1
         if args.paired_end:
             cmd += " " + unmap_fq2
@@ -1129,7 +1102,7 @@ def main():
         cmd = tools.bowtie2 + " -p " + str(pm.cores)
         cmd += " " + bt2_options
         cmd += " --rg-id " + args.sample_name
-        cmd += " -x " + genome_index
+        cmd += " -x " + res.genome_index
         if args.paired_end:
             cmd += " -1 " + unmap_fq1 + " -2 " + unmap_fq2
         else:
@@ -1476,19 +1449,6 @@ def main():
         pm.report_result("Read_length", read_len)
     else:
         read_len = int(pm.get_stat("Read_length"))
-
-    # At this point we can check for seqOutBias required indicies.
-    # Can't do it earlier because we haven't determined the read_length of 
-    # interest for mappability purposes.
-    if args.sob:
-        pm.debug("read_len: {}".format(read_len))  # DEBUG
-        search_asset = [{"asset_name":"tallymer_index",
-                         "seek_key":"search_file",
-                         "tag_name":read_len,
-                         "arg":"search_file",
-                         "user_arg":"search-file",
-                         "required":True}]
-        res, rgc = _add_resources(args, res, search_asset)
 
     # Calculate size of genome
     if not pm.get_stat("Genome_size") or args.new_start:
