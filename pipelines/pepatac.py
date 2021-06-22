@@ -1963,6 +1963,7 @@ def main():
     peak_input_file = shift_bed
     shift_bed_gz = shift_bed + ".gz"
     peak_bed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
+    summits_bed = os.path.join(peak_folder, args.sample_name + "_summits.bed")
     chr_order = os.path.join(peak_folder, "chr_order.txt")
     chr_keep = os.path.join(peak_folder, "chr_keep.txt")
     
@@ -2185,16 +2186,24 @@ def main():
         fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
             "_peaks_fixedWidth.narrowPeak")
         # If using fixed peaks, extend from summit
-        if args.peak_type == "fixed":
+        if args.peak_type == "fixed" and args.peak_caller == "macs2":
+            temp = tempfile.NamedTemporaryFile(dir=peak_folder, delete=False)
             # extend peaks from summit by 'extend'
             # start extend from center of peak
-            cmd = ("awk -v OFS='" + "\t" +
+            cmd1 = ("awk -v OFS='" + "\t" +
                    "' '{$2 = int(($3 - $2)/2 + $2 - " +
                    str(args.extend) + "); " +
                    "$3 = int($2 + " + str(2*args.extend) +
-                   "); print}' " + peak_output_file + " > " + fixed_peak_file)
+                   "); print $1, $2, $3}' " + summits_bed + " > " +
+                   temp.name)
+            # reconstruct narrowPeak file
+            cmd2 = ("paste " + temp.name +
+                    " <(awk -v OFS='\t' '{print $4, $5, $6, " +
+                    "$7, $8, $9, $10}' " + peak_output_file + ")" +
+                    " >> " + fixed_peak_file)
             peak_output_file = fixed_peak_file
-            pm.run(cmd, peak_output_file)
+            pm.run([cmd1, cmd2], peak_output_file)
+            pm.clean_add(temp.name)
 
         # remove overlapping peaks, peaks extending beyond chromosomes,
         # and normalize score
