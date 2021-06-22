@@ -2197,10 +2197,9 @@ def main():
                    "); print $1, $2, $3}' " + summits_bed + " > " +
                    temp.name)
             # reconstruct narrowPeak file
-            cmd2 = ("paste " + temp.name +
-                    " <(awk -v OFS='\t' '{print $4, $5, $6, " +
-                    "$7, $8, $9, $10}' " + peak_output_file + ")" +
-                    " >> " + fixed_peak_file)
+            cmd2 = ("awk -v OFS='\t' '{print $4, $5, $6, $7, $8, $9, $10}' " +
+                    peak_output_file + " | paste " + temp.name + " - " +
+                    " > " + fixed_peak_file)
             peak_output_file = fixed_peak_file
             pm.run([cmd1, cmd2], peak_output_file)
             pm.clean_add(temp.name)
