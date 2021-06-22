@@ -419,15 +419,16 @@ else
 fi
 
 if [ "$DOCKER" -eq 0 ]; then 
-    echo -e $(success "SUCCESS: PEPATAC can be run using docker.")
+    echo -e $(success "SUCCESS: docker.")
 fi
 
 if [ "$SINGULARITY" -eq 0 ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run using singularity.")
+    echo -e $(success "SUCCESS: singularity.")
 fi
     
 if [ "$DOCKER" -eq 1 ] && [ "$SINGULARITY" -eq 1 ]; then
     echo -e $(fail "ERROR: PEPATAC cannot be run using bulker. Please install docker or singularity.")
+    BULKER_INSTALL=1
 else
     if ! is_executable "bulker"; then
         echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
@@ -445,6 +446,7 @@ else
     else
         crate="databio/pepatac:1.0.7"
     fi
+
     echo "crate: ${crate}"
 
     yes n | bulker load $crate
@@ -475,6 +477,7 @@ else
         else
             BULKER_INSTALL=0
             echo -e $(success "SUCCESS: bulker run ${crate}")
+        fi
     fi
 fi
 
