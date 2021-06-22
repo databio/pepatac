@@ -486,7 +486,7 @@ def _add_resources(args, res, asset_dict=None):
     for reference in args.prealignments:
         for asset in [GENOME_IDX_KEY]:
             try:
-                res[asset] = rgc.seek(reference, asset)
+                res[asset] = rgc.seek(reference, asset, strict_exists=False)
             except KeyError:
                 err_msg = "{} for {} is missing from REFGENIE config file."
                 pm.fail_pipeline(KeyError(err_msg.format(asset, reference)))
@@ -518,7 +518,8 @@ def _add_resources(args, res, asset_dict=None):
                     res[seek_key] = rgc.seek(args.genome_assembly,
                                              asset_name=str(asset),
                                              tag_name=str(tag),
-                                             seek_key=str(seek_key))
+                                             seek_key=str(seek_key),
+                                             strict_exists=False)
                 except KeyError:
                     key_errors.append(item)
                     if req:
@@ -989,7 +990,8 @@ def main():
         print("Prealignment assemblies: " + str(args.prealignments))
         # Loop through any prealignment references and map to them sequentially
         for reference in args.prealignments:
-            genome_index = os.path.join(rgc.seek(reference, GENOME_IDX_KEY))
+            genome_index = os.path.join(
+                rgc.seek(reference, GENOME_IDX_KEY, strict_exists=False))
             if not os.path.exists(os.path.dirname(genome_index)):
                 msg = "No {} index found in {}; skipping.".format(
                 reference, os.path.dirname(genome_index))
@@ -997,7 +999,9 @@ def main():
             else:            
                 if not genome_index.endswith(reference):
                     genome_index = os.path.join(
-                        os.path.dirname(rgc.seek(reference, GENOME_IDX_KEY)),
+                        os.path.dirname(rgc.seek(reference, 
+                                                 GENOME_IDX_KEY,
+                                                 strict_exists=False)),
                         reference)
                     if args.aligner.lower() == "bwa":
                         genome_index += ".fa"
@@ -1106,10 +1110,13 @@ def main():
     if os.path.exists(unmap_fq2 + ".gz"):
         unmap_fq2 = unmap_fq2 + ".gz"
 
-    genome_index = os.path.join(rgc.seek(args.genome_assembly, GENOME_IDX_KEY))          
+    genome_index = os.path.join(
+        rgc.seek(args.genome_assembly, GENOME_IDX_KEY, strict_exists=False))          
     if not genome_index.endswith(args.genome_assembly):
         genome_index = os.path.join(
-            os.path.dirname(rgc.seek(args.genome_assembly, GENOME_IDX_KEY)),
+            os.path.dirname(rgc.seek(args.genome_assembly,
+                                     GENOME_IDX_KEY,
+                                     strict_exists=False)),
             args.genome_assembly)
         if args.aligner.lower() == "bwa":
             genome_index += ".fa"
