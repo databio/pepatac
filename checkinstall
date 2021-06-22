@@ -406,41 +406,76 @@ echo -e "-----------------------------------------------------------"
 echo -e "Checking bulker installation...                            "
 BULKER_INSTALL=0
 
-if ! is_executable "bulker"; then
-    echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
-    printf "\n"
-    BULKER_INSTALL=1
+if ! is_executable "docker"; then
+    DOCKER=1
 else
-    BULKER_INSTALL=0
-    echo -e $(success "SUCCESS: bulker")
+    DOCKER=0
 fi
 
-CWD=$(pwd)
-
-if [ -f "$CWD/sample_pipeline_interface.yaml" ]; then
-    crate=$(grep 'bulker_crate' $CWD/sample_pipeline_interface.yaml | awk '{print $2}')
+if ! is_executable "singularity"; then
+    SINGULARITY=1
 else
-    crate="databio/pepatac:1.0.7"
-fi
-echo "crate: ${crate}"
-
-yes n | bulker load $crate
-
-if [ $? -eq 0 ]; then
-    echo $(warn "WARNING: Could not bulker load ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
-    printf "\n"
-    BULKER_INSTALL=1
+    SINGULARITY=0
 fi
 
-isActivatable=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
-#echo "isActivatable: ${isActivatable}"
-if [ -v "$isActivatable" ]; then
-    echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
-    printf "\n"
-    BULKER_INSTALL=1
+if [ "$DOCKER" -eq 0 ]; then 
+    echo -e $(success "SUCCESS: PEPATAC can be run using docker.")
+fi
+
+if [ "$SINGULARITY" -eq 0 ]; then
+    echo -e $(success "SUCCESS: PEPATAC can be run using singularity.")
+fi
+    
+if [ "$DOCKER" -eq 1 ] && [ "$SINGULARITY" -eq 1 ]; then
+    echo -e $(fail "ERROR: PEPATAC cannot be run using bulker. Please install docker or singularity.")
 else
-    BULKER_INSTALL=0
-    echo -e $(success "SUCCESS: bulker run ${crate}")
+    if ! is_executable "bulker"; then
+        echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
+        printf "\n"
+        BULKER_INSTALL=1
+    else
+        BULKER_INSTALL=0
+        echo -e $(success "SUCCESS: bulker")
+    fi
+
+    CWD=$(pwd)
+
+    if [ -f "$CWD/sample_pipeline_interface.yaml" ]; then
+        crate=$(grep 'bulker_crate' $CWD/sample_pipeline_interface.yaml | awk '{print $2}')
+    else
+        crate="databio/pepatac:1.0.7"
+    fi
+    echo "crate: ${crate}"
+
+    yes n | bulker load $crate
+
+    if [ $? -eq 0 ]; then
+        echo $(warn "WARNING: Could not bulker load ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
+        printf "\n"
+        BULKER_INSTALL=1
+    fi
+
+    if [ -f "$CWD/pipelines/pepatac.py" ]; then
+        isActivatable=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
+        #echo "isActivatable: ${isActivatable}"
+        if [ -v "$isActivatable" ]; then
+            echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
+            printf "\n"
+            BULKER_INSTALL=1
+        else
+            BULKER_INSTALL=0
+            echo -e $(success "SUCCESS: bulker run ${crate}")
+        fi
+    else
+        isActivatable=$(bulker run ${crate} bowtie2 --help)
+        if [ -v "$isActivatable" ]; then
+            echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
+            printf "\n"
+            BULKER_INSTALL=1
+        else
+            BULKER_INSTALL=0
+            echo -e $(success "SUCCESS: bulker run ${crate}")
+    fi
 fi
 
 ################################################################################
@@ -453,13 +488,13 @@ else
     echo -e $(fail "ERROR: PEPATAC cannot be run using native installations.")
 fi
 
-if [ "$CONDA_INSTALL" -eq 0  ]; then
+if [ "$CONDA_INSTALL" -eq 0 ]; then
     echo -e $(success "SUCCESS: PEPATAC can be run using conda installation!")
 else
     echo -e $(fail "ERROR: PEPATAC cannot be run via conda.")
 fi
 
-if [ "$BULKER_INSTALL" -eq 0  ]; then
+if [ "$BULKER_INSTALL" -eq 0 ]; then
     echo -e $(success "SUCCESS: PEPATAC can be run using bulker!")
 else
     echo -e $(fail "ERROR: PEPATAC cannot be run using bulker.")
