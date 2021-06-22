@@ -421,6 +421,7 @@ if [ -f "$CWD/sample_pipeline_interface.yaml" ]; then
     crate=$(grep 'bulker_crate' $CWD/sample_pipeline_interface.yaml | awk '{print $2}')
 else:
     crate="databio/pepatac:1.0.7"
+fi
 echo "crate: ${crate}"
 
 yes n | bulker load $crate
