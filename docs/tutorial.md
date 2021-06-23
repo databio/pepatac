@@ -53,7 +53,7 @@ mv tutorial2_r2.fastq.gz pepatac/examples/data/
 
 ## 3: Configure project files
 
-We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A configuration file has been provided for you in the pipeline itself, conveniently named `tutorial.yaml`.  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#3-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
+We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A [configuration file has been provided for you in the pipeline repository itself, conveniently named `tutorial.yaml`](https://github.com/databio/pepatac/blob/master/examples/tutorial/tutorial.yaml).  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#3-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
 ```console
 nano tutorial.yaml
@@ -66,19 +66,19 @@ pep_version: 2.0.0
 sample_table: tutorial.csv
 
 looper:
-  output_dir: "./pepatac_tutorial/processed/"
-  pipeline_interfaces: ["./pepatac_tutorial/tools/pepatac/project_pipeline_interface.yaml"]
+  output_dir: "${TUTORIAL}/processed/"
+  pipeline_interfaces: ["${TUTORIAL}/tools/pepatac/project_pipeline_interface.yaml"]
 
 sample_modifiers:
   append:
-    pipeline_interfaces: ["./pepatac_tutorial/tools/pepatac/sample_pipeline_interface.yaml"]
+    pipeline_interfaces: ["${TUTORIAL}/tools/pepatac/sample_pipeline_interface.yaml"]
   derive:
     attributes: [read1, read2]
     sources:
       # Obtain tutorial data from http://big.databio.org/pepatac/ then set
       # path to your local saved files
-      R1: "./pepatac/examples/data/{sample_name}_r1.fastq.gz"
-      R2: "./pepatac/examples/data/{sample_name}_r2.fastq.gz"
+      R1: "${TUTORIAL}/tools/pepatac/examples/data/{sample_name}_r1.fastq.gz"
+      R2: "${TUTORIAL}/tools/pepatac/examples/data/{sample_name}_r2.fastq.gz"
   imply:
     - if: 
         organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
@@ -89,10 +89,10 @@ sample_modifiers:
         deduplicator: samblaster # Default. [options: picard]
         trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
         peak_type: fixed         # Default. [options: variable]
-        extend: 250              # Default. For fixed-width peaks, extend this distance up- and down-stream.
+        extend: "250"            # Default. For fixed-width peaks, extend this distance up- and down-stream.
         frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
 ```
-There is also a sample annotation file referenced in our configuration file.  The sample annotation file contains metadata and other information about our sample. Just like before, this file, named `tutorial.csv` has been provided.  You may check it out if you wish, otherwise we're all set.
+There is also a sample annotation file referenced in our configuration file.  The sample annotation file contains metadata and other information about our sample. Just like before, [this file, named `tutorial.csv` has been provided](https://github.com/databio/pepatac/blob/master/examples/tutorial/tutorial.csv).  You may check it out if you wish, otherwise we're all set.
 If you open `tutorial.csv`, you should see the following:
 ```console
 sample_name,protocol,organism,read1,read2,read_type
