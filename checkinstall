@@ -419,15 +419,21 @@ else
 fi
 
 if [ "$DOCKER" -eq 0 ]; then 
-    echo -e $(success "SUCCESS: docker.")
+    CMD_CHECK=$(docker --help)
+    if [ $? -eq 0 ]; then
+        echo -e $(success "SUCCESS: docker.")
+    else
+        echo -e $(warn "WARNING: Docker is a recognized command, but does not appear to be active. Please ensure docker is running and checkinstall again.")
+        DOCKER=1
+    fi
 fi
 
 if [ "$SINGULARITY" -eq 0 ]; then
     echo -e $(success "SUCCESS: singularity.")
 fi
-    
+
 if [ "$DOCKER" -eq 1 ] && [ "$SINGULARITY" -eq 1 ]; then
-    echo -e $(fail "ERROR: PEPATAC cannot be run using bulker. Please install docker or singularity.")
+    echo -e $(fail "ERROR: bulker")
     BULKER_INSTALL=1
 else
     if ! is_executable "bulker"; then
@@ -458,25 +464,28 @@ else
     fi
 
     if [ -f "$CWD/pipelines/pepatac.py" ]; then
-        isActivatable=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
-        #echo "isActivatable: ${isActivatable}"
-        if [ -v "$isActivatable" ]; then
+        CMD_CHECK=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
+        EXIT_CODE=$(echo $?)
+        isActivatable=$(echo "${EXIT_CODE}" | awk '{ print $1+0; exit }')
+        if [ "$isActivatable" -eq 0 ]; then
+            BULKER_INSTALL=0
+            echo -e $(success "SUCCESS: bulker run ${crate}")
+        else            
             echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
             printf "\n"
             BULKER_INSTALL=1
-        else
-            BULKER_INSTALL=0
-            echo -e $(success "SUCCESS: bulker run ${crate}")
         fi
     else
-        isActivatable=$(bulker run ${crate} bowtie2 --help)
-        if [ -v "$isActivatable" ]; then
+        CMD_CHECK=$(bulker run ${crate} bowtie2 --help)
+        EXIT_CODE=$(echo $?)
+        isActivatable=$(echo "${EXIT_CODE}" | awk '{ print $1+0; exit }')
+        if [ "$isActivatable" -eq 0 ]; then
+            BULKER_INSTALL=0
+            echo -e $(success "SUCCESS: bulker run ${crate}")
+        else            
             echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
             printf "\n"
             BULKER_INSTALL=1
-        else
-            BULKER_INSTALL=0
-            echo -e $(success "SUCCESS: bulker run ${crate}")
         fi
     fi
 fi
