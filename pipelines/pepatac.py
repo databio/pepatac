@@ -2137,7 +2137,12 @@ def main():
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
             ]
-            cmd_base.extend(param.macs2.params.split())
+            if args.peak_type == "fixed":
+                cmd_base.extend(param.macs2.params.split())
+            elif args.peak_type == "variable":
+                cmd_base.extend(param.macs2_variable.params.split())
+            else:
+                cmd_base.extend(param.macs2.params.split())
             cmd = build_command(cmd_base)
 
         # Call peaks and report peak count.
