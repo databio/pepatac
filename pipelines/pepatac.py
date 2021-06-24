@@ -981,6 +981,7 @@ def main():
               "See http://pepatac.databio.org/en/latest/ for documentation.")
     else:
         # Loop through any prealignment references and map to them sequentially
+<<<<<<< HEAD
         for count, genome_index in enumerate(res.prealignment_index):
             pm.info(f"Aligning with {args.aligner} to {genome_index}.")
             assembly_identifier = f"prealignment_{count}"
@@ -1008,6 +1009,48 @@ def main():
                 to_compress.append(unmap_fq1)
                 if args.paired_end:
                     to_compress.append(unmap_fq2)
+=======
+        for reference in args.prealignments:
+            genome_index = os.path.join(
+                rgc.seek(reference, GENOME_IDX_KEY, strict_exists=False))
+            if not os.path.exists(os.path.dirname(genome_index)):
+                msg = "No {} index found in {}; skipping.".format(
+                reference, os.path.dirname(genome_index))
+                print(msg)
+            else:            
+                if not genome_index.endswith(reference):
+                    genome_index = os.path.join(
+                        os.path.dirname(rgc.seek(reference, 
+                                                 GENOME_IDX_KEY,
+                                                 strict_exists=False)),
+                        reference)
+                    if args.aligner.lower() == "bwa":
+                        genome_index += ".fa"
+                if args.no_fifo:
+                    unmap_fq1, unmap_fq2 = _align(
+                        args, tools, args.paired_end, False,
+                        unmap_fq1, unmap_fq2, reference,
+                        assembly=genome_index,
+                        outfolder=param.outfolder,
+                        aligndir="prealignments",
+                        bt2_opts_txt=param.bowtie2_pre.params,
+                        bwa_opts_txt=param.bwa_pre.params)
+                    to_compress.append(unmap_fq1)
+                    if args.paired_end:
+                        to_compress.append(unmap_fq2)
+                else:
+                    unmap_fq1, unmap_fq2 = _align(
+                        args, tools, args.paired_end, True,
+                        unmap_fq1, unmap_fq2, reference,
+                        assembly=genome_index, 
+                        outfolder=param.outfolder,
+                        aligndir="prealignments",
+                        bt2_opts_txt=param.bowtie2_pre.params,
+                        bwa_opts_txt=param.bwa_pre.params)
+                    to_compress.append(unmap_fq1)
+                    if args.paired_end:
+                        to_compress.append(unmap_fq2)
+>>>>>>> dev
 
     pm.timestamp("### Compress all unmapped read files")
     # Confirm pairing is complete
@@ -1087,6 +1130,20 @@ def main():
     if os.path.exists(unmap_fq2 + ".gz"):
         unmap_fq2 = unmap_fq2 + ".gz"
 
+<<<<<<< HEAD
+=======
+    genome_index = os.path.join(
+        rgc.seek(args.genome_assembly, GENOME_IDX_KEY, strict_exists=False))          
+    if not genome_index.endswith(args.genome_assembly):
+        genome_index = os.path.join(
+            os.path.dirname(rgc.seek(args.genome_assembly,
+                                     GENOME_IDX_KEY,
+                                     strict_exists=False)),
+            args.genome_assembly)
+        if args.aligner.lower() == "bwa":
+            genome_index += ".fa"
+
+>>>>>>> dev
     if args.aligner.lower() == "bwa":
         cmd = tools.bwa + " mem -t " + str(pm.cores)
         cmd += " " + bwa_options
@@ -1923,6 +1980,7 @@ def main():
     peak_input_file = shift_bed
     shift_bed_gz = shift_bed + ".gz"
     peak_bed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
+    summits_bed = os.path.join(peak_folder, args.sample_name + "_summits.bed")
     chr_order = os.path.join(peak_folder, "chr_order.txt")
     chr_keep = os.path.join(peak_folder, "chr_keep.txt")
     
@@ -2145,16 +2203,23 @@ def main():
         fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
             "_peaks_fixedWidth.narrowPeak")
         # If using fixed peaks, extend from summit
-        if args.peak_type == "fixed":
+        if args.peak_type == "fixed" and args.peak_caller == "macs2":
+            temp = tempfile.NamedTemporaryFile(dir=peak_folder, delete=False)
             # extend peaks from summit by 'extend'
             # start extend from center of peak
-            cmd = ("awk -v OFS='" + "\t" +
+            cmd1 = ("awk -v OFS='" + "\t" +
                    "' '{$2 = int(($3 - $2)/2 + $2 - " +
                    str(args.extend) + "); " +
                    "$3 = int($2 + " + str(2*args.extend) +
-                   "); print}' " + peak_output_file + " > " + fixed_peak_file)
+                   "); print $1, $2, $3}' " + summits_bed + " > " +
+                   temp.name)
+            # reconstruct narrowPeak file
+            cmd2 = ("awk -v OFS='\t' '{print $4, $5, $6, $7, $8, $9, $10}' " +
+                    peak_output_file + " | paste " + temp.name + " - " +
+                    " > " + fixed_peak_file)
             peak_output_file = fixed_peak_file
-            pm.run(cmd, peak_output_file)
+            pm.run([cmd1, cmd2], peak_output_file)
+            pm.clean_add(temp.name)
 
         # remove overlapping peaks, peaks extending beyond chromosomes,
         # and normalize score

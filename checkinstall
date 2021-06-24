@@ -111,60 +111,118 @@ if ! is_executable "pip"; then
     BULKER_INSTALL=1
 fi
 
-while IFS= read -r line; do
-    [ "${line:0:1}" = "#" ] && continue
-    IFS='>=' read -r -a array <<< "$line"
-    package=${array[0]}
-    required=${array[2]}
-    required=$(trim ${required})
-    IFS='.' read -r -a required_version <<< "$required"
-    declare -i rmajor
-    declare -i rminor
-    declare -i rpatch
-    rmajor=$(echo "${required_version[0]}" | awk '{ print $1+0; exit }')
-    rminor=$(echo "${required_version[1]}" | awk '{ print $1+0; exit }')
-    rpatch=$(echo "${required_version[2]}" | awk '{ print $1+0; exit }')
+if [ -f "requirements.txt" ]; then
+    while IFS= read -r line; do
+        [ "${line:0:1}" = "#" ] && continue
+        IFS='>=' read -r -a array <<< "$line"
+        package=${array[0]}
+        required=${array[2]}
+        required=$(trim ${required})
+        IFS='.' read -r -a required_version <<< "$required"
+        declare -i rmajor
+        declare -i rminor
+        declare -i rpatch
+        rmajor=$(echo "${required_version[0]}" | awk '{ print $1+0; exit }')
+        rminor=$(echo "${required_version[1]}" | awk '{ print $1+0; exit }')
+        rpatch=$(echo "${required_version[2]}" | awk '{ print $1+0; exit }')
 
-    if ! pip_show "${package}" 2&>/dev/null ; then
-        echo $(warn "WARNING: PEPATAC requires the Python package, $package, >= $required. Try pip install $package.")
-        # printf "\n"
-        NATIVE_INSTALL=1
-        BULKER_INSTALL=1
-    else
-        installed=$(pip show ${package} | grep -iw 'Version' | awk -F':' '{print $2}' | tr -d '\n')
-        installed=$(trim ${installed})
-        IFS='.' read -r -a installed_version <<< "$installed"
-        declare -i imajor
-        declare -i iminor
-        declare -i ipatch
-        imajor=$(echo "${installed_version[0]}" | awk '{ print $1+0; exit }')
-        iminor=$(echo "${installed_version[1]}" | awk '{ print $1+0; exit }')
-        ipatch=$(echo "${installed_version[2]}" | awk '{ print $1+0; exit }')
-
-        if ! [ -z "$required" ]; then
-            if [ $imajor -lt $rmajor ]; then
-                echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
-                printf "\n"
-                NATIVE_INSTALL=1
-                BULKER_INSTALL=1
-            elif [ $imajor -eq $rmajor ] && [ $iminor -lt $rminor ]; then
-                echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
-                printf "\n"
-                NATIVE_INSTALL=1
-                BULKER_INSTALL=1
-            elif [ $imajor -eq $rmajor ] && [ $iminor -eq $rminor ] && [ $ipatch -lt $rpatch ]; then
-                echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
-                printf "\n"
-                NATIVE_INSTALL=1
-                BULKER_INSTALL=1
-            else
-                echo -e $(success "SUCCESS: Python package ${package}\trequired: ${required}\tinstalled: ${installed}")
-            fi
+        if ! pip_show "${package}"; then
+            echo $(warn "WARNING: PEPATAC requires the Python package, $package, >= $required. Try pip install $package and checkinstall again.")
+            printf "\n"
+            NATIVE_INSTALL=1
+            BULKER_INSTALL=1
         else
-            echo -e $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
+            installed=$(pip show ${package} | grep -iw 'Version' | awk -F':' '{print $2}' | tr -d '\n')
+            installed=$(trim ${installed})
+            IFS='.' read -r -a installed_version <<< "$installed"
+            declare -i imajor
+            declare -i iminor
+            declare -i ipatch
+            imajor=$(echo "${installed_version[0]}" | awk '{ print $1+0; exit }')
+            iminor=$(echo "${installed_version[1]}" | awk '{ print $1+0; exit }')
+            ipatch=$(echo "${installed_version[2]}" | awk '{ print $1+0; exit }')
+
+            if ! [ -z "$required" ]; then
+                if [ $imajor -lt $rmajor ]; then
+                    echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
+                    printf "\n"
+                    NATIVE_INSTALL=1
+                    BULKER_INSTALL=1
+                elif [ $imajor -eq $rmajor ] && [ $iminor -lt $rminor ]; then
+                    echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
+                    printf "\n"
+                    NATIVE_INSTALL=1
+                    BULKER_INSTALL=1
+                elif [ $imajor -eq $rmajor ] && [ $iminor -eq $rminor ] && [ $ipatch -lt $rpatch ]; then
+                    echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
+                    printf "\n"
+                    NATIVE_INSTALL=1
+                    BULKER_INSTALL=1
+                else
+                    echo -e $(success "SUCCESS: Python package ${package}\trequired: ${required}\tinstalled: ${installed}")
+                fi
+            else
+                echo -e $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
+            fi
         fi
-    fi
-done < "requirements.txt"
+    done < "requirements.txt"
+else
+    declare -a requiredPkgs=("attmap>=0.12.9" "bio>=0.2.4" "codecov>=2.0" "colorama>=0.3.9" "Cython>=0.29" "cykhash>=1.0.2 " "divvy>=0.5.0" "eido>=0.1.3" "hypothesis==4.38.0" "jinja2" "jsonschema>=3.0.1" "logmuse>=0.2.5" "looper>=1.2.1" "MACS2>=2.2.7.1" "numpy>=1.17" "oyaml" "pararead" "pandas>=0.20.2" "peppy>=0.31.0" "piper" "psutil" "pysam>=0.13" "python-Levenshtein>=0.12.0" "pyyaml>=3.13" "refgenconf>=0.7.0" "refgenie" "ubiquerg>=0.6.1" "yacman>=0.6.7")
+
+    for package in ${requiredPkgs[@]}; do
+        IFS='>=' read -r -a array <<< "$package"
+        package=${array[0]}
+        required=${array[2]}
+        required=$(trim ${required})
+        IFS='.' read -r -a required_version <<< "$required"
+        declare -i rmajor
+        declare -i rminor
+        declare -i rpatch
+        rmajor=$(echo "${required_version[0]}" | awk '{ print $1+0; exit }')
+        rminor=$(echo "${required_version[1]}" | awk '{ print $1+0; exit }')
+        rpatch=$(echo "${required_version[2]}" | awk '{ print $1+0; exit }')
+
+        if ! pip_show "${package}" 2&>/dev/null ; then
+            echo $(warn "WARNING: PEPATAC requires the Python package, $package, >= $required. Try pip install $package.")
+            # printf "\n"
+            NATIVE_INSTALL=1
+            BULKER_INSTALL=1
+        else
+            installed=$(pip show ${package} | grep -iw 'Version' | awk -F':' '{print $2}' | tr -d '\n')
+            installed=$(trim ${installed})
+            IFS='.' read -r -a installed_version <<< "$installed"
+            declare -i imajor
+            declare -i iminor
+            declare -i ipatch
+            imajor=$(echo "${installed_version[0]}" | awk '{ print $1+0; exit }')
+            iminor=$(echo "${installed_version[1]}" | awk '{ print $1+0; exit }')
+            ipatch=$(echo "${installed_version[2]}" | awk '{ print $1+0; exit }')
+
+            if ! [ -z "$required" ]; then
+                if [ $imajor -lt $rmajor ]; then
+                    echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
+                    printf "\n"
+                    NATIVE_INSTALL=1
+                    BULKER_INSTALL=1
+                elif [ $imajor -eq $rmajor ] && [ $iminor -lt $rminor ]; then
+                    echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
+                    printf "\n"
+                    NATIVE_INSTALL=1
+                    BULKER_INSTALL=1
+                elif [ $imajor -eq $rmajor ] && [ $iminor -eq $rminor ] && [ $ipatch -lt $rpatch ]; then
+                    echo $(warn "WARNING: PEPATAC requires the python package, $package, >= $required. Try pip install --upgrade $package and checkinstall again.")
+                    printf "\n"
+                    NATIVE_INSTALL=1
+                    BULKER_INSTALL=1
+                else
+                    echo -e $(success "SUCCESS: Python package ${package}\trequired: ${required}\tinstalled: ${installed}")
+                fi
+            else
+                echo -e $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
+            fi
+        fi
+    done
+fi
 
 # Check tool installation
 declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fseq" "macs2" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "bigWigCat" "wigToBigWig" "Rscript")
@@ -348,36 +406,88 @@ echo -e "-----------------------------------------------------------"
 echo -e "Checking bulker installation...                            "
 BULKER_INSTALL=0
 
-if ! is_executable "bulker"; then
-    echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
-    printf "\n"
-    BULKER_INSTALL=1
+if ! is_executable "docker"; then
+    DOCKER=1
 else
-    BULKER_INSTALL=0
-    echo -e $(success "SUCCESS: bulker")
+    DOCKER=0
 fi
 
-CWD=$(pwd)
-crate=$(grep 'bulker_crate' $CWD/sample_pipeline_interface.yaml | awk '{print $2}')
-echo "crate: ${crate}"
-
-yes n | bulker load $crate
-
-if [ $? -eq 0 ]; then
-    echo $(warn "WARNING: Could not bulker load ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
-    printf "\n"
-    BULKER_INSTALL=1
+if ! is_executable "singularity"; then
+    SINGULARITY=1
+else
+    SINGULARITY=0
 fi
 
-isActivatable=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
-#echo "isActivatable: ${isActivatable}"
-if [ -v "$isActivatable" ]; then
-    echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
-    printf "\n"
+if [ "$DOCKER" -eq 0 ]; then 
+    CMD_CHECK=$(docker --help)
+    if [ $? -eq 0 ]; then
+        echo -e $(success "SUCCESS: docker.")
+    else
+        echo -e $(warn "WARNING: Docker is a recognized command, but does not appear to be active. Please ensure docker is running and checkinstall again.")
+        DOCKER=1
+    fi
+fi
+
+if [ "$SINGULARITY" -eq 0 ]; then
+    echo -e $(success "SUCCESS: singularity.")
+fi
+
+if [ "$DOCKER" -eq 1 ] && [ "$SINGULARITY" -eq 1 ]; then
+    echo -e $(fail "ERROR: bulker")
     BULKER_INSTALL=1
 else
-    BULKER_INSTALL=0
-    echo -e $(success "SUCCESS: bulker run ${crate}")
+    if ! is_executable "bulker"; then
+        echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
+        printf "\n"
+        BULKER_INSTALL=1
+    else
+        BULKER_INSTALL=0
+        echo -e $(success "SUCCESS: bulker")
+    fi
+
+    CWD=$(pwd)
+
+    if [ -f "$CWD/sample_pipeline_interface.yaml" ]; then
+        crate=$(grep 'bulker_crate' $CWD/sample_pipeline_interface.yaml | awk '{print $2}')
+    else
+        crate="databio/pepatac:1.0.7"
+    fi
+
+    echo "crate: ${crate}"
+
+    yes n | bulker load $crate
+
+    if [ $? -eq 0 ]; then
+        echo $(warn "WARNING: Could not bulker load ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
+        printf "\n"
+        BULKER_INSTALL=1
+    fi
+
+    if [ -f "$CWD/pipelines/pepatac.py" ]; then
+        CMD_CHECK=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
+        EXIT_CODE=$(echo $?)
+        isActivatable=$(echo "${EXIT_CODE}" | awk '{ print $1+0; exit }')
+        if [ "$isActivatable" -eq 0 ]; then
+            BULKER_INSTALL=0
+            echo -e $(success "SUCCESS: bulker run ${crate}")
+        else            
+            echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
+            printf "\n"
+            BULKER_INSTALL=1
+        fi
+    else
+        CMD_CHECK=$(bulker run ${crate} bowtie2 --help)
+        EXIT_CODE=$(echo $?)
+        isActivatable=$(echo "${EXIT_CODE}" | awk '{ print $1+0; exit }')
+        if [ "$isActivatable" -eq 0 ]; then
+            BULKER_INSTALL=0
+            echo -e $(success "SUCCESS: bulker run ${crate}")
+        else            
+            echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
+            printf "\n"
+            BULKER_INSTALL=1
+        fi
+    fi
 fi
 
 ################################################################################
@@ -390,13 +500,13 @@ else
     echo -e $(fail "ERROR: PEPATAC cannot be run using native installations.")
 fi
 
-if [ "$CONDA_INSTALL" -eq 0  ]; then
+if [ "$CONDA_INSTALL" -eq 0 ]; then
     echo -e $(success "SUCCESS: PEPATAC can be run using conda installation!")
 else
     echo -e $(fail "ERROR: PEPATAC cannot be run via conda.")
 fi
 
-if [ "$BULKER_INSTALL" -eq 0  ]; then
+if [ "$BULKER_INSTALL" -eq 0 ]; then
     echo -e $(success "SUCCESS: PEPATAC can be run using bulker!")
 else
     echo -e $(fail "ERROR: PEPATAC cannot be run using bulker.")

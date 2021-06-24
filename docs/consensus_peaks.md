@@ -4,7 +4,7 @@ When a `PEP` project contains more than one sample, the `PEPATAC` project proces
 
 For example: `looper runp examples/test_project/test_config.yaml`
 
-For the consensus peak generation, the pipeline performs the following steps:
+For the consensus peak generation, the pipeline performs the following steps:  
 1. Overlapping peaks are identified among all the project samples. 
 2. For each set of overlapping peaks, the consensus peak's coordinates are defined as the coordinates of the peak with the maximum score among the set of overlapping peaks. 
 3. Any peaks that extend beyond chromosomes are trimmed.

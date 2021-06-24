@@ -16,13 +16,13 @@ nav:
   - Getting Started:
     - Introduction: 'README.md'
     - Features: 'features.md'
-    - Install and run test example: 'install.md'
+    - Install: 'install.md'
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
-    - Detailed install guide: 'detailed-install.md'
-    - Run directly: 'run-directly.md'
-    - Run on cluster: 'run-cluster.md'
+    - Run using bulker: 'run-bulker.md'
     - Run using containers: 'run-container.md'
+    - Run using conda: 'run-conda.md'
+    - Run natively: 'detailed-install.md'
     - Configure assets: 'assets.md'
     - Configure prealignments: 'prealignments.md'
     - Configure project files: 'peps.md'
