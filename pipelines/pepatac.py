@@ -603,12 +603,22 @@ def main():
         GENOME_IDX_KEY = "bowtie2_index"
 
     # Add prealignment genome annotation files to resources
-    pm.info(f"prealignments: {args.prealignments}")
+    pm.debug(f"prealignments: {args.prealignments}")
     res.prealignment_index = args.prealignments
     
     # Add primary genome annotation files to resources
-    pm.info(f"primary genome index: {args.genome_index}")
     res.genome_index = args.genome_index
+    if not res.genome_index.endswith(args.genome_assembly):
+        # Replace last occurrence of . with genome name
+        res.genome_index = (res.genome_index[:res.genome_index.rfind(".")] +
+                                             args.genome_assembly)
+        if args.aligner.lower() == "bwa":
+            res.genome_index += ".fa"
+    pm.debug(f"primary genome index: {args.genome_index}")
+    
+    if (args.chrom_sizes and os.path.isfile(args.chrom_sizes) and
+            os.stat(args.chrom_sizes).st_size > 0):
+        res.chrom_sizes = args.chrom_sizes
 
     # Add optional files to resources
     if args.sob and not args.search_file:
@@ -918,6 +928,12 @@ def main():
     else:
         # Loop through any prealignment references and map to them sequentially
         for genome, genome_index in pairs(res.prealignment_index):
+            if not genome_index.endswith(genome):
+                # Replace last occurrence of . with genome name
+                genome_index = genome_index[:genome_index.rfind(".")] + genome
+                #genome_index = genome_index.replace('.',genome)
+                if args.aligner.lower() == "bwa":
+                    genome_index += ".fa"
             pm.debug(f"Aligning with {args.aligner} to {genome_index}")           
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align(
