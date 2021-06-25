@@ -55,7 +55,7 @@ For each of the alternative peak callers, you can specify them on the command li
 
 Here are examples with the included test sample:
 
-1. F-Seq
+### F-Seq
 ```yaml
 # This project config file describes your project. See looper docs for details.
 name: test_project # The name that summary files will be prefaced with
@@ -91,7 +91,7 @@ sample_modifiers:
         frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
 ```
 
-2. HMMRATAC
+### HMMRATAC
 ```yaml
 # This project config file describes your project. See looper docs for details.
 name: test_project # The name that summary files will be prefaced with
@@ -127,7 +127,7 @@ sample_modifiers:
         frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
 ```
 
-3. HOMER
+### HOMER
 ```yaml
 # This project config file describes your project. See looper docs for details.
 name: test_project # The name that summary files will be prefaced with
@@ -163,7 +163,7 @@ sample_modifiers:
         frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
 ```
 
-4. Genrich
+### Genrich
 ```yaml
 # This project config file describes your project. See looper docs for details.
 name: test_project # The name that summary files will be prefaced with
