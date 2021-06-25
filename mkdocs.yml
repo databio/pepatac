@@ -25,6 +25,7 @@ nav:
     - Run natively: 'detailed-install.md'
     - Configure assets: 'assets.md'
     - Configure prealignments: 'prealignments.md'
+    - Configure peak callers: 'configure-peak-callers.md'
     - Configure project files: 'peps.md'
     - Configure seqOutBias assets: 'sob.md'
     - Configure computing resources: 'compute-resources.md'
