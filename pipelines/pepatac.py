@@ -120,27 +120,16 @@ def parse_arguments():
                              "that appear with some sequence read files.")
 
     # Genome assets
-    prealignment_index = parser.add_mutually_exclusive_group(required=False)
-    prealignment_index.add_argument("--prealignment-bowtie2-index",
-        default=[], type=str, nargs="+", dest="prealignment_bowtie2_index",
-        help="Space-delimited list of paths to bowtie2 "
-             "prefixes to align to before primary alignment "
-             "(minus trailing .X.bt2).")
-    prealignment_index.add_argument("--prealignment-bwa-index", default=[],
-        type=str, nargs="+", dest="prealignment_bwa_index",
-        help="Space-delimited list of paths to bwa "
-             "index directories to align to before primary alignment.")
-
-    primary_index = parser.add_mutually_exclusive_group(required=True)
-    primary_index.add_argument("--bowtie2-index", default=None,
-                               dest="bowtie2_index", type=str,
-                               help="Path to primary genome bowtie2 prefix "
-                                    "(minus trailing .X.bt2).")
-    primary_index.add_argument("--bwa-index", default=None,
-                               dest="bwa_index", type=str,
-                               help="Path to primary genome bwa index "
-                                    "directory.")
-
+    parser.add_argument("--prealignments", default=[], type=str,
+                        nargs="+",
+                        help="Space-delimited list of reference genomes to "
+                             "align to before primary alignment.")
+    # Genome assets
+    parser.add_argument("--genome-index", default=None, required=True,
+                        dest="genome_index", type=str,
+                        help="Path to primary genome index file. Either a "
+                             "bowtie2 or bwa index.")
+    
     parser.add_argument("--chrom-sizes", default=None, required=True,
                         dest="chrom_sizes", type=str,
                         help="Path to primary genome chromosome sizes file.")
@@ -614,76 +603,11 @@ def main():
         GENOME_IDX_KEY = "bowtie2_index"
 
     # Add prealignment genome annotation files to resources
-    res.prealignment_index = []
-    if args.prealignment_bowtie2_index and args.prealignment_bwa_index:
-        err_msg = (f"Incompatible prealignment settings: You specified a "
-                   f"bowtie2 and bwa index.")
-        pm.fail_pipeline(RuntimeError(err_msg))
-    elif args.prealignment_bowtie2_index:
-        if args.aligner.lower() == "bwa":
-            err_msg = (f"Incompatible settings: You specified bwa as your "
-                       f"aligner but are using --prealignment-bowtie2-index "
-                       f"to pass indices.")
-            pm.fail_pipeline(RuntimeError(err_msg))
-        for index in args.prealignment_bowtie2_index:
-            if not os.path.exists(os.path.dirname(index)):
-                err_msg = (f"Could not find {index}.")
-                pm.info(IOError(err_msg))
-            else:
-                res.prealignment_index.append(index)
-    elif args.prealignment_bwa_index:
-        if args.aligner.lower() == "bowtie2":
-            err_msg = (f"Incompatible settings: You specified bowtie2 as your "
-                       f"aligner but are using --prealignment-bwa "
-                       f"to pass indices.")
-            pm.fail_pipeline(RuntimeError(err_msg))
-        for index in args.prealignment_bwa_index:
-            if not os.path.exists(os.path.dirname(index)):
-                err_msg = (f"Could not find {index}.")
-                pm.info(IOError(err_msg))
-            else:
-                res.prealignment_index.append(index)
-    else:
-        pm.warning(f"Unable to find any prealignment indices. If this appears "
-                   f"incorrect, confirm you passed the full path to each "
-                   f"index directory prefix.")
-
+    pm.info(f"prealignments: {args.prealignments}")
+    
     # Add primary genome annotation files to resources
-    if (args.bowtie2_index and args.bwa_index):
-        err_msg = (f"Incompatible settings: You specified a bowtie2 and "
-                   f"bwa index.")
-        pm.fail_pipeline(RuntimeError(err_msg))
-    elif (os.path.exists(os.path.dirname(args.bowtie2_index)) and not
-            args.bwa_index):
-        if args.aligner.lower() == "bwa":
-            err_msg = (f"Incompatible settings: You specified bwa as your "
-                       f"aligner but are using --bwa-index "
-                       f"to specify the index.")
-            pm.fail_pipeline(RuntimeError(err_msg))
-        else:
-            res.genome_index = args.bowtie2_index
-    elif (os.path.exists(os.path.dirname(args.bwa_index)) and not
-            args.bowtie2_index):
-        if args.aligner.lower() == "bowtie2":
-            err_msg = (f"Incompatible settings: You specified bowtie2 as your "
-                       f"aligner but are using --bowtie2-index "
-                       f"to specify the index.")
-            pm.fail_pipeline(RuntimeError(err_msg))
-        else:
-            res.genome_index = args.bwa_index
-    else:
-        err_msg = (f"A genome index file for {args.genome_assembly} "
-                   f"for {args.aligner} is required.")
-        pm.fail_pipeline(IOError(err_msg))
-
-    if (args.chrom_sizes and os.path.isfile(args.chrom_sizes) and
-            os.stat(args.chrom_sizes).st_size > 0):
-        res.chrom_sizes = args.chrom_sizes
-    else:
-        err_msg = (f"A chromosome sizes file for {args.genome_assembly} "
-                   f"is required.")
-        pm.fail_pipeline(IOError(err_msg))
-
+    pm.info(f"primary genome index: {args.genome_index}")
+    
     # Add optional files to resources
     if args.sob and not args.search_file:
         err_msg = (f"You specified --sob but did not include the path to"
@@ -981,7 +905,6 @@ def main():
               "See http://pepatac.databio.org/en/latest/ for documentation.")
     else:
         # Loop through any prealignment references and map to them sequentially
-<<<<<<< HEAD
         for count, genome_index in enumerate(res.prealignment_index):
             pm.info(f"Aligning with {args.aligner} to {genome_index}.")
             assembly_identifier = f"prealignment_{count}"
@@ -1009,48 +932,6 @@ def main():
                 to_compress.append(unmap_fq1)
                 if args.paired_end:
                     to_compress.append(unmap_fq2)
-=======
-        for reference in args.prealignments:
-            genome_index = os.path.join(
-                rgc.seek(reference, GENOME_IDX_KEY, strict_exists=False))
-            if not os.path.exists(os.path.dirname(genome_index)):
-                msg = "No {} index found in {}; skipping.".format(
-                reference, os.path.dirname(genome_index))
-                print(msg)
-            else:            
-                if not genome_index.endswith(reference):
-                    genome_index = os.path.join(
-                        os.path.dirname(rgc.seek(reference, 
-                                                 GENOME_IDX_KEY,
-                                                 strict_exists=False)),
-                        reference)
-                    if args.aligner.lower() == "bwa":
-                        genome_index += ".fa"
-                if args.no_fifo:
-                    unmap_fq1, unmap_fq2 = _align(
-                        args, tools, args.paired_end, False,
-                        unmap_fq1, unmap_fq2, reference,
-                        assembly=genome_index,
-                        outfolder=param.outfolder,
-                        aligndir="prealignments",
-                        bt2_opts_txt=param.bowtie2_pre.params,
-                        bwa_opts_txt=param.bwa_pre.params)
-                    to_compress.append(unmap_fq1)
-                    if args.paired_end:
-                        to_compress.append(unmap_fq2)
-                else:
-                    unmap_fq1, unmap_fq2 = _align(
-                        args, tools, args.paired_end, True,
-                        unmap_fq1, unmap_fq2, reference,
-                        assembly=genome_index, 
-                        outfolder=param.outfolder,
-                        aligndir="prealignments",
-                        bt2_opts_txt=param.bowtie2_pre.params,
-                        bwa_opts_txt=param.bwa_pre.params)
-                    to_compress.append(unmap_fq1)
-                    if args.paired_end:
-                        to_compress.append(unmap_fq2)
->>>>>>> dev
 
     pm.timestamp("### Compress all unmapped read files")
     # Confirm pairing is complete
@@ -1130,20 +1011,6 @@ def main():
     if os.path.exists(unmap_fq2 + ".gz"):
         unmap_fq2 = unmap_fq2 + ".gz"
 
-<<<<<<< HEAD
-=======
-    genome_index = os.path.join(
-        rgc.seek(args.genome_assembly, GENOME_IDX_KEY, strict_exists=False))          
-    if not genome_index.endswith(args.genome_assembly):
-        genome_index = os.path.join(
-            os.path.dirname(rgc.seek(args.genome_assembly,
-                                     GENOME_IDX_KEY,
-                                     strict_exists=False)),
-            args.genome_assembly)
-        if args.aligner.lower() == "bwa":
-            genome_index += ".fa"
-
->>>>>>> dev
     if args.aligner.lower() == "bwa":
         cmd = tools.bwa + " mem -t " + str(pm.cores)
         cmd += " " + bwa_options
@@ -2147,7 +2014,12 @@ def main():
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
             ]
-            cmd_base.extend(param.macs2.params.split())
+            if args.peak_type == "fixed":
+                cmd_base.extend(param.macs2.params.split())
+            elif args.peak_type == "variable":
+                cmd_base.extend(param.macs2_variable.params.split())
+            else:
+                cmd_base.extend(param.macs2.params.split())
             cmd = build_command(cmd_base)
 
         # Call peaks and report peak count.
