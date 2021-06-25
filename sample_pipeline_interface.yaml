@@ -14,9 +14,9 @@ command_template: >
   --single-or-paired { sample.read_type }
   --genome { sample.genome }
   --chrom-sizes { refgenie[sample.genome].fasta.chrom_sizes }
-  --TSS-name { refgenie[sample.genome].refgene_anno.refgene_tss }
-  --blacklist { refgenie[sample.genome].blacklist.blacklist }
-  --anno-name { refgenie[sample.genome].feat_annotation.feat_annotation }
+  {% if sample.TSS_name is defined %} --TSS-name { sample.TSS_name } {% elif refgenie[sample.genome].refgene_anno.refgene_tss is defined %} --TSS-name { refgenie[sample.genome].refgene_anno.refgene_tss } {% endif %}
+  {% if sample.blacklist is defined %} --blacklist { sample.blacklist } {% else %} { refgenie[sample.genome].blacklist.blacklist } {% endif %}
+  {% if sample.anno_name is defined %} --anno-name { sample.anno_name } {% else %} { refgenie[sample.genome].feat_annotation.feat_annotation } {% endif %}
   {% if sample.trimmer is defined %} --trimmer { sample.trimmer } {% endif %}
   {% if sample.aligner is defined %} --aligner { sample.aligner } {% endif %}
   {% if sample.aligner == "bowtie2" %} {% if sample.genome_index is defined %} --genome-index { sample.genome_index } {% else %} --genome-index { refgenie[sample.genome].bowtie2_index.dir } --prealignments {% for p in sample.prealignments %} { p } { refgenie[p].bowtie2_index.dir }{% endfor %} {% endif %} {% else %} {% if sample.genome_index is defined %} --genome-index { sample.genome_index } {% else %} --genome-index { refgenie[sample.genome].bwa_index.dir } --prealignments {% for p in sample.prealignments %} { p } { refgenie[p].bwa_index.dir }{% endfor %} {% endif %} {% endif %}

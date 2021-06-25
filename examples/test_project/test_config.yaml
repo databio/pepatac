@@ -14,13 +14,13 @@ sample_modifiers:
   derive:
     attributes: [read1, read2]
     sources:
-      test_data_R1: "examples/data/{sample_name}_r1.fastq.gz"
-      test_data_R2: "examples/data/{sample_name}_r2.fastq.gz"
+      test_data_R1: "examples/data/{sample_name}_chr22_r1.fastq.gz"
+      test_data_R2: "examples/data/{sample_name}_chr22_r2.fastq.gz"
   imply:
     - if: 
         organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
       then: 
-        genome: hg38
+        genome: hg38_chr22
         macs_genome_size: hs
         prealignments: ["rCRSd"]
         aligner: bowtie2         # Default. [options: bwa]
@@ -29,3 +29,6 @@ sample_modifiers:
         peak_type: fixed         # Default. [options: variable]
         extend: "250"            # Default. For fixed-width peaks, extend this distance up- and down-stream.
         frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
+        #TSS_name: "/project/shefflab/genomes_v04_210301/alias/hg38/refgene_anno/default/hg38_TSS.bed"
+        blacklist: /project/shefflab/genomes_v04_210301/alias/hg38/blacklist/default/hg38_blacklist.bed.gz
+        anno_name: /project/shefflab/genomes_v04_210301/alias/hg38/feat_annotation/default/hg38_annotations.bed.gz
