@@ -5,53 +5,36 @@ input_schema: pepatac_input_schema.yaml
 output_schema: pepatac_output_schema.yaml
 command_template: >
   python {pipeline.path}
-  --output_parent { looper.results_subdir }
+  --output-parent { looper.results_subdir }
   --cores { compute.cores }
   --mem { compute.mem }
-  --sample_name { sample.sample_name }
+  --sample-name { sample.sample_name }
   --input { sample.read1 }
   {% if sample.read2 is defined %} --input2 { sample.read2 } {% endif %}
-  --single_or_paired { sample.read_type }
+  --single-or-paired { sample.read_type }
   --genome { sample.genome }
-  --chrom_sizes { refgenie[sample.genome].fasta.chrom_sizes }
-  --TSS_name { refgenie[sample.genome].refgene_anno.refgene_tss }
+  --chrom-sizes { refgenie[sample.genome].fasta.chrom_sizes }
+  --TSS-name { refgenie[sample.genome].refgene_anno.refgene_tss }
   --blacklist { refgenie[sample.genome].blacklist.blacklist }
-  --anno_name { refgenie[sample.genome].feat_annotation.feat_annotation }
+  --anno-name { refgenie[sample.genome].feat_annotation.feat_annotation }
   {% if sample.trimmer is defined %} --trimmer { sample.trimmer } {% endif %}
   {% if sample.aligner is defined %} --aligner { sample.aligner } {% endif %}
-  {% if sample.aligner == "bowtie2" %}
-    {% if sample.genome_index is defined %}
-      --genome_index { sample.genome_index } 
-    {% else %}
-      --genome_index { refgenie[sample.genome].bowtie2_index.dir }
-        --prealignments {% for p in sample.prealignments %}
-          { p } { refgenie[p].bowtie2_index.dir }{% endfor %}
-    {% endif %}
-  {% else %}
-    {% if sample.genome_index is defined %}
-      --genome_index { sample.genome_index } 
-    {% else %}
-      --genome_index { refgenie[sample.genome].bwa_index.dir }
-        --prealignments {% for p in sample.prealignments %}
-          { p } { refgenie[p].bwa_index.dir }{% endfor %}
-    {% endif %} 
-  {% endif %}
+  {% if sample.aligner == "bowtie2" %} {% if sample.genome_index is defined %} --genome-index { sample.genome_index } {% else %} --genome-index { refgenie[sample.genome].bowtie2_index.dir } --prealignments {% for p in sample.prealignments %} { p } { refgenie[p].bowtie2_index.dir }{% endfor %} {% endif %} {% else %} {% if sample.genome_index is defined %} --genome-index { sample.genome_index } {% else %} --genome-index { refgenie[sample.genome].bwa_index.dir } --prealignments {% for p in sample.prealignments %} { p } { refgenie[p].bwa_index.dir }{% endfor %} {% endif %} {% endif %}
   {% if sample.deduplicator is defined %} --deduplicator { sample.deduplicator } {% endif %}
-  {% if sample.peak_caller is defined %} --peak_caller { sample.peak_caller } {% endif %}
-  {% if sample.peak_type is defined %} --peak_type { sample.peak_type } {% endif %}
+  {% if sample.peak_caller is defined %} --peak-caller { sample.peak_caller } {% endif %}
+  {% if sample.peak_type is defined %} --peak-type { sample.peak_type } {% endif %}
   {% if sample.extend is defined %} --extend { sample.extend } {% endif %}
-  {% if sample.genome_size is defined %} --genome_size { sample.genome_size } {% endif %}
+  {% if sample.genome_size is defined %} --genome-size { sample.genome_size } {% endif %}
   {% if sample.frip_ref_peaks is defined %} --frip-ref-peaks { sample.frip_ref_peaks } {% endif %}
   {% if sample.motif is defined %} --motif {% endif %}
   {% if sample.sob is defined %} --sob {% endif %}
-  {% if sample.sob is defined %} --search_file { refgenie[sample.genome].tallymer_index.search_file } {% endif %}
-  {% if sample.no_scale is defined %} --no_scale {% endif %}
+  {% if sample.sob is defined %} --search-file { refgenie[sample.genome].tallymer_index.search_file } {% endif %}
+  {% if sample.no_scale is defined %} --no-scale {% endif %}
   {% if sample.prioritize is defined %} --prioritize {% endif %}
   {% if sample.keep is defined %} --keep {% endif %}
   {% if sample.no_fifo is defined %} --noFIFO {% endif %}
   {% if sample.lite is defined %} --lite {% endif %}
   {% if sample.skipqc is defined %} --skipqc {% endif %}
-
 
 compute:
   singularity_image: ${SIMAGES}pepatac
