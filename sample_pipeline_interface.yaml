@@ -24,7 +24,7 @@ command_template: >
       --genome_index { sample.genome_index } 
     {% else %}
       --genome_index { refgenie[sample.genome].bowtie2_index.dir }
-      refgenie  
+      refgenie:
         --prealignments {% for p in sample.prealignments %}
           { p } { refgenie[p].bowtie2_index.dir }{% endfor %}
     {% endif %}
@@ -33,7 +33,7 @@ command_template: >
       --genome_index { sample.genome_index } 
     {% else %}
       --genome_index { refgenie[sample.genome].bwa_index.dir }
-      refgenie  
+      refgenie:
         --prealignments {% for p in sample.prealignments %}
           { p } { refgenie[p].bwa_index.dir }{% endfor %}
     {% endif %} 
