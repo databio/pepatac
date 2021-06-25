@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 
 from argparse import ArgumentParser
@@ -125,12 +125,12 @@ def parse_arguments():
                         help="Space-delimited list of reference genomes to "
                              "align to before primary alignment.")
     # Genome assets
-    parser.add_argument("--genome-index", default=None, required=True,
+    parser.add_argument("--genome-index", default=None,
                         dest="genome_index", type=str,
                         help="Path to primary genome index file. Either a "
                              "bowtie2 or bwa index.")
     
-    parser.add_argument("--chrom-sizes", default=None, required=True,
+    parser.add_argument("--chrom-sizes", default=None,
                         dest="chrom_sizes", type=str,
                         help="Path to primary genome chromosome sizes file.")
 
@@ -604,10 +604,12 @@ def main():
 
     # Add prealignment genome annotation files to resources
     pm.info(f"prealignments: {args.prealignments}")
+    res.prealignment_index = args.prealignments
     
     # Add primary genome annotation files to resources
     pm.info(f"primary genome index: {args.genome_index}")
-    
+    res.genome_index = args.genome_index
+
     # Add optional files to resources
     if args.sob and not args.search_file:
         err_msg = (f"You specified --sob but did not include the path to"
@@ -897,6 +899,16 @@ def main():
 
     # Keep track of the unmapped files in order to compress them after final
     # alignment.
+    def pairs(l):
+        '''
+        Iterate over a list in pairs
+        '''
+        i = iter(l)
+        prev = next(i)
+        for item in i:
+            yield prev, item
+            prev = item
+
     to_compress = []
     if len(res.prealignment_index) == 0:
         print("You may use `--prealignment-bowtie2-index` or "
@@ -905,13 +917,12 @@ def main():
               "See http://pepatac.databio.org/en/latest/ for documentation.")
     else:
         # Loop through any prealignment references and map to them sequentially
-        for count, genome_index in enumerate(res.prealignment_index):
-            pm.info(f"Aligning with {args.aligner} to {genome_index}.")
-            assembly_identifier = f"prealignment_{count}"
+        for genome, genome_index in pairs(res.prealignment_index):
+            pm.debug(f"Aligning with {args.aligner} to {genome_index}")           
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align(
                     args, tools, args.paired_end, False,
-                    unmap_fq1, unmap_fq2, assembly_identifier,
+                    unmap_fq1, unmap_fq2, genome,
                     assembly=genome_index,
                     outfolder=param.outfolder,
                     aligndir="prealignments",
@@ -923,7 +934,7 @@ def main():
             else:
                 unmap_fq1, unmap_fq2 = _align(
                     args, tools, args.paired_end, True,
-                    unmap_fq1, unmap_fq2, assembly_identifier,
+                    unmap_fq1, unmap_fq2, genome,
                     assembly=genome_index, 
                     outfolder=param.outfolder,
                     aligndir="prealignments",
