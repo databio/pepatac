@@ -407,7 +407,7 @@ else
         IFACE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/sample_pipeline_interface.yaml)
     fi
 
-    CRATE=$(grep 'bulker_crate' $IFACE | awk '{print $2}')
+    CRATE=$(echo $IFACE | tr " " "\n" | grep -A1 'bulker_crate' | tail -n 1)
 
     yes n | bulker load $CRATE
     if [ $? -eq 0 ]; then
