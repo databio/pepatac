@@ -74,6 +74,12 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     # -q: The qvalue (minimum FDR) cutoff to call significant regions.
     # --shift:  Assign an arbitrary shift in bp. See MACS documentation.
     # --nomodel: Will bybass building the shifting model.
+  macs2_variable:
+    params: '-f BED -q 0.01 --shift 0 --nomodel'
+    # -f: Format of tag file.
+    # -q: The qvalue (minimum FDR) cutoff to call significant regions.
+    # --shift:  Assign an arbitrary shift in bp. See MACS documentation.
+    # --nomodel: Will bybass building the shifting model.
   fseq:
     params: '-of npf -l 600 -t 4.0 -s 1'
     # -of: narrowPeak as output format.
