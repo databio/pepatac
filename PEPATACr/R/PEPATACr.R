@@ -1719,7 +1719,7 @@ reducePeaks <- function(input, chr_sizes, output=NA, normalize=FALSE) {
         final[score < 0, score := 0]
         # save final peak set
         if (is.na(output)) {
-            fwrite(final, paste0(sampleName(input),
+            fwrite(final, paste0(sampleName(input, 1),
                                  "_peaks_normalized.narrowPeak"),
                    sep="\t", col.names=FALSE)
         } else {
