@@ -927,7 +927,9 @@ def main():
               "See http://pepatac.databio.org/en/latest/ for documentation.")
     else:
         # Loop through any prealignment references and map to them sequentially
-        for genome, genome_index in pairs(res.prealignment_index):
+        for prealignment in res.prealignment_index:
+            pm.debug(f"prealignment: {prealignment}")
+            genome, genome_index = prealignment.split('=')
             if not genome_index.endswith(genome):
                 # Replace last occurrence of . with genome name
                 genome_index = genome_index[:genome_index.rfind(".")] + genome
