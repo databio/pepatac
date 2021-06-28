@@ -48,8 +48,6 @@ bioconductor:
   readFunPath: BiocProject/runCOCOA.R
 var_templates:
   refgenie_config: "$REFGENIE"
-#  custom_template: sample_template.jinja
 pre_submit:
   python_functions:
   - refgenconf.looper_refgenie_populate
-#  - looper.write_custom_template
