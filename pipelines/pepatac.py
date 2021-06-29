@@ -2179,6 +2179,7 @@ def main():
                 cmd1 = build_command([tools.Rscript,
                              (tool_path("PEPATAC.R"), "reduce"),
                              ("-i", filter_peak),
+                             ("-s", args.sample_name),
                              ("-c", res.chrom_sizes)
                             ])
                 cmd2 = ("touch " + blacklist_target)
