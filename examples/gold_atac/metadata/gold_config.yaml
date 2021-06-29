@@ -1,0 +1,137 @@
+name: gold_atac
+
+pep_version: 2.0.0
+sample_table: gold_sample_table.csv 
+
+looper:
+  output_dir: "$PROCESSED/pepatac/gold_atac/default"
+  pipeline_interfaces: "$CODE/pepatac/project_pipeline_interface.yaml"
+
+sample_modifiers:
+  append:
+    pipeline_interfaces: "$CODE/pepatac/sample_pipeline_interface.yaml"
+  derive:
+    attributes: [read1, read2]
+    sources:
+      SRA: "/scratch/jps3dp/tools/databio/pepatac/examples/gold_atac/metadata/{SRR}.bam"
+      SRA_1: "$SRAFQ/{SRR}_1.fastq.gz"
+      SRA_2: "$SRAFQ/{SRR}_2.fastq.gz"
+  imply:
+    - if: 
+        organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
+      then: 
+        genome: hg38
+        genome_size: hs
+        prealignments: ["rCRSd"]
+
+project_modifiers:
+  amend:
+    genrich:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/peak_caller/genrich"
+      sample_modifiers:
+        append:
+          peak_caller: genrich
+          peak_type: variable
+    hmmratac:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/peak_caller/hmmratac"
+      sample_modifiers:
+        append:
+          peak_caller: hmmratac
+          peak_type: variable
+    homer:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/peak_caller/homer"
+      sample_modifiers:
+        append:  
+          peak_caller: homer
+          peak_type: variable
+    fseq:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/peak_caller/fseq"
+      sample_modifiers:
+        append:
+          peak_caller: fseq
+          peak_type: variable
+    fseq2:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/peak_caller/fseq2"
+      sample_modifiers:
+        append:
+          peak_caller: fseq2
+          peak_type: variable
+    variable:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/peak_caller/macs2/variable"
+      sample_modifiers:
+        append:
+          peak_caller: macs2
+          peak_type: variable
+    bwa:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/aligner/bwa"
+      sample_modifiers:
+        append:
+          aligner: bwa
+    picard:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/dedup/picard"
+      sample_modifiers:
+        append:
+          deduplicator: picard
+    samtools:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/dedup/samtools"
+      sample_modifiers:
+        append:
+          deduplicator: samtools
+    motif:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/motif"
+      sample_modifiers:
+        append:
+          motif: True
+    noscale:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/no-scale"
+      sample_modifiers:
+        append:
+          no-scale: True
+    prioritize:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/prioritize"
+      sample_modifiers:
+        append:
+          prioritize: True
+    sob:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/sob/default"
+      sample_modifiers:
+        append:
+          sob: True
+    sob_noscale:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/sob/no-scale"
+      sample_modifiers:
+        append:
+          sob: True
+          no-scale: True
+    skipqc:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/skipqc"
+      sample_modifiers:
+        append:
+          skipqc: True
+    nofifo:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/noFIFO"
+      sample_modifiers:
+        append:
+          noFIFO: True
+    lite:
+      looper:
+        output_dir: "$PROCESSED/pepatac/gold_atac/lite"
+      sample_modifiers:
+        append:
+          lite: True
