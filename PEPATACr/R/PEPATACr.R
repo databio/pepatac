@@ -1720,7 +1720,8 @@ reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALS
         final[score < 0, score := 0]
         # save final peak set
         if (is.na(output)) {
-            fwrite(final, paste0(sample_name, "_peaks_normalized.narrowPeak"),
+            file_path <- file.path(dirname(input), sample_name)
+            fwrite(final, paste0(file_path, "_peaks_normalized.narrowPeak"),
                    sep="\t", col.names=FALSE)
         } else {
             fwrite(final, output, sep="\t", col.names=FALSE)
