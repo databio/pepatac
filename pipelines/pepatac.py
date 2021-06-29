@@ -907,18 +907,6 @@ def main():
     unmap_genome_bam = os.path.join(
         map_genome_folder, args.sample_name + "_unmap.bam")
 
-    # Keep track of the unmapped files in order to compress them after final
-    # alignment.
-    def pairs(l):
-        '''
-        Iterate over a list in pairs
-        '''
-        i = iter(l)
-        prev = next(i)
-        for item in i:
-            yield prev, item
-            prev = item
-
     to_compress = []
     if len(res.prealignment_index) == 0:
         print("You may use `--prealignment-bowtie2-index` or "
@@ -2129,6 +2117,7 @@ def main():
         cmd = build_command([tools.Rscript,
                              (tool_path("PEPATAC.R"), "reduce"),
                              ("-i", peak_output_file),
+                             ("-s", args.sample_name),
                              ("-c", res.chrom_sizes),
                              "--normalize"
                             ])

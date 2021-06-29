@@ -1640,12 +1640,13 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 #' peaks.  It also trims peaks extending beyond the bounds of the chromosome.
 #'
 #' @param input Path to narrowPeak file
+#' @param sample_name Sample name character string
 #' @param chr_sizes Genome chromosome sizes file. <Chr> <Size>
 #' @param output Output file name.
 #' @param normalize Remove overlaps and normalize the score.
 #' @keywords reduce fixed peaks
 #' @export
-reducePeaks <- function(input, chr_sizes, output=NA, normalize=FALSE) {
+reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALSE) {
     info <- file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
         peaks           <- fread(file.path(input))
@@ -1719,8 +1720,7 @@ reducePeaks <- function(input, chr_sizes, output=NA, normalize=FALSE) {
         final[score < 0, score := 0]
         # save final peak set
         if (is.na(output)) {
-            fwrite(final, paste0(sampleName(input, 1),
-                                 "_peaks_normalized.narrowPeak"),
+            fwrite(final, paste0(sample_name, "_peaks_normalized.narrowPeak"),
                    sep="\t", col.names=FALSE)
         } else {
             fwrite(final, output, sep="\t", col.names=FALSE)
