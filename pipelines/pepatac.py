@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.11.0"
+__version__ = "0.10.0"
 
 
 from argparse import ArgumentParser
@@ -40,8 +40,8 @@ def parse_arguments():
     parser = ArgumentParser(description='PEPATAC version ' + __version__)
     parser = pypiper.add_pypiper_args(parser, groups=
         ['pypiper', 'looper', 'ngs'],
-        required=["input", "genome", "sample-name", "output-parent",
-                  "chrom-sizes", "primary-index"])
+        required=["input", "genome", "sample_name", "output_parent",
+                  "chrom_sizes", "genome_index"])
 
     # Pipeline-specific arguments
     parser.add_argument("--trimmer", dest="trimmer", type=str.lower,
@@ -119,18 +119,25 @@ def parse_arguments():
                         help="Skip FastQC. Useful for bugs in FastQC "
                              "that appear with some sequence read files.")
 
-    # Genome assets
-    parser.add_argument("--prealignments", default=[], type=str,
+    # Prealignment genome assets
+    parser.add_argument("--prealignment-names", default=[], type=str,
                         nargs="+",
-                        help="Space-delimited list of reference genomes to "
-                             "align to before primary alignment.")
+                        help="Space-delimited list of prealignment genome "
+                             "names to align to before primary alignment.")
+    
+    parser.add_argument("--prealignment-index", default=[], type=str,
+                        nargs="+",
+                        help="Space-delimited list of prealignment genome "
+                             "name and index files delimited by an equals sign "
+                             "to align to before primary alignment. "
+                             "e.g. rCRSd=/path/to/bowtie2_index/.")
     # Genome assets
-    parser.add_argument("--genome-index", default=None,
+    parser.add_argument("--genome-index", default=None, required=True,
                         dest="genome_index", type=str,
                         help="Path to primary genome index file. Either a "
                              "bowtie2 or bwa index.")
     
-    parser.add_argument("--chrom-sizes", default=None,
+    parser.add_argument("--chrom-sizes", default=None, required=True,
                         dest="chrom_sizes", type=str,
                         help="Path to primary genome chromosome sizes file.")
 
@@ -603,22 +610,28 @@ def main():
         GENOME_IDX_KEY = "bowtie2_index"
 
     # Add prealignment genome annotation files to resources
-    pm.debug(f"prealignments: {args.prealignments}")
-    res.prealignment_index = args.prealignments
+    if args.prealignment_index:
+        pm.debug(f"prealignments: {args.prealignment_index}")
+        res.prealignment_index = args.prealignment_index
+    else:
+        res.prealignment_index = None
     
     # Add primary genome annotation files to resources
     res.genome_index = args.genome_index
-    if not res.genome_index.endswith(args.genome_assembly):
+
+    if res.genome_index.endswith("."):
         # Replace last occurrence of . with genome name
-        res.genome_index = (res.genome_index[:res.genome_index.rfind(".")] +
-                                             args.genome_assembly)
+        res.genome_index = os.path.abspath((
+            res.genome_index[:res.genome_index.rfind(".")] + 
+            args.genome_assembly)
+        )
         if args.aligner.lower() == "bwa":
             res.genome_index += ".fa"
     pm.debug(f"primary genome index: {args.genome_index}")
     
     if (args.chrom_sizes and os.path.isfile(args.chrom_sizes) and
             os.stat(args.chrom_sizes).st_size > 0):
-        res.chrom_sizes = args.chrom_sizes
+        res.chrom_sizes = os.path.abspath(args.chrom_sizes)
 
     # Add optional files to resources
     if args.sob and not args.search_file:
@@ -628,20 +641,20 @@ def main():
         pm.fail_pipeline(RuntimeError(err_msg))
     if (args.search_file and os.path.isfile(args.search_file) and
             os.stat(args.search_file).st_size > 0):
-        res.search_file = args.search_file
+        res.search_file = os.path.abspath(args.search_file)
     
     if (args.blacklist and os.path.isfile(args.blacklist) and
             os.stat(args.blacklist).st_size > 0):
-        res.blacklist = args.blacklist
+        res.blacklist = os.path.abspath(args.blacklist)
     if (args.TSS_name and os.path.isfile(args.TSS_name) and
             os.stat(args.TSS_name).st_size > 0):
-        res.refgene_tss = args.TSS_name
+        res.refgene_tss = os.path.abspath(args.TSS_name)
     if (args.anno_name and os.path.isfile(args.anno_name) and
             os.stat(args.anno_name).st_size > 0):
-        res.feat_annotation = args.anno_name
+        res.feat_annotation = os.path.abspath(args.anno_name)
     if (args.frip_ref_peaks and os.path.isfile(args.frip_ref_peaks) and
             os.stat(args.frip_ref_peaks).st_size > 0):
-        res.frip_ref_peaks = args.frip_ref_peaks
+        res.frip_ref_peaks = os.path.abspath(args.frip_ref_peaks)
 
     # Adapter file can be set in the config; if left null, we use a default.
     res.adapters = res.adapters or tool_path("NexteraPE-PE.fa")
@@ -908,19 +921,19 @@ def main():
         map_genome_folder, args.sample_name + "_unmap.bam")
 
     to_compress = []
-    if len(res.prealignment_index) == 0:
-        print("You may use `--prealignment-bowtie2-index` or "
-              "`--prealignment-bwa-index` to align to references before "
-              "the genome alignment step. "
+    if len(res.prealignment_index) == 0 or res.prealignment_index is None:
+        print("You may use `--prealignment-index` to align to references "
+              "before the genome alignment step. "
               "See http://pepatac.databio.org/en/latest/ for documentation.")
     else:
         # Loop through any prealignment references and map to them sequentially
         for prealignment in res.prealignment_index:
             pm.debug(f"prealignment: {prealignment}")
             genome, genome_index = prealignment.split('=')
-            if not genome_index.endswith(genome):
+            if genome_index.endswith("."):
                 # Replace last occurrence of . with genome name
                 genome_index = genome_index[:genome_index.rfind(".")] + genome
+                genome_index = os.path.abspath(genome_index)
                 #genome_index = genome_index.replace('.',genome)
                 if args.aligner.lower() == "bwa":
                     genome_index += ".fa"
