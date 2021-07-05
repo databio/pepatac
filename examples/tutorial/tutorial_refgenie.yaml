@@ -22,9 +22,7 @@ sample_modifiers:
         organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
       then: 
         genome: hg38
-        genome_index: default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4
-        chrom_sizes: default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes
-        prealignment_index: ["rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4"]
+        prealignment_names: ["rCRSd"]
         deduplicator: samblaster # Default. [options: picard]
         trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
         peak_type: fixed         # Default. [options: variable]

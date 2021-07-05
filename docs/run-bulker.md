@@ -46,10 +46,9 @@ refgenie build hg38/feat_annotation
 
 ```console
 refgenie pull rCRSd/bowtie2_index
-refgenie pull human_repeats/bowtie2_index
 ```
 
-#### 2b: Download assets
+#### 2b: Download assets manually
 
 If you prefer not to use `refgenie`, you can also download and construct assets manually.  The minimum required assets for a genome includes:  
  - a chromosome sizes file: a text file containing "chr" and "size" columns.
@@ -79,7 +78,7 @@ bulker activate databio/pepatac:1.0.7
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!
 
-### 6. Run the pipeline
+### 6. Run the sample-level pipeline
 
 Now we simply run the pipeline like you would with a native installation, but we wouldn't have needed to install any additional tools!
 
@@ -92,7 +91,7 @@ refgenie seek hg38/bowtie2_index.dir
 refgenie seek rCRSd/bowtie2_index.dir
 ```
 
-Alternatively, if you are *not* using `refgenie`, you can still grab premade `--chrom-sizes` and `--genome-index` files from the refgenie servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
+Alternatively, if you are *not* using `refgenie`, you can still grab premade `--chrom-sizes` and `--genome-index` files from the `refgenie` servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
 ```console
 wget -O hg38.fasta.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/fasta?tag=default
 wget  -O hg38.bowtie2_index.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/bowtie2_index?tag=default
@@ -102,7 +101,7 @@ wget  -O rCRSd.bowtie2_index.tgz http://refgenomes.databio.org/v3/assets/archive
 From the `pepatac/` repository folder (using the manually downloaded genome assets):
 ```console
 pipelines/pepatac.py --single-or-paired paired \
-  --prealignments rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
+  --prealignment-index rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
   --genome hg38 \
   --genome-index default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4 \
   --chrom-sizes default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes \
@@ -113,11 +112,11 @@ pipelines/pepatac.py --single-or-paired paired \
   -O $HOME/pepatac_test
 ```
 
-With a single core, this will take 20-30 minutes to complete. 
+With a single processor, this will take 20-30 minutes to complete. 
 
 #### Run the pipeline using looper
 
-Since `bulker` automatically direct any calls to required software to instead be executed in containers, we can just run our project the exact same way we would when we installed everything natively!
+Since `bulker` automatically directs any calls to required software to instead be executed in containers, we can just run our project the exact same way we would when we installed everything natively!
 
 **Run the pipeline with looper and manual asset specifications**
 ```console
@@ -128,3 +127,19 @@ looper run examples/test_project/test_config.yaml
 ```console
 looper run examples/test_project/test_config_refgenie.yaml
 ```
+
+### 7: Run the project level pipeline
+
+`PEPATAC` also includes a project-level processing pipeline to do things like:
+
+ - [Plot alignment statistics](files/examples/gold/summary/gold_alignmentPercent.pdf) for all samples in the project together for easy visualization
+ - [Plot TSS enrichment scores](files/examples/gold/summary/gold_TSSEnrichment.pdf) for all the samples in the project in a single figure
+ - [Produce a consensus peak set](consensus_peaks.md) for the project
+ - [Produce a count table](count_table.md) using the consensus peak set for all the samples in a project
+
+From the `pepatac/` repository folder (using the manually downloaded genome assets):
+```console
+looper runp examples/test_project/test_config.yaml
+```
+
+This should take < a minute on the test sample and will generate a `summary/` directory containing project level output in the parent project directory. In this small example, there won't be a consensus peak set or count table because it is only a single sample. To see more, you can [run through the extended tutorial](tutorial.md) to see this in action.
