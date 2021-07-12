@@ -4,7 +4,7 @@ path: pipelines/pepatac.py
 input_schema: pepatac_input_schema.yaml
 output_schema: pepatac_output_schema.yaml
 command_template: >
-  python {pipeline.path}
+  {pipeline.path}
   --output-parent { looper.results_subdir }
   --cores { compute.cores }
   --mem { compute.mem }
