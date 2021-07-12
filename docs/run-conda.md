@@ -101,11 +101,18 @@ refgenie seek hg38/bowtie2_index.dir
 refgenie seek rCRSd/bowtie2_index.dir
 ```
 
-Alternatively, if you are *not* using `refgenie`, you can still grab premade `--chrom-sizes` and `--genome-index` files from the refgenie servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
+Alternatively, if you are *not* using `refgenie`, you can still grab premade `--chrom-sizes` and `--genome-index` files from the `refgenie` servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
 ```console
 wget -O hg38.fasta.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/fasta?tag=default
 wget  -O hg38.bowtie2_index.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/bowtie2_index?tag=default
 wget  -O rCRSd.bowtie2_index.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/bowtie2_index?tag=default
+```
+
+Then, extract these files:
+```console
+tar xvf hg38.fasta.tgz
+tar xvf hg38.bowtie2_index.tgz 
+tar xvf rCRSd.bowtie2_index.tgz
 ```
 
 From the `pepatac/` repository folder (using the manually downloaded genome assets):

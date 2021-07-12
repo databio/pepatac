@@ -57,6 +57,13 @@ wget  -O hg38.bowtie2_index.tgz http://rg.databio.org/v3/assets/archive/2230c535
 wget  -O rCRSd.bowtie2_index.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/bowtie2_index?tag=default
 ```
 
+Then, extract these files:
+```console
+tar xvf hg38.fasta.tgz
+tar xvf hg38.bowtie2_index.tgz 
+tar xvf rCRSd.bowtie2_index.tgz
+```
+
 ### 3. Pull the container image.
 
 **Docker**: You can pull the docker [databio/pepatac image](https://hub.docker.com/r/databio/pepatac/) from `dockerhub` like this:
