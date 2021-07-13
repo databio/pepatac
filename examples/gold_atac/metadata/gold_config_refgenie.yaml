@@ -4,7 +4,7 @@ pep_version: 2.0.0
 sample_table: gold_sample_table.csv 
 
 looper:
-  output_dir: "$PROCESSED/pepatac/gold_atac/default"
+  output_dir: "$PROCESSED/pepatac/gold_atac/default_refgenie"
   pipeline_interfaces: "$CODE/pepatac/project_pipeline_interface.yaml"
 
 sample_modifiers:
@@ -21,7 +21,7 @@ sample_modifiers:
         organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
       then: 
         genome: hg38
-        prealignments: ["rCRSd"]
+        prealignment_names: ["rCRSd"]
 
 project_modifiers:
   amend:
