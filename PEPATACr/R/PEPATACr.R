@@ -836,7 +836,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                         group=feature, color=feature)) +
                 #geom_line(aes(linetype=feature), size=2, alpha=0.5) +
                 geom_line(size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
+                guides(linetype = "none") +
                 labs(x=expression(log[10]("number of bases")),
                      y="FRiF") +
                 theme_PEPATAC()
@@ -885,7 +885,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
             p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
                         group=feature, color=feature)) +
                 geom_line(size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
+                guides(linetype = "none") +
                 labs(x=expression(log[10]("number of bases")), y="FRiF") +
                 theme_PEPATAC()
 
@@ -919,7 +919,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                         aes(x=log10(cumSize), y=frip,
                             group=feature, color=feature)) +
                 geom_line(aes(linetype=feature), size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
+                guides(linetype = "none") +
                 labs(x=expression(log[10]("number of bases")),
                      y="FRiF") +
                 theme_PEPATAC()
