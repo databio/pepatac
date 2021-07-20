@@ -21,7 +21,7 @@ properties:
           type: string
           description: "Refgenie genome registry identifier"
         prealignments:
-          type: ["string", "array"]
+          type: ["array"]
           descrption: "Refgenie genome registry identifiers"
         read_type:
           type: string
