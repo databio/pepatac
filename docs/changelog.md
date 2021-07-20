@@ -1,6 +1,21 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] -- 2021-07-20
+
+### Changed
+ - Make refgenie optional
+ - Use looper refgenie populate plugin to integrate refgenie
+ - Update docs to reflect changes to refgenie requirement and installation
+ - Fix file.path in reducePeaks() and take sample name argument
+ - Update blacklist reduce peaks step
+ - Rework CLI arguments to be fully explicit
+ - Update <guides> settings in R
+ - Update dockerfile to most recent refgenie usage and R package changes 
+ - Reduce smaller file resource requests
+ 
+### Added
+ - Add assets descriptions and how to obtain to docs
 
 ## [0.9.16] -- 2021-05-18
 
