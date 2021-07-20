@@ -81,11 +81,13 @@ refgenie pull rCRSd/bowtie2_index
 
 ### 5b: Download assets manually
 
-If you prefer not to use `refgenie`, you can also download and construct assets manually.  The minimum required assets for a genome includes:  
+If you prefer not to use `refgenie`, you can also download and construct assets manually.  The minimum required assets for a genome includes: 
+ 
  - a chromosome sizes file: a text file containing "chr" and "size" columns.
  - a [`bowtie2` genome index](http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer).
 
-Optional assets include:  
+Optional assets include: 
+ 
  - a TSS annotation file: a BED file containing "chr", "start", "end", "gene name", "score", and "strand" columns.
  - a region blacklist: e.g. [the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist)
  - a [genomic feature annotation file](annotation.md)

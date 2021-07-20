@@ -45,7 +45,8 @@ If you prefer not to use `refgenie`, you can also download and construct assets 
 - a chromosome sizes file: a text file containing "chr" and "size" columns.  
 - a [`bowtie2` genome index](http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer).
 
-Optional assets include:  
+Optional assets include: 
+ 
 - a TSS annotation file: a BED file containing "chr", "start", "end", "gene name", "score", and "strand" columns.
 - a region blacklist: e.g. [the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist)
 - a [genomic feature annotation file](annotation.md)
