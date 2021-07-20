@@ -42,13 +42,13 @@ refgenie pull rCRSd/bowtie2_index
 #### 2b: Download assets manually
 
 If you prefer not to use `refgenie`, you can also download and construct assets manually.  Again, because these are user-defined assets, they must exist outside of any container system. The minimum required assets for a genome includes:  
- - a chromosome sizes file: a text file containing "chr" and "size" columns.
- - a [`bowtie2` genome index](http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer).
+- a chromosome sizes file: a text file containing "chr" and "size" columns.  
+- a [`bowtie2` genome index](http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer).
 
 Optional assets include:  
- - a TSS annotation file: a BED file containing "chr", "start", "end", "gene name", "score", and "strand" columns.
- - a region blacklist: e.g. [the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist)
- - a [genomic feature annotation file](annotation.md)
+- a TSS annotation file: a BED file containing "chr", "start", "end", "gene name", "score", and "strand" columns.
+- a region blacklist: e.g. [the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist)
+- a [genomic feature annotation file](annotation.md)
 
 You can obtain the minimally required pre-constructed `--chrom-sizes` and `--genome-index` files from the `refgenie` servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
 ```console
