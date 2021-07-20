@@ -216,11 +216,15 @@ Fantastic! Now that we have the pipeline and its requirements installed, we're r
 
 ## 4. Download a reference genome
 
-Before we analyze anything, we also need a reference genome.  `PEPATAC` uses [`refgenie`](http://refgenie.databio.org/) assets for alignment. If you haven't already, initialize a refgenie config file like this:
+Before we analyze anything, we also need a reference genome. You can use our recommended approach, `refgenie`, or download the assets manually.
+
+### 4a: Initialize `refgenie` and download assets
+
+`PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must still be available natively. Therefore, we need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
 
 ```console
-pip install --user refgenie
-export REFGENIE=your_genome_folder/genome_config.yaml
+pip install refgenie
+export REFGENIE=/path/to/your_genome_folder/genome_config.yaml
 refgenie init -c $REFGENIE
 ```
 
@@ -229,12 +233,26 @@ Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it pers
 Next, pull the assets you need. Replace `hg38` in the example below if you need to use a different genome assembly. If these assets are not available automatically for your genome of interest, then you'll need to [build them](annotation.md). Download these required assets with this command:
 
 ```console
-refgenie pull hg38/bowtie2_index refgene_anno feat_annotation
+refgenie pull hg38/fasta hg38/bowtie2_index hg38/refgene_anno hg38/ensembl_gtf hg38/ensembl_rb
+refgenie build hg38/feat_annotation
 ```
 
-PEPATAC also requires `bowtie2_index` for any pre-alignment genomes:
+`PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
 
 ```console
 refgenie pull rCRSd/bowtie2_index
-refgenie pull human_repeats/bowtie2_index
 ```
+
+### 4b: Download assets manually
+
+If you prefer not to use `refgenie`, you can also download and construct assets manually.  The minimum required assets for a genome includes: 
+ 
+ - a chromosome sizes file: a text file containing "chr" and "size" columns.
+ - a [`bowtie2` genome index](http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer).
+
+Optional assets include: 
+ 
+ - a TSS annotation file: a BED file containing "chr", "start", "end", "gene name", "score", and "strand" columns.
+ - a region blacklist: e.g. [the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist)
+ - a [genomic feature annotation file](annotation.md)
+
