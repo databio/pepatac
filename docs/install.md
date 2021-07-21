@@ -6,3 +6,16 @@ We provide several methods to setup `PEPATAC`. A fundamental challenge of any co
 2. [Run the pipeline using a single, monolithic container.](run-container.md)
 3. [Run the pipeline in a conda environment.](run-conda.md)
 4. [Run the pipeline natively.](detailed-install.md)
+
+## Confirm installation 
+
+After setting up your environment to run `PEPATAC`, you can confirm which means of running the pipeline are now executable using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository:
+
+```console
+./checkinstall
+```
+
+or from the web:
+```console
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+```

@@ -92,7 +92,20 @@ Optional assets include:
  - a region blacklist: e.g. [the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist)
  - a [genomic feature annotation file](annotation.md)
 
-## 6: Use `looper` to run the sample processing pipeline
+## 6. Confirm installation 
+
+After setting up your environment to run `PEPATAC` with `conda`, you can confirm the pipeline is now executable with `conda` using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository...
+
+```console
+./checkinstall
+```
+
+or from the web:
+```console
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+```
+
+## 7: Use `looper` to run the sample processing pipeline
 
 Start by running the example project (`test_config.yaml`) in the `examples/test_project/` folder. `PEPATAC` can utilize a project management tool called `looper` to run the sample-level pipeline across each sample in a project. Let's use the `-d` argument to first try a dry run, which will create job scripts for every sample in a project, but will not execute them:
 
@@ -129,7 +142,7 @@ looper run examples/test_project/test_config.yaml
 
 There are lots of other cool things you can do with `looper`, like dry runs, report results, check on pipeline run status, clean intermediate files to save disk space, lump multiple samples into one job, and more. For details, consult the [looper docs](http://looper.databio.org/).
 
-## 7: Use `looper` to run the project level pipeline
+## 8: Use `looper` to run the project level pipeline
 
 `PEPATAC` also includes a project-level processing pipeline to do things like:
 
@@ -144,4 +157,3 @@ looper runp examples/test_project/test_config.yaml
 ```
 
 This should take < a minute on the test sample and will generate a `summary/` directory containing project level output in the parent project directory. In this small example, there won't be a consensus peak set or count table because it is only a single sample. To see more, you can [run through the extended tutorial](tutorial.md) to see this in action.
-

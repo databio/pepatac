@@ -65,14 +65,27 @@ Optional assets include:
 
 Check out [the `bulker` setup guide to install bulker](https://bulker.databio.org/en/latest/install/) on your system. It is a straightforward python package with a few configuration steps required prior to use with `PEPATAC`.
 
-### 4. Load the `PEPATAC` crate
+### 4. Confirm installation 
+
+After setting up your environment to run `PEPATAC` with `bulker`, you can confirm the pipeline is now executable with `bulker` using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository...
+
+```console
+./checkinstall
+```
+
+or from the web:
+```console
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+```
+
+### 5. Load the `PEPATAC` crate
 
 We've already produced a `bulker` crate for `PEPATAC` that requires all software needed to run the pipeline.  We can load this crate directly from the [`bulker registry`](http://hub.bulker.io/):
 ```console
 bulker load databio/pepatac:1.0.7 -r
 ```
 
-### 5. Activate the `PEPATAC` crate
+### 6. Activate the `PEPATAC` crate
 
 Now that we've loaded the `PEPATAC` crate, we need to activate that specific crate so its included tools are available.
 ```console
@@ -80,7 +93,7 @@ bulker activate databio/pepatac:1.0.7
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!
 
-### 6. Run the sample-level pipeline
+### 7. Run the sample-level pipeline
 
 Now we simply run the pipeline like you would with a native installation, but we wouldn't have needed to install any additional tools!
 
@@ -137,7 +150,7 @@ looper run examples/test_project/test_config.yaml
 looper run examples/test_project/test_config_refgenie.yaml
 ```
 
-### 7: Run the project level pipeline
+### 8: Run the project level pipeline
 
 `PEPATAC` also includes a project-level processing pipeline to do things like:
 

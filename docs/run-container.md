@@ -85,6 +85,19 @@ make singularity
 
 Now you'll need to tell the pipeline where you saved the singularity image. You can either create an environment variable called `$SIMAGES` that points to the folder where your image is stored, or you can tweak the `pipeline_interface.yaml` file so that the `compute.singularity_image` attribute is pointing to the right location on disk.
 
+### 6. Confirm installation 
+
+After setting up your environment to run `PEPATAC` using containers, you can confirm the pipeline is now executable with your container system using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository...
+
+```console
+./checkinstall
+```
+
+or from the web:
+```console
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+```
+
 ### 4. Run individual samples in a container
 
 Individual jobs can be run in a container by simply running the `pepatac.py` command through `docker run` or `singularity exec`. You can run containers either on your local computer, or in an HPC environment, as long as you have `docker` or `singularity` installed. You will need to include any volumes that contain data required by the pipeline. For example, to utilize `refgenie` assets you'll need to ensure the volume containing those files is available. In the following example, we are including an environment variable (`$GENOMES`) which points to such a directory.
@@ -99,6 +112,10 @@ With `docker`, you can use:
 docker run --rm -it databio/pepatac pipelines/pepatac.py --help
 ```
 Be sure to mount the volumes you need with `--volume`. If you're utilizing any environment variables (e.g. `$REFGENIE`), don't forget to include those in your docker command with the `-e` option.
+
+### 5. Running multiple samples in a container with looper
+
+To run multiple samples in a container, you simply need to configure `looper` to use a container-compatible template. The looper documentation has instructions for [running jobs in containers](http://looper.databio.org/en/latest/containers/).
 
 ### Container details 
 
@@ -177,6 +194,3 @@ Third, close your instance when finished.
 singularity instance stop pepatac_instance
 ```
 
-### 5. Running multiple samples in a container with looper
-
-To run multiple samples in a container, you simply need to configure `looper` to use a container-compatible template. The looper documentation has instructions for [running jobs in containers](http://looper.databio.org/en/latest/containers/).
