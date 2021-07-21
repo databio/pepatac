@@ -67,7 +67,7 @@ echo -e "Checking base requirements...                              "
 
 BASE_REQS=0
 
-declare -a requiredPkgs=("refgenie" "looper")
+declare -a requiredPkgs=("looper")
 
 for package in ${requiredPkgs[@]}; do
     if ! pip_show $package; then
@@ -401,13 +401,13 @@ else
 
     CWD=$(pwd)
 
-    if [ -f "$CWD/sample_pipeline_interface.yaml" ]; then
-        IFACE="$CWD/sample_pipeline_interface.yaml"
+    if [ -f "sample_pipeline_interface.yaml" ]; then
+        IFACE="sample_pipeline_interface.yaml"
+        CRATE=$(cat $IFACE | grep 'bulker_crate' | tr " " "\n" | tail -n 1)
     else
         IFACE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/sample_pipeline_interface.yaml)
+        CRATE=$(echo $IFACE | tr " " "\n" | grep -A1 'bulker_crate' | tail -n 1)
     fi
-
-    CRATE=$(echo $IFACE | tr " " "\n" | grep -A1 'bulker_crate' | tail -n 1)
 
     yes n | bulker load $CRATE
     if [ $? -eq 0 ]; then
