@@ -451,6 +451,18 @@ else
     echo -e $(fail "ERROR: PEPATAC cannot be run via conda.")
 fi
 
+if [ "$DOCKER" -eq 0 ]; then
+    echo -e $(success "SUCCESS: PEPATAC can be run using docker!")
+else
+    echo -e $(fail "ERROR: PEPATAC cannot be run using docker.")
+fi
+
+if [ "$SINGULARITY" -eq 0 ]; then
+    echo -e $(success "SUCCESS: PEPATAC can be run using singularity!")
+else
+    echo -e $(fail "ERROR: PEPATAC cannot be run using singularity.")
+fi
+
 if [ "$BULKER_INSTALL" -eq 0 ]; then
     echo -e $(success "SUCCESS: PEPATAC can be run using bulker!")
 else
