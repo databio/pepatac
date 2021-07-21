@@ -836,7 +836,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                         group=feature, color=feature)) +
                 #geom_line(aes(linetype=feature), size=2, alpha=0.5) +
                 geom_line(size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
+                guides(linetype = "none") +
                 labs(x=expression(log[10]("number of bases")),
                      y="FRiF") +
                 theme_PEPATAC()
@@ -885,7 +885,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
             p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
                         group=feature, color=feature)) +
                 geom_line(size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
+                guides(linetype = "none") +
                 labs(x=expression(log[10]("number of bases")), y="FRiF") +
                 theme_PEPATAC()
 
@@ -919,7 +919,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                         aes(x=log10(cumSize), y=frip,
                             group=feature, color=feature)) +
                 geom_line(aes(linetype=feature), size=2, alpha=0.5) +
-                guides(linetype = FALSE) +
+                guides(linetype = "none") +
                 labs(x=expression(log[10]("number of bases")),
                      y="FRiF") +
                 theme_PEPATAC()
@@ -1640,12 +1640,13 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 #' peaks.  It also trims peaks extending beyond the bounds of the chromosome.
 #'
 #' @param input Path to narrowPeak file
+#' @param sample_name Sample name character string
 #' @param chr_sizes Genome chromosome sizes file. <Chr> <Size>
 #' @param output Output file name.
 #' @param normalize Remove overlaps and normalize the score.
 #' @keywords reduce fixed peaks
 #' @export
-reducePeaks <- function(input, chr_sizes, output=NA, normalize=FALSE) {
+reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALSE) {
     info <- file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
         peaks           <- fread(file.path(input))
@@ -1719,8 +1720,8 @@ reducePeaks <- function(input, chr_sizes, output=NA, normalize=FALSE) {
         final[score < 0, score := 0]
         # save final peak set
         if (is.na(output)) {
-            fwrite(final, paste0(sampleName(input),
-                                 "_peaks_normalized.narrowPeak"),
+            file_path <- file.path(dirname(input), sample_name)
+            fwrite(final, paste0(file_path, "_peaks_normalized.narrowPeak"),
                    sep="\t", col.names=FALSE)
         } else {
             fwrite(final, output, sep="\t", col.names=FALSE)

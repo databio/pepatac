@@ -24,6 +24,6 @@ pysam>=0.13
 python-Levenshtein>=0.12.0
 pyyaml>=3.13
 refgenconf>=0.7.0
-refgenie
+#refgenie
 ubiquerg>=0.6.1
 yacman>=0.6.7

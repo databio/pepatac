@@ -588,6 +588,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         "Version: ", version, "\n\n",
         "Command: reduce \t reduce overlapping peaks\n\n",
         " -i, --input\t\t Path to narrowPeak file.\n",
+        " -s, --sample_name\t\t Sample name character string.\n",
         " -c, --chr_sizes\t Genome chromosome sizes file. <Chr> <Size>.\n",
         " -o, --output\t\t Output file (optional).\n",
         " -n, --normalize\t\t Normalize scores.\n"
@@ -604,18 +605,21 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         message(usage)
         quit()
     } else {
-        input     <- opt_get(name = c("input", "i"), required=TRUE,
-                             description="Path to narrowPeak file.")
-        chr_sizes <- opt_get(name = c("chr_sizes", "c"), required=TRUE,
-                             description="Genome chromosome sizes file. <Chr> <Size>.")
-        output    <- opt_get(name = c("output", "o"), required=FALSE,
-                             description="Output file.")
-        normalize <- opt_get(name = c("normalize", "n"), required=FALSE,
-                             default=FALSE,
-                             description="Normalize scores.")
+        input       <- opt_get(name = c("input", "i"), required=TRUE,
+                               description="Path to narrowPeak file.")
+        sample_name <- opt_get(name = c("sample_name", "s"), required=TRUE,
+                               description="Sample name character string.")
+        chr_sizes   <- opt_get(name = c("chr_sizes", "c"), required=TRUE,
+                               description="Genome chromosome sizes file. <Chr> <Size>.")
+        output      <- opt_get(name = c("output", "o"), required=FALSE,
+                               description="Output file.")
+        normalize   <- opt_get(name = c("normalize", "n"), required=FALSE,
+                               default=FALSE,
+                               description="Normalize scores.")
         #print(message(paste0("Normalize: ", normalize)))
         if (is.na(output)) {output <- NA}
         PEPATACr::reducePeaks(input=input,
+                              sample_name=sample_name,
                               chr_sizes=chr_sizes,
                               output=output,
                               normalize=normalize)

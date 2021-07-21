@@ -3,12 +3,13 @@
 # PEPATAC pipeline installation check
 #
 
-if [[ $# -gt 0 ]] ; then
+if [ $# -gt 0 ] ; then
   echo "Usage: checkinstall"
   exit 1
 fi
 
 set -o pipefail
+# set -e
 
 echo -e "-----------------------------------------------------------"
 echo -e "                                                           "
@@ -49,28 +50,28 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-function fail {
+fail() {
     printf "${RED}\u2716 $@${NC}\n"
 }
 
-function success {
+success() {
     printf "${GREEN}\xE2\x9C\x94 $@${NC}\n"
 }
 
-function warn {
-    printf "${YELLOW}$@${NC}\n"
+warn() {
+    printf "${YELLOW}\u26A0 $@${NC}\n"
 }
 
 ################################################################################
 echo -e "Checking base requirements...                              "
-echo -e "                                                           "
+
 BASE_REQS=0
 
-declare -a requiredPkgs=("refgenie" "looper")
+declare -a requiredPkgs=("looper")
 
 for package in ${requiredPkgs[@]}; do
     if ! pip_show $package; then
-        echo $(fail "ERROR: PEPATAC requires the Python package, $package. Try pip install $package and checkinstall again.")
+        echo $(fail "ERROR: PEPATAC requires the Python package, $package. Try pip install $package.")
         printf "\n"
         exit 1
     fi
@@ -84,7 +85,6 @@ fi
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "Checking native installation...                            "
-echo -e "                                                           "
 NATIVE_INSTALL=0
 
 # Check Python
@@ -109,6 +109,12 @@ if ! is_executable "pip"; then
     printf "\n"
     NATIVE_INSTALL=1
     BULKER_INSTALL=1
+fi
+
+if [ -f "requirements.txt" ]; then
+    REQS="requirements.txt"
+else
+    REQS=$(curl https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt)
 fi
 
 while IFS= read -r line; do
@@ -164,7 +170,7 @@ while IFS= read -r line; do
             echo -e $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
         fi
     fi
-done < "requirements.txt"
+done < $REQS
 
 # Check tool installation
 declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fseq" "macs2" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "bigWigCat" "wigToBigWig" "Rscript")
@@ -172,7 +178,7 @@ declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fse
 for cmd in ${requiredCommands[@]}; do
     if ! is_executable $cmd; then
         echo $(warn "WARNING: Install $cmd and checkinstall again.")
-        printf "\n"
+        # printf "\n"
         NATIVE_INSTALL=1
     else
         echo -e $(success "SUCCESS: ${cmd}")
@@ -210,7 +216,6 @@ done
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "Checking conda installation...                             "
-echo -e "                                                           "
 CONDA_INSTALL=0
 
 if ! is_executable "conda"; then
@@ -244,6 +249,12 @@ else
         echo $(warn "WARNING: PEPATAC requires pip. Please install pip and checkinstall again.")
         printf "\n"
         CONDA_INSTALL=1
+    fi
+
+    if [ -f "requirements.txt" ]; then
+        REQS="requirements.txt"
+    else
+        REQS=$(curl https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt)
     fi
 
     while IFS= read -r line; do
@@ -298,7 +309,7 @@ else
                 echo -e $(success "SUCCESS: Python package ${package}\trequired: any\tinstalled: ${installed_version}")
             fi
         fi
-    done < "requirements.txt"
+    done < $REQS
 
     # Check tool installation
     declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "fseq" "macs2" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "bigWigCat" "wigToBigWig" "Rscript")
@@ -347,62 +358,115 @@ fi
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "Checking bulker installation...                            "
-echo -e "                                                           "
 BULKER_INSTALL=0
 
-if ! is_executable "bulker"; then
-    echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
-    printf "\n"
-    BULKER_INSTALL=1
+if ! is_executable "docker"; then
+    DOCKER=1
 else
-    BULKER_INSTALL=0
-    echo -e $(success "SUCCESS: bulker")
+    DOCKER=0
 fi
 
-CWD=$(pwd)
-crate=$(grep 'bulker_crate' $CWD/sample_pipeline_interface.yaml | awk '{print $2}')
-echo "crate: ${crate}"
-
-yes n | bulker load $crate
-
-if [ $? -eq 0 ]; then
-    echo $(warn "WARNING: Could not bulker load ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
-    printf "\n"
-    BULKER_INSTALL=1
+if ! is_executable "singularity"; then
+    SINGULARITY=1
+else
+    SINGULARITY=0
 fi
 
-isActivatable=$(bulker run ${crate} $CWD/pipelines/pepatac.py --help)
-#echo "isActivatable: ${isActivatable}"
-if [ -v "$isActivatable" ]; then
-    echo $(warn "WARNING: Could not activate the bulker crate, ${crate}. Check out https://bulker.databio.org/en/latest/install/.")
-    printf "\n"
+if [ "$DOCKER" -eq 0 ]; then 
+    CMD_CHECK=$(docker --help)
+    if [ $? -eq 0 ]; then
+        echo -e $(success "SUCCESS: docker.")
+    else
+        echo -e $(warn "WARNING: Docker is a recognized command, but does not appear to be active. Please ensure docker is running and checkinstall again.")
+        DOCKER=1
+    fi
+fi
+
+if [ "$SINGULARITY" -eq 0 ]; then
+    echo -e $(success "SUCCESS: singularity.")
+fi
+
+if [ "$DOCKER" -eq 1 ] && [ "$SINGULARITY" -eq 1 ]; then
+    echo -e $(fail "ERROR: bulker")
     BULKER_INSTALL=1
 else
-    BULKER_INSTALL=0
-    echo -e $(success "SUCCESS: bulker run ${crate}")
+    if ! is_executable "bulker"; then
+        echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
+        printf "\n"
+        BULKER_INSTALL=1
+    else
+        BULKER_INSTALL=0
+        echo -e $(success "SUCCESS: bulker")
+    fi
+
+    CWD=$(pwd)
+
+    if [ -f "sample_pipeline_interface.yaml" ]; then
+        IFACE="sample_pipeline_interface.yaml"
+        CRATE=$(cat $IFACE | grep 'bulker_crate' | tr " " "\n" | tail -n 1)
+    else
+        IFACE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/sample_pipeline_interface.yaml)
+        CRATE=$(echo $IFACE | tr " " "\n" | grep -A1 'bulker_crate' | tail -n 1)
+    fi
+
+    yes n | bulker load $CRATE
+    if [ $? -eq 0 ]; then
+        echo $(warn "WARNING: Could not bulker load ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
+        printf "\n"
+        BULKER_INSTALL=1
+    fi
+
+    if [ -f "$CWD/pipelines/pepatac.py" ]; then
+        PIPELINE="$CWD/pipelines/pepatac.py"
+    else
+        PIPELINE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/pipelines/pepatac.py)
+    fi
+
+    CMD_CHECK=$(bulker run ${CRATE} $PIPELINE --help)
+    EXIT_CODE=$(echo $?)
+    isActivatable=$(echo "${EXIT_CODE}" | awk '{ print $1+0; exit }')
+    if [ "$isActivatable" -eq 0 ]; then
+        BULKER_INSTALL=0
+        echo -e $(success "SUCCESS: bulker run ${CRATE}")
+    else            
+        echo $(warn "WARNING: Could not activate the bulker crate, ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
+        printf "\n"
+        BULKER_INSTALL=1
+    fi
 fi
 
 ################################################################################
 echo -e "-----------------------------------------------------------"
 echo -e "             PEPATAC checkinstall results                  "
-echo -e "                                                           "
 
 if [ "$NATIVE_INSTALL" -eq 0 ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run utilizing native installations!")
+    echo -e $(success "SUCCESS: PEPATAC can be run using native installations!")
 else
-    echo -e $(fail "WARNING: PEPATAC cannot be run utilizing native installations!")
+    echo -e $(fail "ERROR: PEPATAC cannot be run using native installations.")
 fi
 
-if [ "$CONDA_INSTALL" -eq 0  ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run utilizing conda installation!")
+if [ "$CONDA_INSTALL" -eq 0 ]; then
+    echo -e $(success "SUCCESS: PEPATAC can be run using conda installation!")
 else
-    echo -e $(fail "WARNING: PEPATAC cannot be run via conda!")
+    echo -e $(fail "ERROR: PEPATAC cannot be run via conda.")
 fi
 
-if [ "$BULKER_INSTALL" -eq 0  ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run utilizing bulker!")
+if [ "$DOCKER" -eq 0 ]; then
+    echo -e $(success "SUCCESS: PEPATAC can be run using docker!")
 else
-    echo -e $(fail "WARNING: PEPATAC cannot be run utilizing bulker!")
+    echo -e $(fail "ERROR: PEPATAC cannot be run using docker.")
+fi
+
+if [ "$SINGULARITY" -eq 0 ]; then
+    echo -e $(success "SUCCESS: PEPATAC can be run using singularity!")
+else
+    echo -e $(fail "ERROR: PEPATAC cannot be run using singularity.")
+fi
+
+if [ "$BULKER_INSTALL" -eq 0 ]; then
+    echo -e $(success "SUCCESS: PEPATAC can be run using bulker!")
+else
+    echo -e $(fail "ERROR: PEPATAC cannot be run using bulker.")
 fi
 
 if [ "$NATIVE_INSTALL" -eq 1 ] && [ "$CONDA_INSTALL" -eq 1 ] && [ "$BULKER_INSTALL" -eq 1 ]; then
