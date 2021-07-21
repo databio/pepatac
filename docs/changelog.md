@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
  
 ### Added
  - Add assets descriptions and how to obtain to docs
+ - Add script to check native, conda, and container-based installs
 
 ## [0.9.16] -- 2021-05-18
 
