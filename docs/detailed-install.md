@@ -256,3 +256,15 @@ Optional assets include:
  - a region blacklist: e.g. [the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist)
  - a [genomic feature annotation file](annotation.md)
 
+### 5: Confirm installation 
+
+After setting up your environment to run `PEPATAC`, you can confirm which means of running the pipeline are now executable using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository:
+
+```console
+./checkinstall
+```
+
+or from the web:
+```console
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+```
