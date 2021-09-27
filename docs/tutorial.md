@@ -182,7 +182,7 @@ Save and close that file, and change into the `tools/pepatac/` folder.
 ```console
 cd ../tools/pepatac/
 ```
-Now, we'll use `looper` to run the sample locally.
+Now, we'll use `looper` to run the sample locally. Make sure you've installed `looper` already (e.g. `pip install --user --upgrade looper`).
 ```console
 looper run examples/tutorial/tutorial.yaml
 ```         
@@ -375,7 +375,7 @@ cd ../tools/pepatac/
 ```
 Now, we'll use `looper` to run the sample locally.
 ```console
-looper run examples/tutorial/tutorial.yaml
+looper run examples/tutorial/tutorial_refgenie.yaml
 ```         
 Congratulations! Your first samples should be running through the pipeline now. For both samples to run locally should take 30-50 minutes in total depending on your system.
 
@@ -384,7 +384,7 @@ After the pipeline is finished, we can look through the output directory togethe
 ## 6: Use `looper` to run the project level pipeline
 The pipeline also includes project level analyses that work on all samples concurrently.  This allows for analyses that require output produced by individual sample analysis. We'll run the project analysis much like we run the sample analysis:
 ```console
-looper runp examples/tutorial/tutorial.yaml
+looper runp examples/tutorial/tutorial_refgenie.yaml
 ```
 This should take about a minute on the tutorial samples and will generate a `summary/` directory containing project level output in the parent project directory.  You can [browse the tutorial data](browse_output.md) to see the example output.
 
@@ -394,7 +394,7 @@ Let's take full advantage of `looper` and generate a pipeline `HTML` report that
 
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `report` function of `looper`.
 ```console
-looper report examples/tutorial/tutorial.yaml
+looper report examples/tutorial/tutorial_refgenie.yaml
 ```         
 That's it! Easy, right? `Looper` conveniently provides you with the location where the HTML report is produced.  You may either open the report with your preferred internet browser using the PATH returned with `looper report`, or we can change directories to the report's location and open it there.  Let's go ahead and change into the directory that contains the report.
 ```console
