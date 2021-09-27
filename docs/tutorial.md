@@ -57,6 +57,7 @@ refgenie build hg38/feat_annotation
 `PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
 
 ```console
+refgenie pull rCRSd/fasta
 refgenie pull rCRSd/bowtie2_index
 ```
 
