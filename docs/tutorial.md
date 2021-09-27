@@ -83,6 +83,7 @@ mv tutorial2_r2.fastq.gz pepatac/examples/data/
 We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A [configuration file has been provided for you in the pipeline repository itself, named `tutorial_refgenie.yaml`](https://github.com/databio/pepatac/blob/master/examples/tutorial/tutorial_refgenie.yaml).  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#3-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
 ```console
+cd pepatac/examples/tutorial
 nano tutorial_refgenie.yaml
 ```
 The following is what you should see in that configuration file.
@@ -130,7 +131,7 @@ That's it! Let's analyze that sample!
 ## 5: Using `looper` to run the sample processing pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. `Looper` uses [`divvy`](http://code.databio.org/divvy) to manage computing resource configuration so that projects and pipelines can easily travel among environments. For more detailed information, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing/). Let's set it up.
 
-We should still be in the `tools/` subdirectory, but let's move up one level.
+We should still be in the `tools/` subdirectory (unless you went and viewed/edited the tutorial.yaml, in which case you are in tools/pepatac/examples/tutorial/), but let's move up to the primary `pepatac_tutorial/` directory.
 ```console
 cd ../
 touch compute_config.yaml
