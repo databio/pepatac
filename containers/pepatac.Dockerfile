@@ -5,7 +5,7 @@ FROM phusion/baseimage:master
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.10.0
+LABEL version 0.10.1
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -101,16 +101,6 @@ RUN Rscript -e "install.packages('argparser')" && \
     Rscript -e "install.packages('roxygen2')" && \
     Rscript -e "install.packages('rversions')" && \
     Rscript -e "install.packages('devtools')" && \
-    Rscript -e "devtools::install_github('pepkit/pepr')" && \    
-    Rscript -e "install.packages('data.table')" && \
-    Rscript -e "install.packages('BiocManager')" && \
-    Rscript -e "BiocManager::install('GenomicRanges')" && \
-    Rscript -e "BiocManager::install('BSgenome')" && \
-    Rscript -e "BiocManager::install('GenomicFeatures')" && \
-    Rscript -e "BiocManager::install('ensembldb')" && \
-    Rscript -e "BiocManager::install('ExperimentHub')" && \
-    Rscript -e "devtools::install_github('databio/GenomicDistributions')" && \
-    Rscript -e "install.packages('http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz', repos=NULL)" &&\
     Rscript -e "install.packages('ggrepel')" && \
     Rscript -e "install.packages('ggplot2')" && \  
     Rscript -e "install.packages('gplots')" && \
@@ -118,7 +108,21 @@ RUN Rscript -e "install.packages('argparser')" && \
     Rscript -e "install.packages('gtable')" && \
     Rscript -e "install.packages('scales')" && \
     Rscript -e "install.packages('stringr')" && \
-    Rscript -e "devtools::install_github('databio/pepatac/PEPATACr/')"
+    Rscript -e "devtools::install_github('pepkit/pepr')" && \    
+    Rscript -e "install.packages('data.table')" && \
+    Rscript -e "install.packages('BiocManager')" && \
+    Rscript -e "BiocManager::install('GenomicRanges')" && \
+    Rscript -e 'BiocManager::install("Biostrings")' && \
+    Rscript -e 'BiocManager::install("AnnotationHub")' && \
+    Rscript -e 'BiocManager::install("AnnotationFilter")' && \
+    Rscript -e "BiocManager::install('BSgenome')" && \
+    Rscript -e "BiocManager::install('GenomicFeatures')" && \
+    Rscript -e "BiocManager::install('ensembldb')" && \
+    Rscript -e "BiocManager::install('ExperimentHub')"
+RUN Rscript -e "devtools::install_github('databio/GenomicDistributions')"
+RUN wget http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz
+RUN Rscript -e "install.packages('GenomicDistributionsData_0.0.2.tar.gz', repos=NULL)"
+RUN Rscript -e "devtools::install_github('databio/pepatac/PEPATACr/')"
 
 # Install bedtools
 RUN DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes \
