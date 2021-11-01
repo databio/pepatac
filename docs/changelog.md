@@ -1,6 +1,12 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.10.2] -- 2021-11-01
+
+### Changed
+ - Update conda environment file
+ - Update conda docs
+
 ## [0.10.1] -- 2021-10-25
 
 ### Changed
