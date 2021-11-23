@@ -613,8 +613,9 @@ def main():
     if args.prealignment_index:
         pm.debug(f"prealignments: {args.prealignment_index}")
         res.prealignment_index = args.prealignment_index
-    else:
-        res.prealignment_index = None
+    #else:
+        #pm.info(f"prealignments: {args.prealignment_index}")
+        #res.prealignment_index = None
     
     # Add primary genome annotation files to resources
     res.genome_index = args.genome_index
@@ -661,16 +662,23 @@ def main():
 
     # Report utilized assets
     assets_file = os.path.join(param.outfolder, "assets.tsv")
+    pm.info(f"res: {res}")
     for asset in res:
         if isinstance(res[asset], list):
             for a in res[asset]:
-                message = "{}\t{}".format(asset, os.path.expandvars(a))
+                if a is not None:
+                    message = "{}\t{}".format(asset, os.path.expandvars(a))
+                    pm.debug(message)
+                    report_message(pm, assets_file, message)
+        else:
+            if asset is not None:
+                message = "{}\t{}".format(
+                    asset, os.path.expandvars(res[asset]))
                 pm.debug(message)
                 report_message(pm, assets_file, message)
-        else:
-            message = "{}\t{}".format(asset, os.path.expandvars(res[asset]))
-            pm.debug(message)
-            report_message(pm, assets_file, message)
+
+    if not args.prealignment_index:
+        res.prealignment_index = None
 
     # Report primary genome
     message = "genome\t{}".format(args.genome_assembly)
@@ -925,7 +933,7 @@ def main():
         map_genome_folder, args.sample_name + "_unmap.bam")
 
     to_compress = []
-    if len(res.prealignment_index) == 0 or res.prealignment_index is None:
+    if res.prealignment_index is None or len(res.prealignment_index) == 0:
         print("You may use `--prealignment-index` to align to references "
               "before the genome alignment step. "
               "See http://pepatac.databio.org/en/latest/ for documentation.")
