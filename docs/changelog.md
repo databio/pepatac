@@ -1,6 +1,12 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.10.3] -- 2021-11-23
+
+### Changed
+ - Change handling of prealignment arguments
+ - Update handling of blacklist when using HMMRATAC
+
 ## [0.10.2] -- 2021-11-01
 
 ### Changed

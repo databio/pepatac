@@ -26,7 +26,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [--TSS-name TSS_NAME] [--blacklist BLACKLIST]
                   [--anno-name ANNO_NAME] [--search-file SEARCH_FILE] [-V]
 
-PEPATAC version 0.10.2
+PEPATAC version 0.10.3
 
 optional arguments:
   -h, --help            show this help message and exit
