@@ -104,3 +104,6 @@ parameters:  # parameters passed to bioinformatic tools, subclassed by tool
     params: '-size given -mask'
     # -mask: mask repeats
     # -size given: use the exact regions provided to homer
+  java_settings:
+    params: '' 
+    # Can modify java settings in this manner. e.g. -Xms1g -Xmx7g. Default is no modifications.
