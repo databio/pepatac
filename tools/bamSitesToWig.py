@@ -92,13 +92,16 @@ class CutTracer(pararead.ParaReadProcessor):
         grab a subset of reads from the bamfile
         """
 
+        _LOGGER.debug(f"chrom: {chrom}")
         chrom_size = self.get_chrom_size(chrom)
 
         _LOGGER.debug("[Name: " + chrom + "; Size: " + str(chrom_size) + "]")
         reads = self.fetch_chunk(chrom)
 
-        chromOutFile = self._tempf(chrom)
+        chromOutFile = self._tempf(chrom.replace("|","_"))
         chromOutFileBw = chromOutFile + ".bw"
+        chromOutFileBwSm = chromOutFile + "_smooth.bw"
+        tmpFile = chromOutFile + "_cuts.txt"
 
         cutsToWig = os.path.join(os.path.dirname(__file__), "cutsToWig.pl")
 
@@ -121,8 +124,6 @@ class CutTracer(pararead.ParaReadProcessor):
         if self.smoothbw:
             cutsToWigSm = os.path.join(os.path.dirname(__file__),
                                        "smoothWig.pl")
-            chromOutFileBwSm = chromOutFile + "_smooth.bw"
-            tmpFile = chromOutFile + "_cuts.txt"
             cmd1 = ("sort -n | tee " + tmpFile + " | perl " + cutsToWigSm +
                     " " + str(chrom_size) + " " +  str(self.smooth_length) +
                     " " + str(self.step_size) + " " + str(self.variable_step) +
@@ -270,11 +271,12 @@ class CutTracer(pararead.ParaReadProcessor):
             _LOGGER.info("No successful chromosomes, so no combining.")
             return
         elif len(good_chromosomes) == 1:
-            subprocess.call(["mv", self._tempf(good_chromosomes[0]) +
+            subprocess.call(["mv",
+                            self._tempf(good_chromosomes[0].replace("|","_")) +
                              ".bw", self.exactbw])
-            subprocess.call(["mv", self._tempf(good_chromosomes[0]) +
+            subprocess.call(["mv",
+                            self._tempf(good_chromosomes[0].replace("|","_")) +
                              "_smooth.bw", self.smoothbw])
-
         else:
             if self.exactbw:
                 _LOGGER.info("Merging {} files into output file: '{}'".
