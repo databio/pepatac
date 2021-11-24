@@ -662,7 +662,7 @@ def main():
 
     # Report utilized assets
     assets_file = os.path.join(param.outfolder, "assets.tsv")
-    pm.info(f"res: {res}")
+    pm.debug(f"res: {res}")
     for asset in res:
         if isinstance(res[asset], list):
             for a in res[asset]:
