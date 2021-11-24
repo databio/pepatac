@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.10.3] -- 2021-11-23
 
+### Added
+ - Customize java settings in the configuration file
+
 ### Changed
  - Change handling of prealignment arguments
  - Update handling of blacklist when using HMMRATAC
