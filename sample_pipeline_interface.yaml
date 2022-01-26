@@ -31,6 +31,8 @@ command_template: >
   {% if sample.motif is defined %} --motif {% endif %}
   {% if sample.sob is defined %} --sob {% endif %}
   {% if sample.sob is defined %} {% if refgenie[sample.genome].tallymer_index is defined %} --search-file { refgenie[sample.genome].tallymer_index.search_file } {% endif %} {% endif %}
+  {% if sample.sob is defined %} {% if refgenie[sample.genome].fasta is defined %} --fasta { refgenie[sample.genome].fasta.fasta } {% endif %} {% endif %}
+  {% if sample.fasta is defined %} --fasta { sample.fasta } {% elif refgenie[sample.genome].fasta is defined %} --fasta { refgenie[sample.genome].fasta.fasta } {% endif %}
   {% if sample.no_scale is defined %} --no-scale {% endif %}
   {% if sample.prioritize is defined %} --prioritize {% endif %}
   {% if sample.keep is defined %} --keep {% endif %}
