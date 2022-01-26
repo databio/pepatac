@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.10.3"
+__version__ = "0.10.4"
 
 
 from argparse import ArgumentParser
@@ -136,6 +136,11 @@ def parse_arguments():
                         dest="genome_index", type=str,
                         help="Path to primary genome index file. Either a "
                              "bowtie2 or bwa index.")
+
+    parser.add_argument("--fasta", default=None, required=False,
+                        dest="fasta", type=str,
+                        help="Path to primary genome fasta file. Required "
+                              "with --sob.")
     
     parser.add_argument("--chrom-sizes", default=None, required=True,
                         dest="chrom_sizes", type=str,
