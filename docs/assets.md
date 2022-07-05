@@ -44,7 +44,7 @@ refgenie build hg38/feat_annotation
 `PEPATAC` also requires a `bowtie2_index` asset for any prealignment genomes:
 
 ```console
-refgenie pull rCRSd/bowtie2_index human_repeats/bowtie2_index
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index human_repeats/fasta human_repeats/bowtie2_index
 ```
 
 If you prefer `bwa` for alignment, you would use the [`refgenie bwa_index`](http://refgenie.databio.org/en/latest/available_assets/#bwa_index) instead.
