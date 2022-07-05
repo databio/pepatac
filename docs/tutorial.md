@@ -134,7 +134,7 @@ Looper requires a few variables and configuration files to work for the specific
 
 We should still be in the `tools/` subdirectory (unless you went and viewed/edited the tutorial.yaml, in which case you are in tools/pepatac/examples/tutorial/), but let's move up to the primary `pepatac_tutorial/` directory.
 ```console
-cd ../
+cd $TUTORIAL
 touch compute_config.yaml
 ```
 Open that file in your favorite text editor.  We'll add in the following example for running locally.  You'll need to edit this file further for your own setup and you can [learn more about that in the `looper` docs](https://looper.readthedocs.io/en/latest/index.html).
