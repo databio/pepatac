@@ -240,13 +240,14 @@ refgenie build hg38/feat_annotation
 `PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
 
 ```console
+refgenie pull rCRSd/fasta
 refgenie pull rCRSd/bowtie2_index
 ```
 
 ### 4b: Download assets manually
 
 If you prefer not to use `refgenie`, you can also download and construct assets manually.  The minimum required assets for a genome includes: 
- 
+ - a FASTA file for the genome of interest
  - a chromosome sizes file: a text file containing "chr" and "size" columns.
  - a [`bowtie2` genome index](http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer).
 
