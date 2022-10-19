@@ -98,6 +98,7 @@ properties:
       required:
         - sample_name
         - protocol
+        - read_type
         - read1
         - genome
       required_files:

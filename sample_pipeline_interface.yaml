@@ -43,8 +43,8 @@ command_template: >
 compute:
   singularity_image: ${SIMAGES}pepatac
   conda_env: pepatac
-  docker_image:  databio/pepatac
-  bulker_crate:  databio/pepatac:1.0.9
+  docker_image: databio/pepatac
+  bulker_crate: databio/pepatac:1.0.10
   size_dependent_variables: resources-sample.tsv
 bioconductor:
   readFunName: runCOCOA
