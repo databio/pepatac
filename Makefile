@@ -7,7 +7,7 @@ changtest:
 
 
 docker:
-	docker build -t databio/pepatac -f containers/pepatac.Dockerfile .
+    docker build -t databio/pepatac - < containers/pepatac.Dockerfile
 
 singularity:
-	singularity build $${SIMAGES}pepatac docker://databio/pepatac
+	singularity build ${SIMAGES}pepatac docker://databio/pepatac
