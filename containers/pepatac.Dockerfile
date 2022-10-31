@@ -5,7 +5,7 @@ FROM phusion/baseimage:master
 LABEL maintainer Jason Smith "jasonsmith@virginia.edu"
 
 # Version info
-LABEL version 0.10.1
+LABEL version 0.10.2
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
@@ -96,6 +96,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get --assume-yes install r-base r-base-de
 
 RUN Rscript -e "install.packages('argparser')" && \
     Rscript -e "install.packages('optigrab')" && \
+    Rscript -e "install.packages('R.utils')" && \
     Rscript -e "install.packages('data.table')" && \
     Rscript -e "install.packages('xml2')" && \
     Rscript -e "install.packages('roxygen2')" && \
