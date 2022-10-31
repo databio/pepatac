@@ -42,13 +42,14 @@ To ensure these packages are installed to the `pepatac` `conda` environment, mak
 conda activate pepatac
 unset R_LIBS
 export R_LIBS="$CONDA_PREFIX/lib/R/library"
+wget http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz
 ```
 
 From the `pepatac/` directory, open `R` and install the following packages:
 ```{R}
 install.packages("optigrab")
 devtools::install_github("databio/GenomicDistributions")
-install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)
+install.packages("GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)
 devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")
 ```
 
@@ -76,8 +77,7 @@ refgenie build hg38/feat_annotation
 `PEPATAC` also requires a `fasta` and `bowtie2_index` asset for any pre-alignment genomes:
 
 ```console
-refgenie pull rCRSd/fasta
-refgenie pull rCRSd/bowtie2_index
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
 ```
 
 ### 5b: Download assets manually
@@ -121,6 +121,8 @@ Alternatively, if you are *not* using `refgenie`, you can still grab premade `--
 ```console
 wget -O hg38.fasta.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/fasta?tag=default
 wget  -O hg38.bowtie2_index.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/bowtie2_index?tag=default
+wget -O hg38.refgene_anno.tgz http://refgenomes.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/refgene_anno?tag=default
+wget -O rCRSd.fasta.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/fasta?tag=default
 wget  -O rCRSd.bowtie2_index.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/bowtie2_index?tag=default
 ```
 
@@ -128,7 +130,14 @@ Then, extract these files:
 ```console
 tar xvf hg38.fasta.tgz
 tar xvf hg38.bowtie2_index.tgz 
+tar xvf hg38.refgene_anno.tgz 
+tar xvf rCRSd.fasta.tgz 
 tar xvf rCRSd.bowtie2_index.tgz
+
+cd default/
+wget http://big.databio.org/pepatac/hg38_annotations.bed.gz
+wget http://big.databio.org/pepatac/hg38.blacklist.bed
+cd ../
 ```
 
 From the `pepatac/` repository folder (using the manually downloaded genome assets):

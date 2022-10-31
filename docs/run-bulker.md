@@ -144,8 +144,9 @@ pipelines/pepatac.py --single-or-paired paired \
   --genome-index default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4 \
   --chrom-sizes default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes \
   --fasta default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.fa \
-  --prealignment-index default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
-  --TSS-name default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4_TSS.bed
+  --prealignment-index "rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4" \
+  --prealignment-names "rCRSd" \
+  --TSS-name default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4_TSS.bed \
   --blacklist default/hg38.blacklist.bed \
   --anno-name default/hg38_annotations.bed.gz \
   --sample-name test1 \

@@ -36,7 +36,7 @@ refgenie build hg38/feat_annotation
 `PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
 
 ```console
-refgenie pull rCRSd/bowtie2_index
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
 ```
 
 #### 2b: Download assets manually
@@ -53,8 +53,11 @@ Optional assets include:
 
 You can obtain the minimally required pre-constructed `--chrom-sizes` and `--genome-index` files from the `refgenie` servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
 ```console
+cd pepatac/
 wget -O hg38.fasta.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/fasta?tag=default
 wget  -O hg38.bowtie2_index.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/bowtie2_index?tag=default
+wget -O hg38.refgene_anno.tgz http://refgenomes.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/refgene_anno?tag=default
+wget -O rCRSd.fasta.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/fasta?tag=default
 wget  -O rCRSd.bowtie2_index.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/bowtie2_index?tag=default
 ```
 
@@ -62,7 +65,14 @@ Then, extract these files:
 ```console
 tar xvf hg38.fasta.tgz
 tar xvf hg38.bowtie2_index.tgz 
+tar xvf hg38.refgene_anno.tgz 
+tar xvf rCRSd.fasta.tgz 
 tar xvf rCRSd.bowtie2_index.tgz
+
+cd default/
+wget http://big.databio.org/pepatac/hg38_annotations.bed.gz
+wget http://big.databio.org/pepatac/hg38.blacklist.bed
+cd ../
 ```
 
 ### 3. Pull the container image.
@@ -130,10 +140,15 @@ docker run --rm -it --volume /home/jps3ag/:/home/jps3ag/ \
   -e HOME='/home/jps3ag/' \
   databio/pepatac \
   /home/jps3ag/src/pepatac/pipelines/pepatac.py --single-or-paired paired \
-  --prealignment-index rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
   --genome hg38 \
   --genome-index /home/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4 \
   --chrom-sizes /home/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes \
+  --fasta /home/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.fa \
+  --prealignment-index "rCRSd=/home/jps3ag/src/pepatac/default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4" \
+  --prealignment-names "rCRSd" \
+  --TSS-name /home/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4_TSS.bed \
+  --blacklist /home/jps3ag/src/pepatac/default/hg38.blacklist.bed \
+  --anno-name /home/jps3ag/src/pepatac/default/hg38_annotations.bed.gz \
   --sample-name test1 \
   --input /home/jps3ag/src/pepatac/examples/data/test1_r1.fastq.gz \
   --input2 /home/jps3ag/src/pepatac/examples/data/test1_r2.fastq.gz \
@@ -155,10 +170,15 @@ docker run --rm -it --volume /Users/jps3ag/:/Users/jps3ag/ \
   -e HOME="/Users/jps3ag/" \
   databio/pepatac \
   /Users/jps3ag/src/pepatac/pipelines/pepatac.py --single-or-paired paired \
-  --prealignment-index rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
   --genome hg38 \
   --genome-index /Users/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4 \
   --chrom-sizes /Users/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes \
+  --fasta /Users/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.fa \
+  --prealignment-index "rCRSd=/Users/jps3ag/src/pepatac/default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4" \
+  --prealignment-names "rCRSd" \
+  --TSS-name /Users/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4_TSS.bed \
+  --blacklist /Users/jps3ag/src/pepatac/default/hg38.blacklist.bed \
+  --anno-name /Users/jps3ag/src/pepatac/default/hg38_annotations.bed.gz \
   --sample-name test1 \
   --input /Users/jps3ag/src/pepatac/examples/data/test1_r1.fastq.gz \
   --input2 /Users/jps3ag/src/pepatac/examples/data/test1_r2.fastq.gz \
@@ -178,10 +198,15 @@ Second, run your command.
 ```console
 singularity exec instance://pepatac_instance \
   /home/jps3ag/src/pepatac/pipelines/pepatac.py --single-or-paired paired \
-  --prealignment-index rCRSd=/Users/jps3ag/src/pepatac/default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
   --genome hg38 \
-  --genome-index /Users/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4 \
-  --chrom-sizes /Users/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes \
+  --genome-index /home/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4 \
+  --chrom-sizes /home/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes \
+  --fasta /home/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.fa \
+  --prealignment-index "rCRSd=/home/jps3ag/src/pepatac/default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4" \
+  --prealignment-names "rCRSd" \
+  --TSS-name /home/jps3ag/src/pepatac/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4_TSS.bed \
+  --blacklist /home/jps3ag/src/pepatac/default/hg38.blacklist.bed \
+  --anno-name /home/jps3ag/src/pepatac/default/hg38_annotations.bed.gz \
   --sample-name test1 \
   --input /home/jps3ag/src/pepatac/examples/data/test1_r1.fastq.gz \
   --input2 /home/jps3ag/src/pepatac/examples/data/test1_r2.fastq.gz \

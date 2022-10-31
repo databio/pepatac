@@ -127,13 +127,17 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 `PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
 
 ```
+wget http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz
+
 Rscript -e 'install.packages("devtools")'
+Rscript -e 'install.packages("argparser")'
+Rscript -e 'install.packages("R.utils")'
 Rscript -e 'devtools::install_github("pepkit/pepr")'
 Rscript -e 'install.packages("BiocManager")'
 Rscript -e 'BiocManager::install("GenomicRanges")'
 Rscript -e 'devtools::install_github("databio/GenomicDistributions")'
 Rscript -e 'BiocManager::install(c("BSgenome", "GenomicFeatures", "ensembldb"))'
-Rscript -e 'install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.1.tar.gz", repos=NULL)'
+Rscript -e 'install.packages("GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)'
 ```
 
 Then, install the `PEPATAC` package.  From the `pepatac/` directory:
@@ -237,11 +241,10 @@ refgenie pull hg38/fasta hg38/bowtie2_index hg38/refgene_anno hg38/ensembl_gtf h
 refgenie build hg38/feat_annotation
 ```
 
-`PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
+`PEPATAC` also requires `fasta` and `bowtie2_index` assets for any pre-alignment genomes:
 
 ```console
-refgenie pull rCRSd/fasta
-refgenie pull rCRSd/bowtie2_index
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
 ```
 
 ### 4b: Download assets manually
