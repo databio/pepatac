@@ -200,7 +200,7 @@ else
     fi
 fi
 
-declare -a requiredRPackages=("optigrab" "devtools" "GenomicDistributions" "PEPATACr" "data.table" "pepr" "gplots" "grid" "ggplot2" "scales" "IRanges" "GenomicRanges")
+declare -a requiredRPackages=("optigrab" "argparser" "R.utils" "devtools" "GenomicDistributions" "GenomicDistributionsData" "PEPATACr" "data.table" "pepr" "gplots" "grid" "ggplot2" "scales" "IRanges" "GenomicRanges")
 for package in ${requiredRPackages[@]}; do
     cmd=$(echo "Rscript -e 'library(\"$package\")'")
     packageInstalled=$(eval $cmd 2>&1)

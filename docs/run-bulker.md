@@ -45,7 +45,7 @@ refgenie build hg38/feat_annotation
 `PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
 
 ```console
-refgenie pull rCRSd/bowtie2_index
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
 ```
 
 #### 2b: Download assets manually
@@ -108,16 +108,32 @@ refgenie seek rCRSd/bowtie2_index.dir
 
 Alternatively, if you are *not* using `refgenie`, you can still grab premade `--chrom-sizes` and `--genome-index` files from the `refgenie` servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
 ```console
-wget -O hg38.fasta.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/fasta?tag=default
-wget  -O hg38.bowtie2_index.tgz http://rg.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/bowtie2_index?tag=default
-wget  -O rCRSd.bowtie2_index.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/bowtie2_index?tag=default
+cd pepatac/
+
+wget -O hg38.fasta.tgz http://refgenomes.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/fasta?tag=default
+
+wget -O hg38.bowtie2.tgz http://refgenomes.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/bowtie2_index?tag=default
+
+wget -O hg38.refgene_anno.tgz http://refgenomes.databio.org/v3/assets/archive/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4/refgene_anno?tag=default
+
+wget -O rCRSd.fasta.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/fasta?tag=default
+
+wget -O rCRSd.bowtie2.tgz http://refgenomes.databio.org/v3/assets/archive/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4/bowtie2_index?tag=default
+
+cd default/
+wget http://big.databio.org/pepatac/hg38_annotations.bed.gz
+wget http://big.databio.org/pepatac/hg38.blacklist.bed
+
+cd ../
 ```
 
 Then, extract these files:
 ```console
-tar xvf hg38.fasta.tgz
-tar xvf hg38.bowtie2_index.tgz 
-tar xvf rCRSd.bowtie2_index.tgz
+tar xvfz hg38.fasta.tgz
+tar xvfz hg38.bowtie2.tgz 
+tar xvfz hg38.refgene_anno.tgz 
+tar xvfz rCRSd.fasta.tgz 
+tar xvfz rCRSd.bowtie2.tgz
 ```
 
 From the `pepatac/` repository folder (using the manually downloaded genome assets):
@@ -127,6 +143,11 @@ pipelines/pepatac.py --single-or-paired paired \
   --genome hg38 \
   --genome-index default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4 \
   --chrom-sizes default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes \
+  --fasta default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.fa \
+  --prealignment-index default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
+  --TSS-name default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4_TSS.bed
+  --blacklist default/hg38.blacklist.bed \
+  --anno-name default/hg38_annotations.bed.gz \
   --sample-name test1 \
   --input examples/data/test1_r1.fastq.gz \
   --input2 examples/data/test1_r2.fastq.gz \
@@ -134,7 +155,7 @@ pipelines/pepatac.py --single-or-paired paired \
   -O $HOME/pepatac_test
 ```
 
-With a single processor, this will take 20-30 minutes to complete. 
+With a single processor, this will take ~30 minutes to complete. 
 
 #### Run the pipeline using looper
 
