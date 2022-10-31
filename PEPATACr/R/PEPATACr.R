@@ -1575,8 +1575,8 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
     info = file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
         np           <- fread(file.path(input))
-        colnames(np) <- c("chr", "start", "end", "name", "score", "strand",
-                          "signalValue", "pValue", "qValue", "peak")
+        colnames(np) <- c("chr", "chromStart", "chromEnd", "name", "score",
+                          "strand", "signalValue", "pValue", "qValue", "peak")
     } else {
       out_file <- file.path(paste0(sample_path, "_peaks.bigBed"))
       system2(paste("touch"), out_file)
@@ -1590,19 +1590,20 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
     np$score <- rescale(log(np$score), to = c(0, 1000))
 
     np           <- merge(np, chrom_sizes, by="chr", sort=FALSE)
-    colnames(np) <- c("chr", "start", "end", "name", "score", "strand",
-                      "signalValue", "pValue", "qValue", "peak", "max_size")
+    colnames(np) <- c("chr", "chromStart", "chromEnd", "name", "score",
+                      "strand", "signalValue", "pValue", "qValue", "peak",
+                      "max_size")
 
     # make sure 'end' positions are not greater than the max chrom.size
     for (j in 1:nrow(np)) {
-        if (np$end[j] > np$max_size[j]) np$end[j] <- np$max_size[j]
+        if (np$chromEnd[j] > np$max_size[j]) np$chromEnd[j] <- np$max_size[j]
     }
     np       <- np[,-11]
     np$score <- as.integer(np$score)  # ensure score is an integer value
     
     # can't extend past chromosome
     for (i in nrow(chrom_sizes)) {
-        np[chr == c_size$chr[i] & end > c_size$size[i], end := c_size$size[i]]
+        np[chr == chrom_sizes$chr[i] & chromEnd > chrom_sizes$size[i], chromEnd := chrom_sizes$size[i]]
     }
 
     tmp_file <- file.path(paste0(sample_path, "_peaks.bed"))
@@ -1616,8 +1617,8 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
     "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n",
     "(\n",
     "     string chrom;        \"Reference sequence chromosome or scaffold\"\n",
-    "     uint   start;   \"Start position in chromosome\"\n",
-    "     uint   end;     \"End position in chromosome\"\n",
+    "     uint   chromStart;   \"Start position in chromosome\"\n",
+    "     uint   chromEnd;     \"End position in chromosome\"\n",
     "     string name;         \"Name given to a region (preferably unique). Use . if no name is assigned\"\n",
     "     uint   score;        \"Indicates how dark the peak will be displayed in the browser (0-1000) \"\n",
     "     char[1]  strand;     \"+ or - or . for unknown\"\n",

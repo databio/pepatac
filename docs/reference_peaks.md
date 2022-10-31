@@ -28,7 +28,7 @@ sample_modifiers:
         organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
       then: 
         genome: hg38
-        macs_genome_size: hs
+        genome_size: hs
         prealignments: rCRSd human_repeats
         deduplicator: samblaster # Default. [options: picard]
         trimmer: skewer          # Default. [options: pyadapt, trimmomatic]

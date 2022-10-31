@@ -1,6 +1,28 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.10.3] -- 2021-11-23
+
+### Added
+ - Customize java settings in the configuration file
+
+### Changed
+ - Change handling of prealignment arguments
+ - Update handling of blacklist when using HMMRATAC
+
+## [0.10.2] -- 2021-11-01
+
+### Changed
+ - Update conda environment file
+ - Update conda docs
+
+## [0.10.1] -- 2021-10-25
+
+### Changed
+ - Update dockerfile for changes to R package installations
+ - Update bulker crate for new rpipe container
+ - Update tutorial docs
+
 ## [0.10.0] -- 2021-07-20
 
 ### Changed

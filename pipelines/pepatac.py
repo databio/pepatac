@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.10.0"
+__version__ = "0.10.4"
 
 
 from argparse import ArgumentParser
@@ -136,6 +136,11 @@ def parse_arguments():
                         dest="genome_index", type=str,
                         help="Path to primary genome index file. Either a "
                              "bowtie2 or bwa index.")
+
+    parser.add_argument("--fasta", default=None, required=False,
+                        dest="fasta", type=str,
+                        help="Path to primary genome fasta file. Required "
+                              "with --sob.")
     
     parser.add_argument("--chrom-sizes", default=None, required=True,
                         dest="chrom_sizes", type=str,
@@ -613,8 +618,9 @@ def main():
     if args.prealignment_index:
         pm.debug(f"prealignments: {args.prealignment_index}")
         res.prealignment_index = args.prealignment_index
-    else:
-        res.prealignment_index = None
+    #else:
+        #pm.info(f"prealignments: {args.prealignment_index}")
+        #res.prealignment_index = None
     
     # Add primary genome annotation files to resources
     res.genome_index = args.genome_index
@@ -661,16 +667,23 @@ def main():
 
     # Report utilized assets
     assets_file = os.path.join(param.outfolder, "assets.tsv")
+    pm.debug(f"res: {res}")
     for asset in res:
         if isinstance(res[asset], list):
             for a in res[asset]:
-                message = "{}\t{}".format(asset, os.path.expandvars(a))
+                if a is not None:
+                    message = "{}\t{}".format(asset, os.path.expandvars(a))
+                    pm.debug(message)
+                    report_message(pm, assets_file, message)
+        else:
+            if asset is not None:
+                message = "{}\t{}".format(
+                    asset, os.path.expandvars(res[asset]))
                 pm.debug(message)
                 report_message(pm, assets_file, message)
-        else:
-            message = "{}\t{}".format(asset, os.path.expandvars(res[asset]))
-            pm.debug(message)
-            report_message(pm, assets_file, message)
+
+    if not args.prealignment_index:
+        res.prealignment_index = None
 
     # Report primary genome
     message = "genome\t{}".format(args.genome_assembly)
@@ -845,9 +858,13 @@ def main():
     else:
         # Default to trimmomatic.
         pm.info("trimmomatic local_input_files: {}".format(local_input_files))
+        if not param.java_settings.params:
+            java_settings = '-Xmx{mem}'.format(mem=pm.mem)
+        else:
+            java_settings = param.java_settings.params
         trim_cmd_chunks = [
-            "{java} -Xmx{mem} -jar {trim} {PE} -threads {cores}".format(
-                java=tools.java, mem=pm.mem,
+            "{java} {settings} -jar {trim} {PE} -threads {cores}".format(
+                java=tools.java, settings=java_settings,
                 trim=tools.trimmomatic,
                 PE="PE" if args.paired_end else "SE",
                 cores=pm.cores),
@@ -921,7 +938,7 @@ def main():
         map_genome_folder, args.sample_name + "_unmap.bam")
 
     to_compress = []
-    if len(res.prealignment_index) == 0 or res.prealignment_index is None:
+    if res.prealignment_index is None or len(res.prealignment_index) == 0:
         print("You may use `--prealignment-index` to align to references "
               "before the genome alignment step. "
               "See http://pepatac.databio.org/en/latest/ for documentation.")
@@ -1263,9 +1280,12 @@ def main():
     tempdir = tempfile.mkdtemp(dir=map_genome_folder)
     os.chmod(tempdir, 0o771)
     pm.clean_add(tempdir)
-
+    if not param.java_settings.params:
+        java_settings = '-Xmx{mem}'.format(mem=pm.mem)
+    else:
+        java_settings = param.java_settings.params
     if args.deduplicator == "picard":
-        cmd1 = (tools.java + " -Xmx" + str(pm.javamem) + " -jar " + 
+        cmd1 = (tools.java + " " + java_settings + " -jar " + 
                 tools.picard + " MarkDuplicates")
         cmd1 += " INPUT=" + mapping_genome_bam
         cmd1 += " OUTPUT=" + rmdup_bam
@@ -1882,6 +1902,7 @@ def main():
     chr_keep = os.path.join(peak_folder, "chr_keep.txt")
     
     if not os.path.exists(chr_order) or args.new_start:
+        pm.info("Generating chr_order file...")
         cmd = (tools.samtools + " view -H " + rmdup_bam +
                " | grep 'SN:' | awk -F':' '{print $2,$3}' | " +
                "awk -F' ' -v OFS='\t' '{print $1,$3}' > " + chr_order)
@@ -1968,22 +1989,26 @@ def main():
                 pm.run(cmd1, fixed_header_bam)
                 cmd2 = tools.samtools + " index " + fixed_header_bam
                 pm.run(cmd2, fixed_header_index)
-                cmd3 = (tools.java + " -jar " + tools.hmmratac)
+                if not param.java_settings.params:
+                    java_settings = '-Xmx{mem}'.format(mem=pm.mem)
+                else:
+                    java_settings = param.java_settings.params
+                cmd3 = (tools.java + " " + java_settings +
+                        " -jar " + tools.hmmratac)
                 cmd3 += " --bam " + fixed_header_bam
                 cmd3 += " --index " + fixed_header_index
                 cmd3 += " --genome " + chr_order
                 if os.path.exists(res.blacklist):
-                    cmd3 += " --blacklist " + res.blacklist
+                    local_list = os.path.join(peak_folder, "blacklist.bed")
+                    cmd = (ngstk.ziptool + " -d -c " + res.blacklist +
+                           " > " + local_list)
+                    pm.run(cmd, local_list)
+                    cmd3 += " --blacklist " + local_list
+                    pm.clean_add(local_list)
                 cmd3 += " " + param.hmmratac.params
                 cmd3 += " --output " 
                 cmd3 += os.path.join(peak_folder,  args.sample_name)
-                # Drop HighCoveragePeaks [$13(e.g. the score)>1]
-                # Use the score as the qValue for compatibility downstream
-                cmd4 = ("awk -v OFS='\t' '$13>1 {print $1, $2, $3, $4, " +
-                        "$13, $5, \".\", \".\", $13, \".\"}' " +
-                        gapped_peak_file + " | sort -k1,1n -k2,2n > " +
-                        peak_output_file)
-                cmd = [cmd3, cmd4]
+                cmd = cmd3
         elif args.peak_caller == "hmmratac" and not args.paired_end:
             pm.info("HMMRATAC requires paired-end data. Defaulting to MACS2")
             cmd_base = [
@@ -2058,6 +2083,14 @@ def main():
         #       maybe it should just fail?
         if args.peak_caller == "hmmratac":
             pm.run(cmd, peak_output_file, nofail=True)
+            if os.path.exists(gapped_peak_file):
+                # Drop HighCoveragePeaks [$13(e.g. the score)>1]
+                # Use the score as the qValue for compatibility downstream
+                cmd = ("awk -v OFS='\t' '$13>1 {print $1, $2, $3, $4, " +
+                       "$13, $5, \".\", \".\", $13, \".\"}' " +
+                       gapped_peak_file + " | sort -k1,1n -k2,2n > " +
+                       peak_output_file)
+                pm.run(cmd, peak_output_file)
             if os.path.exists(peak_output_file):
                 line_count = int(ngstk.count_lines(peak_output_file).strip())
                 num_peaks = max(0, line_count - 1)

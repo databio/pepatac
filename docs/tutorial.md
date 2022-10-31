@@ -57,6 +57,7 @@ refgenie build hg38/feat_annotation
 `PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
 
 ```console
+refgenie pull rCRSd/fasta
 refgenie pull rCRSd/bowtie2_index
 ```
 
@@ -83,6 +84,7 @@ mv tutorial2_r2.fastq.gz pepatac/examples/data/
 We're going to use `looper` to analyze our data.  For that, we need to pass looper a configuration file.  This project config file describes your project. See [`looper` docs](https://looper.readthedocs.io/en/latest/) for details. A [configuration file has been provided for you in the pipeline repository itself, named `tutorial_refgenie.yaml`](https://github.com/databio/pepatac/blob/master/examples/tutorial/tutorial_refgenie.yaml).  This configuration file also points to our sample.  In this case, we've provided a sample for you with the pipeline.  You don't have to do anything else at this point and may [skip right to running the sample if you'd like](tutorial.md#3-using-looper-to-run-the-pipeline).  Otherwise, we'll briefly touch on what those configuration files look like.
 You can open the configuration file in your favorite text editor if you'd like to look closer.  For the purposes of the tutorial you may safely move past this step should you choose.
 ```console
+cd pepatac/examples/tutorial
 nano tutorial_refgenie.yaml
 ```
 The following is what you should see in that configuration file.
@@ -130,9 +132,9 @@ That's it! Let's analyze that sample!
 ## 5: Using `looper` to run the sample processing pipeline
 Looper requires a few variables and configuration files to work for the specific user. Let's get those set up now. `Looper` uses [`divvy`](http://code.databio.org/divvy) to manage computing resource configuration so that projects and pipelines can easily travel among environments. For more detailed information, [check out the `looper` docs](https://looper.readthedocs.io/en/latest/cluster-computing/). Let's set it up.
 
-We should still be in the `tools/` subdirectory, but let's move up one level.
+We should still be in the `tools/` subdirectory (unless you went and viewed/edited the tutorial.yaml, in which case you are in tools/pepatac/examples/tutorial/), but let's move up to the primary `pepatac_tutorial/` directory.
 ```console
-cd ../
+cd $TUTORIAL
 touch compute_config.yaml
 ```
 Open that file in your favorite text editor.  We'll add in the following example for running locally.  You'll need to edit this file further for your own setup and you can [learn more about that in the `looper` docs](https://looper.readthedocs.io/en/latest/index.html).
@@ -181,9 +183,9 @@ Save and close that file, and change into the `tools/pepatac/` folder.
 ```console
 cd ../tools/pepatac/
 ```
-Now, we'll use `looper` to run the sample locally.
+Now, we'll use `looper` to run the sample locally. Make sure you've installed `looper` already (e.g. `pip install --user --upgrade looper`).
 ```console
-looper run examples/tutorial/tutorial.yaml
+looper run examples/tutorial/tutorial_refgenie.yaml
 ```         
 Congratulations! Your first samples should be running through the pipeline now. For both samples to run locally should take 30-50 minutes in total depending on your system.
 
@@ -202,7 +204,7 @@ Let's take full advantage of `looper` and generate a pipeline `HTML` report that
 
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `report` function of `looper`.
 ```console
-looper report examples/tutorial/tutorial.yaml
+looper report examples/tutorial/tutorial_refgenie.yaml
 ```         
 That's it! Easy, right? `Looper` conveniently provides you with the location where the HTML report is produced.  You may either open the report with your preferred internet browser using the PATH returned with `looper report`, or we can change directories to the report's location and open it there.  Let's go ahead and change into the directory that contains the report.
 ```console
@@ -374,7 +376,7 @@ cd ../tools/pepatac/
 ```
 Now, we'll use `looper` to run the sample locally.
 ```console
-looper run examples/tutorial/tutorial.yaml
+looper run examples/tutorial/tutorial_refgenie.yaml
 ```         
 Congratulations! Your first samples should be running through the pipeline now. For both samples to run locally should take 30-50 minutes in total depending on your system.
 
@@ -383,7 +385,7 @@ After the pipeline is finished, we can look through the output directory togethe
 ## 6: Use `looper` to run the project level pipeline
 The pipeline also includes project level analyses that work on all samples concurrently.  This allows for analyses that require output produced by individual sample analysis. We'll run the project analysis much like we run the sample analysis:
 ```console
-looper runp examples/tutorial/tutorial.yaml
+looper runp examples/tutorial/tutorial_refgenie.yaml
 ```
 This should take about a minute on the tutorial samples and will generate a `summary/` directory containing project level output in the parent project directory.  You can [browse the tutorial data](browse_output.md) to see the example output.
 
@@ -393,7 +395,7 @@ Let's take full advantage of `looper` and generate a pipeline `HTML` report that
 
 Using our same configuration file we used to run the samples through the pipeline, we'll now employ the `report` function of `looper`.
 ```console
-looper report examples/tutorial/tutorial.yaml
+looper report examples/tutorial/tutorial_refgenie.yaml
 ```         
 That's it! Easy, right? `Looper` conveniently provides you with the location where the HTML report is produced.  You may either open the report with your preferred internet browser using the PATH returned with `looper report`, or we can change directories to the report's location and open it there.  Let's go ahead and change into the directory that contains the report.
 ```console

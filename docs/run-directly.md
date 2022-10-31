@@ -5,7 +5,7 @@ The pipeline at its core is just a python script, and you can run it on the comm
 From the `pepatac/` repository folder (using the manually downloaded genome assets):
 ```console
 pipelines/pepatac.py --single-or-paired paired \
-  --prealignments rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
+  --prealignment-index rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4 \
   --genome hg38 \
   --genome-index default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4 \
   --chrom-sizes default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes \

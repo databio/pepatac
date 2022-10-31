@@ -20,7 +20,8 @@ command_template: >
   {% if sample.trimmer is defined %} --trimmer { sample.trimmer } {% else %} --trimmer "skewer" {% endif %}
   {% if sample.aligner is defined %} --aligner { sample.aligner } {% set aligner = sample.aligner %} {% else %} --aligner "bowtie2" {% set aligner = "bowtie2" %} {% endif %}
   {% if aligner == "bowtie2" or sample.aligner == "bowtie2" %} {% if sample.genome_index is defined %} --genome-index { sample.genome_index } {% elif refgenie[sample.genome].bowtie2_index is defined %} --genome-index { refgenie[sample.genome].bowtie2_index.dir } {% endif %} {% else %} {% if sample.genome_index is defined %} --genome-index { sample.genome_index } {% elif refgenie[sample.genome].bwa_index is defined %} --genome-index { refgenie[sample.genome].bwa_index.dir } {% endif %} {% endif %}
-  {% if sample.prealignment_index is defined %} --prealignment-index { sample.prealignment_index } {% elif aligner == "bowtie2" or sample.aligner == "bowtie2" and sample.prealignment_names is defined %} --prealignment-index {% for p in sample.prealignment_names %} { p ~ '=' ~ refgenie[p].bowtie2_index.dir } {% endfor %} {% else %} --prealignment-index {% for p in sample.prealignment_names %} { p ~ '=' ~ refgenie[p].bwa_index.dir } {% endfor %} {% endif %}
+  {% if sample.prealignment_index is defined %} --prealignment-index { sample.prealignment_index } {% endif %}
+  {% if sample.prealignment_names is defined %} {% if aligner == "bowtie2" or sample.aligner == "bowtie2" %} --prealignment-index {% for p in sample.prealignment_names %} { p ~ '=' ~ refgenie[p].bowtie2_index.dir } {% endfor %} {% else %} --prealignment-index {% for p in sample.prealignment_names %} { p ~ '=' ~ refgenie[p].bwa_index.dir } {% endfor %} {% endif %} {% endif %}
   {% if sample.deduplicator is defined %} --deduplicator { sample.deduplicator } {% endif %}
   {% if sample.peak_caller is defined %} --peak-caller { sample.peak_caller } {% else %} --peak-caller "macs2" {% endif %}
   {% if sample.peak_type is defined %} --peak-type { sample.peak_type } {% else %} --peak-type "fixed" {% endif %}
@@ -30,6 +31,8 @@ command_template: >
   {% if sample.motif is defined %} --motif {% endif %}
   {% if sample.sob is defined %} --sob {% endif %}
   {% if sample.sob is defined %} {% if refgenie[sample.genome].tallymer_index is defined %} --search-file { refgenie[sample.genome].tallymer_index.search_file } {% endif %} {% endif %}
+  {% if sample.sob is defined %} {% if refgenie[sample.genome].fasta is defined %} --fasta { refgenie[sample.genome].fasta.fasta } {% endif %} {% endif %}
+  {% if sample.fasta is defined %} --fasta { sample.fasta } {% elif refgenie[sample.genome].fasta is defined %} --fasta { refgenie[sample.genome].fasta.fasta } {% endif %}
   {% if sample.no_scale is defined %} --no-scale {% endif %}
   {% if sample.prioritize is defined %} --prioritize {% endif %}
   {% if sample.keep is defined %} --keep {% endif %}
@@ -40,8 +43,8 @@ command_template: >
 compute:
   singularity_image: ${SIMAGES}pepatac
   conda_env: pepatac
-  docker_image:  databio/pepatac
-  bulker_crate:  databio/pepatac:1.0.8
+  docker_image: databio/pepatac
+  bulker_crate: databio/pepatac:1.0.10
   size_dependent_variables: resources-sample.tsv
 bioconductor:
   readFunName: runCOCOA
