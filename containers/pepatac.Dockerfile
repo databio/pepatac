@@ -34,6 +34,10 @@ RUN apt-get update && \
     lua-md5-dev \
     libexpat1-dev \
     libtre-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
     libcairo2-dev \
     libpango1.0-dev \
     libsqlite3-dev \
@@ -47,7 +51,6 @@ RUN apt-get update && \
     python3-pip \
     python3-dev \
     build-essential \
-    rustc \
     wget \
     zlib1g \
     zlib1g-dev    
@@ -274,11 +277,14 @@ RUN wget https://github.com/broadinstitute/picard/releases/download/2.25.2/picar
 
 # Install seqOutBias
 WORKDIR /home/tools/
-RUN wget -O seqOutBias-v1.3.0.tar.gz 'https://github.com/guertinlab/seqOutBias/archive/refs/tags/v1.3.0.tar.gz' && \
-    tar xf seqOutBias-v1.3.0.tar.gz && \
-    cd seqOutBias-1.3.0 && \
-    cargo build --release && \
-    ln -s /home/tools/seqOutBias-1.3.0/target/release/seqOutBias /usr/bin/
+RUN wget -O seqOutBias-v1.3.1.tar.gz 'https://github.com/guertinlab/seqOutBias/archive/refs/tags/v1.3.1.tar.gz' && \
+    tar xf seqOutBias-v1.3.1.tar.gz && \
+    cd seqOutBias-1.3.1 && \
+    curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN exec bash && \
+    /bin/bash -c "source $HOME/.cargo/env" && \
+RUN /home/.cargo/bin/cargo build --release && \
+    ln -s /home/tools/seqOutBias-1.3.1/target/release/seqOutBias /usr/bin/
 
 # Install Trimmomatic
 WORKDIR /home/src/
@@ -318,3 +324,4 @@ CMD ["/bin/bash"]
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
