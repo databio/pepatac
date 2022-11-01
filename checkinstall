@@ -417,7 +417,7 @@ else
     fi
 
     if [ -f "$CWD/pipelines/pepatac.py" ]; then
-        PIPELINE="$CWD/pipelines/pepatac.py"
+        PIPELINE=$(cat "$CWD/pipelines/pepatac.py")
     else
         PIPELINE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/pipelines/pepatac.py)
     fi
