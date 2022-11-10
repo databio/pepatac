@@ -1,6 +1,13 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.10.4] -- 2022-11-02
+
+### Changed
+ - Update samblaster settings when using bwa
+ - Update samtools deduplication command
+ - Upgrade MACS2 to MACS3 as default peak caller
+
 ## [0.10.3] -- 2021-11-23
 
 ### Added

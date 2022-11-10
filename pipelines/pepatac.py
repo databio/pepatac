@@ -24,7 +24,7 @@ from refgenconf import RefGenConf as RGC, select_genome_config
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
 ALIGNERS = ["bowtie2", "bwa"]
-PEAK_CALLERS = ["fseq", "fseq2", "genrich", "hmmratac", "homer", "macs2"]
+PEAK_CALLERS = ["fseq", "fseq2", "genrich", "hmmratac", "homer", "macs3"]
 PEAK_TYPES = [ "fixed", "variable"]
 DEDUPLICATORS = ["picard", "samblaster", "samtools"]
 TRIMMERS = ["trimmomatic", "pyadapt", "skewer"]
@@ -57,7 +57,7 @@ def parse_arguments():
                         help="Name of deduplicator program.")
 
     parser.add_argument("--peak-caller", dest="peak_caller", type=str.lower,
-                        default="macs2", choices=PEAK_CALLERS,
+                        default="macs3", choices=PEAK_CALLERS,
                         help="Name of peak caller.")
 
     parser.add_argument("-gs", "--genome-size", default="2.7e9", type=str.lower,
@@ -68,7 +68,7 @@ def parse_arguments():
     parser.add_argument("--peak-type", default="fixed",
                         dest="peak_type", choices=PEAK_TYPES, type=str.lower,
                         help="Call variable or fixed width peaks.\n"
-                             "Fixed width requires MACS2.")
+                             "Fixed width requires macs3.")
 
     parser.add_argument("--extend", default=250,
                         dest="extend", type=int,
@@ -530,8 +530,8 @@ def main():
                  "pigz", "bwa"]
 
     # Confirm compatible peak calling settings
-    if args.peak_type == "fixed" and not args.peak_caller == "macs2":
-        err_msg = ("Must use MACS2 with `--peak-type fixed` width peaks. " +
+    if args.peak_type == "fixed" and not args.peak_caller == "macs3":
+        err_msg = ("Must use macs3 with `--peak-type fixed` width peaks. " +
                    "Either change the " +
                    "`--peak-caller {}` or ".format(PEAK_CALLERS) +
                    "use `--peak-type variable`.")
@@ -1300,9 +1300,30 @@ def main():
             ("-T", tempdir),
             mapping_genome_bam,
             "|",
-            "{} view -h - -@ {}".format(tools.samtools, str(nProc)),
+            "{} fixmate -@ {} -m - - ".format(tools.samtools, str(nProc)),
             "|",
-            "{} -r --ignoreUnmated 2> {}".format(tools.samblaster, dedup_log),
+            "{} view -h - -@ {}".format(tools.samtools, str(nProc)),
+            "|"
+        ]
+        if args.paired_end:
+            if args.aligner.lower() == "bwa":
+                samblaster_cmd_chunks2 = [
+                    "{} -M -r 2> {}".format(tools.samblaster, dedup_log),
+                ]
+            else:
+                samblaster_cmd_chunks2 = [
+                    "{} -r 2> {}".format(tools.samblaster, dedup_log),
+                ]
+        else:
+            if args.aligner.lower() == "bwa":
+                samblaster_cmd_chunks2 = [
+                    "{} -M -r --ignoreUnmated 2> {}".format(tools.samblaster, dedup_log),
+                ]
+            else:
+                samblaster_cmd_chunks2 = [
+                    "{} -r --ignoreUnmated 2> {}".format(tools.samblaster, dedup_log),
+                ]
+        samblaster_cmd_chunks3 = [
             "|",
             "{} view -b - -@ {}".format(tools.samtools, str(nProc)),
             "|",
@@ -1310,7 +1331,9 @@ def main():
             ("-T", tempdir),
             ("-o", rmdup_bam)
         ]
-        cmd1 = build_command(samblaster_cmd_chunks)
+        cmd1 = build_command(samblaster_cmd_chunks +
+                             samblaster_cmd_chunks2 +
+                             samblaster_cmd_chunks3)
         cmd2 = tools.samtools + " index " + rmdup_bam
         # no separate metrics file with samblaster
         metrics_file = dedup_log
@@ -1323,7 +1346,7 @@ def main():
             "|",
             "{} fixmate -@ {} -m - - ".format(tools.samtools, str(nProc)),
             "|",
-            "{} sort -@ {} -T {}".format(tools.samtools, str(nProc), tempdir),
+            "{} sort - -@ {} -T {}".format(tools.samtools, str(nProc), tempdir),
             "|",
             "{} markdup -@ {} -T {} -rs -f {} - - ".format(tools.samtools,
                                                            str(nProc),
@@ -1929,7 +1952,7 @@ def main():
     else:
         if args.peak_caller == "fseq":
             if args.peak_type == "fixed":
-                err_msg = "Must use MACS2 when calling fixed width peaks."
+                err_msg = "Must use MACS3 when calling fixed width peaks."
                 pm.fail_pipeline(RuntimeError(err_msg))
             else:
                 fseq_cmd_chunks = [
@@ -1953,7 +1976,7 @@ def main():
                 cmd = [fseq_cmd, merge_chrom_peaks_files]
         elif args.peak_caller == "fseq2":
             if args.peak_type == "fixed":
-                err_msg = "Must use MACS2 when calling fixed width peaks."
+                err_msg = "Must use MACS3 when calling fixed width peaks."
                 pm.fail_pipeline(RuntimeError(err_msg))
             else:
                 fseq_cmd_chunks = [
@@ -1972,7 +1995,7 @@ def main():
                 cmd = fseq_cmd
         elif args.peak_caller == "hmmratac" and args.paired_end:
             if args.peak_type == "fixed":
-                err_msg = "Must use MACS2 when calling fixed width peaks."
+                err_msg = "Must use MACS3 when calling fixed width peaks."
                 pm.fail_pipeline(RuntimeError(err_msg))
             else:
                 gapped_peak_file = os.path.join(peak_folder, args.sample_name +
@@ -2010,20 +2033,20 @@ def main():
                 cmd3 += os.path.join(peak_folder,  args.sample_name)
                 cmd = cmd3
         elif args.peak_caller == "hmmratac" and not args.paired_end:
-            pm.info("HMMRATAC requires paired-end data. Defaulting to MACS2")
+            pm.info("HMMRATAC requires paired-end data. Defaulting to MACS3")
             cmd_base = [
-                "{} callpeak".format(tools.macs2),
+                "{} callpeak".format(tools.macs3),
                 ("-t", peak_input_file),
                 ("-f", "BED"),
                 ("--outdir", peak_folder),
                 ("-n", args.sample_name),
                 ("-g", args.genome_size)
             ]
-            cmd_base.extend(param.macs2.params.split())
+            cmd_base.extend(param.macs3.params.split())
             cmd = build_command(cmd_base)
         elif args.peak_caller == "genrich":
             if args.peak_type == "fixed":
-                err_msg = "Must use MACS2 when calling fixed width peaks."
+                err_msg = "Must use macs3 when calling fixed width peaks."
                 pm.fail_pipeline(RuntimeError(err_msg))
             else:
                 cmd1 = (tools.samtools + " sort -n " + rmdup_bam + " > " +
@@ -2037,7 +2060,7 @@ def main():
                 cmd = [cmd1, cmd2]
         elif args.peak_caller == "homer":
             if args.peak_type == "fixed":
-                err_msg = "Must use MACS2 when calling fixed width peaks."
+                err_msg = "Must use macs3 when calling fixed width peaks."
                 pm.fail_pipeline(RuntimeError(err_msg))
             else:
                 tag_directory = os.path.join(peak_folder, "HOMER_tags")
@@ -2059,10 +2082,10 @@ def main():
                 pm.clean_add(tag_directory)
                 cmd = [cmd1, cmd2, cmd3]
         else:
-            # MACS2
+            # macs3
             # Note: required input file is non-positional ("treatment" file -t)
             cmd_base = [
-                "{} callpeak".format(tools.macs2),
+                "{} callpeak".format(tools.macs3),
                 ("-t", peak_input_file),
                 ("-f", "BED"),
                 ("--outdir", peak_folder),
@@ -2070,11 +2093,11 @@ def main():
                 ("-g", args.genome_size)
             ]
             if args.peak_type == "fixed":
-                cmd_base.extend(param.macs2.params.split())
+                cmd_base.extend(param.macs3.params.split())
             elif args.peak_type == "variable":
-                cmd_base.extend(param.macs2_variable.params.split())
+                cmd_base.extend(param.macs3_variable.params.split())
             else:
-                cmd_base.extend(param.macs2.params.split())
+                cmd_base.extend(param.macs3.params.split())
             cmd = build_command(cmd_base)
 
         # Call peaks and report peak count.
@@ -2138,7 +2161,7 @@ def main():
         fixed_peak_file = os.path.join(peak_folder,  args.sample_name +
             "_peaks_fixedWidth.narrowPeak")
         # If using fixed peaks, extend from summit
-        if args.peak_type == "fixed" and args.peak_caller == "macs2":
+        if args.peak_type == "fixed" and args.peak_caller == "macs3":
             temp = tempfile.NamedTemporaryFile(dir=peak_folder, delete=False)
             # extend peaks from summit by 'extend'
             # start extend from center of peak

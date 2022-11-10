@@ -46,7 +46,7 @@ properties:
         peak_caller:
           type: string
           description: "Specify the peak calling tool"
-          enum: ["fseq", "genrich", "hmmratac", "homer", "macs2"]
+          enum: ["fseq", "genrich", "hmmratac", "homer", "macs3"]
         genome_size:
           type: string
           description: "MACS2 effective genome size"
