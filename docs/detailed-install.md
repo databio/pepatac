@@ -65,7 +65,7 @@ tar xvfj preseq_linux_v2.0.tar.bz2
 ```
 Add to `PATH`!
 ```console
-export PATH="$PATH:/path/to/peppro_tutorial/tools/preseq_v2.0/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/preseq_v2.0/"
 ```
 
 #### samblaster
@@ -180,7 +180,7 @@ chmod +x picard.jar
 ```
 Create an environmental variable pointing to the `picard.jar` file called `$PICARD`.  Alternatively, [update the `pepatac.yaml` file](https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml) with the full PATH to the `picard.jar` file.
 ```
-export PICARD="/path/to/peppro_tutorial/tools/picard.jar"
+export PICARD="/path/to/pepatac_tutorial/tools/picard.jar"
 ```
 
 #### pigz
