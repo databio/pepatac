@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.10.4] -- 2023-07-14
+
+### Fixed
+ - adjusted requirements for Looper (1.4.1 and above) and Eido (0.2.0 and above)
+   
 ## [0.10.3] -- 2021-11-23
 
 ### Added
