@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.10.5] -- 2023-07-31
+
+### Fixed
+ - adjusted requirements for Looper 1.4.2
+
 ## [0.10.4] -- 2023-07-14
 
 ### Fixed
