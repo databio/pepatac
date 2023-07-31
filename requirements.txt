@@ -11,7 +11,7 @@ hypothesis==4.38.0
 jinja2
 jsonschema>=3.0.1
 logmuse>=0.2.6
-looper>=1.4.1
+looper>=1.4.2
 MACS2>=2.2.7.1
 numpy>=1.21
 oyaml
