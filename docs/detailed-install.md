@@ -29,8 +29,8 @@ We'll install each of these pieces of software before moving forward.  Let's sta
 ```console
 cd tools/
 wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools-2.29.2.tar.gz
-tar -zxvf bedtools-2.29.0.tar.gz
-rm bedtools-2.29.0.tar.gz
+tar -zxvf bedtools-2.29.2.tar.gz
+rm bedtools-2.29.2.tar.gz
 cd bedtools2
 make
 ```
@@ -50,6 +50,7 @@ rm bowtie2-2.4.1-source.zip
 cd bowtie2-2.4.1
 make
 ```
+Note: you may need to install `libtbb-dev` if `make` fails, e.g. using `apt install libtbb-dev`
 
 Again, let's add `bowtie2` to our `PATH` environment variable:
 
@@ -59,6 +60,14 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.4.1/"
 
 #### preseq
 The pipeline uses `preseq` to calculate library complexity. Check out the author's [page for more instruction](https://github.com/smithlabcode/preseq).
+Note: If receiving the following error later in the tutorial: `preseq: error while loading shared libraries: libgsl.so.0: cannot open shared object file: No such file or directory`
+you may need to install `libgsl-dev` using: `apt install libgsl-dev` and either: 
+1. `export LD_LIBRARY_PATH=/usr/local/lib`
+2. link `libgsl.so.0` to an existing `libgsl`, e.g. `libgsl.so.27`
+
+More info can be found here:
+https://www.gnu.org/software/gsl/doc/html/usage.html#shared-libraries
+
 ```console
 wget http://smithlabresearch.org/downloads/preseq_linux_v2.0.tar.bz2
 tar xvfj preseq_linux_v2.0.tar.bz2
@@ -84,7 +93,7 @@ wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.t
 tar xvfj samtools-1.10.tar.bz2
 rm samtools-1.10.tar.bz2
 cd samtools-1.10
-/configure
+./configure
 ```
 Alternatively, if you do not have the ability to install `samtools` to the default location, you can specify using the `--prefix=/install/destination/dir/` option.  [Learn more about the `--prefix` option here](http://samtools.github.io/bcftools/howtos/install.html).
 ```console
@@ -126,6 +135,7 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 
 `PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
 
+Note: if given error regarding `devtools` try: `apt install r-cran-devtools` before proceeding with installation.
 ```
 Rscript -e 'install.packages("devtools")'
 Rscript -e 'devtools::install_github("pepkit/pepr")'
@@ -187,10 +197,10 @@ export PICARD="/path/to/pepatac_tutorial/tools/picard.jar"
 To extract files quicker, `PEPATAC` can also utilize `pigz` in place of `gzip` if you have it installed.  Let's go ahead and do that now. It's not required, but it can help speed everything up when you have many samples to process.
 ```console
 cd /path/to/pepatac_tutorial/tools/
-wget https://zlib.net/pigz/pigz-2.4.tar.gz
-tar xvfz pigz-2.4.tar.gz
-rm pigz-2.4.tar.gz
-cd pigz-2.4/
+wget https://zlib.net/pigz/pigz-2.8.tar.gz
+tar xvfz pigz-2.8.tar.gz
+rm pigz-2.8.tar.gz
+cd pigz-2.8/
 make
 ```
 Don't forget to add this to your `PATH` too!
