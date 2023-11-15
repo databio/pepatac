@@ -1,0 +1,18 @@
+pep_version: "2.1.0"
+sample_table: microtest.csv
+
+looper:
+  output_dir: microtest
+
+sample_modifiers:
+  append:
+    genome: hg38_chr22
+    pipeline_interfaces: ../sample_pipeline_interface.yaml
+    read1: R1
+    read2: R2
+    read_type: PAIRED
+  derive:
+    attributes: ["read1", "read2"]
+    sources:
+      R1: "${CODE}/microtest/data/atac-seq_PE_R1.fastq.gz"
+      R2: "${CODE}/microtest/data/atac-seq_PE_R2.fastq.gz"
