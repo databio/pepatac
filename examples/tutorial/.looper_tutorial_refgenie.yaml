@@ -1,0 +1,7 @@
+name: PEPATAC_tutorial
+pep_config: tutorial_refgenie_project_config.yaml
+
+output_dir: "${TUTORIAL}/processed/"
+pipeline_interfaces:
+  sample: ["${TUTORIAL}/tools/pepatac/sample_pipeline_interface.yaml"]
+  project: ["${TUTORIAL}/tools/pepatac/project_pipeline_interface.yaml"]

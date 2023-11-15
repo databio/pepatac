@@ -376,14 +376,24 @@ cd ../tools/pepatac/
 ```
 Now, we'll use `looper` to run the sample locally.
 ```console
-looper run examples/tutorial/tutorial_refgenie.yaml
+looper run --looper-config examples/tutorial/.looper_tutorial_refgenie.yaml
 ```         
+Note: if using Looper<1.5.0, the run method is via:
+```console
+looper run examples/tutorial/tutorial_refgenie.yaml
+```
+
+
 Congratulations! Your first samples should be running through the pipeline now. For both samples to run locally should take 30-50 minutes in total depending on your system.
 
 After the pipeline is finished, we can look through the output directory together.  We've provided an example breakdown of just such a directory in the [browse output page](browse_output.md).
 
 ## 6: Use `looper` to run the project level pipeline
 The pipeline also includes project level analyses that work on all samples concurrently.  This allows for analyses that require output produced by individual sample analysis. We'll run the project analysis much like we run the sample analysis:
+```console
+looper runp --looper-config examples/tutorial/.looper_tutorial_refgenie.yaml
+```
+Note: if using Looper<1.5.0, the run method is via:
 ```console
 looper runp examples/tutorial/tutorial_refgenie.yaml
 ```
