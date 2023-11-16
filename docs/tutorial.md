@@ -199,6 +199,7 @@ looper runp examples/tutorial/tutorial_refgenie.yaml
 This should take about a minute on the tutorial samples and will generate a `summary/` directory containing project level output in the parent project directory.  You can [browse the tutorial data](browse_output.md) to see the example output.
 
 ## 7: Generate an `HTML` report using `looper`
+Note: beginning with Looper 1.5.0, pipestat configuration is required to use `looper report`, please see here [Configuring Looper to use pipestat](https://looper.databio.org/en/dev/pipestat/)
 
 Let's take full advantage of `looper` and generate a pipeline `HTML` report that makes all our results easy to view and browse.  If you'd like to skip right to the results and see what it looks like, [check out the tutorial results](files/examples/tutorial/PEPATAC_tutorial_summary.html).  Otherwise, let's generate a report ourselves.
 
