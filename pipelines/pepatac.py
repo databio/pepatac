@@ -512,7 +512,7 @@ def main():
     results_file = os.path.abspath(os.path.join(args.output_parent, "pepatac_results.yaml"))
     global pm
     pm = pypiper.PipelineManager(
-        name="PEPATAC", outfolder=outfolder, pipestat_results_file=results_file,args=args, version=__version__)
+        name="PEPATAC", outfolder=outfolder,pipestat_sample_name=args.sample_name, pipestat_results_file=results_file,args=args, version=__version__)
     global ngstk
     ngstk = pypiper.NGSTk(pm=pm)
 
