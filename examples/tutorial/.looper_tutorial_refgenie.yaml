@@ -5,3 +5,6 @@ output_dir: "${TUTORIAL}/processed/"
 pipeline_interfaces:
   sample: ["${TUTORIAL}/tools/pepatac/sample_pipeline_interface.yaml"]
   project: ["${TUTORIAL}/tools/pepatac/project_pipeline_interface.yaml"]
+
+pipestat:
+  results_file_path: "${TUTORIAL}/processed/results_pipeline/{sample_name}/stats.yaml"

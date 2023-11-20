@@ -1,67 +1,123 @@
+title: An example Pipestat output schema
 description: objects produced by PEPATAC pipeline.
+type: object
 properties:
+  pipeline_name: PEPATAC
   samples:
-    type: array
-    items:
-      type: object
-      properties:
-        smooth_bw: 
-          path: "aligned_{genome}/{sample_name}_smooth.bw"
-          type: string
-          description: "Smoothed signal track"
-        exact_bw:
-          path: "aligned_{genome}_exact/{sample_name}_exact.bw"
-          type: string
-          description: "Nucleotide-resolution signal track"
-        aligned_bam: 
-          path: "aligned_{genome}/{sample_name}_sort_dedup.bam"
-          type: string
-          description: "Coordinate sorted deduplicated, aligned BAM file"
-        peak_file: 
-          path: "peak_calling_{genome}/{sample_name}_peaks_normalized.narrowPeak"
-          type: string
-          description: "Sample peak file"
-        coverage_file:
-          path: "peak_calling_{genome}/{sample_name}_peaks_coverage.bed.gz"
-          type: string
-          description: "Sample peak coverage table"
-        summits_bed: 
-          path: "peak_calling_{genome}/{sample_name}_summits.bed"
-          type: string
-          description: "Peak summit file"
-  alignment_percent_file:
-    title: "Alignment percent file"
-    description: "Plots percent of total alignment to all pre-alignments and primary genome."
-    thumbnail_path: "summary/{name}_alignmentPercent.png"
-    path: "summary/{name}_alignmentPercent.pdf"
-    type: image
-  alignment_raw_file:
-    title: "Alignment raw file"
-    description: "Plots raw alignment rates to all pre-alignments and primary genome."
-    thumbnail_path: "summary/{name}_alignmentRaw.png"
-    path: "summary/{name}_alignmentRaw.pdf"
-    type: image
-  tss_file:
-    title: "TSS enrichment file"
-    description: "Plots TSS scores for each sample."
-    thumbnail_path: "summary/{name}_TSSEnrichment.png"
-    path: "summary/{name}_TSSEnrichment.pdf"
-    type: image
-  library_complexity_file:
-    title: "Library complexity file"
-    description: "Plots each sample's library complexity on a single plot."
-    thumbnail_path: "summary/{name}_libComplexity.png"
-    path: "summary/{name}_libComplexity.pdf"
-    type: image
-  consensus_peaks_file:
-    title: "Consensus peaks file"
-    description: "A set of consensus peaks across samples."
-    thumbnail_path: "summary/{name}_*_consensusPeaks.png"
-    path: "summary/{name}_*_consensusPeaks.narrowPeak"
-    type: string
-  counts_table:
-    title: "Project peak coverage file"
-    description: "Project peak coverages: chr_start_end X sample"
-    thumbnail_path: "summary/{name}_*_peaks_coverage.png"
-    path: "summary/{name}_*_peaks_coverage.tsv"
-    type: string
+    type: object
+    properties:
+      smooth_bw:
+        type: string
+        description: "Smoothed signal track"
+      exact_bw:
+        type: string
+        description: "Nucleotide-resolution signal track"
+      aligned_bam:
+        type: string
+        description: "Coordinate sorted deduplicated, aligned BAM file"
+      peak_file:
+        type: string
+        description: "Sample peak file"
+      coverage_file:
+        type: string
+        description: "Sample peak coverage table"
+      summits_bed:
+        type: string
+        description: "Peak summit file"
+  project:
+    type: object
+    properties:
+      alignment_percent_file:
+        title: "Alignment percent file"
+        description: "Plots percent of total alignment to all pre-alignments and primary genome."
+        type: object
+        object_type: image
+        properties:
+          path:
+            type: string
+          thumbnail_path:
+            type: string
+          title:
+            type: string
+        required:
+          - path
+          - thumbnail_path
+          - title
+      alignment_raw_file:
+        title: "Alignment raw file"
+        description: "Plots raw alignment rates to all pre-alignments and primary genome."
+        type: object
+        object_type: image
+        properties:
+          path:
+            type: string
+          thumbnail_path:
+            type: string
+          title:
+            type: string
+        required:
+          - path
+          - thumbnail_path
+          - title
+      tss_file:
+        title: "TSS enrichment file"
+        description: "Plots TSS scores for each sample."
+        type: object
+        object_type: image
+        properties:
+          path:
+            type: string
+          thumbnail_path:
+            type: string
+          title:
+            type: string
+        required:
+          - path
+          - thumbnail_path
+          - title
+      library_complexity_file:
+        title: "Library complexity file"
+        description: "Plots each sample's library complexity on a single plot."
+        type: object
+        object_type: image
+        properties:
+          path:
+            type: string
+          thumbnail_path:
+            type: string
+          title:
+            type: string
+        required:
+          - path
+          - thumbnail_path
+          - title
+      consensus_peaks_file:
+        title: "consesus peak file"
+        description: "A set of consensus peaks across samples."
+        type: object
+        object_type: file
+        properties:
+          path:
+            type: string
+          title:
+            type: string
+          thumbnail_path:
+            type: string
+        required:
+          - path
+          - title
+      counts_table:
+        title: "Project peak coverage file"
+        description: "Project peak coverages: chr_start_end X sample"
+        type: object
+        object_type: file
+        properties:
+          path:
+            type: string
+          title:
+            type: string
+          thumbnail_path:
+            type: string
+        required:
+          - path
+          - title
