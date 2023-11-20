@@ -509,9 +509,10 @@ def main():
     # access in ancillary functions outside of main().
     outfolder = os.path.abspath(
         os.path.join(args.output_parent, args.sample_name))
+    results_file = os.path.abspath(os.path.join(args.output_parent, "pepatac_results.yaml"))
     global pm
     pm = pypiper.PipelineManager(
-        name="PEPATAC", outfolder=outfolder, args=args, version=__version__)
+        name="PEPATAC", outfolder=outfolder, pipestat_results_file=results_file,args=args, version=__version__)
     global ngstk
     ngstk = pypiper.NGSTk(pm=pm)
 
