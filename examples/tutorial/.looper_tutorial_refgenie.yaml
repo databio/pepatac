@@ -7,4 +7,4 @@ pipeline_interfaces:
   project: ["${TUTORIAL}/tools/pepatac/project_pipeline_interface.yaml"]
 
 pipestat:
-  results_file_path: "${TUTORIAL}/processed/results_pipeline/pepatac_results.yaml"
+  results_file_path: "${TUTORIAL}/processed/results_pipeline/{record_identifier}/stats.yaml"
