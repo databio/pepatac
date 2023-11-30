@@ -6,7 +6,7 @@
 
 [![PEP compatible](http://pepkit.github.io/img/PEP-compatible-green.svg)](http://pepkit.github.io)
 
-PEPATAC is a pipeline designed to process ATAC-seq data. For more information see: http://pepatac.databio.org/
+PEPATAC is a pipeline for ATAC-seq data. For more information see: http://pepatac.databio.org/
 
 ## Docs
 
