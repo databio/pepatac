@@ -1446,7 +1446,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
             message(x$msg)
         }
         
-        if (x$value == "" || is.na(x$value) || is.null(x$value)) {
+        if (is.null(nrow(x$value))) {
             return(ggplot())
         }
         # Don't plot lowest 10% represented chromosomes
