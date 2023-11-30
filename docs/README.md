@@ -4,7 +4,7 @@
 
 ---
 
-[![PEP compatible](http://pepkit.github.io/img/PEP-compatible-green.svg)](http://pepkit.github.io)
+[![PEP compatible](https://pepkit.github.io/img/PEP-compatible-green.svg)](https://pepkit.github.io)
 
 `PEPATAC` is a standardized ATAC-seq analysis pipeline designed to be modular and highly flexible. `PEPATAC` leverages unique features of ATAC-seq data to optimize for speed and accuracy, and it provides several unique analytical approaches. Downstream analysis is simplified by a standard definition format, modularity of components, and metadata APIs in R and Python. It is restartable, fault-tolerant, and can be run on local hardware, using any cluster resource manager, or in provided Linux containers. We also emphasize the advantage of aligning to the mitochondrial genome (and *more*) serially, which improves alignment and quality control metrics. `PEPATAC` is a robust and portable first step for any ATAC-seq project.
 
