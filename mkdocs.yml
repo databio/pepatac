@@ -9,7 +9,6 @@ google_analytics: ['UA-127092878-1', 'pepatac.databio.org']
 paper_link: https://doi.org/10.1101/2020.10.21.347054
 
 markdown_extensions:
-  - fontawesome_markdown  # pip install --user fontawesome-markdown
   - pymdownx.details  # pip install --user pymdown-extensions
 
 nav:
@@ -50,9 +49,3 @@ plugins:
       usage_template: "docs/usage_template.md"
       usage_cmds:
         -"$CODEBASE/databio/pepatac/pipelines/pepatac.py --help
-
-navbar:
-  right:
-  - text: Software & Data
-    icon: fa-code fa-lg
-    href: http://databio.org/software/
