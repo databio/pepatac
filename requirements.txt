@@ -24,8 +24,9 @@ oyaml>=1.0
 pararead>=0.7.0
 pandas>=1.4
 #peppy>=0.35.7
-piper>=0.13.2
-pipestat>=0.5.1
+#piper>=0.13.2
+#pipestat>=0.5.1
+git+https://github.com/pepkit/pipestat.git@dev
 psutil>=5.8
 pyqt5<5.16
 pyqtwebengine<5.16
