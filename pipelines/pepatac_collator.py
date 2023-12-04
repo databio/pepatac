@@ -5,12 +5,15 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 from argparse import ArgumentParser
 import os
 import sys
 import pypiper
+import peppy
+from peppy.utils import load_yaml
+import yaml
 from ubiquerg import VersionInHelpParser
 
 def tool_path(tool_name):
@@ -33,7 +36,7 @@ def parse_arguments():
     """
     parser = VersionInHelpParser(prog="PEPATAC_collator",
         description='PEPATAC collator' , version=__version__)
-    parser = pypiper.add_pypiper_args(parser, groups=['pypiper', 'looper'])
+    parser = pypiper.add_pypiper_args(parser, groups=['pypiper', 'looper', 'common'])
     parser.add_argument("-n", "--name",
                         help="Name of the project to use.", type=str)
     parser.add_argument("-r", "--results",
@@ -70,6 +73,33 @@ def main():
     
     pm = pypiper.PipelineManager(name="PEPATAC_collator", outfolder=outfolder,
                                  args=args, version=__version__)
+
+    pm.debug(f"\nargs: {args}\n")
+
+    project = peppy.Project(args.config_file)
+    #results_subdir = "/home/jps3dp/processed/pepatac_tutorial//processed/results_pipeline"
+    #stats_yaml_files.append(os.path.join(args.results, sample, "stats.yaml"))
+    # project._project_data['_config']['looper']['output_dir']
+    project_stats_file = os.path.join(args.output_parent, f"{project.name}_stats_summary.yaml")
+    stats_yaml_files = []
+    sample_names = []
+    for sample in project.sample_table.sample_name:
+        pm.debug(f"sample name: {sample}")
+        sample_names.append(sample)
+        stats_yaml_files.append(os.path.join(args.results, sample, "stats.yaml"))
+    num_samples = len(sample_names)
+    yaml_dict = load_yaml(stats_yaml_files[0])
+    if num_samples > 1:
+        sample_names = sample_names[1:]
+        stats_yaml_files = stats_yaml_files[1:]
+    for i in range(len(stats_yaml_files)):
+        pm.debug(f"i: {i}")
+        sample_name = sample_names[i]
+        yaml_tmp = load_yaml(stats_yaml_files[i])
+        yaml_dict['PEPATAC']['sample'][sample_name] = yaml_tmp['PEPATAC']['sample'][sample_name]
+    with open(project_stats_file, 'w') as file:
+        yaml.dump(yaml_dict, file)
+    print(f"Summary (n={num_samples}: {project_stats_file})")
 
     cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
            f"{args.config_file} {args.output_parent} "
