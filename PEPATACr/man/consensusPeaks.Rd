@@ -10,7 +10,8 @@ consensusPeaks(
   results_subdir,
   assets,
   min_samples = 2,
-  min_score = 5
+  min_score = 5,
+  min_olap = 1
 )
 }
 \arguments{
@@ -27,6 +28,9 @@ genomes.}
 in to keep.}
 
 \item{min_score}{A minimum peak score to keep an individual peak.}
+
+\item{min_olap}{A minimum number of bases between peaks to be 
+considered overlapping.}
 }
 \description{
 This function is meant to identify a project level set of consensus peaks.
