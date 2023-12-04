@@ -108,10 +108,11 @@ pep <- argv$config
 # Load the project
 prj <- invisible(suppressWarnings(pepr::Project(pep)))
 # Convenience
-project_name    <- config(prj)$name
+project_name    <- pepr::config(prj)$name
 project_samples <- pepr::sampleTable(prj)$sample_name
-sample_table    <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
-                              genome=pepr::sampleTable(prj)$genome)
+sample_table    <- data.table::data.table(
+    sample_name=pepr::sampleTable(prj)$sample_name,
+    genome=pepr::sampleTable(prj)$genome)
 
 # Set the output directory
 summary_dir <- suppressMessages(file.path(argv$output, "summary"))
@@ -132,15 +133,15 @@ if (dir.exists(argv$results)) {
 
 
 # Generate stats summary
-stats  <- PEPATACr::createStatsSummary(project_samples, results_subdir)
-if (nrow(stats) == 0) {
-    quit()
-}
-project_stats_file <- file.path(argv$output,
-                                paste0(project_name, '_stats_summary.tsv'))
-message(sprintf("Summary (n=%s): %s",
-        length(unique(stats$sample_name)), project_stats_file))
-fwrite(stats, project_stats_file, sep="\t", col.names=TRUE)
+# stats  <- PEPATACr::createStatsSummary(project_samples, results_subdir)
+# if (nrow(stats) == 0) {
+    # quit()
+# }
+# project_stats_file <- file.path(argv$output,
+                                # paste0(project_name, '_stats_summary.tsv'))
+# message(sprintf("Summary (n=%s): %s",
+        # length(unique(stats$sample_name)), project_stats_file))
+# data.table::fwrite(stats, project_stats_file, sep="\t", col.names=TRUE)
 
 
 # Generate assets
@@ -152,7 +153,7 @@ project_assets_file <- file.path(argv$output,
                                  paste0(project_name, '_assets_summary.tsv'))
 message(sprintf("Summary (n=%s): %s",
         length(unique(assets$sample_name)), project_assets_file))
-fwrite(assets, project_assets_file, sep="\t", col.names=FALSE)
+data.table::fwrite(assets, project_assets_file, sep="\t", col.names=FALSE)
 
 
 # Produce project summary plots
