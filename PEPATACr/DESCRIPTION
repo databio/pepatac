@@ -5,7 +5,7 @@ Authors@R: person("Jason", "Smith", email = "jasonsmith@virginia.edu", role = c(
 Maintainer: Jason Smith <jasonsmith@virginia.edu>
 Description: Installs required libraries to calculate the fraction of reads in features, TSS enrichments, and fragment length distributions. 
 BiocViews:
-Depends: R (>= 3.5.1)
+Depends: R (>= 4.0), GenomicRanges
 Imports: data.table, pepr, gplots, grid, ggplot2, optigrab, scales, yaml, GenomicDistributions, GenomicDistributionsData
 License: BSD 2-Clause "Simplified" License
 Encoding: UTF-8

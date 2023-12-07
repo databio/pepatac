@@ -12,6 +12,7 @@
 #' @references \url{http://github.com/databio/pepatac}
 #' @import data.table
 #' @import ggplot2
+#' @import optigrab
 NULL
 
 ################################################################################
@@ -621,7 +622,7 @@ plotComplexityCurves <- function(ccurves,
 calcFRiF <- function(bedFile, total, reads) {
     colnames(bedFile) <- c("chromosome", "start", "end",
                            "count", "bases", "width", "fraction")
-    grObj   <- makeGRangesFromDataFrame(bedFile)
+    grObj   <- GenomicRanges::makeGRangesFromDataFrame(bedFile)
     grObj   <- reduce(grObj)
     redBed  <- data.frame(chromosome=seqnames(grObj),
                           start=start(grObj), end=end(grObj))
@@ -1366,7 +1367,7 @@ tryCatchChromBins <- function(x, y) {
       withCallingHandlers(
         {
           msg <- ""
-          list(value = calcChromBinsRef(x, y), msg = msg)
+          list(value = GenomicDistributions::calcChromBinsRef(x, y), msg = msg)
         }, 
         warning = function(e) {
           msg <<- trimws(paste0("WARNING: ", e))
@@ -1441,7 +1442,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
     } 
 
     # Convert to GRanges Object
-    query  <- makeGRangesFromDataFrame(in_bed, keep.extra.columns=TRUE)
+    query  <- GenomicRanges::makeGRangesFromDataFrame(in_bed, keep.extra.columns=TRUE)
 
     if (tolower(plot) == "chromosome") {
         # Chromosome distribution plot
@@ -1460,7 +1461,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         keep   <- tbl[tbl$Freq > cutoff, 1]
         x      <- x$value[x$value$chr %in% keep,]
         if (nrow(x) > 0) {
-            ga_plot <- plotChromBins(x)
+            ga_plot <- GenomicDistributions::plotChromBins(x)
             return(ga_plot)
         } else {
             message("Too few peaks to plot. Check the genome alignment rates.")
@@ -1470,15 +1471,15 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         # Feature distance distribution plots
         x <- tryCatch(
             {
-                suppressMessages(calcFeatureDistRefTSS(query, genome))
+                suppressMessages(GenomicDistributions::calcFeatureDistRefTSS(query, genome))
             },
             error=function(e) {
-                message("calcFeatureDistRefTSS(): ", e)
+                message("GenomicDistributions::calcFeatureDistRefTSS(): ", e)
                 return(NULL)
             },
             warning=function(e) {
-                message("calcFeatureDistRefTSS(): ", e)
-                return(NULL)
+                message("GenomicDistributions::calcFeatureDistRefTSS(): ", e)
+                suppressMessages(GenomicDistributions::calcFeatureDistRefTSS(query, genome))
             }
         )
 
@@ -1487,7 +1488,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         }
         
         if (!is.na(x[1])) {
-            TSS_plot <- plotFeatureDist(x, featureName="TSS")
+            TSS_plot <- GenomicDistributions::plotFeatureDist(x, featureName="TSS")
             return(TSS_plot)
         } else {
             message("Unable to produce TSS distribution plot.")
@@ -1532,7 +1533,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         # Default to chromosome distribution plot
         # Chromosome distribution plot
         # Chromosome distribution plot
-        x <- chromBins(query, genome)
+        x <- GenomicDistributions::chromBins(query, genome)
 
         if (x$msg != "") {
             message(x$msg)
@@ -1547,7 +1548,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         keep   <- tbl[tbl$Freq > cutoff, 1]
         x      <- x$value[x$value$chr %in% keep,]
         if (nrow(x) > 0) {
-            ga_plot <- plotChromBins(x)
+            ga_plot <- GenomicDistributions::plotChromBins(x)
             return(ga_plot)
         } else {
             message("Too few peaks to plot. Check the genome alignment rates.")
@@ -1695,7 +1696,7 @@ reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALS
     }
 
     if (exists("peaks") & exists("c_size")) {
-        hits  <- foverlaps(peaks, peaks,
+        hits  <- data.table::foverlaps(peaks, peaks,
                            by.x=c("chr", "start", "end"),
                            type="any", which=TRUE, nomatch=0)
         if (bedOnly) {
@@ -2511,7 +2512,7 @@ summarizer <- function(project, output_dir) {
 countReproduciblePeaks <- function(peak_list, peak_DT) {
     setkey(peak_DT, chr, start, end)
     setkey(peak_list, chr, start, end)
-    hits <- foverlaps(peak_list, peak_DT,
+    hits <- data.table::foverlaps(peak_list, peak_DT,
                       by.x=c("chr", "start", "end"),
                       type="any", which=TRUE, nomatch=0)
     # track the number of overlaps of final peak set peaks
@@ -2569,7 +2570,7 @@ collapsePeaks <- function(sample_table, chr_sizes,
     peaks_by_chr   <- split(peaks, peaks$chr)
     hit_aggregator <- function(x) {
         #message(paste0("x: ", unique(x$chr)))  # DEBUG
-        peaksGR <- makeGRangesFromDataFrame(x, keep.extra.columns=FALSE)
+        peaksGR <- GenomicRanges::makeGRangesFromDataFrame(x, keep.extra.columns=FALSE)
         hitsGR  <- suppressWarnings(
             findOverlaps(peaksGR, peaksGR,
 						 ignore.strand=TRUE, minoverlap=min_olap))
@@ -2931,7 +2932,7 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
             setkey(peaks, chr, start, end)
             peaks_dt  <- rbind(peaks_dt, peaks)
             # Convert to GRanges for more efficient findOverlaps vs data.table
-            peaksGR   <- makeGRangesFromDataFrame(peaks_dt,
+            peaksGR   <- GenomicRanges::makeGRangesFromDataFrame(peaks_dt,
                                                   keep.extra.columns=TRUE)
             reduceGR  <- reduce(peaksGR)
             
@@ -2974,8 +2975,8 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                                      "base_count", "width", "frac", "norm")
                     setkey(p, chr, start, end)
                     
-                    reduceGR <- makeGRangesFromDataFrame(reduce_dt)
-                    peaksGR  <- makeGRangesFromDataFrame(p)
+                    reduceGR <- GenomicRanges::makeGRangesFromDataFrame(reduce_dt)
+                    peaksGR  <- GenomicRanges::makeGRangesFromDataFrame(p)
                     hitsGR   <- findOverlaps(query=reduceGR, subject=peaksGR,
 											 minoverlap=min_olap)
 
