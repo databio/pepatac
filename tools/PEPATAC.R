@@ -6,7 +6,7 @@
 version <- 0.6
 ##### Load dependencies #####
 
-required_libraries <- c("PEPATACr")
+required_libraries <- c("PEPATACr", "optigrab")
 for (i in required_libraries) {
     loadLibrary <- tryCatch (
         {
@@ -16,8 +16,6 @@ for (i in required_libraries) {
         error=function(e) {
             message("Error: Install the \"", i,
                     "\" R package before proceeding.")
-            message('i.e. devtools::install_github("databio/pepatac",',
-                    ' subdir="PEPATACr")')
             return(NULL)
         },
         warning=function(e) {
@@ -324,7 +322,7 @@ if (is.na(subcmd) || grepl("/R", subcmd)) {
         argGap      <- ifelse(reads, 13, 12)
         
         # Manually parse --bed argument
-        opt_args_dt <- as.data.table(opt_get_args())
+        opt_args_dt <- data.table::as.data.table(opt_get_args())
         bed_start   <- grep("--bed", opt_args_dt$V1) + 1
         bed_end     <- nrow(opt_args_dt)
         # bed         <- opt_get(name = c("bed", "b"), required=TRUE,
