@@ -5,7 +5,7 @@ output_schema: pepatac_output_schema.yaml
 command_template: >
   {pipeline.path} 
   --config {looper.pep_config}
-  -O {looper.output_dir}
+  -O {looper.results_subdir}
   -P {compute.cores}
   -M {compute.mem}
   -n {project.name}

@@ -69,9 +69,10 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
+
     outfolder = os.path.abspath(os.path.join(args.output_parent, "summary"))
     
-    pm = pypiper.PipelineManager(name="PEPATAC_collator", outfolder=outfolder,
+    pm = pypiper.PipelineManager(name="PEPATAC_collator", outfolder=outfolder, pipestat_sample_name="PEPATAC_Collator", pipestat_pipeline_type="project",
                                  args=args, version=__version__)
 
     pm.debug(f"\nargs: {args}\n")
@@ -123,6 +124,11 @@ def main():
         outfolder, "{name}_peaks_coverage.tsv".format(name=args.name))
 
     pm.run(cmd, [complexity_file, consensus_peaks_file, peak_coverage_file])
+
+    pm.report_object("Library complexity", complexity_file)
+    pm.report_object("consensus_peaks_file", consensus_peaks_file)
+    pm.report_object("counts_table", peak_coverage_file)
+
     pm.stop_pipeline()
 
 
