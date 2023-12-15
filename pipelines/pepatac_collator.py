@@ -118,16 +118,23 @@ def main():
 
     complexity_file = os.path.join(
         outfolder, "{name}_libComplexity.pdf".format(name=args.name))
+    complexity_thumbnail = os.path.join(
+        outfolder, "{name}_libComplexity.png".format(name=args.name))
     consensus_peaks_file = os.path.join(
         outfolder, "{name}_*_consensusPeaks.narrowPeak".format(name=args.name))
+    consensus_peaks_thumbnail = os.path.join(
+        outfolder, "{name}_*_consensusPeaks.png".format(name=args.name))
     peak_coverage_file = os.path.join(
         outfolder, "{name}_peaks_coverage.tsv".format(name=args.name))
+    peak_coverage_thumbnail = os.path.join(
+        outfolder, "{name}_peaks_coverage.png".format(name=args.name))
 
     pm.run(cmd, [complexity_file, consensus_peaks_file, peak_coverage_file])
 
-    pm.report_object("Library complexity", complexity_file)
-    pm.report_object("consensus_peaks_file", consensus_peaks_file)
-    pm.report_object("counts_table", peak_coverage_file)
+    # For pypiper's report object, anchor image = thumbnail path
+    pm.report_object("Library complexity", complexity_file, anchor_image=complexity_thumbnail)
+    pm.report_object("consensus_peaks_file", consensus_peaks_file, anchor_image=consensus_peaks_thumbnail)
+    pm.report_object("counts_table", peak_coverage_file, anchor_image=peak_coverage_thumbnail)
 
     pm.stop_pipeline()
 
