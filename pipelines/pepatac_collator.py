@@ -78,9 +78,6 @@ def main():
     pm.debug(f"\nargs: {args}\n")
 
     project = peppy.Project(args.config_file)
-    #results_subdir = "/home/jps3dp/processed/pepatac_tutorial//processed/results_pipeline"
-    #stats_yaml_files.append(os.path.join(args.results, sample, "stats.yaml"))
-    # project._project_data['_config']['looper']['output_dir']
     project_stats_file = os.path.join(args.output_parent, f"{project.name}_stats_summary.yaml")
     stats_yaml_files = []
     sample_names = []
@@ -120,14 +117,20 @@ def main():
         outfolder, "{name}_libComplexity.pdf".format(name=args.name))
     complexity_thumbnail = os.path.join(
         outfolder, "{name}_libComplexity.png".format(name=args.name))
-    consensus_peaks_file = os.path.join(
-        outfolder, "{name}_*_consensusPeaks.narrowPeak".format(name=args.name))
-    consensus_peaks_thumbnail = os.path.join(
-        outfolder, "{name}_*_consensusPeaks.png".format(name=args.name))
-    peak_coverage_file = os.path.join(
-        outfolder, "{name}_peaks_coverage.tsv".format(name=args.name))
-    peak_coverage_thumbnail = os.path.join(
-        outfolder, "{name}_peaks_coverage.png".format(name=args.name))
+    
+    # TODO: add genome to file name
+    for genome in project.sample_table.genome.unique():
+        pm.debug(f"genome: {genome}")
+        consensus_peaks_file = os.path.join(
+            outfolder, f"{args.name}_{genome}_consensusPeaks.narrowPeak")
+        consensus_peaks_thumbnail = os.path.join(
+            outfolder, f"{args.name}_{genome}_consensusPeaks.png")
+        pm.debug(f"consensus_peaks_file: {consensus_peaks_file}")
+        peak_coverage_file = os.path.join(
+            outfolder, f"{args.name}_{genome}_peaks_coverage.tsv")
+        peak_coverage_thumbnail = os.path.join(
+            outfolder, f"{args.name}_{genome}_peaks_coverage.png")
+        pm.debug(f"peak_coverage_file(s): {peak_coverage_file}")
 
     pm.run(cmd, [complexity_file, consensus_peaks_file, peak_coverage_file])
 
