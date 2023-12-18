@@ -295,7 +295,7 @@ properties:
           - path
           - thumbnail_path
           - title
-      TSS enrichment:
+      TSS_enrichment:
         title: "TSS enrichment file"
         description: "Plots TSS scores for each sample."
         type: object
@@ -311,7 +311,7 @@ properties:
           - path
           - thumbnail_path
           - title
-      Library complexity:
+      Library_complexity:
         title: "Library complexity file"
         description: "Plots each sample's library complexity on a single plot."
         type: object

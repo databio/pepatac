@@ -5,7 +5,7 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 from argparse import ArgumentParser
 import os
@@ -72,7 +72,9 @@ def main():
 
     outfolder = os.path.abspath(os.path.join(args.output_parent, "summary"))
     
-    pm = pypiper.PipelineManager(name="PEPATAC", outfolder=outfolder, pipestat_sample_name="summary", pipestat_pipeline_type="project",
+    pm = pypiper.PipelineManager(name="PEPATAC", outfolder=outfolder,
+                                 pipestat_sample_name="summary",
+                                 pipestat_pipeline_type="project",
                                  args=args, version=__version__)
 
     pm.debug(f"\nargs: {args}\n")
@@ -114,9 +116,24 @@ def main():
         cmd += " --normalized"
 
     complexity_file = os.path.join(
-        outfolder, "{name}_libComplexity.pdf".format(name=args.name))
+        outfolder, f"{args.name}_libComplexity.pdf")
     complexity_thumbnail = os.path.join(
-        outfolder, "{name}_libComplexity.png".format(name=args.name))
+        outfolder, f"{args.name}_libComplexity.png")
+    
+    alignment_percent_file = os.path.join(
+        outfolder, f"{args.name}_alignmentPercent.pdf")
+    alignment_percent_thumbnail = os.path.join(
+        outfolder, f"{args.name}_alignmentPercent.png")
+
+    alignment_raw_file = os.path.join(
+        outfolder, f"{args.name}_alignmentRaw.pdf")
+    alignment_raw_thumbnail = os.path.join(
+        outfolder, f"{args.name}_alignmentRaw.png")
+
+    TSS_enrichment_file = os.path.join(
+        outfolder, f"{args.name}_TSSEnrichment.pdf")
+    TSS_enrichment_thumbnail = os.path.join(
+        outfolder, f"{args.name}_TSSEnrichment.png")
     
     # TODO: add genome to file name
     for genome in project.sample_table.genome.unique():
@@ -135,9 +152,18 @@ def main():
     pm.run(cmd, [complexity_file, consensus_peaks_file, peak_coverage_file])
 
     # For pypiper's report object, anchor image = thumbnail path
-    pm.report_object("Library complexity", complexity_file, anchor_image=complexity_thumbnail)
-    pm.report_object("consensus_peaks_file", consensus_peaks_file, anchor_image=consensus_peaks_thumbnail)
-    pm.report_object("counts_table", peak_coverage_file, anchor_image=peak_coverage_thumbnail)
+    pm.report_object("Library_complexity", complexity_file,
+                     anchor_image=complexity_thumbnail)
+    pm.report_object("alignment_percent_file", alignment_percent_file,
+                     anchor_image=alignment_percent_thumbnail)
+    pm.report_object("alignment_raw_file", alignment_raw_file,
+                     anchor_image=alignment_raw_thumbnail)
+    pm.report_object("TSS_enrichment", TSS_enrichment_file,
+                     anchor_image=TSS_enrichment_thumbnail)
+    pm.report_object("consensus_peaks_file", consensus_peaks_file,
+                     anchor_image=consensus_peaks_thumbnail)
+    pm.report_object("counts_table", peak_coverage_file,
+                     anchor_image=peak_coverage_thumbnail)
 
     pm.stop_pipeline()
 
