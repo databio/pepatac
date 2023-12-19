@@ -1834,11 +1834,13 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
-        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.border      = element_rect(colour = "black", fill = NA,
+                                         linewidth = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
-                                          size = 20, hjust = 0.5),
+                                         size = 20, angle = 90, hjust = 1,
+                                         vjust=0.5),
         axis.text.y       = element_text(face = "plain", color = "black",
                                           size = 20, hjust = 1),
         axis.title.x      = element_text(face = "plain", color = "black", 
@@ -1847,11 +1849,12 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
                                           size = 22, hjust = 0.5),
         plot.title        = element_text(face = "bold", color = "black", 
                                           size = 12, hjust = 0.5),
-        axis.ticks        = element_line(size = 0.5),
+        axis.ticks        = element_line(linewidth = 0.5),
         axis.ticks.length = unit(2, "mm"),
         legend.background = element_rect(fill = "transparent"),
         legend.text       = element_text(size = 16),
-        legend.title      = element_blank()
+        legend.title      = element_blank(),
+        aspect.ratio      = 1
     )
 
     # Get prealignments if they exist
@@ -1914,21 +1917,21 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
                stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
                with=FALSE][[1]])]
         }
-        setcolorder(align_raw, c("sample", "unaligned",
+        data.table::setcolorder(align_raw, c("sample", "unaligned",
                                 paste(unlist(prealignments)),
                                 "duplicates", paste(unique(stats$Genome))))
     } else {
-        setcolorder(align_raw, c("sample", "unaligned", "duplicates",
+        data.table::setcolorder(align_raw, c("sample", "unaligned", "duplicates",
                                 paste(unique(stats$Genome))))
     }
 
     align_raw$sample <- factor(align_raw$sample,
                                levels = unique(align_raw$sample))
 
-    melt_align_raw <- melt(align_raw, id.vars = "sample")
+    melt_align_raw <- reshape2::melt(align_raw, id.vars = "sample")
     max_reads      <- max(rowSums(align_raw[,2:ncol(align_raw)]))
     upper_limit    <- roundUpNice(max_reads/1000000)
-    chart_height   <- (length(unique(align_raw$sample))) * 0.75
+    chart_height   <- (length(unique(align_raw$sample))) #* 0.75
     plot_colors    <- data.table::data.table(unaligned="gray15")
 
     if (!is.null(prealignments)) {
@@ -1948,7 +1951,7 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
 
     align_raw_plot <- (
         ggplot(melt_align_raw, aes(x=sample, y=as.numeric(value)/1000000)) +
-            geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) +
+            geom_col(aes(fill=variable), colour="black", `linewidth`=0.25, width=0.8) +
             guides(fill=guide_legend(reverse=TRUE)) +
             labs(x="", y="Number of reads (M)") +
             scale_x_discrete(limits=rev(levels(melt_align_raw$sample))) +
@@ -1964,7 +1967,7 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
         setPanelSize(
             align_raw_plot,
             file=output_file,
-            width=unit(8,"inches"),
+            width=unit(chart_height,"inches"),
             height=unit(chart_height,"inches")
             )
         )
@@ -1977,8 +1980,8 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
         colnames(more_to_see)  <- colnames(align_raw_thumb)
         align_raw_thumb        <- rbind(align_raw_thumb, more_to_see)
         align_raw_thumb$sample <- droplevels(align_raw_thumb)$sample
-        melt_align_raw_thumb   <- melt(align_raw_thumb, id.vars="sample")
-        chart_height           <- (length(unique(align_raw_thumb$sample))) * 0.75
+        melt_align_raw_thumb   <- reshape2::melt(align_raw_thumb, id.vars="sample")
+        chart_height           <- (length(unique(align_raw_thumb$sample))) #* 0.75
     } else {melt_align_raw_thumb <- melt_align_raw}
 
     thumb_raw_plot <- (
@@ -1998,7 +2001,7 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
         setPanelSize(
             thumb_raw_plot,
             file=output_file,
-            width=unit(8,"inches"),
+            width=unit(chart_height,"inches"),
             height=unit(chart_height,"inches")
             )
         )
@@ -2020,11 +2023,13 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
-        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.border      = element_rect(colour = "black", fill = NA,
+                                         linewidth = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
-                                          size = 20, hjust = 0.5),
+                                         size = 20, angle = 90, hjust = 1,
+                                         vjust=0.5),
         axis.text.y       = element_text(face = "plain", color = "black",
                                           size = 20, hjust = 1),
         axis.title.x      = element_text(face = "plain", color = "black", 
@@ -2033,11 +2038,12 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
                                           size = 22, hjust = 0.5),
         plot.title        = element_text(face = "bold", color = "black", 
                                           size = 12, hjust = 0.5),
-        axis.ticks        = element_line(size = 0.5),
+        axis.ticks        = element_line(linewidth = 0.5),
         axis.ticks.length = unit(2, "mm"),
         legend.background = element_rect(fill = "transparent"),
         legend.text       = element_text(size = 16),
-        legend.title      = element_blank()
+        legend.title      = element_blank(),
+        aspect.ratio      = 1
     )
 
     unaligned <- 100 - as.numeric(stats$Alignment_rate)
@@ -2093,11 +2099,11 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
                       unlist(prealignments)[i], sep="_")),
                       with=FALSE][[1]])]
         }
-        setcolorder(align_percent, c("sample", "unaligned",
+        data.table::setcolorder(align_percent, c("sample", "unaligned",
                                     paste(unlist(prealignments)),
                                     "duplicates", paste(unique(stats$Genome))))
     } else {
-        setcolorder(align_percent, c("sample", "unaligned", "duplicates",
+        data.table::setcolorder(align_percent, c("sample", "unaligned", "duplicates",
                                     paste(unique(stats$Genome))))
     }
 
@@ -2127,9 +2133,9 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         print(aberrant_samples, row.names=FALSE)
     }
 
-    melt_align_percent <- melt(align_percent, id.vars="sample")
+    melt_align_percent <- reshape2::melt(align_percent, id.vars="sample")
     upper_limit        <- 103
-    chart_height       <- (length(unique(align_percent$sample))) * 0.75
+    chart_height       <- (length(unique(align_percent$sample))) #* 0.75
 
     plot_colors <- data.table::data.table(unaligned="gray15")
 
@@ -2166,7 +2172,7 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         setPanelSize(
             align_percent_plot, 
             file=output_file, 
-            width=unit(8,"inches"), 
+            width=unit(chart_height,"inches"), 
             height=unit(chart_height,"inches")
             )
         )
@@ -2180,10 +2186,9 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         colnames(more_to_see)      <- colnames(align_percent_thumb)
         align_percent_thumb        <- rbind(align_percent_thumb, more_to_see)
         align_percent_thumb$sample <- droplevels(align_percent_thumb)$sample
-        melt_align_percent_thumb   <- melt(align_percent_thumb,
+        melt_align_percent_thumb   <- reshape2::melt(align_percent_thumb,
                                            id.vars="sample")
-        chart_height        <- ((length(unique(align_percent_thumb$sample))) *
-                                0.75)
+        chart_height        <- ((length(unique(align_percent_thumb$sample))))
     } else {melt_align_percent_thumb <- melt_align_percent}
 
     thumb_percent_plot <- (
@@ -2203,7 +2208,7 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         setPanelSize(
             thumb_percent_plot, 
             file=output_file, 
-            width=unit(8,"inches"), 
+            width=unit(chart_height,"inches"), 
             height=unit(chart_height,"inches")
             )
         )
@@ -2227,11 +2232,12 @@ plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
         panel.border      = element_rect(colour = "black", fill = NA,
-                                         size = 0.5),
+                                         linewidth = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
-                                          size = 20, hjust = 0.5),
+                                         size = 20, angle = 90, hjust = 1,
+                                         vjust=0.5),
         axis.text.y       = element_text(face = "plain", color = "black",
                                           size = 20, hjust = 1),
         axis.title.x      = element_text(face = "plain", color = "black", 
@@ -2240,11 +2246,12 @@ plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
                                           size = 22, hjust = 0.5),
         plot.title        = element_text(face = "bold", color = "black", 
                                           size = 12, hjust = 0.5),
-        axis.ticks        = element_line(size = 0.5),
+        axis.ticks        = element_line(linewidth = 0.5),
         axis.ticks.length = unit(2, "mm"),
         legend.background = element_rect(fill = "transparent"),
         legend.text       = element_text(size = 16),
-        legend.title      = element_blank()
+        legend.title      = element_blank(),
+        aspect.ratio      = 1
     )
 
     # Establish red/green color scheme
@@ -2288,7 +2295,7 @@ plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
 
     max_TSS      <- max(stats$TSS_score, na.rm=TRUE)
     upper_limit  <- roundUpNice(max_TSS)
-    chart_height <- (length(unique(TSS_score$sample))) * 0.75
+    chart_height <- (length(unique(TSS_score$sample))) #* 0.75
 
     TSS_score$sample <- factor(TSS_score$sample,
                                levels=unique(TSS_score$sample))
@@ -2318,7 +2325,7 @@ plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
     # Limit to 25 samples max
     if (length(TSS_score$sample) > 25) {
         TSS_score_thumb <- TSS_score[1:25, ]
-        chart_height    <- (length(unique(TSS_score_thumb$sample))) * 0.75
+        chart_height    <- (length(unique(TSS_score_thumb$sample))) #* 0.75
         more_to_see     <- data.frame(t(c("...", "0", "#AF0000")))
         colnames(more_to_see) <- colnames(TSS_score_thumb)
         TSS_score_thumb       <- rbind(TSS_score_thumb, more_to_see)
@@ -2362,7 +2369,8 @@ plotLibSizes <- function(prj, summary_dir, stats) {
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
-        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.border      = element_rect(colour = "black", fill = NA,
+                                         linewidth = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
@@ -2375,11 +2383,12 @@ plotLibSizes <- function(prj, summary_dir, stats) {
                                           size = 22, hjust = 0.5),
         plot.title        = element_text(face = "bold", color = "black", 
                                           size = 12, hjust = 0.5),
-        axis.ticks        = element_line(size = 0.5),
+        axis.ticks        = element_line(linewidth = 0.5),
         axis.ticks.length = unit(2, "mm"),
         legend.background = element_rect(fill = "transparent"),
         legend.text       = element_text(size = 16),
-        legend.title      = element_blank()
+        legend.title      = element_blank(),
+        aspect.ratio      = 1
     )
 
     picard_lib_size <- cbind.data.frame(
@@ -2477,8 +2486,8 @@ summarizer <- function(project, output_dir) {
     dir.create(summary_dir, showWarnings = FALSE)
 
     # convert yaml to data.table object
-    stats <- rbindlist(sapply(project_samples, FUN=yamlToDT,
-                              yaml_file=summary_file), fill=TRUE)
+    stats <- data.table::rbindlist(sapply(project_samples, FUN=yamlToDT,
+                                          yaml_file=summary_file), fill=TRUE)
 
     # Set absent values in table to zero
     stats[is.na(stats)]   <- 0
