@@ -135,7 +135,6 @@ def main():
     TSS_enrichment_thumbnail = os.path.join(
         outfolder, f"{args.name}_TSSEnrichment.png")
     
-    # TODO: add genome to file name
     for genome in project.sample_table.genome.unique():
         pm.debug(f"genome: {genome}")
         consensus_peaks_file = os.path.join(
