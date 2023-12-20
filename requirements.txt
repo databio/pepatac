@@ -13,10 +13,8 @@ FuzzyTM>=0.4.0
 hypothesis==4.38.0
 jinja2
 jsonschema>=3.0.1
-git+https://github.com/pepkit/looper.git@dev
-git+https://github.com/databio/pypiper.git@dev
 logmuse>=0.2.7
-#looper>=1.4.2
+looper>=1.6.0a3
 MACS2>=2.2.9.1
 MACS3>=3.0.0b1
 numpy<1.25,>=1.21
@@ -24,9 +22,8 @@ oyaml>=1.0
 pararead>=0.7.0
 pandas>=1.4
 #peppy>=0.35.7
-#piper>=0.13.2
-#pipestat>=0.5.1
-git+https://github.com/pepkit/pipestat.git@dev
+piper>=0.14.0a2
+pipestat>=0.6.0a11
 psutil>=5.8
 pyqt5<5.16
 pyqtwebengine<5.16
