@@ -136,6 +136,7 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 `PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
 
 Note: if given error regarding `devtools` try: `apt install r-cran-devtools` before proceeding with installation.
+Note: if receiving an error for GenomicDistributionsData_0.0.2.tar.gz, download the file manually and install directly using `install.packages("local/path/to/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)`
 ```
 Rscript -e 'install.packages('argparser')'
 Rscript -e 'install.packages("devtools")'

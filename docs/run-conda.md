@@ -46,6 +46,7 @@ export R_LIBS_USER="$CONDA_PREFIX/lib/R/library"
 ```
 
 From the `pepatac/` directory, open `R` and install the following packages:
+Note: if receiving an error for GenomicDistributionsData_0.0.2.tar.gz, download the file manually and install directly using `install.packages("local/path/to/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)`
 ```{R}
 install.packages('argparser')
 install.packages("optigrab")
