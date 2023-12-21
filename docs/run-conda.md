@@ -42,10 +42,12 @@ To ensure these packages are installed to the `pepatac` `conda` environment, mak
 conda activate pepatac
 unset R_LIBS
 export R_LIBS="$CONDA_PREFIX/lib/R/library"
+export R_LIBS_USER="$CONDA_PREFIX/lib/R/library"
 ```
 
 From the `pepatac/` directory, open `R` and install the following packages:
 ```{R}
+install.packages('argparser')
 install.packages("optigrab")
 devtools::install_github("databio/GenomicDistributions")
 install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)

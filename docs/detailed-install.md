@@ -137,6 +137,7 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 
 Note: if given error regarding `devtools` try: `apt install r-cran-devtools` before proceeding with installation.
 ```
+Rscript -e 'install.packages('argparser')'
 Rscript -e 'install.packages("devtools")'
 Rscript -e 'devtools::install_github("pepkit/pepr")'
 Rscript -e 'install.packages("BiocManager")'
