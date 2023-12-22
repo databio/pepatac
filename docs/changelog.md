@@ -1,7 +1,7 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.10.6] -- 2023-XX-XX
+## [0.10.6] -- 2023-12-22
 
 ### Fixed
  - adjusted requirements and docs for Looper 1.6.0, Pipestat v0.6.0, and Pypiper 0.14.0
