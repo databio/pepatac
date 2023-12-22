@@ -11,11 +11,11 @@
 # ))
 #
 # Created: 5/18/17
-# Last updated: 05/10/2021
+# Last updated: 12/18/2023
 #
 # usage: Rscript /path/to/Rscript/PEPATAC_summarizer.R 
 #        /path/to/project_config.yaml
-# Depends: R (>= 3.5.1)
+# Depends: R (>= 4.0)
 # Imports: PEPATACr, argparser
 ###############################################################################
 ##### LOAD ARGUMENTPARSER #####
@@ -108,10 +108,11 @@ pep <- argv$config
 # Load the project
 prj <- invisible(suppressWarnings(pepr::Project(pep)))
 # Convenience
-project_name    <- config(prj)$name
+project_name    <- pepr::config(prj)$name
 project_samples <- pepr::sampleTable(prj)$sample_name
-sample_table    <- data.table(sample_name=pepr::sampleTable(prj)$sample_name,
-                              genome=pepr::sampleTable(prj)$genome)
+sample_table    <- data.table::data.table(
+    sample_name=pepr::sampleTable(prj)$sample_name,
+    genome=pepr::sampleTable(prj)$genome)
 
 # Set the output directory
 summary_dir <- suppressMessages(file.path(argv$output, "summary"))
@@ -130,19 +131,6 @@ if (dir.exists(argv$results)) {
     quit()
 }
 
-
-# Generate stats summary
-stats  <- PEPATACr::createStatsSummary(project_samples, results_subdir)
-if (nrow(stats) == 0) {
-    quit()
-}
-project_stats_file <- file.path(argv$output,
-                                paste0(project_name, '_stats_summary.tsv'))
-message(sprintf("Summary (n=%s): %s",
-        length(unique(stats$sample_name)), project_stats_file))
-fwrite(stats, project_stats_file, sep="\t", col.names=TRUE)
-
-
 # Generate assets
 assets <- PEPATACr::createAssetsSummary(project_samples, results_subdir)
 if (nrow(assets) == 0) {
@@ -152,7 +140,7 @@ project_assets_file <- file.path(argv$output,
                                  paste0(project_name, '_assets_summary.tsv'))
 message(sprintf("Summary (n=%s): %s",
         length(unique(assets$sample_name)), project_assets_file))
-fwrite(assets, project_assets_file, sep="\t", col.names=FALSE)
+data.table::fwrite(assets, project_assets_file, sep="\t", col.names=FALSE)
 
 
 # Produce project summary plots
@@ -189,15 +177,15 @@ if (!file.exists(complexity_path) || argv$new_start) {
                                             read_length = 0,
                                             real_counts_path = rcSub,
                                             ignore_unique = FALSE)
-        output_file <- file.path(summary_dir,
+        output_pdf <- file.path(summary_dir,
                                  paste0(project_name, "_libComplexity.pdf"))
-        pdf(file = output_file, width= 10, height = 7, useDingbats=F)
+        pdf(file = output_pdf, width= 10, height = 7, useDingbats=F)
         suppressWarnings(print(p))
         invisible(dev.off())
 
-        output_file <- file.path(summary_dir,
+        output_png <- file.path(summary_dir,
                                  paste0(project_name, "_libComplexity.png"))
-        png(filename = output_file, width = 686, height = 480)
+        png(filename = output_png, width = 686, height = 480)
         suppressWarnings(print(p))
         invisible(dev.off())
     } else {
