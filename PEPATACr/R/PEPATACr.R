@@ -10,6 +10,9 @@
 #' @author Jason Smith
 #'
 #' @references \url{http://github.com/databio/pepatac}
+#' @import data.table
+#' @import ggplot2
+#' @import optigrab
 NULL
 
 ################################################################################
@@ -20,8 +23,8 @@ NULL
 #' @examples
 #' theme_PEPATAC()
 theme_PEPATAC <- function(base_family = "sans", ...){
-  theme_classic(base_family = base_family, base_size = 14, ...) +
-  theme(
+  ggplot2::theme_classic(base_family = base_family, base_size = 14, ...) +
+  ggplot2::theme(
     axis.line = element_line(size = 0.5),
     axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5),
     panel.grid.major = element_blank(),
@@ -88,7 +91,7 @@ fileIcon <- function(x=seq(0:275), y=seq(0:275)) {
                                   y=c(157.5/275*maxY,157.5/275*maxY)),
                   aes(x=x,y=y), color="gray", size=4, lineend="round") +
         theme_PEPATAC() +
-        theme(panel.border = element_blank(),
+        ggplot2::theme(panel.border = element_blank(),
               axis.line = element_blank(),
               axis.title.x=element_blank(),
               axis.text.x=element_blank(),
@@ -191,12 +194,13 @@ plotComplexityCurves <- function(ccurves,
     }
 
     # Get the real counts if we have them
-    rcDT <- data.table(name = character(length(real_counts_path)),
-                       total = integer(length(real_counts_path)),
-                       unique = integer(length(real_counts_path)))
+    rcDT <- data.table::data.table(
+        name = character(length(real_counts_path)),
+        total = integer(length(real_counts_path)),
+        unique = integer(length(real_counts_path)))
 
     if (exists(real_counts_path[1])) {
-        rc_file    <- data.table(get(real_counts_path[1]))
+        rc_file    <- data.table::data.table(get(real_counts_path[1]))
         rcDT$name  <- basename(rc_file$V1)
         rcDT$total <- as.integer(rc_file$V2)
         if (ncol(rc_file) == 3 && !ignore_unique) {
@@ -221,7 +225,7 @@ plotComplexityCurves <- function(ccurves,
         for (rc in 1:length(real_counts_path)) {
             info <- file.info(file.path(real_counts_path[rc]))
             if (file.exists(real_counts_path[rc]) && info$size != 0) {
-                rc_file        <- fread(real_counts_path[rc])
+                rc_file        <- data.table::fread(real_counts_path[rc])
                 rcDT$name[rc]  <- basename(rc_file$V1)
                 rcDT$total[rc] <- as.integer(rc_file$V2)
                 if (ncol(rc_file) == 3 && !ignore_unique) {
@@ -259,7 +263,8 @@ plotComplexityCurves <- function(ccurves,
                                   "#372B4C", "#E3DAC7", "#27CAE6", "#B361BC",
                                   "#897779", "#6114F8", "#19C42B", "#56B4E9"))
 
-    clist <- data.table(TOTAL_READS = list(), EXPECTED_DISTINCT = list())
+    clist <- data.table::data.table(TOTAL_READS = list(),
+                                    EXPECTED_DISTINCT = list())
     ccurves  <- as.list(ccurves)
     colormap <- palette(length(ccurves))
     for (c in 1:length(ccurves)) {
@@ -270,9 +275,9 @@ plotComplexityCurves <- function(ccurves,
         #message(paste0("Processing ", sample_name))
 
         if (exists(ccurves[[c]])) {
-            ctable <- data.table(get(ccurves[[c]]))
+            ctable <- data.table::data.table(get(ccurves[[c]]))
         } else if (file.exists(ccurves[[c]])) {
-            ctable <- fread(ccurves[[c]])
+            ctable <- data.table::fread(ccurves[[c]])
         } else {
             stop(paste0("FileExistsError: ", ccurves[[c]],
                         " could not be found."))
@@ -313,7 +318,7 @@ plotComplexityCurves <- function(ccurves,
             }
         }
         if (c == 1) {
-            clist <- data.table(
+            clist <- data.table::data.table(
                 SAMPLE_NAME = list(rep(sample_name,
                                    length(ccurve_TOTAL_READS))),
                 TOTAL_READS = list(ccurve_TOTAL_READS),
@@ -322,7 +327,7 @@ plotComplexityCurves <- function(ccurves,
             )
         } else {
             clist <- rbindlist(list(clist,
-                data.table(SAMPLE_NAME = list(rep(sample_name,
+                data.table::data.table(SAMPLE_NAME = list(rep(sample_name,
                                               length(ccurve_TOTAL_READS))),
                            TOTAL_READS = list(ccurve_TOTAL_READS),
                            EXPECTED_DISTINCT = list(ccurve_EXPECTED_DISTINCT),
@@ -499,11 +504,11 @@ plotComplexityCurves <- function(ccurves,
         labs(col = "") +
         scale_color_discrete(labels=c(clist$SAMPLE_NAME)) +
         theme_PEPATAC() +
-        theme(legend.position = "right",
+        ggplot2::theme(legend.position = "right",
               plot.caption = element_text(size = 8, face = "italic"))
 
     # inset zoom plot
-    zoom_theme <- theme(legend.position = "none",
+    zoom_theme <- ggplot2::theme(legend.position = "none",
                         axis.line = element_blank(),
                         axis.text.x = element_blank(),
                         axis.text.y = element_blank(),
@@ -563,7 +568,7 @@ plotComplexityCurves <- function(ccurves,
 
     # Don't include legend for single sample plots
     if (length(ccurves) == 1) {
-        fig <- fig + theme(legend.position = "none")
+        fig <- fig + ggplot2::theme(legend.position = "none")
     }
 
     return(fig)
@@ -617,7 +622,7 @@ plotComplexityCurves <- function(ccurves,
 calcFRiF <- function(bedFile, total, reads) {
     colnames(bedFile) <- c("chromosome", "start", "end",
                            "count", "bases", "width", "fraction")
-    grObj   <- makeGRangesFromDataFrame(bedFile)
+    grObj   <- GenomicRanges::makeGRangesFromDataFrame(bedFile)
     grObj   <- reduce(grObj)
     redBed  <- data.frame(chromosome=seqnames(grObj),
                           start=start(grObj), end=end(grObj))
@@ -835,7 +840,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
             p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
                         group=feature, color=feature)) +
                 #geom_line(aes(linetype=feature), size=2, alpha=0.5) +
-                geom_line(size=2, alpha=0.5) +
+                geom_line(linewidth=2, alpha=0.5) +
                 guides(linetype = "none") +
                 labs(x=expression(log[10]("number of bases")),
                      y="FRiF") +
@@ -846,7 +851,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                                                       labels$val),
                                         values=labels$color) +
                 labs(color="FRiF") +
-                theme(legend.position="right",
+                ggplot2::theme(legend.position="right",
                       legend.justification=c(0.1,0.9),
                       legend.background=element_blank(),
                       legend.text = element_text(size = rel(0.65)),
@@ -862,11 +867,11 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                 coord_flip() +
                 scale_x_discrete(position="top") +
                 theme_PEPATAC() +
-                theme(plot.background = element_rect(fill = "transparent",
-                                                     color = NA,),
-                      panel.background = element_rect(fill = "transparent"),
-                      rect = element_rect(fill = "transparent"),
-                      plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
+                ggplot2::theme(plot.background = element_rect(
+                               fill = "transparent", color = NA,),
+                    panel.background = element_rect(fill = "transparent"),
+                    rect = element_rect(fill = "transparent"),
+                    plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
 
             g   <- ggplotGrob(p2)
             min_x <- min(layer_scales(p)$x$range$range)
@@ -884,7 +889,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
             #               group=feature, color=feature)) +
             p <- ggplot(covDF, aes(x=log10(cumSize), y=frip,
                         group=feature, color=feature)) +
-                geom_line(size=2, alpha=0.5) +
+                geom_line(linewidth=2, alpha=0.5) +
                 guides(linetype = "none") +
                 labs(x=expression(log[10]("number of bases")), y="FRiF") +
                 theme_PEPATAC()
@@ -894,7 +899,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                                                       labels$val),
                                         values=labels$color) +
                 labs(color="FRiF") +
-                theme(legend.position=c(0.075,0.975),
+                ggplot2::theme(legend.position=c(0.075,0.975),
                       legend.justification=c(0.1,0.9),
                       legend.title = element_blank(),
                       legend.text = element_text(size = rel(0.65)), 
@@ -929,7 +934,7 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                                                       labels$val),
                                         values=labels$color) +
                 labs(color="FRiF") +
-                theme(legend.position="right",
+                ggplot2::theme(legend.position="right",
                       legend.justification=c(0.1,0.9),
                       legend.background=element_blank(),
                       legend.key = element_blank(),
@@ -944,11 +949,11 @@ plotFRiF <- function(sample_name, num_reads, genome_size,
                 coord_flip() +
                 scale_x_discrete(position="top") +
                 theme_PEPATAC() +
-                theme(plot.background = element_rect(fill = "transparent",
-                                                     color = NA,),
-                      panel.background = element_rect(fill = "transparent"),
-                      rect = element_rect(fill = "transparent"),
-                      plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
+                ggplot2::theme(plot.background = element_rect(
+                               fill = "transparent", color = NA,),
+                    panel.background = element_rect(fill = "transparent"),
+                    rect = element_rect(fill = "transparent"),
+                    plot.margin = unit(c(0,0,-6.5,-6.5),"mm"))
 
             g   <- ggplotGrob(p2)
             min_x <- min(layer_scales(p)$x$range$range)
@@ -1004,8 +1009,8 @@ plotTSS <- function(TSSfile, cutoff=6) {
         }
     }
 
-    t1 <- theme_classic(base_size=14) + 
-            theme(plot.background  = element_blank(),
+    t1 <- ggplot2::theme_classic(base_size=14) + 
+            ggplot2::theme(plot.background  = element_blank(),
                   panel.grid.major = element_blank(),
                   panel.grid.minor = element_blank(),
                   panel.border     = element_rect(colour = "black",
@@ -1016,26 +1021,26 @@ plotTSS <- function(TSSfile, cutoff=6) {
                   aspect.ratio = 1,
                   axis.ticks.length = unit(2, "mm"))
 
-    iMat <- data.table(V1 = numeric())
+    iMat <- data.table::data.table(V1 = numeric())
     if (length(TSSfile) == 1) {
         if (exists(TSSfile)) {
-            iMat <- data.table(get(TSSfile))
+            iMat <- data.table::data.table(get(TSSfile))
         } else {
-            iMat <- fread(TSSfile)
+            iMat <- data.table::fread(TSSfile)
         }
     } else if (length(TSSfile) == 2) {
         for (i in 1:length(TSSfile)) {
             if (exists(TSSfile[i])) {
                 if (i == 1) {
-                    iMat <- data.table(get(TSSfile[i]))
+                    iMat <- data.table::data.table(get(TSSfile[i]))
                 } else {
-                    iMat <- list(iMat, data.table(get(TSSfile[i])))
+                    iMat <- list(iMat, data.table::data.table(get(TSSfile[i])))
                 }
             } else {
                 if (i == 1) {
-                    iMat <- fread(TSSfile[i])
+                    iMat <- data.table::fread(TSSfile[i])
                 } else {
-                    iMat <- list(iMat, fread(TSSfile[i]))
+                    iMat <- list(iMat, data.table::fread(TSSfile[i]))
                 }
             }
         }
@@ -1192,11 +1197,11 @@ plotFLD <- function(fragL,
                     max_fragment = 200) {
 
     if (exists(fragL_count)) {
-        dat <- data.table(get(fragL_count))
+        dat <- data.table::data.table(get(fragL_count))
     } else if (file.exists(fragL_count)) {
         info <- file.info(file.path(fragL_count))
         if (info$size != 0) {
-            dat <- fread(fragL_count)
+            dat <- data.table::fread(fragL_count)
         } else {
             warning(paste0(fragL_count, " is an empty file."))
             return(ggplot())
@@ -1207,9 +1212,9 @@ plotFLD <- function(fragL,
     }
 
     if (exists(fragL)) {
-        summary_table <- data.table(get(fragL))
+        summary_table <- data.table::data.table(get(fragL))
     } else if (file.exists(fragL)) {
-        summary_table <- fread(fragL)
+        summary_table <- data.table::fread(fragL)
     } else {
         stop(paste0("FileExistsError: ", fragL, " could not be found."))
         quit(save = "no", status = 1, runLast = FALSE)
@@ -1217,7 +1222,7 @@ plotFLD <- function(fragL,
 
     dat1 <- dat[dat$V2<=max_fragment,]
     tmp  <- seq(1:as.numeric(dat1[1,2]-1))
-    dat0 <- data.table(V1=rep(0,length(tmp)),V2=tmp)
+    dat0 <- data.table::data.table(V1=rep(0,length(tmp)),V2=tmp)
     dat2 <- rbind(dat0, dat1)
 
     x_min <- which.min(dat1$V1[1:which.max(dat1$V1)])
@@ -1237,15 +1242,16 @@ plotFLD <- function(fragL,
             geom_line(alpha=0.5) +
             labs(x="Fragment length", y=ylabel) +
             theme_PEPATAC() +
-            theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+            ggplot2::theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
 
-    summ <- data.table(Min=min(summary_table$V1),
-                       Max=max(summary_table$V1),
-                       Median=median(summary_table$V1),
-                       Mean=mean(summary_table$V1),
-                       Stdev=sd(summary_table$V1))
+    summ <- data.table::data.table(
+        Min=min(summary_table$V1),
+        Max=max(summary_table$V1),
+        Median=median(summary_table$V1),
+        Mean=mean(summary_table$V1),
+        Stdev=sd(summary_table$V1))
     # Write summary table to stats file
-    fwrite(summ, file=fragL_txt, row.names=F, quote=F, sep="\t")
+    data.table::fwrite(summ, file=fragL_txt, row.names=F, quote=F, sep="\t")
 
     return(p)
 }
@@ -1361,7 +1367,7 @@ tryCatchChromBins <- function(x, y) {
       withCallingHandlers(
         {
           msg <- ""
-          list(value = calcChromBinsRef(x, y), msg = msg)
+          list(value = GenomicDistributions::calcChromBinsRef(x, y), msg = msg)
         }, 
         warning = function(e) {
           msg <<- trimws(paste0("WARNING: ", e))
@@ -1411,11 +1417,11 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
     
     # load input file and convert to/ensure it is in BED6 format
     if (exists(input)) {
-        in_file <- data.table(get(input))
+        in_file <- data.table::data.table(get(input))
     } else {
         info <- file.info(file.path(input))
         if (file.exists(file.path(input)) && info$size != 0) {
-            in_file  <- fread(file.path(input))
+            in_file  <- data.table::fread(file.path(input))
         } else {
             out_file <- file.path(output, paste(basename(sample_path),
                                                 output_type,
@@ -1436,7 +1442,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
     } 
 
     # Convert to GRanges Object
-    query  <- makeGRangesFromDataFrame(in_bed, keep.extra.columns=TRUE)
+    query  <- GenomicRanges::makeGRangesFromDataFrame(in_bed, keep.extra.columns=TRUE)
 
     if (tolower(plot) == "chromosome") {
         # Chromosome distribution plot
@@ -1446,7 +1452,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
             message(x$msg)
         }
         
-        if (x$value == "" || is.na(x$value) || is.null(x$value)) {
+        if (is.null(nrow(x$value))) {
             return(ggplot())
         }
         # Don't plot lowest 10% represented chromosomes
@@ -1455,7 +1461,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         keep   <- tbl[tbl$Freq > cutoff, 1]
         x      <- x$value[x$value$chr %in% keep,]
         if (nrow(x) > 0) {
-            ga_plot <- plotChromBins(x)
+            ga_plot <- GenomicDistributions::plotChromBins(x)
             return(ga_plot)
         } else {
             message("Too few peaks to plot. Check the genome alignment rates.")
@@ -1465,15 +1471,15 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         # Feature distance distribution plots
         x <- tryCatch(
             {
-                suppressMessages(calcFeatureDistRefTSS(query, genome))
+                suppressMessages(GenomicDistributions::calcFeatureDistRefTSS(query, genome))
             },
             error=function(e) {
-                message("calcFeatureDistRefTSS(): ", e)
+                message("GenomicDistributions::calcFeatureDistRefTSS(): ", e)
                 return(NULL)
             },
             warning=function(e) {
-                message("calcFeatureDistRefTSS(): ", e)
-                return(NULL)
+                message("GenomicDistributions::calcFeatureDistRefTSS(): ", e)
+                suppressMessages(GenomicDistributions::calcFeatureDistRefTSS(query, genome))
             }
         )
 
@@ -1482,7 +1488,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         }
         
         if (!is.na(x[1])) {
-            TSS_plot <- plotFeatureDist(x, featureName="TSS")
+            TSS_plot <- GenomicDistributions::plotFeatureDist(x, featureName="TSS")
             return(TSS_plot)
         } else {
             message("Unable to produce TSS distribution plot.")
@@ -1492,13 +1498,14 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         # Partition distribution plots
         knownGenomes <- c('hg19', 'hg38', 'mm9', 'mm10')
         if (exists(feat)) {
-            anno_file <- data.table(get(feat))
+            anno_file <- data.table::data.table(get(feat))
         } else {
             if (filetype(paste0(feat)) == "gzfile") {
-                anno_file <- fread(cmd=(sprintf('gzip -d -c %s', shQuote(file.path(feat)))))
+                anno_file <- data.table::fread(
+                    cmd=(sprintf('gzip -d -c %s', shQuote(file.path(feat)))))
                 suppressWarnings(closeAllConnections())
             } else {
-                anno_file <- fread(file.path(feat))
+                anno_file <- data.table::fread(file.path(feat))
             }
         }
         
@@ -1526,7 +1533,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         # Default to chromosome distribution plot
         # Chromosome distribution plot
         # Chromosome distribution plot
-        x <- chromBins(query, genome)
+        x <- GenomicDistributions::chromBins(query, genome)
 
         if (x$msg != "") {
             message(x$msg)
@@ -1541,7 +1548,7 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         keep   <- tbl[tbl$Freq > cutoff, 1]
         x      <- x$value[x$value$chr %in% keep,]
         if (nrow(x) > 0) {
-            ga_plot <- plotChromBins(x)
+            ga_plot <- GenomicDistributions::plotChromBins(x)
             return(ga_plot)
         } else {
             message("Too few peaks to plot. Check the genome alignment rates.")
@@ -1565,7 +1572,7 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
     sample_path <- sampleName(input, 1)
 
     if (file.exists(file.path(chr_sizes))) {
-        chrom_sizes <- fread(file.path(chr_sizes))
+        chrom_sizes <- data.table::fread(file.path(chr_sizes))
         colnames(chrom_sizes) <- c("chr", "size")
     } else {
         err_msg <- paste0("Could not find: ", file.path(chr_sizes))
@@ -1574,7 +1581,7 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 
     info = file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
-        np           <- fread(file.path(input))
+        np           <- data.table::fread(file.path(input))
         colnames(np) <- c("chr", "chromStart", "chromEnd", "name", "score",
                           "strand", "signalValue", "pValue", "qValue", "peak")
     } else {
@@ -1610,8 +1617,8 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
     as_file  <- file.path(paste0(dirname(sample_path), "bigNarrowPeak.as"))
     out_file <- file.path(paste0(sample_path, "_peaks.bigBed"))
 
-    fwrite(np, file=tmp_file, col.names=FALSE, row.names=FALSE,
-           quote=FALSE, sep='\t')
+    data.table::fwrite(np, file=tmp_file, col.names=FALSE, row.names=FALSE,
+                       quote=FALSE, sep='\t')
 
     cat("table bigNarrowPeak\n", 
     "\"BED6+4 Peaks of signal enrichment based on pooled, normalized (interpreted) data.\"\n",
@@ -1650,7 +1657,7 @@ narrowPeakToBigBed <- function(input=input, chr_sizes=chr_sizes,
 reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALSE) {
     info <- file.info(file.path(input))
     if (file.exists(file.path(input)) && info$size != 0) {
-        peaks           <- fread(file.path(input))
+        peaks <- data.table::fread(file.path(input))
         if (ncol(peaks) == 6) {
             colnames(peaks) <- c("chr", "start", "end",
                                  "name", "score", "strand")
@@ -1677,7 +1684,7 @@ reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALS
 
     info <- file.info(file.path(chr_sizes))
     if (file.exists(file.path(chr_sizes)) && info$size != 0) {
-        c_size           <- fread(file.path(chr_sizes))
+        c_size           <- data.table::fread(file.path(chr_sizes))
         colnames(c_size) <- c("chr", "size")
     } else {
         if (info$size == 0) {
@@ -1689,14 +1696,16 @@ reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALS
     }
 
     if (exists("peaks") & exists("c_size")) {
-        hits  <- foverlaps(peaks, peaks,
+        hits  <- data.table::foverlaps(peaks, peaks,
                            by.x=c("chr", "start", "end"),
                            type="any", which=TRUE, nomatch=0)
         if (bedOnly) {
             # Only have the "score" to rank peaks
-            qVals <- data.table(index=rep(1:nrow(peaks)), qValue=peaks$score)
+            qVals <- data.table::data.table(index=rep(1:nrow(peaks)),
+                                            qValue=peaks$score)
         } else {
-            qVals <- data.table(index=rep(1:nrow(peaks)), qValue=peaks$qValue)
+            qVals <- data.table::data.table(index=rep(1:nrow(peaks)),
+                                            qValue=peaks$qValue)
         }
         setkey(hits, xid)
         setkey(qVals, index)
@@ -1722,10 +1731,11 @@ reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALS
         # save final peak set
         if (is.na(output)) {
             file_path <- file.path(dirname(input), sample_name)
-            fwrite(final, paste0(file_path, "_peaks_normalized.narrowPeak"),
-                   sep="\t", col.names=FALSE)
+            data.table::fwrite(final,
+                paste0(file_path, "_peaks_normalized.narrowPeak"),
+                sep="\t", col.names=FALSE)
         } else {
-            fwrite(final, output, sep="\t", col.names=FALSE)
+            data.table::fwrite(final, output, sep="\t", col.names=FALSE)
         }
 
     } else {
@@ -1785,9 +1795,9 @@ setPanelSize <- function(p=NULL, g=ggplotGrob(p), file=NULL,
     
     if(!is.null(file))
         ggsave(file, g, limitsize = FALSE,
-               width=convertWidth(sum(g$widths) + margin, 
+               width=grid::convertWidth(sum(g$widths) + margin, 
                                   unitTo="in", valueOnly=TRUE),
-               height=convertHeight(sum(g$heights) + margin,  
+               height=grid::convertHeight(sum(g$heights) + margin,  
                                     unitTo="in", valueOnly=TRUE))
     invisible(g)
 }
@@ -1818,17 +1828,19 @@ getPrealignments <- function(stats_file) {
 #' @export
 plotAlignedRaw <- function(prj, summary_dir, stats) {
     # Convenience
-    project_name <- config(prj)$name
+    project_name <- pepr::config(prj)$name
 
-    align_theme <- theme(
+    align_theme <- ggplot2::theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
-        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.border      = element_rect(colour = "black", fill = NA,
+                                         linewidth = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
-                                          size = 20, hjust = 0.5),
+                                         size = 20, angle = 90, hjust = 1,
+                                         vjust=0.5),
         axis.text.y       = element_text(face = "plain", color = "black",
                                           size = 20, hjust = 1),
         axis.title.x      = element_text(face = "plain", color = "black", 
@@ -1837,17 +1849,18 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
                                           size = 22, hjust = 0.5),
         plot.title        = element_text(face = "bold", color = "black", 
                                           size = 12, hjust = 0.5),
-        axis.ticks        = element_line(size = 0.5),
+        axis.ticks        = element_line(linewidth = 0.5),
         axis.ticks.length = unit(2, "mm"),
         legend.background = element_rect(fill = "transparent"),
         legend.text       = element_text(size = 16),
-        legend.title      = element_blank()
+        legend.title      = element_blank(),
+        aspect.ratio      = 1
     )
 
     # Get prealignments if they exist
     prealignments <- getPrealignments(stats)
 
-    unaligned <- stats$Fastq_reads - stats$Aligned_reads
+    unaligned <- as.numeric(stats$Fastq_reads) - as.numeric(stats$Aligned_reads)
     # If prealignments exist...include in unaligned reads count
     if (!is.null(prealignments)) {
         for (i in 1:length(unlist(prealignments))) {
@@ -1859,7 +1872,7 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
 
     align_raw <- tryCatch(
         {
-            data.table(sample = stats$sample_name,
+            data.table::data.table(sample = stats$sample_name,
                        unaligned = as.integer(unaligned),
                        duplicates = as.integer(stats$Duplicate_reads))
         },
@@ -1904,25 +1917,25 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
                stats[, (paste("Aligned_reads", unlist(prealignments)[i], sep="_")),
                with=FALSE][[1]])]
         }
-        setcolorder(align_raw, c("sample", "unaligned",
+        data.table::setcolorder(align_raw, c("sample", "unaligned",
                                 paste(unlist(prealignments)),
                                 "duplicates", paste(unique(stats$Genome))))
     } else {
-        setcolorder(align_raw, c("sample", "unaligned", "duplicates",
+        data.table::setcolorder(align_raw, c("sample", "unaligned", "duplicates",
                                 paste(unique(stats$Genome))))
     }
 
     align_raw$sample <- factor(align_raw$sample,
                                levels = unique(align_raw$sample))
 
-    melt_align_raw <- melt(align_raw, id.vars = "sample")
+    melt_align_raw <- reshape2::melt(align_raw, id.vars = "sample")
     max_reads      <- max(rowSums(align_raw[,2:ncol(align_raw)]))
     upper_limit    <- roundUpNice(max_reads/1000000)
-    chart_height   <- (length(unique(align_raw$sample))) * 0.75
-    plot_colors    <- data.table(unaligned="gray15")
+    chart_height   <- (length(unique(align_raw$sample))) #* 0.75
+    plot_colors    <- data.table::data.table(unaligned="gray15")
 
     if (!is.null(prealignments)) {
-        more_colors <- colorpanel(length(unlist(prealignments)),
+        more_colors <- gplots::colorpanel(length(unlist(prealignments)),
                                   low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
         for (i in 1:length(unlist(prealignments))) {
             plot_colors[, unlist(prealignments)[i] := more_colors[i]]
@@ -1930,7 +1943,7 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
     }
 
     plot_colors[, duplicates := "#FC1E25"]
-    more_colors <- colorpanel(length(genome_names),
+    more_colors <- gplots::colorpanel(length(genome_names),
                               low="#4876FF", mid="#94D9CE", high="#7648FF")
     for (i in 1:length(genome_names)) {
         plot_colors[, (genome_names[i]) := more_colors[i]]
@@ -1938,7 +1951,7 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
 
     align_raw_plot <- (
         ggplot(melt_align_raw, aes(x=sample, y=as.numeric(value)/1000000)) +
-            geom_col(aes(fill=variable), colour="black", size=0.25, width=0.8) +
+            geom_col(aes(fill=variable), colour="black", `linewidth`=0.25, width=0.8) +
             guides(fill=guide_legend(reverse=TRUE)) +
             labs(x="", y="Number of reads (M)") +
             scale_x_discrete(limits=rev(levels(melt_align_raw$sample))) +
@@ -1954,7 +1967,7 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
         setPanelSize(
             align_raw_plot,
             file=output_file,
-            width=unit(8,"inches"),
+            width=unit(chart_height,"inches"),
             height=unit(chart_height,"inches")
             )
         )
@@ -1967,8 +1980,8 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
         colnames(more_to_see)  <- colnames(align_raw_thumb)
         align_raw_thumb        <- rbind(align_raw_thumb, more_to_see)
         align_raw_thumb$sample <- droplevels(align_raw_thumb)$sample
-        melt_align_raw_thumb   <- melt(align_raw_thumb, id.vars="sample")
-        chart_height           <- (length(unique(align_raw_thumb$sample))) * 0.75
+        melt_align_raw_thumb   <- reshape2::melt(align_raw_thumb, id.vars="sample")
+        chart_height           <- (length(unique(align_raw_thumb$sample))) #* 0.75
     } else {melt_align_raw_thumb <- melt_align_raw}
 
     thumb_raw_plot <- (
@@ -1988,7 +2001,7 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
         setPanelSize(
             thumb_raw_plot,
             file=output_file,
-            width=unit(8,"inches"),
+            width=unit(chart_height,"inches"),
             height=unit(chart_height,"inches")
             )
         )
@@ -2004,17 +2017,19 @@ plotAlignedRaw <- function(prj, summary_dir, stats) {
 #' @export
 plotAlignedPct <- function(prj, summary_dir, stats) {
     # Convenience
-    project_name <- config(prj)$name
+    project_name <- pepr::config(prj)$name
 
-    align_theme <- theme(
+    align_theme <- ggplot2::theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
-        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.border      = element_rect(colour = "black", fill = NA,
+                                         linewidth = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
-                                          size = 20, hjust = 0.5),
+                                         size = 20, angle = 90, hjust = 1,
+                                         vjust=0.5),
         axis.text.y       = element_text(face = "plain", color = "black",
                                           size = 20, hjust = 1),
         axis.title.x      = element_text(face = "plain", color = "black", 
@@ -2023,14 +2038,15 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
                                           size = 22, hjust = 0.5),
         plot.title        = element_text(face = "bold", color = "black", 
                                           size = 12, hjust = 0.5),
-        axis.ticks        = element_line(size = 0.5),
+        axis.ticks        = element_line(linewidth = 0.5),
         axis.ticks.length = unit(2, "mm"),
         legend.background = element_rect(fill = "transparent"),
         legend.text       = element_text(size = 16),
-        legend.title      = element_blank()
+        legend.title      = element_blank(),
+        aspect.ratio      = 1
     )
 
-    unaligned <- 100 - stats$Alignment_rate
+    unaligned <- 100 - as.numeric(stats$Alignment_rate)
 
     # Get prealignments if they exist
     prealignments <- getPrealignments(stats)
@@ -2054,7 +2070,7 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         }
     }
 
-    align_percent <- data.table(sample=stats$sample_name,
+    align_percent <- data.table::data.table(sample=stats$sample_name,
                                 unaligned=unaligned,
                                 duplicates=as.numeric(duplicates))
 
@@ -2083,11 +2099,11 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
                       unlist(prealignments)[i], sep="_")),
                       with=FALSE][[1]])]
         }
-        setcolorder(align_percent, c("sample", "unaligned",
+        data.table::setcolorder(align_percent, c("sample", "unaligned",
                                     paste(unlist(prealignments)),
                                     "duplicates", paste(unique(stats$Genome))))
     } else {
-        setcolorder(align_percent, c("sample", "unaligned", "duplicates",
+        data.table::setcolorder(align_percent, c("sample", "unaligned", "duplicates",
                                     paste(unique(stats$Genome))))
     }
 
@@ -2117,14 +2133,14 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         print(aberrant_samples, row.names=FALSE)
     }
 
-    melt_align_percent <- melt(align_percent, id.vars="sample")
+    melt_align_percent <- reshape2::melt(align_percent, id.vars="sample")
     upper_limit        <- 103
-    chart_height       <- (length(unique(align_percent$sample))) * 0.75
+    chart_height       <- (length(unique(align_percent$sample))) #* 0.75
 
-    plot_colors <- data.table(unaligned="gray15")
+    plot_colors <- data.table::data.table(unaligned="gray15")
 
     if (!is.null(prealignments)) {
-        more_colors <- colorpanel(length(unlist(prealignments)), 
+        more_colors <- gplots::colorpanel(length(unlist(prealignments)), 
                                  low="#FFE595", mid="#F6CAA6", high="#F6F2A6")
         for (i in 1:length(unlist(prealignments))) {
             plot_colors[, unlist(prealignments)[i] := more_colors[i]]
@@ -2132,7 +2148,7 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
     }
 
     plot_colors[, duplicates := "#FC1E25"]
-    more_colors <- colorpanel(length(genome_names), 
+    more_colors <- gplots::colorpanel(length(genome_names), 
                              low="#4876FF", mid="#94D9CE", high="#7648FF")
     for (i in 1:length(genome_names)) {
         plot_colors[, (genome_names[i]) := more_colors[i]]
@@ -2156,7 +2172,7 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         setPanelSize(
             align_percent_plot, 
             file=output_file, 
-            width=unit(8,"inches"), 
+            width=unit(chart_height,"inches"), 
             height=unit(chart_height,"inches")
             )
         )
@@ -2170,10 +2186,9 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         colnames(more_to_see)      <- colnames(align_percent_thumb)
         align_percent_thumb        <- rbind(align_percent_thumb, more_to_see)
         align_percent_thumb$sample <- droplevels(align_percent_thumb)$sample
-        melt_align_percent_thumb   <- melt(align_percent_thumb,
+        melt_align_percent_thumb   <- reshape2::melt(align_percent_thumb,
                                            id.vars="sample")
-        chart_height        <- ((length(unique(align_percent_thumb$sample))) *
-                                0.75)
+        chart_height        <- ((length(unique(align_percent_thumb$sample))))
     } else {melt_align_percent_thumb <- melt_align_percent}
 
     thumb_percent_plot <- (
@@ -2193,7 +2208,7 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
         setPanelSize(
             thumb_percent_plot, 
             file=output_file, 
-            width=unit(8,"inches"), 
+            width=unit(chart_height,"inches"), 
             height=unit(chart_height,"inches")
             )
         )
@@ -2210,18 +2225,19 @@ plotAlignedPct <- function(prj, summary_dir, stats) {
 #' @export
 plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
     # Convenience
-    project_name <- config(prj)$name
+    project_name <- pepr::config(prj)$name
 
-    align_theme <- theme(
+    align_theme <- ggplot2::theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
         panel.border      = element_rect(colour = "black", fill = NA,
-                                         size = 0.5),
+                                         linewidth = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
-                                          size = 20, hjust = 0.5),
+                                         size = 20, angle = 90, hjust = 1,
+                                         vjust=0.5),
         axis.text.y       = element_text(face = "plain", color = "black",
                                           size = 20, hjust = 1),
         axis.title.x      = element_text(face = "plain", color = "black", 
@@ -2230,23 +2246,24 @@ plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
                                           size = 22, hjust = 0.5),
         plot.title        = element_text(face = "bold", color = "black", 
                                           size = 12, hjust = 0.5),
-        axis.ticks        = element_line(size = 0.5),
+        axis.ticks        = element_line(linewidth = 0.5),
         axis.ticks.length = unit(2, "mm"),
         legend.background = element_rect(fill = "transparent"),
         legend.text       = element_text(size = 16),
-        legend.title      = element_blank()
+        legend.title      = element_blank(),
+        aspect.ratio      = 1
     )
 
     # Establish red/green color scheme
     red_min      <- 0
     red_max      <- cutoff-0.01
     red_breaks   <- seq(red_min,red_max,0.01)
-    red_colors   <- colorpanel(length(red_breaks),
+    red_colors   <- gplots::colorpanel(length(red_breaks),
                                "#AF0000","#E40E00","#FF7A6A")
     green_min    <- cutoff
     green_max    <- 30
     green_breaks <- seq(green_min,green_max,0.01)
-    green_colors <- colorpanel(length(green_breaks)-1,
+    green_colors <- gplots::colorpanel(length(green_breaks)-1,
                                "#B4E896","#009405","#003B00")
     TSS_colors   <- c(red_colors, green_colors)
 
@@ -2278,7 +2295,7 @@ plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
 
     max_TSS      <- max(stats$TSS_score, na.rm=TRUE)
     upper_limit  <- roundUpNice(max_TSS)
-    chart_height <- (length(unique(TSS_score$sample))) * 0.75
+    chart_height <- (length(unique(TSS_score$sample))) #* 0.75
 
     TSS_score$sample <- factor(TSS_score$sample,
                                levels=unique(TSS_score$sample))
@@ -2308,7 +2325,7 @@ plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
     # Limit to 25 samples max
     if (length(TSS_score$sample) > 25) {
         TSS_score_thumb <- TSS_score[1:25, ]
-        chart_height    <- (length(unique(TSS_score_thumb$sample))) * 0.75
+        chart_height    <- (length(unique(TSS_score_thumb$sample))) #* 0.75
         more_to_see     <- data.frame(t(c("...", "0", "#AF0000")))
         colnames(more_to_see) <- colnames(TSS_score_thumb)
         TSS_score_thumb       <- rbind(TSS_score_thumb, more_to_see)
@@ -2346,13 +2363,14 @@ plotTSSscores <- function(prj, summary_dir, stats, cutoff=6) {
 #' @export
 plotLibSizes <- function(prj, summary_dir, stats) {
     # Convenience
-    project_name <- config(prj)$name
+    project_name <- pepr::config(prj)$name
 
-    align_theme <- theme(
+    align_theme <- ggplot2::theme(
         plot.background   = element_blank(),
         panel.grid.major  = element_blank(),
         panel.grid.minor  = element_blank(),
-        panel.border      = element_rect(colour = "black", fill = NA, size = 0.5),
+        panel.border      = element_rect(colour = "black", fill = NA,
+                                         linewidth = 0.5),
         panel.background  = element_blank(),
         axis.line         = element_blank(),
         axis.text.x       = element_text(face = "plain", color = "black", 
@@ -2365,11 +2383,12 @@ plotLibSizes <- function(prj, summary_dir, stats) {
                                           size = 22, hjust = 0.5),
         plot.title        = element_text(face = "bold", color = "black", 
                                           size = 12, hjust = 0.5),
-        axis.ticks        = element_line(size = 0.5),
+        axis.ticks        = element_line(linewidth = 0.5),
         axis.ticks.length = unit(2, "mm"),
         legend.background = element_rect(fill = "transparent"),
         legend.text       = element_text(size = 16),
-        legend.title      = element_blank()
+        legend.title      = element_blank(),
+        aspect.ratio      = 1
     )
 
     picard_lib_size <- cbind.data.frame(
@@ -2411,6 +2430,34 @@ plotLibSizes <- function(prj, summary_dir, stats) {
     )
 }
 
+#' Internal helper function for \code{summarizer}
+#' Convert the new pipestat yaml outputs into R readable data.table file
+#'
+#' @param sample_name A list project sample names
+#' @param yaml_file A project level stats summary yaml file
+yamlToDT <- function(sample_name, yaml_file) {
+    sample_DT <- data.table::as.data.table(yaml_file$PEPATAC$sample[[sample_name]])
+    remove_cols <- c("Library complexity",
+                     "TSS enrichment",
+                     "TSS distance distribution",
+                     "Fragment distribution",
+                     "Peak chromosome distribution",
+                     "Peak partition distribution",
+                     "cFRiF",
+                     "FRiF",
+                     "FastQC report r1",
+                     "FastQC report r2")
+    cols_present <- character()
+    for (column_name in remove_cols) {
+        if (any(grepl(column_name, names(sample_DT)))) {
+            cols_present <- c(cols_present, column_name)
+        }
+    }
+    sample_DT[, (cols_present) := NULL]
+    sample_DT <- unique(sample_DT)
+    sample_DT$sample_name <- sample_name
+    return(sample_DT)
+}
 
 #' This function is meant to plot multiple summary graphs from the summary table 
 #' made by the Looper summarize command
@@ -2420,25 +2467,27 @@ plotLibSizes <- function(prj, summary_dir, stats) {
 #' @keywords summarize PEPATAC
 #' @export
 summarizer <- function(project, output_dir) {
+    options(scipen = 999)
     # Build the stats summary file path
     summary_file <- file.path(output_dir,
-        paste0(pepr::config(project)$name, "_stats_summary.tsv"))
-
+        paste0(pepr::config(project)$name, "_stats_summary.yaml"))
+    if (file.exists(summary_file)) {
+        summary_file <- yaml::read_yaml(summary_file,
+            handlers=list(int=function(x) { as.numeric(x) }))
+    } else {
+        warning("PEPATAC.R summarizer was unable to locate the summary file.")
+        return(FALSE)
+    }
+    #message(paste0("summary file : ", summary_file)) # DEBUG
     write(paste0("Creating summary plots..."), stdout())
     # Set the output directory
     summary_dir <- suppressMessages(file.path(output_dir, "summary"))
     # Produce output directory (if needed)
     dir.create(summary_dir, showWarnings = FALSE)
 
-    # read in stats summary file
-    if (file.exists(summary_file)) {
-        stats <- suppressWarnings(fread(summary_file,
-                                        header=TRUE,
-                                        check.names=FALSE))
-    } else {
-        warning("PEPATAC.R summarizer was unable to locate the summary file.")
-        return(FALSE)
-    }
+    # convert yaml to data.table object
+    stats <- data.table::rbindlist(sapply(project_samples, FUN=yamlToDT,
+                                          yaml_file=summary_file), fill=TRUE)
 
     # Set absent values in table to zero
     stats[is.na(stats)]   <- 0
@@ -2472,7 +2521,7 @@ summarizer <- function(project, output_dir) {
 countReproduciblePeaks <- function(peak_list, peak_DT) {
     setkey(peak_DT, chr, start, end)
     setkey(peak_list, chr, start, end)
-    hits <- foverlaps(peak_list, peak_DT,
+    hits <- data.table::foverlaps(peak_list, peak_DT,
                       by.x=c("chr", "start", "end"),
                       type="any", which=TRUE, nomatch=0)
     # track the number of overlaps of final peak set peaks
@@ -2500,7 +2549,7 @@ countReproduciblePeaks <- function(peak_list, peak_DT) {
 collapsePeaks <- function(sample_table, chr_sizes,
 						  min_samples=2, min_score=5, min_olap=1) {
     # create combined peaks
-    peaks <- rbindlist(lapply(sample_table$peak_files, fread), idcol="file")
+    peaks <- rbindlist(lapply(sample_table$peak_files, data.table::fread), idcol="file")
     if (ncol(peaks) == 7) {
         colnames(peaks) <- c("file", "chr", "start", "end",
                              "name", "score", "strand")
@@ -2512,7 +2561,7 @@ collapsePeaks <- function(sample_table, chr_sizes,
         warning(paste0("Peak files did not contain a recognizable number", 
                        " of columns (", ncol(peaks), ")"))
         rm(peaks)
-        final <- data.table(chr=character(),
+        final <- data.table::data.table(chr=character(),
                             start=integer(),
                             end=integer(),
                             name=character(),
@@ -2530,14 +2579,14 @@ collapsePeaks <- function(sample_table, chr_sizes,
     peaks_by_chr   <- split(peaks, peaks$chr)
     hit_aggregator <- function(x) {
         #message(paste0("x: ", unique(x$chr)))  # DEBUG
-        peaksGR <- makeGRangesFromDataFrame(x, keep.extra.columns=FALSE)
+        peaksGR <- GenomicRanges::makeGRangesFromDataFrame(x, keep.extra.columns=FALSE)
         hitsGR  <- suppressWarnings(
             findOverlaps(peaksGR, peaksGR,
 						 ignore.strand=TRUE, minoverlap=min_olap))
         hits    <- data.table::data.table(xid=queryHits(hitsGR),
                                           yid=subjectHits(hitsGR))
         setkey(hits, xid)
-        scores  <- data.table(index=rep(1:nrow(x)), score=x$score)
+        scores  <- data.table::data.table(index=rep(1:nrow(x)), score=x$score)
         setkey(scores, index)
         out     <- hits[scores, nomatch=0]
         keep    <- out[out[,.I[which.max(score)],by=yid]$V1]
@@ -2610,7 +2659,7 @@ consensusPeaks <- function(sample_table, summary_dir, results_subdir, assets,
             file_exists <- append(file_exists, file.path(file_list[i]))
         }
     }
-    files <- data.table(peak_files=file_exists)
+    files <- data.table::data.table(peak_files=file_exists)
     consensus_peak_files = list()
     if (nrow(files) == 0) {
         return(consensus_peak_files)
@@ -2636,7 +2685,7 @@ consensusPeaks <- function(sample_table, summary_dir, results_subdir, assets,
         }
         c_path <- unique(sample_table[genome == g, c_path])
         if (file.exists(c_path)) {
-            c_size <- fread(c_path)
+            c_size <- data.table::fread(c_path)
             colnames(c_size) <- c("chr", "size")
         } else {
             warning("Unable to load the chromosome sizes file.")
@@ -2654,7 +2703,7 @@ consensusPeaks <- function(sample_table, summary_dir, results_subdir, assets,
             file_name   <- paste0("_", g,"_consensusPeaks.narrowPeak")
             output_file <- file.path(summary_dir,
                                      paste0(project_name, file_name))
-            fwrite(final, output_file, sep="\t", col.names=FALSE)
+            data.table::fwrite(final, output_file, sep="\t", col.names=FALSE)
             consensus_peak_files <- c(consensus_peak_files, output_file)
             rm(final)
             invisible(gc())
@@ -2704,7 +2753,7 @@ readPepatacPeakCounts = function(prj, results_subdir) {
     result <- lapply(paths, function(x){
         info <- file.info(file.path(x))
         if (file.exists(x) && info$size != 0) {
-            df <- fread(x)
+            df <- data.table::fread(x)
             colnames(df) <- c("chr", "start", "end", "read_count",
                               "base_count", "width", "frac", "norm")
             gr <- GenomicRanges::GRanges(df) 
@@ -2784,7 +2833,7 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
             file_exists <- append(file_exists, file.path(file_list[i]))
         }
     }
-    files <- data.table(peak_files=file_exists)
+    files <- data.table::data.table(peak_files=file_exists)
     consensus_peak_files = list()
     if (nrow(files) == 0) {
         return(consensus_peak_files)
@@ -2811,7 +2860,7 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
         }
         c_path <- unique(sample_table[genome == g, c_path])
         if (file.exists(c_path)) {
-            c_size <- fread(c_path)
+            c_size <- data.table::fread(c_path)
             colnames(c_size) <- c("chr", "size")
         } else {
             warning("Unable to load the chromosome sizes file.")
@@ -2823,7 +2872,7 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                        nrow(st_list[[g]]), " samples..."))
         if (reference) {
             read_peaks <- function(x, y) {
-                fread(y)
+                data.table::fread(y)
             }
             # Load each peak file as list of named data.tables
             peaks <- mapply(FUN=read_peaks,
@@ -2856,7 +2905,7 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                 return(NULL)
             }
         } else {
-            peaks_dt <- data.table(chr=as.character(),
+            peaks_dt <- data.table::data.table(chr=as.character(),
                                    start=as.numeric(),
                                    end=as.numeric(),
                                    read_count=as.numeric(),
@@ -2868,7 +2917,7 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
             peaks <- tryCatch(
                 {
                     suppressMessages(
-                        rbindlist(lapply(st_list[[g]]$peak_files, fread)))
+                        rbindlist(lapply(st_list[[g]]$peak_files, data.table::fread)))
                 },
                 error=function(e) {
                     message("peakCounts() peak coverage file fread(): ", e)
@@ -2892,15 +2941,16 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
             setkey(peaks, chr, start, end)
             peaks_dt  <- rbind(peaks_dt, peaks)
             # Convert to GRanges for more efficient findOverlaps vs data.table
-            peaksGR   <- makeGRangesFromDataFrame(peaks_dt,
+            peaksGR   <- GenomicRanges::makeGRangesFromDataFrame(peaks_dt,
                                                   keep.extra.columns=TRUE)
             reduceGR  <- reduce(peaksGR)
             
             # instead, different column for each sample is the counts columns,
             # plural
-            reduce_dt <- data.table(chr=as.character(seqnames(reduceGR)),
-                                    start=start(reduceGR),
-                                    end=end(reduceGR))
+            reduce_dt <- data.table::data.table(
+                chr=as.character(seqnames(reduceGR)),
+                start=start(reduceGR),
+                end=end(reduceGR))
             f <- function(x) {list(0)}
             # Need to make syntactically valid names
             valid_names <- make.unique(make.names(st_list[[g]]$sample_name))
@@ -2926,7 +2976,7 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
             for (file in st_list[[g]]$peak_files) {
                 info <- file.info(file.path(file))
                 if (file.exists(file.path(file)) && info$size != 0) {
-                    p    <- fread(file)
+                    p    <- data.table::fread(file)
                     #name <- gsub("_peaks_coverage.bed","", basename(file))
                     name <- make.unique(make.names(st_list[[g]][i]$sample_name))
                     i    <- i + 1
@@ -2934,8 +2984,8 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                                      "base_count", "width", "frac", "norm")
                     setkey(p, chr, start, end)
                     
-                    reduceGR <- makeGRangesFromDataFrame(reduce_dt)
-                    peaksGR  <- makeGRangesFromDataFrame(p)
+                    reduceGR <- GenomicRanges::makeGRangesFromDataFrame(reduce_dt)
+                    peaksGR  <- GenomicRanges::makeGRangesFromDataFrame(p)
                     hitsGR   <- findOverlaps(query=reduceGR, subject=peaksGR,
 											 minoverlap=min_olap)
 
@@ -2945,21 +2995,22 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                     polap  <- width(olap) / width(peaksGR[subjectHits(hitsGR)])
 
                     if (poverlap & norm) {
-                        counts <- data.table(index=rep(1:nrow(p)),
+                        counts <- data.table::data.table(index=rep(1:nrow(p)),
                                              counts=p$norm*polap)
                     } else if (!poverlap & norm) {
-                        counts <- data.table(index=rep(1:nrow(p)),
+                        counts <- data.table::data.table(index=rep(1:nrow(p)),
                                              counts=p$norm)
                     } else if (poverlap & !norm) {
-                        counts <- data.table(index=rep(1:nrow(p)),
+                        counts <- data.table::data.table(index=rep(1:nrow(p)),
                                              counts=p$read_count*polap)
                     } else {
-                        counts <- data.table(index=rep(1:nrow(p)),
+                        counts <- data.table::data.table(index=rep(1:nrow(p)),
                                              counts=p$read_count)
                     }
 
-                    hits   <- data.table(xid=queryHits(hitsGR),
-                                         yid=subjectHits(hitsGR))
+                    hits   <- data.table::data.table(
+                        xid=queryHits(hitsGR),
+                        yid=subjectHits(hitsGR))
                     setkey(hits, yid)
                     setkey(counts, index)
                     out    <- hits[counts, nomatch=0]
@@ -3004,7 +3055,8 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                 output_file <- file.path(summary_dir,
                     paste0(project_name, "_", g, "_peaks_coverage.tsv"))
                 # save consensus peak set
-                fwrite(reduce_dt, output_file, sep="\t", col.names=TRUE)
+                data.table::fwrite(reduce_dt, output_file,
+                                   sep="\t", col.names=TRUE)
                 counts_path <- c(counts_path, output_file)
         } else {
             warning(strwrap(prefix = " ", initial = "",
@@ -3036,7 +3088,7 @@ createStatsSummary <- function(samples, results_subdir) {
             next
         }
 
-        t <- fread(sample_assets_file, header=FALSE,
+        t <- data.table::fread(sample_assets_file, header=FALSE,
                    col.names=c('stat', 'val', 'annotation'))
         # Remove complete duplicates
         t <- t[!duplicated(t[, c('stat', 'val', 'annotation')],
@@ -3047,9 +3099,9 @@ createStatsSummary <- function(samples, results_subdir) {
                fromLast=TRUE),]
         t[stat=="Time",]$val <- max_time
 
-        t2 <- data.table(t(t$val))
+        t2 <- data.table::data.table(t(t$val))
         colnames(t2) <- t$stat
-        t2 <- cbind(data.table(sample_name=sample), t2)
+        t2 <- cbind(data.table::data.table(sample_name=sample), t2)
         if (exists("stats")) {
             stats <- rbind(stats, t2, fill=TRUE)
         } else {
@@ -3073,10 +3125,11 @@ createStatsSummary <- function(samples, results_subdir) {
 createAssetsSummary <- function(samples, results_subdir) {  
     # Create assets_summary file
     missing_files   <- 0
-    assets  <- data.table(sample_name=character(),
-                          asset=character(),
-                          path=character(),
-                          annotation=character())
+    assets  <- data.table::data.table(
+        sample_name=character(),
+        asset=character(),
+        path=character(),
+        annotation=character())
     write(paste0("Creating assets summary..."), stdout())
 
     for (sample in samples) {
@@ -3088,7 +3141,7 @@ createAssetsSummary <- function(samples, results_subdir) {
             next
         }
 
-        t <- fread(sample_assets_file, header=FALSE,
+        t <- data.table::fread(sample_assets_file, header=FALSE,
                    col.names=c('asset', 'path', 'annotation'))
         t <- t[!duplicated(t[, c('asset', 'path', 'annotation')],
                fromLast=TRUE),]

@@ -47,3 +47,10 @@ divvy init $DIVCFG
 ```
 
 Next, you edit that config file to add in any compute packages you need. `PEPATAC` will then give you access to any of your custom packages with `looper --package <compute_package>`. For complete instructions on how to create a custom compute package, read [how to configure divvy](https://divvy.databio.org/en/latest/configuration/). 
+
+Alternatively, you can specify compute parameters via the CLI:
+
+```console
+looper run examples/test_project/test_config_refgenie.yaml -d \
+  --package slurm --compute PARTITION="your_cluster_partition_name"
+```

@@ -23,7 +23,7 @@ command_template: >
   {% if sample.prealignment_index is defined %} --prealignment-index { sample.prealignment_index } {% endif %}
   {% if sample.prealignment_names is defined %} {% if aligner == "bowtie2" or sample.aligner == "bowtie2" %} --prealignment-index {% for p in sample.prealignment_names %} { p ~ '=' ~ refgenie[p].bowtie2_index.dir } {% endfor %} {% else %} --prealignment-index {% for p in sample.prealignment_names %} { p ~ '=' ~ refgenie[p].bwa_index.dir } {% endfor %} {% endif %} {% endif %}
   {% if sample.deduplicator is defined %} --deduplicator { sample.deduplicator } {% endif %}
-  {% if sample.peak_caller is defined %} --peak-caller { sample.peak_caller } {% else %} --peak-caller "macs2" {% endif %}
+  {% if sample.peak_caller is defined %} --peak-caller { sample.peak_caller } {% else %} --peak-caller "macs3" {% endif %}
   {% if sample.peak_type is defined %} --peak-type { sample.peak_type } {% else %} --peak-type "fixed" {% endif %}
   {% if sample.extend is defined %} --extend { sample.extend } {% else %} --extend 250 {% endif %}
   {% if sample.genome_size is defined %} --genome-size { sample.genome_size } {% else %} --genome-size "2.7e9" {% endif %}

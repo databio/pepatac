@@ -5,12 +5,15 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.0.4"
+__version__ = "0.0.6"
 
 from argparse import ArgumentParser
 import os
 import sys
 import pypiper
+import peppy
+from peppy.utils import load_yaml
+import yaml
 from ubiquerg import VersionInHelpParser
 
 def tool_path(tool_name):
@@ -33,7 +36,7 @@ def parse_arguments():
     """
     parser = VersionInHelpParser(prog="PEPATAC_collator",
         description='PEPATAC collator' , version=__version__)
-    parser = pypiper.add_pypiper_args(parser, groups=['pypiper', 'looper'])
+    parser = pypiper.add_pypiper_args(parser, groups=['pypiper', 'looper', 'common'])
     parser.add_argument("-n", "--name",
                         help="Name of the project to use.", type=str)
     parser.add_argument("-r", "--results",
@@ -66,10 +69,37 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
+
     outfolder = os.path.abspath(os.path.join(args.output_parent, "summary"))
     
-    pm = pypiper.PipelineManager(name="PEPATAC_collator", outfolder=outfolder,
+    pm = pypiper.PipelineManager(name="PEPATAC", outfolder=outfolder,
+                                 pipestat_sample_name="summary",
+                                 pipestat_pipeline_type="project",
                                  args=args, version=__version__)
+
+    pm.debug(f"\nargs: {args}\n")
+
+    project = peppy.Project(args.config_file)
+    project_stats_file = os.path.join(args.output_parent, f"{project.name}_stats_summary.yaml")
+    stats_yaml_files = []
+    sample_names = []
+    for sample in project.sample_table.sample_name:
+        pm.debug(f"sample name: {sample}")
+        sample_names.append(sample)
+        stats_yaml_files.append(os.path.join(args.results, sample, "stats.yaml"))
+    num_samples = len(sample_names)
+    yaml_dict = load_yaml(stats_yaml_files[0])
+    if num_samples > 1:
+        sample_names = sample_names[1:]
+        stats_yaml_files = stats_yaml_files[1:]
+    for i in range(len(stats_yaml_files)):
+        pm.debug(f"i: {i}")
+        sample_name = sample_names[i]
+        yaml_tmp = load_yaml(stats_yaml_files[i])
+        yaml_dict['PEPATAC']['sample'][sample_name] = yaml_tmp['PEPATAC']['sample'][sample_name]
+    with open(project_stats_file, 'w') as file:
+        yaml.dump(yaml_dict, file)
+    print(f"Summary (n={num_samples}: {project_stats_file})")
 
     cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
            f"{args.config_file} {args.output_parent} "
@@ -86,13 +116,54 @@ def main():
         cmd += " --normalized"
 
     complexity_file = os.path.join(
-        outfolder, "{name}_libComplexity.pdf".format(name=args.name))
-    consensus_peaks_file = os.path.join(
-        outfolder, "{name}_*_consensusPeaks.narrowPeak".format(name=args.name))
-    peak_coverage_file = os.path.join(
-        outfolder, "{name}_peaks_coverage.tsv".format(name=args.name))
+        outfolder, f"{args.name}_libComplexity.pdf")
+    complexity_thumbnail = os.path.join(
+        outfolder, f"{args.name}_libComplexity.png")
+    
+    alignment_percent_file = os.path.join(
+        outfolder, f"{args.name}_alignmentPercent.pdf")
+    alignment_percent_thumbnail = os.path.join(
+        outfolder, f"{args.name}_alignmentPercent.png")
+
+    alignment_raw_file = os.path.join(
+        outfolder, f"{args.name}_alignmentRaw.pdf")
+    alignment_raw_thumbnail = os.path.join(
+        outfolder, f"{args.name}_alignmentRaw.png")
+
+    TSS_enrichment_file = os.path.join(
+        outfolder, f"{args.name}_TSSEnrichment.pdf")
+    TSS_enrichment_thumbnail = os.path.join(
+        outfolder, f"{args.name}_TSSEnrichment.png")
+    
+    for genome in project.sample_table.genome.unique():
+        pm.debug(f"genome: {genome}")
+        consensus_peaks_file = os.path.join(
+            outfolder, f"{args.name}_{genome}_consensusPeaks.narrowPeak")
+        consensus_peaks_thumbnail = os.path.join(
+            outfolder, f"{args.name}_{genome}_consensusPeaks.png")
+        pm.debug(f"consensus_peaks_file: {consensus_peaks_file}")
+        peak_coverage_file = os.path.join(
+            outfolder, f"{args.name}_{genome}_peaks_coverage.tsv")
+        peak_coverage_thumbnail = os.path.join(
+            outfolder, f"{args.name}_{genome}_peaks_coverage.png")
+        pm.debug(f"peak_coverage_file(s): {peak_coverage_file}")
 
     pm.run(cmd, [complexity_file, consensus_peaks_file, peak_coverage_file])
+
+    # For pypiper's report object, anchor image = thumbnail path
+    pm.report_object("Library_complexity", complexity_file,
+                     anchor_image=complexity_thumbnail)
+    pm.report_object("alignment_percent_file", alignment_percent_file,
+                     anchor_image=alignment_percent_thumbnail)
+    pm.report_object("alignment_raw_file", alignment_raw_file,
+                     anchor_image=alignment_raw_thumbnail)
+    pm.report_object("TSS_enrichment", TSS_enrichment_file,
+                     anchor_image=TSS_enrichment_thumbnail)
+    pm.report_object("consensus_peaks_file", consensus_peaks_file,
+                     anchor_image=consensus_peaks_thumbnail)
+    pm.report_object("counts_table", peak_coverage_file,
+                     anchor_image=peak_coverage_thumbnail)
+
     pm.stop_pipeline()
 
 

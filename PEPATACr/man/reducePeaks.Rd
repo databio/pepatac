@@ -5,10 +5,12 @@
 \title{This function is meant to keep only the most significant non-overlapping
 peaks.  It also trims peaks extending beyond the bounds of the chromosome.}
 \usage{
-reducePeaks(input, chr_sizes, output = NA, normalize = FALSE)
+reducePeaks(input, sample_name, chr_sizes, output = NA, normalize = FALSE)
 }
 \arguments{
 \item{input}{Path to narrowPeak file}
+
+\item{sample_name}{Sample name character string}
 
 \item{chr_sizes}{Genome chromosome sizes file. <Chr> <Size>}
 
