@@ -17,3 +17,25 @@ When deciding whether or not to merge technical replicates, you should first fol
     - [PCR Bottleneck Coefficient 1 (PBC1)](glossary.md#qc-output): values &lt; 0.7 are considered concerning; values &gt; 0.9 are ideal
     - [PCR Bottleneck Coefficient 2 (PBC2)](glossary.md#qc-output): values &lt; 1.0 represent severe bottlenecking; values &gt; 3.0 are acceptable
 
+## What if I need to restart a run?
+
+There are two steps for restarting runs. When executing `looper run`, you can pass the `--ignore-flags` argument, e.g.
+`looper run --looper-config /path_to_your/.looper_config.yaml --ignore-flags`
+This will ignore any flags associated with the samples. Further reading: [Sample Flags](https://looper.databio.org/en/latest/faq/#why-isnt-a-sample-being-processed-by-a-pipeline-not-submitting-flag-found-_statusflag)
+
+If a run failed or timedout, there will be a lock on intermediate files. The pipeline interface can be modified to add the `-R` argument such that the pipeline manager (pypiper) will run in recover mode which will allow the pipeline to restart and proceed. Further reading: [Pypiper CLI: built in arguments](https://pypiper.databio.org/en/latest/cli/)
+
+Modify PEPATAC's sample pipeline interface, adding the `-R` argument to the command template, e.g:
+
+```yaml
+command_template: >
+  {pipeline.path}
+  -R
+  --output-parent { looper.results_subdir }
+  --cores { compute.cores }
+  --mem { compute.mem }
+  --sample-name { sample.sample_name }
+  --input { sample.read1 }
+```
+
+
