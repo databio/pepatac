@@ -2486,7 +2486,7 @@ summarizer <- function(project, output_dir) {
     dir.create(summary_dir, showWarnings = FALSE)
 
     # convert yaml to data.table object
-    stats <- data.table::rbindlist(sapply(project_samples, FUN=yamlToDT,
+    stats <- data.table::rbindlist(lapply(project_samples, FUN=yamlToDT,
                                           yaml_file=summary_file), fill=TRUE)
 
     # Set absent values in table to zero
