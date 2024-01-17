@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.11.1] -- 2024-01-17
+
+### Fixed
+ - changed PEPATACr.R to use lapply instead of sapply when converting yaml to data.table object
+
 ## [0.11.0] -- 2023-12-22
 
 ### Fixed
