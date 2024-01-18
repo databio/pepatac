@@ -798,9 +798,9 @@ def main():
     trimmed_fastq_R2 = trimming_prefix + "_R2_trim.fastq"
     fastqc_folder = os.path.join(param.outfolder, "fastqc")
     fastqc_report = os.path.join(fastqc_folder,
-        trimming_prefix + "_R1_trim_fastqc.html")
+        args.sample_name + "_R1_trim_fastqc.html")
     fastqc_report_R2 = os.path.join(fastqc_folder,
-        trimming_prefix + "_R2_trim_fastqc.html")
+        args.sample_name + "_R2_trim_fastqc.html")
     if ngstk.check_command(tools.fastqc):
         ngstk.make_dir(fastqc_folder)
 
