@@ -1,7 +1,7 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
-## [0.11.2] -- 2024-01-18
+## [0.11.2] -- 2024-01-22
 
 ### Fixed
  - fix fastqc path Issue #268
