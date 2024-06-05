@@ -1,6 +1,11 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.11.3] -- 2024-06-05
+
+### Changed
+ - Pin Pipestat (pipestat==0.6.0), Looper (looper==1.6.0), and Pypiper (piper==0.14.0) versions to ensure compatibility
+
 ## [0.11.2] -- 2024-01-22
 
 ### Fixed
