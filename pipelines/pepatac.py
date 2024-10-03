@@ -511,7 +511,7 @@ def main():
         os.path.join(args.output_parent, args.sample_name))
     global pm
     pm = pypiper.PipelineManager(
-        name="PEPATAC", outfolder=outfolder,pipestat_sample_name=args.sample_name, args=args, version=__version__)
+        name="PEPATAC", outfolder=outfolder,pipestat_record_identifier=args.sample_name, args=args, version=__version__)
     global ngstk
     ngstk = pypiper.NGSTk(pm=pm)
 

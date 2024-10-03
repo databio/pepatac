@@ -73,7 +73,7 @@ def main():
     outfolder = os.path.abspath(os.path.join(args.output_parent, "summary"))
     
     pm = pypiper.PipelineManager(name="PEPATAC", outfolder=outfolder,
-                                 pipestat_sample_name="summary",
+                                 pipestat_record_identifier="summary",
                                  pipestat_pipeline_type="project",
                                  args=args, version=__version__)
 
