@@ -1,7 +1,5 @@
 # This project config file describes your project. See looper docs for details.
-name: test_project # The name that summary files will be prefaced with
-
-pep_version: 2.0.0
+pep_version: 2.1.0
 sample_table: test_annotation.csv  # sheet listing all samples in the project
 
 looper:  # relative paths are relative to this config file
