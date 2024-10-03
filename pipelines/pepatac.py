@@ -1459,11 +1459,11 @@ def main():
         pm.timestamp("### Calculate library complexity")
 
         cmd1 = (tools.preseq + " c_curve -v -o " + preseq_output +
-                " -B " + mapping_genome_bam)
+                " " + mapping_genome_bam)
         pm.run(cmd1, preseq_output)
 
         cmd2 = (tools.preseq + " lc_extrap -v -o " + preseq_yield +
-                " -B " + mapping_genome_bam)
+                " " + mapping_genome_bam)
         pm.run(cmd2, preseq_yield, nofail=True)
 
         if os.path.exists(preseq_yield):
