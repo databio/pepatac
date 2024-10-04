@@ -169,9 +169,9 @@ Optionally, `PEPATAC` can mix and match tools for adapter removal, deduplication
 You will need to have `java` installed to use `FastQC`.  At the command prompt, you can type `java -version`, press enter, and if you don't see an error you should be alright.  You'll need a version greater than 1.6 to work with `FastQC`.  Read more from the [`FastQC` installation instructions](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/INSTALL.txt).
 ```console
 cd /path/to/pepatac_tutorial/tools/
-wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
-unzip fastqc_v0.11.9.zip
-rm fastqc_v0.11.9.zip
+wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.0.zip
+unzip fastqc_v0.12.0.zip
+rm fastqc_v0.12.0.zip
 ```
 We also need to make the `FastQC` wrapper executable. To learn more about this, check out this [introduction to `chmod`](https://www.howtoforge.com/tutorial/linux-chmod-command/).
 
