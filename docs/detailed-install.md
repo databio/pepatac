@@ -159,7 +159,7 @@ Optionally, `PEPATAC` can mix and match tools for adapter removal, deduplication
 
 * [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/download.html#fastqc)
 * [picard](https://broadinstitute.github.io/picard/)
-* [pigz (v2.3.4+)](https://zlib.net/pigz/)
+* [pigz (v2.8+)](https://zlib.net/pigz/)
 * [seqOutBias](https://github.com/guertinlab/seqOutBias): necessitates the following UCSC tools
     * [bedGraphToBigWig](http://hgdownload.soe.ucsc.edu/admin/exe/)
     * [bigWigMerge](http://hgdownload.soe.ucsc.edu/admin/exe/)
@@ -207,7 +207,7 @@ make
 ```
 Don't forget to add this to your `PATH` too!
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.4/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.8/"
 ```
 
 That's it! Everything we need to run `PEPATAC` to its full potential should be installed.  If you are interested and have experience using containers, you can check out the [alternate installation methods](run-container.md).
