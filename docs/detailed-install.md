@@ -68,44 +68,13 @@ you may need to install `libgsl-dev` using: `apt install libgsl-dev` and either:
 More info can be found here:
 https://www.gnu.org/software/gsl/doc/html/usage.html#shared-libraries
 
-
-Instructions for installing preseq can be found here: https://github.com/smithlabcode/preseq
-
 ```console
-wget https://github.com/smithlabcode/preseq/releases/download/v3.2.0/preseq-3.2.0.tar.gz
-tar -zxvf preseq-x.tar.gz
+wget http://smithlabresearch.org/downloads/preseq_linux_v2.0.tar.bz2
+tar xvfj preseq_linux_v2.0.tar.bz2
 ```
-
-Move into the preseq directory and create a build directory:
-``` console
-cd preseq-x
-mkdir build && cd build
-```
-Run the configuration script:
-
-```console
-$ ../configure
-```
-
-You will need to enable hts support:
-
-```console
-../configure --enable-hts
-```
-If you need to install htslib, you can follow the guide here: https://github.com/samtools/htslib
-
-Compile and install the tools:
-
-```console
-make
-make install
-```
-
-
 Add to `PATH`!
-
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/preseq-3.2.0/build/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/preseq_v2.0/"
 ```
 
 #### samblaster
