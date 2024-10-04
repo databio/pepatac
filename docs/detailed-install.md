@@ -14,7 +14,7 @@ pip install --user --upgrade -r requirements.txt
 The following tools are used by the pipeline:  
 
 * [bedtools (v2.31.1+)](http://bedtools.readthedocs.io/en/latest/)
-* [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
+* [bowtie2 (v2.5.4+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 * [preseq (v2.0+)](http://smithlabresearch.org/software/preseq/)
 * [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster)
 * [samtools (v1.7)](http://www.htslib.org/)
@@ -44,10 +44,10 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/bedtools2/bin/"
 Next, let's install `bowtie2`.
 ```console
 cd ../
-wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.4.1/bowtie2-2.4.1-source.zip
-unzip bowtie2-2.4.1-source.zip
-rm bowtie2-2.4.1-source.zip
-cd bowtie2-2.4.1
+wget https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.5.4/bowtie2-2.5.4-source.zip
+unzip bowtie2-2.5.4-source.zip
+rm bowtie2-2.5.4-source.zip
+cd bowtie2-2.5.4
 make
 ```
 Note: you may need to install `libtbb-dev` if `make` fails, e.g. using `apt install libtbb-dev`
@@ -55,7 +55,7 @@ Note: you may need to install `libtbb-dev` if `make` fails, e.g. using `apt inst
 Again, let's add `bowtie2` to our `PATH` environment variable:
 
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.4.1/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.5.4/"
 ```
 
 #### preseq
