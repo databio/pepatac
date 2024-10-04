@@ -13,7 +13,7 @@ pip install --user --upgrade -r requirements.txt
 **Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the [pipeline configuration file](https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml) tools section.
 The following tools are used by the pipeline:  
 
-* [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/)
+* [bedtools (v2.31.1+)](http://bedtools.readthedocs.io/en/latest/)
 * [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 * [preseq (v2.0+)](http://smithlabresearch.org/software/preseq/)
 * [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster)
@@ -28,9 +28,9 @@ The following tools are used by the pipeline:
 We'll install each of these pieces of software before moving forward.  Let's start right at the beginning and install `bedtools`.  We're going to install from source, but if you would prefer to install from a package manager, you can follow the instructions in the [bedtools' installation guide](http://bedtools.readthedocs.io/en/latest/content/installation.html).
 ```console
 cd tools/
-wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools-2.29.2.tar.gz
-tar -zxvf bedtools-2.29.2.tar.gz
-rm bedtools-2.29.2.tar.gz
+wget https://github.com/arq5x/bedtools2/releases/download/v2.31.1/bedtools-2.31.1.tar.gz
+tar -zxvf bedtools-2.31.1.tar.gz
+rm bedtools-2.31.1.tar.gz
 cd bedtools2
 make
 ```
