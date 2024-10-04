@@ -13,8 +13,8 @@ pip install --user --upgrade -r requirements.txt
 **Required executables**. We will need some common bioinformatics tools installed. The complete list (including optional tools) is specified in the [pipeline configuration file](https://github.com/databio/pepatac/blob/master/pipelines/pepatac.yaml) tools section.
 The following tools are used by the pipeline:  
 
-* [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/)
-* [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
+* [bedtools (v2.31.1+)](http://bedtools.readthedocs.io/en/latest/)
+* [bowtie2 (v2.5.4+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
 * [preseq (v2.0+)](http://smithlabresearch.org/software/preseq/)
 * [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster)
 * [samtools (v1.7)](http://www.htslib.org/)
@@ -28,9 +28,9 @@ The following tools are used by the pipeline:
 We'll install each of these pieces of software before moving forward.  Let's start right at the beginning and install `bedtools`.  We're going to install from source, but if you would prefer to install from a package manager, you can follow the instructions in the [bedtools' installation guide](http://bedtools.readthedocs.io/en/latest/content/installation.html).
 ```console
 cd tools/
-wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools-2.29.2.tar.gz
-tar -zxvf bedtools-2.29.2.tar.gz
-rm bedtools-2.29.2.tar.gz
+wget https://github.com/arq5x/bedtools2/releases/download/v2.31.1/bedtools-2.31.1.tar.gz
+tar -zxvf bedtools-2.31.1.tar.gz
+rm bedtools-2.31.1.tar.gz
 cd bedtools2
 make
 ```
@@ -44,10 +44,10 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/bedtools2/bin/"
 Next, let's install `bowtie2`.
 ```console
 cd ../
-wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.4.1/bowtie2-2.4.1-source.zip
-unzip bowtie2-2.4.1-source.zip
-rm bowtie2-2.4.1-source.zip
-cd bowtie2-2.4.1
+wget https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.5.4/bowtie2-2.5.4-source.zip
+unzip bowtie2-2.5.4-source.zip
+rm bowtie2-2.5.4-source.zip
+cd bowtie2-2.5.4
 make
 ```
 Note: you may need to install `libtbb-dev` if `make` fails, e.g. using `apt install libtbb-dev`
@@ -55,7 +55,7 @@ Note: you may need to install `libtbb-dev` if `make` fails, e.g. using `apt inst
 Again, let's add `bowtie2` to our `PATH` environment variable:
 
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.4.1/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/bowtie2-2.5.4/"
 ```
 
 #### preseq
@@ -89,10 +89,10 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/samblaster/"
 #### samtools
 Next up, `samtools`.
 ```console
-wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2
-tar xvfj samtools-1.10.tar.bz2
-rm samtools-1.10.tar.bz2
-cd samtools-1.10
+wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2
+tar xvfj samtools-1.21.tar.bz2
+rm samtools-1.21.tar.bz2
+cd samtools-1.21
 ./configure
 ```
 Alternatively, if you do not have the ability to install `samtools` to the default location, you can specify using the `--prefix=/install/destination/dir/` option.  [Learn more about the `--prefix` option here](http://samtools.github.io/bcftools/howtos/install.html).
@@ -103,7 +103,7 @@ make install
 
 As for our other tools, add `samtools` to our `PATH` environment variable:
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/samtools-1.10/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/samtools-1.21/"
 ```
 
 #### skewer
@@ -159,7 +159,7 @@ Optionally, `PEPATAC` can mix and match tools for adapter removal, deduplication
 
 * [fastqc](https://www.bioinformatics.babraham.ac.uk/projects/download.html#fastqc)
 * [picard](https://broadinstitute.github.io/picard/)
-* [pigz (v2.3.4+)](https://zlib.net/pigz/)
+* [pigz (v2.8+)](https://zlib.net/pigz/)
 * [seqOutBias](https://github.com/guertinlab/seqOutBias): necessitates the following UCSC tools
     * [bedGraphToBigWig](http://hgdownload.soe.ucsc.edu/admin/exe/)
     * [bigWigMerge](http://hgdownload.soe.ucsc.edu/admin/exe/)
@@ -169,9 +169,9 @@ Optionally, `PEPATAC` can mix and match tools for adapter removal, deduplication
 You will need to have `java` installed to use `FastQC`.  At the command prompt, you can type `java -version`, press enter, and if you don't see an error you should be alright.  You'll need a version greater than 1.6 to work with `FastQC`.  Read more from the [`FastQC` installation instructions](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/INSTALL.txt).
 ```console
 cd /path/to/pepatac_tutorial/tools/
-wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
-unzip fastqc_v0.11.9.zip
-rm fastqc_v0.11.9.zip
+wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.0.zip
+unzip fastqc_v0.12.0.zip
+rm fastqc_v0.12.0.zip
 ```
 We also need to make the `FastQC` wrapper executable. To learn more about this, check out this [introduction to `chmod`](https://www.howtoforge.com/tutorial/linux-chmod-command/).
 
@@ -207,7 +207,7 @@ make
 ```
 Don't forget to add this to your `PATH` too!
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.4/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/pigz-2.8/"
 ```
 
 That's it! Everything we need to run `PEPATAC` to its full potential should be installed.  If you are interested and have experience using containers, you can check out the [alternate installation methods](run-container.md).
