@@ -89,10 +89,10 @@ export PATH="$PATH:/path/to/pepatac_tutorial/tools/samblaster/"
 #### samtools
 Next up, `samtools`.
 ```console
-wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2
-tar xvfj samtools-1.10.tar.bz2
-rm samtools-1.10.tar.bz2
-cd samtools-1.10
+wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2
+tar xvfj samtools-1.21.tar.bz2
+rm samtools-1.21.tar.bz2
+cd samtools-1.21
 ./configure
 ```
 Alternatively, if you do not have the ability to install `samtools` to the default location, you can specify using the `--prefix=/install/destination/dir/` option.  [Learn more about the `--prefix` option here](http://samtools.github.io/bcftools/howtos/install.html).
@@ -103,7 +103,7 @@ make install
 
 As for our other tools, add `samtools` to our `PATH` environment variable:
 ```console
-export PATH="$PATH:/path/to/pepatac_tutorial/tools/samtools-1.10/"
+export PATH="$PATH:/path/to/pepatac_tutorial/tools/samtools-1.21/"
 ```
 
 #### skewer
