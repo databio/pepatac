@@ -2446,7 +2446,8 @@ yamlToDT <- function(sample_name, yaml_file) {
                      "cFRiF",
                      "FRiF",
                      "FastQC report r1",
-                     "FastQC report r2")
+                     "FastQC report r2",
+                     "meta")
     cols_present <- character()
     for (column_name in remove_cols) {
         if (any(grepl(column_name, names(sample_DT)))) {
@@ -2485,9 +2486,15 @@ summarizer <- function(project, output_dir) {
     # Produce output directory (if needed)
     dir.create(summary_dir, showWarnings = FALSE)
 
-    # convert yaml to data.table object
-    stats <- data.table::rbindlist(lapply(project_samples, FUN=yamlToDT,
-                                          yaml_file=summary_file), fill=TRUE)
+    # # convert yaml to data.table object
+    # stats <- data.table::rbindlist(lapply(project_samples, FUN=yamlToDT,
+    #                                       yaml_file=summary_file), fill=TRUE)
+
+    # Convert YAML to data.table objects
+    sample_dts <- lapply(project_samples, FUN=yamlToDT, yaml_file=summary_file)
+
+    # Combine data.tables
+    stats <- data.table::rbindlist(sample_dts, idcol = "sample_name", fill = TRUE)
 
     # Set absent values in table to zero
     stats[is.na(stats)]   <- 0
