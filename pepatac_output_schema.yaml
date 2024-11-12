@@ -44,7 +44,7 @@ properties:
         Trimmed_reads:
           type: number
           description: "trimmed_reads"
-        Trimmed_loss_rate:
+        Trim_loss_rate:
           type: number
           description: "trimmed loss rate"
         FastQC report r1:
