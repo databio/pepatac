@@ -24,6 +24,23 @@ The following tools are used by the pipeline:
     * [bigWigCat (v4)](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
     * [bedToBigBed](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
 
+
+# WORK IN PROGRESS, ADDING GTARS DEC2024
+
+You must have rust installed:
+https://www.rust-lang.org/learn/get-started
+
+Once Rust is installed you will have access to `cargo` which can be used to install rust programs.
+
+Select a location to install gtars:
+`cargo install gtars --root /home/my_path_to_tools/`
+
+After installation, ensure gtars is set in PATH:
+```
+export PATH="$PATH:/home/drc/Downloads/test_rust_building/gtars"
+```
+
+
 #### bedtools
 We'll install each of these pieces of software before moving forward.  Let's start right at the beginning and install `bedtools`.  We're going to install from source, but if you would prefer to install from a package manager, you can follow the instructions in the [bedtools' installation guide](http://bedtools.readthedocs.io/en/latest/content/installation.html).
 ```console

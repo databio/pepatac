@@ -1510,34 +1510,87 @@ def main():
 
     exact_folder = os.path.join(map_genome_folder + "_exact")
     ngstk.make_dir(exact_folder)
-    exact_target = os.path.join(exact_folder, args.sample_name + "_exact.bw")
+
+    # TODO these may not need file extensions for the gtars version
+    exact_target = os.path.join(exact_folder, args.sample_name + "_exact")
     smooth_target = os.path.join(map_genome_folder,
-                                 args.sample_name + "_smooth.bw")
-    shift_bed = os.path.join(exact_folder, args.sample_name + "_shift.bed")
+                                 args.sample_name + "_smooth")
+    shift_bed = os.path.join(exact_folder, args.sample_name + "_shift")
 
     if not args.sob:
-        wig_cmd_callable = ngstk.check_command("wigToBigWig")
+        #wig_cmd_callable = ngstk.check_command("wigToBigWig")
+        gtars_cmd_callable = ngstk.check_command("gtars")
 
-        if wig_cmd_callable:
-            cmd = tool_path("bamSitesToWig.py")
-            cmd += " -i " + rmdup_bam
-            cmd += " -c " + res.chrom_sizes
-            cmd += " -e " + exact_folder
-            cmd += " -b " + shift_bed # request bed output
-            cmd += " -o " + exact_target
-            cmd += " -w " + smooth_target
-            cmd += " -m " + "atac"
-            cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
-            cmd += " --variable-step"
-            if not args.no_scale:
-                ar = float(pm.get_stat("Aligned_reads"))
-                if ar:
-                    cmd += " --scale " + str(ar)
-            pm.run(cmd, [exact_target, smooth_target])
+        #if wig_cmd_callable:
+        if gtars_cmd_callable:
+            # We actually need 3 separate commands to replace bamsitestowig with gtars
+            # cmd = tool_path("bamSitesToWig.py")
+            # cmd += " -i " + rmdup_bam
+            # cmd += " -c " + res.chrom_sizes
+            # cmd += " -e " + exact_folder
+            # cmd += " -b " + shift_bed # request bed output
+            # cmd += " -o " + exact_target
+            # cmd += " -w " + smooth_target
+            # cmd += " -m " + "atac"
+            # cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
+            # cmd += " --variable-step"
+            # if not args.no_scale:
+            #     ar = float(pm.get_stat("Aligned_reads"))
+            #     if ar:
+            #         cmd += " --scale " + str(ar)
+
+            #gtars uniwig -f "/home/drc/Downloads/bam_files_for_rust_test/test1_chr1_chr2.bam"
+            # -m 5
+            # -s 1
+            # -l /home/drc/outputs_gtars_bamsitestowig_nov2024/rust_created/
+            # -y bw
+            # -t bam
+            # -p 6
+            # -c /home/drc/pepatac_tutorial/genome/alias/hg38/fasta/default/hg38.chrom.sizes
+            # -u all
+
+            cmd_exact = tool_path("gtars") # gtars binary
+            cmd_exact += " -f " + rmdup_bam
+            cmd_exact += " -c " + res.chrom_sizes
+            cmd_exact += " -m " + 0 # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
+            cmd_exact += " -s " + 1  # this is step size
+            cmd_exact += " -t " + "bam"  # input type which is bam
+            cmd_exact += " -y " + "bw"  # output type is bw
+            cmd_exact += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
+            cmd_exact += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
+            cmd_exact += " -l " + exact_target
+
+            cmd_smooth = tool_path("gtars") # gtars binary
+            cmd_smooth += " -f " + rmdup_bam
+            cmd_smooth += " -c " + res.chrom_sizes
+            cmd_smooth += " -m " + 5 # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
+            cmd_smooth += " -s " + 1  # this is step size
+            cmd_smooth += " -t " + "bam"  # input type which is bam
+            cmd_smooth += " -y " + "bw"  # output type is bw
+            cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
+            cmd_smooth += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
+            cmd_smooth += " -l " + smooth_target
+
+            cmd_bed = tool_path("gtars") # gtars binary
+            cmd_bed += " -f " + rmdup_bam
+            cmd_bed += " -c " + res.chrom_sizes
+            cmd_bed += " -m " + 0 # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
+            cmd_bed += " -s " + 1  # this is step size
+            cmd_bed += " -t " + "bam"  # input type which is bam
+            cmd_bed += " -y " + "bw"  # output type is bw
+            cmd_bed += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
+            cmd_bed += " -u " + "core"
+            cmd_bed += " -l " + shift_bed
+
+
+
+            pm.run([cmd_exact, cmd_smooth, cmd_bed])
+
+
         else:
             pm.warning("Skipping signal track production:"
-                       "Could not call \'wigToBigWig\'."
-                       "Confirm the required UCSC tools are in your PATH.")
+                       "Could not call \'gtars\'."
+                       "Confirm the required gtar tools is in your PATH.")
     else:
         # seqOutBias needs a working directory, we'll make that temporary
         tempdir = tempfile.mkdtemp(dir=map_genome_folder)
@@ -1735,25 +1788,35 @@ def main():
         pm.run(convert_cmd, exact_target)
 
         # Generate smooth signal track
-        wig_cmd_callable = ngstk.check_command("wigToBigWig")
+        gtars_cmd_callable = ngstk.check_command("gtars")
 
-        if wig_cmd_callable:
-            cmd = tool_path("bamSitesToWig.py")
-            cmd += " -i " + rmdup_bam
-            cmd += " -c " + res.chrom_sizes
-            cmd += " -w " + smooth_target
-            cmd += " -m " + "atac"
-            cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
-            cmd += " --variable-step"
-            if not args.no_scale:
-                ar = float(pm.get_stat("Aligned_reads"))
-                if ar:
-                    cmd += " --scale " + str(ar)
-            pm.run(cmd, smooth_target)
+        if gtars_cmd_callable:
+            # cmd = tool_path("bamSitesToWig.py")
+            # cmd += " -i " + rmdup_bam
+            # cmd += " -c " + res.chrom_sizes
+            # cmd += " -w " + smooth_target
+            # cmd += " -m " + "atac"
+            # cmd += " -p " + str(int(max(1, int(pm.cores) * 2/3)))
+            # cmd += " --variable-step"
+            # if not args.no_scale:
+            #     ar = float(pm.get_stat("Aligned_reads"))
+            #     if ar:
+            #         cmd += " --scale " + str(ar)
+            cmd_smooth = tool_path("gtars") # gtars binary
+            cmd_smooth += " -f " + rmdup_bam
+            cmd_smooth += " -c " + res.chrom_sizes
+            cmd_smooth += " -m " + 5 # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
+            cmd_smooth += " -s " + 1  # this is step size
+            cmd_smooth += " -t " + "bam"  # input type which is bam
+            cmd_smooth += " -y " + "bw"  # output type is bw
+            cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
+            cmd_smooth += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
+            cmd_smooth += " -l " + smooth_target
+            pm.run(cmd_smooth)
         else:
             pm.warning("Skipping smooth signal track production:"
-                       "Could not call \'wigToBigWig\'."
-                       "Confirm the required UCSC tools are in your PATH.")
+                       "Could not call \'gtars\'."
+                       "Confirm the required gtar tool is in your PATH.")
 
 
     ############################################################################
