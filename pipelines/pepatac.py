@@ -1512,10 +1512,12 @@ def main():
     ngstk.make_dir(exact_folder)
 
     # TODO these may not need file extensions for the gtars version
-    exact_target = os.path.join(exact_folder, args.sample_name + "_exact")
-    smooth_target = os.path.join(map_genome_folder,
-                                 args.sample_name + "_smooth")
-    shift_bed = os.path.join(exact_folder, args.sample_name + "_shift")
+    exact_header = os.path.join(exact_folder, args.sample_name + "_exact")
+    exact_target = os.path.join(exact_folder, args.sample_name + "_exact_start.bw")
+    smooth_header = os.path.join(map_genome_folder, args.sample_name + "_smooth")
+    smooth_target = os.path.join(map_genome_folder, args.sample_name + "_smooth_start.bw")
+    shift_bed_header = os.path.join(exact_folder, args.sample_name + "_shift")
+    shift_bed_target = os.path.join(exact_folder, args.sample_name + "_shift_core.bed")
 
     if not args.sob:
         #wig_cmd_callable = ngstk.check_command("wigToBigWig")
@@ -1558,7 +1560,7 @@ def main():
             cmd_exact += " -y " + "bw"  # output type is bw
             cmd_exact += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
             cmd_exact += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
-            cmd_exact += " -l " + exact_target
+            cmd_exact += " -l " + exact_header
 
             cmd_smooth = tool_path("gtars") # gtars binary
             cmd_smooth += " -f " + rmdup_bam
@@ -1569,7 +1571,7 @@ def main():
             cmd_smooth += " -y " + "bw"  # output type is bw
             cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
             cmd_smooth += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
-            cmd_smooth += " -l " + smooth_target
+            cmd_smooth += " -l " + smooth_header
 
             cmd_bed = tool_path("gtars") # gtars binary
             cmd_bed += " -f " + rmdup_bam
@@ -1580,11 +1582,11 @@ def main():
             cmd_bed += " -y " + "bw"  # output type is bw
             cmd_bed += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
             cmd_bed += " -u " + "core"
-            cmd_bed += " -l " + shift_bed
+            cmd_bed += " -l " + shift_bed_header
 
 
 
-            pm.run([cmd_exact, cmd_smooth, cmd_bed])
+            pm.run([cmd_exact, cmd_smooth, cmd_bed],[exact_target,smooth_target,shift_bed_target])
 
 
         else:
@@ -1762,7 +1764,7 @@ def main():
             "-s -c 5,6 -o sum,distinct -prec 10 -delim \"\\t\"",
             ("-i",  "stdin"),
             " | awk 'BEGIN{OFS=\"\t\";} {print $1, $2, $3, \"N\", $4, $5}' ",
-            (">", shift_bed)
+            (">", shift_bed_target)
         ])
         pm.run(merge_cmd2, exact_target)
 
@@ -1811,8 +1813,8 @@ def main():
             cmd_smooth += " -y " + "bw"  # output type is bw
             cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
             cmd_smooth += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
-            cmd_smooth += " -l " + smooth_target
-            pm.run(cmd_smooth)
+            cmd_smooth += " -l " + smooth_header
+            pm.run(cmd_smooth, smooth_target)
         else:
             pm.warning("Skipping smooth signal track production:"
                        "Could not call \'gtars\'."
@@ -1957,8 +1959,8 @@ def main():
     ngstk.make_dir(peak_folder)
     peak_output_file = os.path.join(peak_folder,  args.sample_name +
                                     "_peaks.narrowPeak")
-    peak_input_file = shift_bed
-    shift_bed_gz = shift_bed + ".gz"
+    peak_input_file = shift_bed_target
+    shift_bed_gz = shift_bed_target + ".gz"
     peak_bed = os.path.join(peak_folder, args.sample_name + "_peaks.bed")
     summits_bed = os.path.join(peak_folder, args.sample_name + "_summits.bed")
     chr_order = os.path.join(peak_folder, "chr_order.txt")
