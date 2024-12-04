@@ -1552,6 +1552,7 @@ def main():
             # -u all
 
             cmd_exact = tool_path("gtars") # gtars binary
+            cmd_exact += " uniwig"
             cmd_exact += " -f " + rmdup_bam
             cmd_exact += " -c " + res.chrom_sizes
             cmd_exact += " -m " + "0" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
@@ -1563,6 +1564,7 @@ def main():
             cmd_exact += " -l " + exact_header
 
             cmd_smooth = tool_path("gtars") # gtars binary
+            cmd_smooth += " uniwig"
             cmd_smooth += " -f " + rmdup_bam
             cmd_smooth += " -c " + res.chrom_sizes
             cmd_smooth += " -m " + "5" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
@@ -1574,6 +1576,7 @@ def main():
             cmd_smooth += " -l " + smooth_header
 
             cmd_bed = tool_path("gtars") # gtars binary
+            cmd_bed += " uniwig"
             cmd_bed += " -f " + rmdup_bam
             cmd_bed += " -c " + res.chrom_sizes
             cmd_bed += " -m " + "0" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
@@ -1805,6 +1808,7 @@ def main():
             #     if ar:
             #         cmd += " --scale " + str(ar)
             cmd_smooth = tool_path("gtars") # gtars binary
+            cmd_smooth += " uniwig"
             cmd_smooth += " -f " + rmdup_bam
             cmd_smooth += " -c " + res.chrom_sizes
             cmd_smooth += " -m " + "5" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
