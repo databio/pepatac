@@ -1550,7 +1550,7 @@ def main():
             # -p 6
             # -c /home/drc/pepatac_tutorial/genome/alias/hg38/fasta/default/hg38.chrom.sizes
             # -u all
-
+            # TODO Scaling is not implemented in gtars uniwig 0.1.2. Therefore, no scaling will be done until that is updated.
             cmd_exact = tool_path("gtars") # gtars binary
             cmd_exact += " uniwig"
             cmd_exact += " -f " + rmdup_bam
@@ -1560,7 +1560,7 @@ def main():
             cmd_exact += " -t " + "bam"  # input type which is bam
             cmd_exact += " -y " + "bw"  # output type is bw
             cmd_exact += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
-            cmd_exact += " -u " + "shift"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
+            cmd_exact += " -u " + "shift"
             cmd_exact += " -l " + exact_header
 
             cmd_smooth = tool_path("gtars") # gtars binary
@@ -1572,7 +1572,7 @@ def main():
             cmd_smooth += " -t " + "bam"  # input type which is bam
             cmd_smooth += " -y " + "bw"  # output type is bw
             cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
-            cmd_smooth += " -u " + "shift"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
+            cmd_smooth += " -u " + "shift"
             cmd_smooth += " -l " + smooth_header
 
             cmd_bed = tool_path("gtars") # gtars binary
