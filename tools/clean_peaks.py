@@ -1,6 +1,9 @@
+#!/usr/bin/env python
+
 from argparse import ArgumentParser
 import sys
 import pandas as pd
+import numpy as np
 
 def parse_args(cmdl):
     parser = ArgumentParser()
@@ -9,6 +12,23 @@ def parse_args(cmdl):
     parser.add_argument('-s', '--chrom-sizes', dest='chrom_sizes', default=None)
 
     return parser.parse_args(cmdl)
+
+
+def rescale(n, after=[0,1], before=[]):
+    """
+    Helper function to rescale a vector between specified range of values
+    
+    :param numpy array n: a vector of numbers to be rescale 
+    :param list after: range of values to which to scale n 
+    :param list before: range of values in which n is contained
+    """
+    if not before:
+        before=[min(n), max(n)]
+    if (before[1] - before[0]) == 0:
+        return n
+    return (((after[1] - after[0]) * (n - before[0]) / 
+             (before[1] - before[0])) + after[0])
+
 
 def main(peak_output_file, chrom_sizes, output_path):
     df = pd.read_csv(peak_output_file, sep='\t', header=None,
