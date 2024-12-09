@@ -1555,7 +1555,7 @@ def main():
             cmd_exact += " uniwig"
             cmd_exact += " -f " + rmdup_bam
             cmd_exact += " -c " + res.chrom_sizes
-            cmd_exact += " -m " + "0" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
+            cmd_exact += " -m " + "25" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
             cmd_exact += " -s " + "5"  # this is step size
             cmd_exact += " -t " + "bam"  # input type which is bam
             cmd_exact += " -y " + "bw"  # output type is bw
