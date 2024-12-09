@@ -1513,11 +1513,11 @@ def main():
 
     # TODO these may not need file extensions for the gtars version
     exact_header = os.path.join(exact_folder, args.sample_name + "_exact")
-    exact_target = os.path.join(exact_folder, args.sample_name + "_exact_start.bw")
+    exact_target = os.path.join(exact_folder, args.sample_name + "_exact_shift.bw")
     smooth_header = os.path.join(map_genome_folder, args.sample_name + "_smooth")
-    smooth_target = os.path.join(map_genome_folder, args.sample_name + "_smooth_start.bw")
-    shift_bed_header = os.path.join(exact_folder, args.sample_name + "_shift")
-    shift_bed_target = os.path.join(exact_folder, args.sample_name + "_shift_core.bed")
+    smooth_target = os.path.join(map_genome_folder, args.sample_name + "_smooth_shift.bw")
+    shift_bed_header = os.path.join(exact_folder, args.sample_name)
+    shift_bed_target = os.path.join(exact_folder, args.sample_name + "_shift.bed")
 
     if not args.sob:
         #wig_cmd_callable = ngstk.check_command("wigToBigWig")
@@ -1560,7 +1560,7 @@ def main():
             cmd_exact += " -t " + "bam"  # input type which is bam
             cmd_exact += " -y " + "bw"  # output type is bw
             cmd_exact += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
-            cmd_exact += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
+            cmd_exact += " -u " + "shift"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
             cmd_exact += " -l " + exact_header
 
             cmd_smooth = tool_path("gtars") # gtars binary
@@ -1572,7 +1572,7 @@ def main():
             cmd_smooth += " -t " + "bam"  # input type which is bam
             cmd_smooth += " -y " + "bw"  # output type is bw
             cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
-            cmd_smooth += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
+            cmd_smooth += " -u " + "shift"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
             cmd_smooth += " -l " + smooth_header
 
             cmd_bed = tool_path("gtars") # gtars binary
@@ -1582,9 +1582,9 @@ def main():
             cmd_bed += " -m " + "0" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
             cmd_bed += " -s " + "1"  # this is step size
             cmd_bed += " -t " + "bam"  # input type which is bam
-            cmd_bed += " -y " + "bw"  # output type is bw
+            cmd_bed += " -y " + "bed"  # output type is bed
             cmd_bed += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
-            cmd_bed += " -u " + "core"
+            cmd_bed += " -u " + "shift"
             cmd_bed += " -l " + shift_bed_header
 
 
@@ -1816,7 +1816,7 @@ def main():
             cmd_smooth += " -t " + "bam"  # input type which is bam
             cmd_smooth += " -y " + "bw"  # output type is bw
             cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
-            cmd_smooth += " -u " + "start"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
+            cmd_smooth += " -u " + "shift"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
             cmd_smooth += " -l " + smooth_header
             pm.run(cmd_smooth, smooth_target)
         else:
