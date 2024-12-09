@@ -1556,7 +1556,7 @@ def main():
             cmd_exact += " -f " + rmdup_bam
             cmd_exact += " -c " + res.chrom_sizes
             cmd_exact += " -m " + "0" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
-            cmd_exact += " -s " + "1"  # this is step size
+            cmd_exact += " -s " + "5"  # this is step size
             cmd_exact += " -t " + "bam"  # input type which is bam
             cmd_exact += " -y " + "bw"  # output type is bw
             cmd_exact += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
@@ -1567,8 +1567,8 @@ def main():
             cmd_smooth += " uniwig"
             cmd_smooth += " -f " + rmdup_bam
             cmd_smooth += " -c " + res.chrom_sizes
-            cmd_smooth += " -m " + "5" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
-            cmd_smooth += " -s " + "1"  # this is step size
+            cmd_smooth += " -m " + "25" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
+            cmd_smooth += " -s " + "5"  # this is step size
             cmd_smooth += " -t " + "bam"  # input type which is bam
             cmd_smooth += " -y " + "bw"  # output type is bw
             cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
@@ -1579,8 +1579,8 @@ def main():
             cmd_bed += " uniwig"
             cmd_bed += " -f " + rmdup_bam
             cmd_bed += " -c " + res.chrom_sizes
-            cmd_bed += " -m " + "0" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
-            cmd_bed += " -s " + "1"  # this is step size
+            cmd_bed += " -m " + "25" # this is smooth size NOT the shift a parameter as above, for exact, smoothing should be 0
+            cmd_bed += " -s " + "5"  # this is step size
             cmd_bed += " -t " + "bam"  # input type which is bam
             cmd_bed += " -y " + "bed"  # output type is bed
             cmd_bed += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
