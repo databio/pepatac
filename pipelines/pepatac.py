@@ -1562,6 +1562,10 @@ def main():
             cmd_exact += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
             cmd_exact += " -u " + "shift"
             cmd_exact += " -l " + exact_header
+            if not args.no_scale:
+                ar = float(pm.get_stat("Aligned_reads"))
+                if ar:
+                    cmd += " --bamscale " + str(ar)
 
             cmd_smooth = tool_path("gtars") # gtars binary
             cmd_smooth += " uniwig"
@@ -1574,6 +1578,10 @@ def main():
             cmd_smooth += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
             cmd_smooth += " -u " + "shift"
             cmd_smooth += " -l " + smooth_header
+            if not args.no_scale:
+                ar = float(pm.get_stat("Aligned_reads"))
+                if ar:
+                    cmd += " --bamscale " + str(ar)
 
             cmd_bed = tool_path("gtars") # gtars binary
             cmd_bed += " uniwig"
@@ -1586,6 +1594,10 @@ def main():
             cmd_bed += " -p " + str(int(max(1, int(pm.cores) * 2/3)))  # number of processors
             cmd_bed += " -u " + "shift"
             cmd_bed += " -l " + shift_bed_header
+            if not args.no_scale:
+                ar = float(pm.get_stat("Aligned_reads"))
+                if ar:
+                    cmd += " --bamscale " + str(ar)
 
 
 
@@ -1819,6 +1831,10 @@ def main():
             cmd_smooth += " -u " + "shift"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
             cmd_smooth += " -l " + smooth_header
             pm.run(cmd_smooth, smooth_target)
+            if not args.no_scale:
+                ar = float(pm.get_stat("Aligned_reads"))
+                if ar:
+                    cmd += " --bamscale " + str(ar)
         else:
             pm.warning("Skipping smooth signal track production:"
                        "Could not call \'gtars\'."
