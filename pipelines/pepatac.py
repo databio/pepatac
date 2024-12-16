@@ -1563,7 +1563,7 @@ def main():
             cmd_exact += " -u " + "shift"
             cmd_exact += " -l " + exact_header
             if not args.no_scale:
-                ar = float(pm.get_stat("Aligned_reads"))
+                ar = int(pm.get_stat("Aligned_reads"))
                 if ar:
                     cmd_exact += " --bamscale " + str(ar)
 
@@ -1579,7 +1579,7 @@ def main():
             cmd_smooth += " -u " + "shift"
             cmd_smooth += " -l " + smooth_header
             if not args.no_scale:
-                ar = float(pm.get_stat("Aligned_reads"))
+                ar = int(pm.get_stat("Aligned_reads"))
                 if ar:
                     cmd_smooth += " --bamscale " + str(ar)
 
@@ -1595,7 +1595,7 @@ def main():
             cmd_bed += " -u " + "shift"
             cmd_bed += " -l " + shift_bed_header
             if not args.no_scale:
-                ar = float(pm.get_stat("Aligned_reads"))
+                ar = int(pm.get_stat("Aligned_reads"))
                 if ar:
                     cmd_bed += " --bamscale " + str(ar)
 
@@ -1831,7 +1831,7 @@ def main():
             cmd_smooth += " -u " + "shift"  # TODO this does NOT account for shifted position, it needs to be updated in gtars
             cmd_smooth += " -l " + smooth_header
             if not args.no_scale:
-                ar = float(pm.get_stat("Aligned_reads"))
+                ar = int(pm.get_stat("Aligned_reads"))
                 if ar:
                     cmd_smooth += " --bamscale " + str(ar)
             pm.run(cmd_smooth, smooth_target)
