@@ -1,6 +1,10 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.12.0] -- 2025-01-xx
+- Remove containers from build and docs (docker and singularity)
+
+
 ## [0.11.3] -- 2024-06-05
 
 ### Changed

@@ -1,6 +1,6 @@
 # Run <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> with a multiple container manager.
 
-Whether you are using `docker` or `singularity`, we have a solution to run the pipeline using containers that reduces the installation burden.
+We have a solution to run the pipeline using containers that reduces the installation burden.
 
 In addition to cloning the `PEPATAC` repository, this requires the installation and configuration of a single python package, our [multi-container environment manager `bulker`](https://bulker.databio.org/en/latest/). We support using `bulker` for a few reasons: 
 
