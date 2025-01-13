@@ -453,6 +453,7 @@ dependencies:
   - rfc3339-validator=0.1.4=py310h06a4308_0
   - rfc3986-validator=0.1.1=py310h06a4308_0
   - rpds-py=0.10.6=py310h4aa5aa6_1
+  - rust-gtars=0.2.0=h4349ce8_0
   - samblaster=0.1.26=h9948957_6
   - sed=4.8=h7b6447c_0
   - send2trash=1.8.2=py310h06a4308_0
