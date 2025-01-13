@@ -1522,7 +1522,7 @@ def main():
         gtars_cmd_callable = ngstk.check_command("gtars")
 
         if gtars_cmd_callable:
-            cmd_exact = tool_path("gtars") # gtars binary
+            cmd_exact = "gtars" # gtars binary
             cmd_exact += " uniwig"
             cmd_exact += " -f " + rmdup_bam
             cmd_exact += " -c " + res.chrom_sizes
@@ -1538,7 +1538,7 @@ def main():
                 if ar:
                     cmd_exact += " --bamscale " + str(ar)
 
-            cmd_smooth = tool_path("gtars") # gtars binary
+            cmd_smooth = "gtars" # gtars binary
             cmd_smooth += " uniwig"
             cmd_smooth += " -f " + rmdup_bam
             cmd_smooth += " -c " + res.chrom_sizes
@@ -1554,7 +1554,7 @@ def main():
                 if ar:
                     cmd_smooth += " --bamscale " + str(ar)
 
-            cmd_bed = tool_path("gtars") # gtars binary
+            cmd_bed = "gtars" # gtars binary
             cmd_bed += " uniwig"
             cmd_bed += " -f " + rmdup_bam
             cmd_bed += " -c " + res.chrom_sizes
@@ -1779,7 +1779,7 @@ def main():
         gtars_cmd_callable = ngstk.check_command("gtars")
 
         if gtars_cmd_callable:
-            cmd_smooth = tool_path("gtars") # gtars binary
+            cmd_smooth = "gtars" # gtars binary
             cmd_smooth += " uniwig"
             cmd_smooth += " -f " + rmdup_bam
             cmd_smooth += " -c " + res.chrom_sizes
