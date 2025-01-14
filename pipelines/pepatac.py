@@ -1502,10 +1502,6 @@ def main():
     ############################################################################
     # "Exact cuts" are nucleotide-resolution tracks of exact bases
     # where the transposition (or DNAse cut) happened;
-    # In the past I used wigToBigWig on a combined wig file, but this ends up
-    # using a boatload of memory (more than 32GB); in contrast, running the
-    # wig -> bw conversion on each chrom and then combining them with bigWigCat
-    # requires much less memory. This was a memory bottleneck in the pipeline.
     pm.timestamp("### Produce signal tracks")
 
     exact_folder = os.path.join(map_genome_folder + "_exact")

@@ -479,6 +479,7 @@ dependencies:
   - tzdata=2024b=h04d1e81_0
   - ucsc-bedgraphtobigwig=377=h0b8a92a_2
   - ucsc-bedtobigbed=473=he8037a5_0
+  - ucsc-bigwigmerge=377=h0b8a92a_2
   - ucsc-stringify=472=he8037a5_0
   - urllib3=2.2.3=py310h06a4308_0
   - wcwidth=0.2.5=pyhd3eb1b0_0
