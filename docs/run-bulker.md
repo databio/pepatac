@@ -1,6 +1,6 @@
 # Run <img src="../img/pepatac_logo_black.svg" alt="PEPATAC" class="img-fluid" style="max-height:35px; margin-top:-15px; margin-bottom:-10px"> with a multiple container manager.
 
-Whether you are using `docker` or `singularity`, we have a solution to run the pipeline using containers that reduces the installation burden.
+We have a solution to run the pipeline using containers that reduces the installation burden.
 
 In addition to cloning the `PEPATAC` repository, this requires the installation and configuration of a single python package, our [multi-container environment manager `bulker`](https://bulker.databio.org/en/latest/). We support using `bulker` for a few reasons: 
 
@@ -8,8 +8,6 @@ In addition to cloning the `PEPATAC` repository, this requires the installation 
 2. Similar to a dockerfile, you can distribute sets of tools *but* as a separate set of containers, not a single, unwieldy, and monolithic container.
 3. Since `bulker` commands behave like native commands, a workflow becomes automatically containerized with bulker.
 4. Finally, this makes bulker environments very portable, since the only requirement for native-like command use is `docker` or `singularity`.
-
-If you would still prefer using a single container, we do provide a [PEPATAC dockerfile](https://github.com/databio/pepatac/blob/master/containers/pepatac.Dockerfile) and support for [running the pipeline using a single, monolithic container.](run-container.md). 
 
 ## Running `PEPATAC` using `bulker`
 
@@ -89,7 +87,7 @@ bulker load databio/pepatac:1.0.7 -r
 
 Now that we've loaded the `PEPATAC` crate, we need to activate that specific crate so its included tools are available.
 ```console
-bulker activate databio/pepatac:1.0.7
+bulker activate databio/pepatac:1.0.13
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!
 

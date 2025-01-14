@@ -1,14 +1,8 @@
-name: PEPATAC_tutorial
+name: PEPATAC_tutorial_without_refgenie
 pep_version: 2.1.0
 sample_table: tutorial.csv
 
-looper:
-  output_dir: "${TUTORIAL}/processed/"
-  pipeline_interfaces: ["${TUTORIAL}/tools/pepatac/project_pipeline_interface.yaml"]
-
 sample_modifiers:
-  append:
-    pipeline_interfaces: ["${TUTORIAL}/tools/pepatac/sample_pipeline_interface.yaml"]
   derive:
     attributes: [read1, read2]
     sources:
@@ -21,7 +15,9 @@ sample_modifiers:
         organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
       then: 
         genome: hg38
-        prealignment_names: ["rCRSd"]
+        genome_index: default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4
+        chrom_sizes: default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes
+        prealignment_index: ["rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4"]
         deduplicator: samblaster # Default. [options: picard]
         trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
         peak_type: fixed         # Default. [options: variable]

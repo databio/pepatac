@@ -5,7 +5,7 @@ PEPATAC - ATACseq pipeline
 
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.11.3"
+__version__ = "0.12.0"
 
 
 from argparse import ArgumentParser
@@ -1502,10 +1502,6 @@ def main():
     ############################################################################
     # "Exact cuts" are nucleotide-resolution tracks of exact bases
     # where the transposition (or DNAse cut) happened;
-    # In the past I used wigToBigWig on a combined wig file, but this ends up
-    # using a boatload of memory (more than 32GB); in contrast, running the
-    # wig -> bw conversion on each chrom and then combining them with bigWigCat
-    # requires much less memory. This was a memory bottleneck in the pipeline.
     pm.timestamp("### Produce signal tracks")
 
     exact_folder = os.path.join(map_genome_folder + "_exact")
@@ -1522,7 +1518,7 @@ def main():
         gtars_cmd_callable = ngstk.check_command("gtars")
 
         if gtars_cmd_callable:
-            cmd_exact = tool_path("gtars") # gtars binary
+            cmd_exact = "gtars" # gtars binary
             cmd_exact += " uniwig"
             cmd_exact += " -f " + rmdup_bam
             cmd_exact += " -c " + res.chrom_sizes
@@ -1538,7 +1534,7 @@ def main():
                 if ar:
                     cmd_exact += " --bamscale " + str(ar)
 
-            cmd_smooth = tool_path("gtars") # gtars binary
+            cmd_smooth = "gtars" # gtars binary
             cmd_smooth += " uniwig"
             cmd_smooth += " -f " + rmdup_bam
             cmd_smooth += " -c " + res.chrom_sizes
@@ -1554,7 +1550,7 @@ def main():
                 if ar:
                     cmd_smooth += " --bamscale " + str(ar)
 
-            cmd_bed = tool_path("gtars") # gtars binary
+            cmd_bed = "gtars" # gtars binary
             cmd_bed += " uniwig"
             cmd_bed += " -f " + rmdup_bam
             cmd_bed += " -c " + res.chrom_sizes
@@ -1779,7 +1775,7 @@ def main():
         gtars_cmd_callable = ngstk.check_command("gtars")
 
         if gtars_cmd_callable:
-            cmd_smooth = tool_path("gtars") # gtars binary
+            cmd_smooth = "gtars" # gtars binary
             cmd_smooth += " uniwig"
             cmd_smooth += " -f " + rmdup_bam
             cmd_smooth += " -c " + res.chrom_sizes
