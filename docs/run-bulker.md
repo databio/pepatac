@@ -87,7 +87,9 @@ bulker load databio/pepatac:1.0.7 -r
 
 Now that we've loaded the `PEPATAC` crate, we need to activate that specific crate so its included tools are available.
 ```console
+
 bulker activate databio/pepatac:1.0.13
+
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!
 
