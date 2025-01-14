@@ -33,7 +33,7 @@ Pull requests welcome. Active development should occur in a development or featu
 * Jin Xu, jinxu9@stanford.edu
 * Ryan Corces, rcorces@stanford.edu
 * Vince Reuter, vreuter@protonmail.com
-* Others... (add your name)
+* Donald Campbell, https://github.com/donaldcampbelljr
 
 ## Citing
 

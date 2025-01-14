@@ -1,0 +1,9 @@
+pep_config: test_refgenie_pep_config.yaml # if you would like to run without using refgenie, point this to test_pep_config.yaml
+
+output_dir: "${PROCESSED}/results_pipeline"
+pipeline_interfaces:
+  - "${CODE}/pepatac/sample_pipeline_interface.yaml"
+  - "${CODE}/pepatac/project_pipeline_interface.yaml"
+
+pipestat:
+  results_file_path: "${PROCESSED}/results_pipeline/{record_identifier}/stats.yaml"

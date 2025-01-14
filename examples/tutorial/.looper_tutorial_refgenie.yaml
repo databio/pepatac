@@ -1,4 +1,4 @@
-pep_config: tutorial_refgenie_project_config.yaml
+pep_config: tutorial_refgenie_pep_config.yaml # if you would like to run without using refgenie, point this to tutorial_pep_config.yaml
 
 output_dir: "${TUTORIAL}/processed/"
 pipeline_interfaces:
