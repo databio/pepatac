@@ -394,7 +394,7 @@ while IFS= read -r line; do
 done < $REQS
 
 # Check tool installation
-declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "macs3" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "Rscript")
+declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "macs3" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "Rscript" "gtars")
 
 for cmd in ${requiredCommands[@]}; do
     if ! is_executable $cmd; then
@@ -740,7 +740,7 @@ else
         done < $REQS
 
         # Check tool installation
-        declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "macs3" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "Rscript")
+        declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "macs3" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "Rscript" "gtars")
 
         for cmd in ${requiredCommands[@]}; do
             if ! is_executable $cmd; then
