@@ -3,7 +3,8 @@ All notable changes to this project will be documented in this file.
 
 ## [0.12.0] -- 2025-01-xx
 - Remove containers from build and docs (docker and singularity)
-
+- update to the newest versions of Looper (2.0.0), Pipestat (0.12.0), Pypiper (0.14.3)
+- replace `bamSitesToWig` step with `gtars uniwig`. 
 
 ## [0.11.3] -- 2024-06-05
 
