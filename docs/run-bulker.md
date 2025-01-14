@@ -9,8 +9,6 @@ In addition to cloning the `PEPATAC` repository, this requires the installation 
 3. Since `bulker` commands behave like native commands, a workflow becomes automatically containerized with bulker.
 4. Finally, this makes bulker environments very portable, since the only requirement for native-like command use is `docker` or `singularity`.
 
-If you would still prefer using a single container, we do provide a [PEPATAC dockerfile](https://github.com/databio/pepatac/blob/master/containers/pepatac.Dockerfile) and support for [running the pipeline using a single, monolithic container.](run-container.md). 
-
 ## Running `PEPATAC` using `bulker`
 
 ### 1: Clone the `PEPATAC` pipeline
@@ -89,7 +87,7 @@ bulker load databio/pepatac:1.0.7 -r
 
 Now that we've loaded the `PEPATAC` crate, we need to activate that specific crate so its included tools are available.
 ```console
-bulker activate databio/pepatac:1.0.7
+bulker activate databio/pepatac:1.0.13
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!
 
