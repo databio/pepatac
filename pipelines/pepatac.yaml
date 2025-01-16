@@ -24,8 +24,8 @@ tools:  # absolute paths to required tools
   hmmratac: ${HMMRATAC}
   homer_findpeaks: findPeaks
   homer_motif: findMotifsGenome.pl
-  trimmomatic: trimmomatic #${TRIMMOMATIC}
-  picard: picard #${PICARD}
+  trimmomatic: ${TRIMMOMATIC}
+  picard: ${PICARD}
   pigz: pigz
   Rscript: Rscript 
   seqOutBias: seqOutBias
