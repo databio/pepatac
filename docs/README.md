@@ -30,5 +30,5 @@ You can download the latest version from the [releases](https://github.com/datab
 
 If you find PEPATAC useful in your research, please cite: 
 
-Jason P. Smith, M. Ryan Corces, Jin Xu, Vincent P. Reuter, Howard Y. Chang, and Nathan C. Sheffield. <b>PEPATAC: An optimized ATAC-seq pipeline with serial alignments.</b> <i>bioRxiv</i> (2021). <a href="https://doi.org/10.1101/2020.10.21.347054">DOI: 10.1101/2020.10.21.347054</a>
+Jason P. Smith, M. Ryan Corces, Jin Xu, Vincent P. Reuter, Howard Y. Chang, and Nathan C. Sheffield. <b>PEPATAC: An optimized ATAC-seq pipeline with serial alignments.</b> <i>NAR Genomics and Bioinformatics</i> (2021). <a href="https://doi.org/10.1093/nargab/lqab101">DOI: 10.1093/nargab/lqab101</a>
 

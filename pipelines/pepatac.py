@@ -1196,9 +1196,9 @@ def main():
             pbc1 = 0
             pbc2 = 0
 
-        pm.report_result("NRF", round(float(nrf),2))
-        pm.report_result("PBC1", round(float(pbc1),2))
-        pm.report_result("PBC2", round(float(pbc2), 2))
+        pm.report_result("NRF", round(float(nrf), 4))
+        pm.report_result("PBC1", round(float(pbc1), 4))
+        pm.report_result("PBC2", round(float(pbc2), 4))
 
     pm.run(cmd, bamQC, follow=lambda: report_bam_qc(bamQC))
 
@@ -2284,7 +2284,7 @@ def main():
             frip = calc_frip(rmdup_bam, peak_output_file,
                              frip_func=ngstk.simple_frip,
                              pipeline_manager=pm)
-            pm.report_result("FRiP", round(frip, 2))
+            pm.report_result("FRiP", round(frip, 4))
 
         # if pm.get_stat("FRiP_Q1") is None or args.new_start:
             # score_sorted_peaks = os.path.join(peak_folder, args.sample_name +
@@ -2310,7 +2310,7 @@ def main():
                 frip_ref = calc_frip(rmdup_bam, res.frip_ref_peaks,
                                      frip_func=ngstk.simple_frip,
                                      pipeline_manager=pm)
-                pm.report_result("FRiP_ref", round(frip_ref, 2))
+                pm.report_result("FRiP_ref", round(frip_ref, 4))
 
 
         ########################################################################
