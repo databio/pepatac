@@ -11,17 +11,20 @@ In addition to cloning the `PEPATAC` repository, this requires the installation 
 
 ## Running `PEPATAC` using `bulker`
 
-### 1: Clone the `PEPATAC` pipeline
+### 1. Clone the `PEPATAC` pipeline
 
 ```console
 git clone https://github.com/databio/pepatac.git
 ```
 
-### 2: Get genome assets
+### 2. Install python package requirements
+`pip install -r /pepatac/requirements.txt`
+
+### 3. Get genome assets
 
 We [recommend `refgenie` to manage all required and optional genome assets](run-bulker.md#2a-initialize-refgenie-and-download-assets). However, [`PEPATAC` can also accept file paths to any of the assets](run-bulker.md#2b-download-assets).
 
-#### 2a: Initialize `refgenie` and download assets
+#### 3a. Initialize `refgenie` and download assets
 
 `PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must still exist outside of a container system. Therefore, we need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
 
@@ -46,7 +49,7 @@ refgenie build hg38/feat_annotation
 refgenie pull rCRSd/bowtie2_index
 ```
 
-#### 2b: Download assets manually
+#### 3b. Download assets manually
 
 If you prefer not to use `refgenie`, you can also download and construct assets manually.  The minimum required assets for a genome includes: 
  
@@ -59,28 +62,15 @@ Optional assets include:
 - a region blacklist: e.g. [the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist)
 - a [genomic feature annotation file](annotation.md)
 
-### 3. Install and configure `bulker`
+### 4. Install and configure `bulker`
 
 Check out [the `bulker` setup guide to install bulker](https://bulker.databio.org/en/latest/install/) on your system. It is a straightforward python package with a few configuration steps required prior to use with `PEPATAC`.
-
-### 4. Confirm installation 
-
-After setting up your environment to run `PEPATAC` with `bulker`, you can confirm the pipeline is now executable with `bulker` using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository...
-
-```console
-./checkinstall
-```
-
-or from the web:
-```console
-curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
-```
 
 ### 5. Load the `PEPATAC` crate
 
 We've already produced a `bulker` crate for `PEPATAC` that requires all software needed to run the pipeline.  We can load this crate directly from the [`bulker registry`](http://hub.bulker.io/):
 ```console
-bulker load databio/pepatac:1.0.7 -r
+bulker load databio/pepatac:1.0.13 -r
 ```
 
 ### 6. Activate the `PEPATAC` crate
@@ -93,7 +83,20 @@ bulker activate databio/pepatac:1.0.13
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!
 
-### 7. Run the sample-level pipeline
+### 7. Confirm installation 
+
+After setting up your environment to run `PEPATAC` with `bulker`, you can confirm the pipeline is now executable with `bulker` using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository...
+
+```console
+./checkinstall
+```
+
+or from the web:
+```console
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+```
+
+### 8. Run the sample-level pipeline
 
 Now we simply run the pipeline like you would with a native installation, but we wouldn't have needed to install any additional tools!
 
@@ -140,14 +143,16 @@ With a single processor, this will take 20-30 minutes to complete.
 
 Since `bulker` automatically directs any calls to required software to instead be executed in containers, we can just run our project the exact same way we would when we installed everything natively!
 
-**Run the pipeline with looper and manual asset specifications**
-```console
-looper run examples/test_project/test_config.yaml
-```
 
 **Run the pipeline with looper and refgenie**
 ```console
-looper run examples/test_project/test_config_refgenie.yaml
+looper run -c examples/test_project/.looper_test.yaml
+```
+
+**Run the pipeline with looper and manual asset specifications**
+Modify `examples/test_project/.looper_test.yaml` such that `pep_config: test_pep_config.yaml`
+```console
+looper run -c examples/test_project/.looper_test.yaml
 ```
 
 ### 8: Run the project level pipeline
@@ -161,7 +166,7 @@ looper run examples/test_project/test_config_refgenie.yaml
 
 From the `pepatac/` repository folder (using the manually downloaded genome assets):
 ```console
-looper runp examples/test_project/test_config.yaml
+looper runp -c examples/test_project/.looper_test.yaml
 ```
 
 This should take < a minute on the test sample and will generate a `summary/` directory containing project level output in the parent project directory. In this small example, there won't be a consensus peak set or count table because it is only a single sample. To see more, you can [run through the extended tutorial](tutorial.md) to see this in action.
