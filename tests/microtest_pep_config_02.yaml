@@ -12,8 +12,8 @@ sample_modifiers:
     genome: hg38
     read_type: PAIRED
     prealignment_names: [ "rCRSd" ]
-    deduplicator: samblaster # Default. [options: picard]
-    trimmer: skewer          # Default. [options: pyadapt, trimmomatic]
-    peak_type: fixed         # Default. [options: variable]
+    deduplicator: picard # Default. [options: picard]
+    trimmer: trimmomatic          # Default. [options: pyadapt, trimmomatic]
+    peak_type: variable         # Default. [options: variable]
     extend: "250"            # Default. For fixed-width peaks, extend this distance up- and down-stream.
     frip_ref_peaks: None     # Default. Use an external reference set of peaks instead of the peaks called from this run
