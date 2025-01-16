@@ -1,2 +1,2 @@
-sample_name,protocol,read1,read2
-test_sample,ATAC-seq,
+sample_name,protocol,organism,read1,read2
+test_sample,ATAC,human,R1,R2

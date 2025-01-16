@@ -1,0 +1,9 @@
+pep_config: microtest_pep_config.yaml
+
+output_dir: "${HOME}/pepatac_microtest/results_pipeline"
+pipeline_interfaces:
+  - "../sample_pipeline_interface.yaml"
+  - "../project_pipeline_interface.yaml"
+
+pipestat:
+  results_file_path: "${HOME}/pepatac_microtest/results_pipeline/{record_identifier}/stats.yaml"

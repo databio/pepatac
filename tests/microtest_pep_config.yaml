@@ -1,0 +1,14 @@
+name: PEPATAC_microtest
+pep_version: 2.1.0
+sample_table: microtest.csv
+
+sample_modifiers:
+  derive:
+    attributes: [ "read1", "read2" ]
+    sources:
+      R1: "../../microtest/data/atac-seq_PE_R1.fastq.gz"
+      R2: "../../microtest/data/atac-seq_PE_R2.fastq.gz"
+  append:
+    genome: hg38_chr22
+    read_type: PAIRED
+
