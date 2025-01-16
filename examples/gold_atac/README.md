@@ -36,13 +36,13 @@ The configuration file contains numerous [amendments](http://peppy.databio.org/e
 For example, say you want to align the gold samples using `bwa` instead of `bowtie2`. First, you will of course need to have `bwa` installed or available with bulker, and second, you'll need to have [`refgenie` assets for `bwa`](http://refgenie.databio.org/en/latest/available_assets/#bwa_index).
 
 ```
-looper run ${CODE}pepatac/examples/gold_atac/metadata/.looper_gold.yaml --amend bwa
+looper run ${CODE}/pepatac/examples/gold_atac/metadata/.looper_gold.yaml --amend bwa
 ```
 
 Or, say you want to use `picard MarkDuplicates` instead of `samblaster` for deduplication:
 
 ```
-looper run ${CODE}pepatac/examples/gold_atac/metadata/.looper_gold.yaml --amend picard
+looper run ${CODE}/pepatac/examples/gold_atac/metadata/.looper_gold.yaml --amend picard
 ```
 
 All of the `project_modifiers:` subheaders in the `gold_pep_config.yaml` file illustrate how you could, using the same base configuration file, call the pipeline on the gold samples with different settings. 
