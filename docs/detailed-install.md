@@ -24,10 +24,8 @@ The following tools are used by the pipeline:
     * [bigWigCat (v4)](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
     * [bedToBigBed](http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/)
 
-
-# WORK IN PROGRESS, ADDING GTARS DEC2024
-
-You must have rust installed:
+  
+You must also have Rust installed:
 https://www.rust-lang.org/learn/get-started
 
 Once Rust is installed you will have access to `cargo` which can be used to install rust programs.
