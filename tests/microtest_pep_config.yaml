@@ -9,6 +9,6 @@ sample_modifiers:
       R1: "../../microtest/data/atac-seq_PE_R1.fastq.gz"
       R2: "../../microtest/data/atac-seq_PE_R2.fastq.gz"
   append:
-    genome: hg38_chr22
+    genome: hg38
     read_type: PAIRED
 
