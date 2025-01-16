@@ -1574,7 +1574,7 @@ def main():
         else:
             pm.warning("Skipping signal track production:"
                        "Could not call \'gtars\'."
-                       "Confirm the required gtar tools is in your PATH.")
+                       "Confirm the required gtars tool is in your PATH.")
     else:
         # seqOutBias needs a working directory, we'll make that temporary
         tempdir = tempfile.mkdtemp(dir=map_genome_folder)
@@ -1795,7 +1795,7 @@ def main():
         else:
             pm.warning("Skipping smooth signal track production:"
                        "Could not call \'gtars\'."
-                       "Confirm the required gtar tool is in your PATH.")
+                       "Confirm the required gtars tool is in your PATH.")
 
 
     ############################################################################
