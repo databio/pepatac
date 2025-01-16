@@ -5,7 +5,7 @@ This guide walks you through the nitty-gritty of how to install each prerequisit
 
 ## 1. Install required software
 
-**Python packages**. The pipeline uses [`pypiper`](http://pypiper.readthedocs.io/en/latest/) to run a single sample, [`looper`](http://looper.readthedocs.io/en/latest/) to handle multi-sample projects (for either local or cluster computation), and [`pararead`](https://github.com/databio/pararead) for parallel processing sequence reads. For peak calling, the pipeline uses [`MACS2`](https://pypi.org/project/MACS2/) as the default. You can do a user-specific install using the included requirements.txt file in the pipeline directory:  
+**Python packages**. The pipeline uses [`pypiper`](https://pep.databio.org/pypiper/) to run a single sample, [`looper`](https://pep.databio.org/looper/) to handle multi-sample projects (for either local or cluster computation), and [`pipestat`](https://pep.databio.org/pipestat/) for results reporting. For peak calling, the pipeline uses [`MACS3`](https://pypi.org/project/MACS3/) as the default. You can do a user-specific install using the included requirements.txt file in the pipeline directory:  
 ```
 pip install --user --upgrade -r requirements.txt
 ```
