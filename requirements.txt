@@ -12,14 +12,14 @@ hypothesis==4.38.0
 jinja2
 jsonschema>=3.0.1
 logmuse>=0.2.7
-looper>=2.0.0a3
+looper>=2.0.0
 MACS3>=3.0.0b1
 numpy<1.25,>=1.21
 oyaml>=1.0
 pararead>=0.7.0
 pandas>=1.4
 piper>=0.14.3
-pipestat>=0.12.0a1
+pipestat>=0.12.0
 psutil>=5.8
 pyqt5<5.16
 pyqtwebengine<5.16
