@@ -48,3 +48,7 @@ examples/test_project/test_hmmratac.yaml
 examples/test_project/test_homer.yaml
 examples/test_project/test_macs.yaml
 .Rproj.user
+/examples/data/tutorial1_r1.fastq.gz
+/examples/data/tutorial1_r2.fastq.gz
+/examples/data/tutorial2_r1.fastq.gz
+/examples/data/tutorial2_r2.fastq.gz

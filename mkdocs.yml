@@ -1,4 +1,5 @@
-theme: databio
+theme:
+  name: databio
 
 site_name: PEPATAC
 site_author: Jason Smith
@@ -19,7 +20,6 @@ nav:
     - Extended tutorial: 'tutorial.md'
   - How-to Guides:
     - Run using bulker: 'run-bulker.md'
-    - Run using containers: 'run-container.md'
     - Run using conda: 'run-conda.md'
     - Run natively: 'detailed-install.md'
     - Configure assets: 'assets.md'

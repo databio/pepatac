@@ -51,6 +51,8 @@ Note: if receiving an error for GenomicDistributionsData_0.0.2.tar.gz, download 
 install.packages('argparser')
 install.packages("optigrab")
 devtools::install_github("databio/GenomicDistributions")
+#increase the download.file time limits:
+options(timeout = max(1000, getOption("timeout")))
 install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)
 devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")
 ```

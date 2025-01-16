@@ -1,20 +1,12 @@
-# From the `pepatac/` directory: `looper run examples/gold_atac/metadata/gold_config.yaml`
 name: gold_atac
-
-pep_version: 2.0.0
-sample_table: gold_sample_table.csv 
-
-looper:
-  output_dir: "$PROCESSED/pepatac/gold_atac/default"
-  pipeline_interfaces: "$CODE/pepatac/project_pipeline_interface.yaml"
+pep_version: 2.1.0
+sample_table: gold_sample_table.csv
 
 sample_modifiers:
-  append:
-    pipeline_interfaces: "$CODE/pepatac/sample_pipeline_interface.yaml"
   derive:
     attributes: [read1, read2]
     sources:
-      SRA: "/scratch/jps3dp/tools/databio/pepatac/examples/gold_atac/metadata/{SRR}.bam"
+      SRA: "$SRABAM/{SRR}.bam"
       SRA_1: "$SRAFQ/{SRR}_1.fastq.gz"
       SRA_2: "$SRAFQ/{SRR}_2.fastq.gz"
   imply:
@@ -22,10 +14,7 @@ sample_modifiers:
         organism: ["human", "Homo sapiens", "Human", "Homo_sapiens"]
       then: 
         genome: hg38
-        # Manually download genome assets from refgenie servers. See http://pepatac.databio.org/en/latest/assets/
-        genome_index: default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4
-        chrom_sizes: default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.chrom.sizes
-        prealignment_index: ["rCRSd=default/94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4"]
+        prealignment_names: ["rCRSd"]
 
 project_modifiers:
   amend:

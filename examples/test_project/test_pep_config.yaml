@@ -1,16 +1,9 @@
-# This project config file describes your project. See looper docs for details.
+# This pep config file describes your project. See looper docs for details.
 name: test_project # The name that summary files will be prefaced with
-
-pep_version: 2.0.0
+pep_version: 2.1.0
 sample_table: test_annotation.csv  # sheet listing all samples in the project
 
-looper:  # relative paths are relative to this config file
-  output_dir: pepatac_test 
-  pipeline_interfaces: ../../project_pipeline_interface.yaml  # PATH to the directory where looper will find the pipeline repository. 
-
 sample_modifiers:
-  append:
-    pipeline_interfaces: ../../sample_pipeline_interface.yaml
   derive:
     attributes: [read1, read2]
     sources:

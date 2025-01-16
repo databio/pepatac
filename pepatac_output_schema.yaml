@@ -4,262 +4,264 @@ type: object
 properties:
   pipeline_name: PEPATAC
   samples:
-    type: object
-    properties:
-      smooth_bw:
-        type: string
-        description: "Smoothed signal track"
-      exact_bw:
-        type: string
-        description: "Nucleotide-resolution signal track"
-      aligned_bam:
-        type: string
-        description: "Coordinate sorted deduplicated, aligned BAM file"
-      peak_file:
-        type: string
-        description: "Sample peak file"
-      coverage_file:
-        type: string
-        description: "Sample peak coverage table"
-      summits_bed:
-        type: string
-        description: "Peak summit file"
-      File_mb:
-        type: number
-        description: "size of file"
-      Read_type:
-        type: string
-        description: "read_type"
-      Genome:
-        type: string
-        description: "e.g. hg38"
-      Raw_reads:
-        type: string
-        description: "raw reads"
-      Fastq_reads:
-        type: number
-        description: "fastq_reads"
-      Trimmed_reads:
-        type: number
-        description: "trimmed_reads"
-      Trimmed_loss_rate:
-        type: number
-        description: "trimmed loss rate"
-      FastQC report r1:
-        title: "FastQC report r1"
-        description: "FastQC report r1"
-        type: object
-        object_type: file
-        properties:
-          path:
-            type: string
-          thumbnail_path:
-            type: string
-          title:
-            type: string
-        required:
-          - path
-          - thumbnail_path
-          - title
-      FastQC report r2:
-        title: "FastQC report r2"
-        description: "FastQC report r2"
-        type: object
-        object_type: file
-        properties:
-          path:
-            type: string
-          thumbnail_path:
-            type: string
-          title:
-            type: string
-        required:
-          - path
-          - thumbnail_path
-          - title
-      Aligned_reads_rCRSd:
-        type: number
-        description: "Aligned_reads_rCRSd"
-      Alignment_rate_rCRSd:
-        type: number
-        description: "Alignment_rate_rCRSd"
-      Mapped_reads:
-        type: string
-        description: "mapped_reads"
-      QC_filtered_reads:
-        type: number
-        description: "QC_filtered_reads"
-      Aligned_reads:
-        type: string
-        description: "Aligned_reads"
-      Alignment_rate:
-        type: number
-        description: "Alignment_rate"
-      Total_efficiency:
-        type: number
-        description: "Total_efficiency"
-      Mitochondrial_reads:
-        type: number
-        description: "Mitochondrial_reads"
-      NRF:
-        type: number
-        description: "NRF"
-      PBC1:
-        type: number
-        description: "PBC1"
-      PBC2:
-        type: number
-        description: "PBC1"
-      Unmapped_reads:
-        type: number
-        description: "Unmapped_reads"
-      Duplicate_reads:
-        type: string
-        description: "Duplicate_reads"
-      Dedup_aligned_reads:
-        type: number
-        description: "Dedup_aligned_reads"
-      Dedup_alignment_rate:
-        type: number
-        description: "Dedup_alignment_rate"
-      Dedup_total_efficiency:
-        type: number
-        description: "Dedup_total_efficiency"
-      NFR_frac:
-        type: number
-        description: "NFR_frac"
-      mono_frac:
-        type: number
-        description: "mono_frac"
-      di_frac:
-        type: number
-        description: "di_frac"
-      tri_frac:
-        type: number
-        description: "tri_frac"
-      poly_frac:
-        type: number
-        description: "poly_frac"
-      Read_length:
-        type: number
-        description: "Read_length"
-      Genome_size:
-        type: number
-        description: "Read_length"
-      Frac_exp_unique_at_10M:
-        type: number
-        description: "Frac_exp_unique_at_10M"
-      TSS_score:
-        type: number
-        description: "TSS_score"
-      Fragment distribution:
-        title: "Fragment distribution"
-        description: "Fragment distribution"
-        type: object
-        object_type: image
-        properties:
-          path:
-            type: string
-          thumbnail_path:
-            type: string
-          title:
-            type: string
-        required:
-          - path
-          - thumbnail_path
-          - title
-      Peak_count:
-        type: number
-        description: "Peak_count"
-      FRiP:
-        type: number
-        description: "FRiP"
-      Peak chromosome distribution:
-        title: "Peak chromosome distribution"
-        description: "Peak chromosome distribution"
-        type: object
-        object_type: image
-        properties:
-          path:
-            type: string
-          thumbnail_path:
-            type: string
-          title:
-            type: string
-        required:
-          - path
-          - thumbnail_path
-          - title
-      TSS distance distribution:
-        title: "TSS distance distribution"
-        description: "TSS distance distribution"
-        type: object
-        object_type: image
-        properties:
-          path:
-            type: string
-          thumbnail_path:
-            type: string
-          title:
-            type: string
-        required:
-          - path
-          - thumbnail_path
-          - title
-      Peak partition distribution:
-        title: "Peak partition distribution"
-        description: "Peak partition distribution"
-        type: object
-        object_type: image
-        properties:
-          path:
-            type: string
-          thumbnail_path:
-            type: string
-          title:
-            type: string
-        required:
-          - path
-          - thumbnail_path
-          - title
-      cFRiF:
-        title: "cFRiF"
-        description: "cFRiF"
-        type: object
-        object_type: image
-        properties:
-          path:
-            type: string
-          thumbnail_path:
-            type: string
-          title:
-            type: string
-        required:
-          - path
-          - thumbnail_path
-          - title
-      FRiF:
-        title: "FRiF"
-        description: "FRiF"
-        type: object
-        object_type: image
-        properties:
-          path:
-            type: string
-          thumbnail_path:
-            type: string
-          title:
-            type: string
-        required:
-          - path
-          - thumbnail_path
-          - title
-      Time:
-        type: string
-        description: "time"
-      Success:
-        type: string
-        description: "success"
+    type: array
+    items:
+      type: object
+      properties:
+        smooth_bw:
+          type: string
+          description: "Smoothed signal track"
+        exact_bw:
+          type: string
+          description: "Nucleotide-resolution signal track"
+        aligned_bam:
+          type: string
+          description: "Coordinate sorted deduplicated, aligned BAM file"
+        peak_file:
+          type: string
+          description: "Sample peak file"
+        coverage_file:
+          type: string
+          description: "Sample peak coverage table"
+        summits_bed:
+          type: string
+          description: "Peak summit file"
+        File_mb:
+          type: number
+          description: "size of file"
+        Read_type:
+          type: string
+          description: "read_type"
+        Genome:
+          type: string
+          description: "e.g. hg38"
+        Raw_reads:
+          type: string
+          description: "raw reads"
+        Fastq_reads:
+          type: number
+          description: "fastq_reads"
+        Trimmed_reads:
+          type: number
+          description: "trimmed_reads"
+        Trim_loss_rate:
+          type: number
+          description: "trimmed loss rate"
+        FastQC report r1:
+          title: "FastQC report r1"
+          description: "FastQC report r1"
+          type: object
+          object_type: file
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        FastQC report r2:
+          title: "FastQC report r2"
+          description: "FastQC report r2"
+          type: object
+          object_type: file
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        Aligned_reads_rCRSd:
+          type: number
+          description: "Aligned_reads_rCRSd"
+        Alignment_rate_rCRSd:
+          type: number
+          description: "Alignment_rate_rCRSd"
+        Mapped_reads:
+          type: string
+          description: "mapped_reads"
+        QC_filtered_reads:
+          type: number
+          description: "QC_filtered_reads"
+        Aligned_reads:
+          type: string
+          description: "Aligned_reads"
+        Alignment_rate:
+          type: number
+          description: "Alignment_rate"
+        Total_efficiency:
+          type: number
+          description: "Total_efficiency"
+        Mitochondrial_reads:
+          type: number
+          description: "Mitochondrial_reads"
+        NRF:
+          type: number
+          description: "NRF"
+        PBC1:
+          type: number
+          description: "PBC1"
+        PBC2:
+          type: number
+          description: "PBC1"
+        Unmapped_reads:
+          type: number
+          description: "Unmapped_reads"
+        Duplicate_reads:
+          type: string
+          description: "Duplicate_reads"
+        Dedup_aligned_reads:
+          type: number
+          description: "Dedup_aligned_reads"
+        Dedup_alignment_rate:
+          type: number
+          description: "Dedup_alignment_rate"
+        Dedup_total_efficiency:
+          type: number
+          description: "Dedup_total_efficiency"
+        NFR_frac:
+          type: number
+          description: "NFR_frac"
+        mono_frac:
+          type: number
+          description: "mono_frac"
+        di_frac:
+          type: number
+          description: "di_frac"
+        tri_frac:
+          type: number
+          description: "tri_frac"
+        poly_frac:
+          type: number
+          description: "poly_frac"
+        Read_length:
+          type: number
+          description: "Read_length"
+        Genome_size:
+          type: number
+          description: "Read_length"
+        Frac_exp_unique_at_10M:
+          type: number
+          description: "Frac_exp_unique_at_10M"
+        TSS_score:
+          type: number
+          description: "TSS_score"
+        Fragment distribution:
+          title: "Fragment distribution"
+          description: "Fragment distribution"
+          type: object
+          object_type: image
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        Peak_count:
+          type: number
+          description: "Peak_count"
+        FRiP:
+          type: number
+          description: "FRiP"
+        Peak chromosome distribution:
+          title: "Peak chromosome distribution"
+          description: "Peak chromosome distribution"
+          type: object
+          object_type: image
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        TSS distance distribution:
+          title: "TSS distance distribution"
+          description: "TSS distance distribution"
+          type: object
+          object_type: image
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        Peak partition distribution:
+          title: "Peak partition distribution"
+          description: "Peak partition distribution"
+          type: object
+          object_type: image
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        cFRiF:
+          title: "cFRiF"
+          description: "cFRiF"
+          type: object
+          object_type: image
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        FRiF:
+          title: "FRiF"
+          description: "FRiF"
+          type: object
+          object_type: image
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        Time:
+          type: string
+          description: "time"
+        Success:
+          type: string
+          description: "success"
   project:
     type: object
     properties:

@@ -15,8 +15,6 @@ tools:  # absolute paths to required tools
   skewer: skewer
   perl: perl
   # ucsc tools
-  wigToBigWig: wigToBigWig
-  bigWigCat: bigWigCat
   bedToBigBed: bedToBigBed
   # optional tools
   bwa: bwa

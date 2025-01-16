@@ -394,7 +394,7 @@ while IFS= read -r line; do
 done < $REQS
 
 # Check tool installation
-declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "macs3" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "bigWigCat" "wigToBigWig" "Rscript")
+declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "macs3" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "Rscript" "gtars")
 
 for cmd in ${requiredCommands[@]}; do
     if ! is_executable $cmd; then
@@ -740,7 +740,7 @@ else
         done < $REQS
 
         # Check tool installation
-        declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "macs3" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "bigWigCat" "wigToBigWig" "Rscript")
+        declare -a requiredCommands=("perl" "awk" "grep" "sed" "bedtools" "bowtie2" "macs3" "preseq" "samblaster" "samtools" "skewer" "bedToBigBed" "Rscript" "gtars")
 
         for cmd in ${requiredCommands[@]}; do
             if ! is_executable $cmd; then
@@ -792,80 +792,51 @@ echo -e "-----------------------------------------------------------"
 echo -e "Checking bulker installation...                            "
 BULKER_INSTALL=0
 
-if ! is_executable "docker"; then
-    DOCKER=1
-else
-    DOCKER=0
-fi
 
-if ! is_executable "singularity"; then
-    SINGULARITY=1
-else
-    SINGULARITY=0
-fi
-
-if [ "$DOCKER" -eq 0 ]; then 
-    CMD_CHECK=$(docker --help)
-    if [ $? -eq 0 ]; then
-        echo -e $(success "SUCCESS: docker.")
-    else
-        echo -e $(warn "WARNING: Docker is a recognized command, but does not appear to be active. Please ensure docker is running and checkinstall again.")
-        DOCKER=1
-    fi
-fi
-
-if [ "$SINGULARITY" -eq 0 ]; then
-    echo -e $(success "SUCCESS: singularity.")
-fi
-
-if [ "$DOCKER" -eq 1 ] && [ "$SINGULARITY" -eq 1 ]; then
-    echo -e $(fail "ERROR: bulker")
+if ! is_executable "bulker"; then
+    echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
+    printf "\n"
     BULKER_INSTALL=1
 else
-    if ! is_executable "bulker"; then
-        echo $(warn "WARNING: To use bulker, pip install bulker and checkinstall again.")
-        printf "\n"
-        BULKER_INSTALL=1
-    else
-        BULKER_INSTALL=0
-        echo -e $(success "SUCCESS: bulker")
-    fi
-
-    CWD=$(pwd)
-
-    if [ -f "sample_pipeline_interface.yaml" ]; then
-        IFACE="sample_pipeline_interface.yaml"
-        CRATE=$(cat $IFACE | grep 'bulker_crate' | tr " " "\n" | tail -n 1)
-    else
-        IFACE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/sample_pipeline_interface.yaml)
-        CRATE=$(echo $IFACE | tr " " "\n" | grep -A1 'bulker_crate' | tail -n 1)
-    fi
-
-    yes n | bulker load $CRATE
-    if [ $? -eq 0 ]; then
-        echo $(warn "WARNING: Could not bulker load ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
-        printf "\n"
-        BULKER_INSTALL=1
-    fi
-
-    if [ -f "$CWD/pipelines/pepatac.py" ]; then
-        PIPELINE=$(cat "$CWD/pipelines/pepatac.py")
-    else
-        PIPELINE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/pipelines/pepatac.py)
-    fi
-
-    CMD_CHECK=$(bulker run ${CRATE} $PIPELINE --help)
-    EXIT_CODE=$(echo $?)
-    isActivatable=$(echo "${EXIT_CODE}" | awk '{ print $1+0; exit }')
-    if [ "$isActivatable" -eq 0 ]; then
-        BULKER_INSTALL=0
-        echo -e $(success "SUCCESS: bulker run ${CRATE}")
-    else            
-        echo $(warn "WARNING: Could not activate the bulker crate, ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
-        printf "\n"
-        BULKER_INSTALL=1
-    fi
+    BULKER_INSTALL=0
+    echo -e $(success "SUCCESS: bulker")
 fi
+
+CWD=$(pwd)
+
+if [ -f "sample_pipeline_interface.yaml" ]; then
+    IFACE="sample_pipeline_interface.yaml"
+    CRATE=$(cat $IFACE | grep 'bulker_crate' | tr " " "\n" | tail -n 1)
+else
+    IFACE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/sample_pipeline_interface.yaml)
+    CRATE=$(echo $IFACE | tr " " "\n" | grep -A1 'bulker_crate' | tail -n 1)
+fi
+
+yes n | bulker load $CRATE
+if [ $? -eq 0 ]; then
+    echo $(warn "WARNING: Could not bulker load ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
+    printf "\n"
+    BULKER_INSTALL=1
+fi
+
+if [ -f "$CWD/pipelines/pepatac.py" ]; then
+    PIPELINE=$(cat "$CWD/pipelines/pepatac.py")
+else
+    PIPELINE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/pipelines/pepatac.py)
+fi
+
+CMD_CHECK=$(bulker run ${CRATE} $PIPELINE --help)
+EXIT_CODE=$(echo $?)
+isActivatable=$(echo "${EXIT_CODE}" | awk '{ print $1+0; exit }')
+if [ "$isActivatable" -eq 0 ]; then
+    BULKER_INSTALL=0
+    echo -e $(success "SUCCESS: bulker run ${CRATE}")
+else
+    echo $(warn "WARNING: Could not activate the bulker crate, ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
+    printf "\n"
+    BULKER_INSTALL=1
+fi
+
 
 ################################################################################
 echo -e "-----------------------------------------------------------"
@@ -881,18 +852,6 @@ if [ "$CONDA_INSTALL" -eq 0 ]; then
     echo -e $(success "SUCCESS: PEPATAC can be run using conda installation!")
 else
     echo -e $(fail "ERROR: PEPATAC cannot be run via conda.")
-fi
-
-if [ "$DOCKER" -eq 0 ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run using docker!")
-else
-    echo -e $(fail "ERROR: PEPATAC cannot be run using docker.")
-fi
-
-if [ "$SINGULARITY" -eq 0 ]; then
-    echo -e $(success "SUCCESS: PEPATAC can be run using singularity!")
-else
-    echo -e $(fail "ERROR: PEPATAC cannot be run using singularity.")
 fi
 
 if [ "$BULKER_INSTALL" -eq 0 ]; then
