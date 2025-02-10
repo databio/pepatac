@@ -1,6 +1,9 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.12.1] -- 2025-02-10
+- Bump pipestat version to fix this issue: https://github.com/pepkit/pipestat/issues/215
+
 ## [0.12.0] -- 2025-01-16
 - Remove containers from build and docs (docker and singularity)
 - update native install and bulker install docs

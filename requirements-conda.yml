@@ -516,7 +516,7 @@ dependencies:
       - pephubclient==0.4.5
       - peppy==0.40.7
       - piper==0.14.3
-      - pipestat==0.12.0a1
+      - pipestat==0.12.1
       - pydantic==2.10.4
       - pydantic-argparse==0.9.0
       - pydantic-core==2.27.2
