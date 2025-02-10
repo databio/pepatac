@@ -19,7 +19,7 @@ oyaml>=1.0
 pararead>=0.7.0
 pandas>=1.4
 piper>=0.14.3
-pipestat>=0.12.0
+pipestat>=0.12.1
 psutil>=5.8
 pyqt5<5.16
 pyqtwebengine<5.16
