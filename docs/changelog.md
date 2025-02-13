@@ -1,6 +1,9 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.12.2] -- 2025-02-13
+- Bump rust-gtars to v0.2.1: https://anaconda.org/bioconda/rust-gtars
+
 ## [0.12.1] -- 2025-02-10
 - Bump pipestat version to fix this issue: https://github.com/pepkit/pipestat/issues/215
 
