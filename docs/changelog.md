@@ -1,6 +1,9 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.12.3] -- 2025-03-05
+- Bump rust-gtars to v0.2.4, looper to 2.0.1, ubiquerg to 0.8.1
+
 ## [0.12.2] -- 2025-02-13
 - Bump rust-gtars to v0.2.1: https://anaconda.org/bioconda/rust-gtars
 
