@@ -12,7 +12,7 @@ hypothesis==4.38.0
 jinja2
 jsonschema>=3.0.1
 logmuse>=0.2.7
-looper>=2.0.0
+looper>=2.0.1
 MACS3>=3.0.0b1
 numpy<1.25,>=1.21
 oyaml>=1.0
@@ -28,5 +28,5 @@ python-Levenshtein>=0.12
 pyyaml>=3.13
 refgenconf>=0.12.2
 requests_mock
-ubiquerg>=0.8.1a1
+ubiquerg>=0.8.1
 yacman>=0.9.3
