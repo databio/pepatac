@@ -2446,7 +2446,8 @@ yamlToDT <- function(sample_name, yaml_file) {
                      "cFRiF",
                      "FRiF",
                      "FastQC report r1",
-                     "FastQC report r2")
+                     "FastQC report r2",
+                     "meta")
     cols_present <- character()
     for (column_name in remove_cols) {
         if (any(grepl(column_name, names(sample_DT)))) {
