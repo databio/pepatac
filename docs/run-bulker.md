@@ -18,7 +18,10 @@ git clone https://github.com/databio/pepatac.git
 ```
 
 ### 2. Install python package requirements
-`pip install -r /pepatac/requirements.txt`
+
+```console
+pip install -r pepatac/requirements.txt
+```
 
 ### 3. Get genome assets
 
