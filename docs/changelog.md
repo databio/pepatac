@@ -1,6 +1,9 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.12.5] -- 2025-09-23
+- Fix tutorial typos.
+
 ## [0.12.4] -- 2025-03-24
 - fix for issue [310](https://github.com/databio/pepatac/issues/310)
 
