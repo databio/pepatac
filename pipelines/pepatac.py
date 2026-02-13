@@ -40,7 +40,7 @@ def parse_arguments():
     ###########################################################################
     parser = ArgumentParser(description='PEPATAC version ' + __version__)
     parser = pypiper.add_pypiper_args(parser, groups=
-        ['pypiper', 'looper', 'ngs'],
+        ['pypiper', 'looper', 'ngs', 'pipestat'],
         required=["input", "genome", "sample_name", "output_parent",
                   "chrom_sizes", "genome_index"])
 
@@ -512,7 +512,8 @@ def main():
         os.path.join(args.output_parent, args.sample_name))
     global pm
     pm = pypiper.PipelineManager(
-        name="PEPATAC", outfolder=outfolder,pipestat_record_identifier=args.sample_name, args=args, version=__version__)
+        name="PEPATAC", outfolder=outfolder, pipestat_record_identifier=args.sample_name,
+        args=args, version=__version__)
     global ngstk
     ngstk = pypiper.NGSTk(pm=pm)
 
@@ -1260,10 +1261,11 @@ def main():
         if not dr and not dr.strip():
             pm.info("DEBUG: dr didn't work correctly")
             dr = ar
+        dr = float(dr)
         if args.deduplicator == "samtools":
-            dr = float(dr)/2
-        
-        pdar = float(ar) - float(dr)
+            dr = dr/2
+
+        pdar = ar - dr
         dar = round(float(pdar) * 100 / float(tr), 2)
         dte = round(float(pdar) * 100 / float(rr), 2)
         
@@ -1802,6 +1804,7 @@ def main():
     ############################################################################
     #                          Determine TSS enrichment                        #
     ############################################################################
+    Tss_enrich = None
     if not os.path.exists(res.refgene_tss):
         print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}"
               .format(res.refgene_tss))
@@ -1856,6 +1859,9 @@ def main():
     ############################################################################
     #                         Fragment distribution                            #
     ############################################################################
+    frag_len = None
+    fragL_dis2 = None
+    fragL_count = None
     if args.paired_end:
         pm.timestamp("### Plot fragment distribution")
         frag_len = os.path.join(QC_folder,
@@ -1932,6 +1938,7 @@ def main():
     name_sort_rmdup = os.path.join(map_genome_folder,
                                    args.sample_name + "_namesort_dedup.bam")
 
+    peak_coverage_gz = None
     peak_folder = os.path.join(param.outfolder, "peak_calling_" +
                                args.genome_assembly)
     ngstk.make_dir(peak_folder)

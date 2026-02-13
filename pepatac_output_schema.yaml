@@ -116,7 +116,7 @@ properties:
           type: number
           description: "Unmapped_reads"
         Duplicate_reads:
-          type: string
+          type: number
           description: "Duplicate_reads"
         Dedup_aligned_reads:
           type: number
@@ -256,6 +256,59 @@ properties:
             - path
             - thumbnail_path
             - title
+        Picard_est_lib_size:
+          type: number
+          description: "Picard estimated library size"
+        FRiP_ref:
+          type: number
+          description: "FRiP using reference peaks"
+        Library complexity:
+          title: "Library complexity"
+          description: "Library complexity curve"
+          type: object
+          object_type: image
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        TSS enrichment:
+          title: "TSS enrichment"
+          description: "TSS enrichment plot"
+          type: object
+          object_type: image
+          properties:
+            path:
+              type: string
+            thumbnail_path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - thumbnail_path
+            - title
+        Motif analysis:
+          title: "Motif analysis"
+          description: "Motif enrichment analysis results"
+          type: object
+          object_type: file
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+            thumbnail_path:
+              type: string
+          required:
+            - path
+            - title
         Time:
           type: string
           description: "time"
@@ -359,3 +412,9 @@ properties:
         required:
           - path
           - title
+      Time:
+        type: string
+        description: "Total elapsed pipeline time"
+      Success:
+        type: string
+        description: "Timestamp when pipeline completed successfully"

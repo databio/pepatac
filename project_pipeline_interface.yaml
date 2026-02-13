@@ -2,13 +2,14 @@ pipeline_name: PEPATAC
 output_schema: pepatac_output_schema.yaml
 project_interface:
   command_template: >
-    {looper.piface_dir}/pipelines/pepatac_collator.py 
+    {looper.piface_dir}/pipelines/pepatac_collator.py
     --config {looper.pep_config}
     -O {looper.results_subdir}
     -P {compute.cores}
     -M {compute.mem}
     -n {project.name}
     -r {looper.results_subdir}
+    --pipestat-config {pipestat.config_file}
 compute:
   bulker_crate: databio/pepatac:1.0.10
   size_dependent_variables: resources-project.tsv

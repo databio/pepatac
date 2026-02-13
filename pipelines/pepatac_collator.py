@@ -36,7 +36,7 @@ def parse_arguments():
     """
     parser = VersionInHelpParser(prog="PEPATAC_collator",
         description='PEPATAC collator' , version=__version__)
-    parser = pypiper.add_pypiper_args(parser, groups=['pypiper', 'looper', 'common'])
+    parser = pypiper.add_pypiper_args(parser, groups=['pypiper', 'looper', 'common', 'pipestat'])
     parser.add_argument("-n", "--name",
                         help="Name of the project to use.", type=str)
     parser.add_argument("-r", "--results",

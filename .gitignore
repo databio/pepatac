@@ -7,6 +7,8 @@
 
 # Tests
 .cache/
+tests/test_outputs/
+tests/data/refgenie/
 
 # MkDocs files
 site/
@@ -23,6 +25,9 @@ _site/
 _build/
 .sass-cache/
 .jekyll-metadata
+
+# environment files
+.venv/
 
 # Annotation files
 anno/hg38_annotations.bed.gz
