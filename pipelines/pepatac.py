@@ -17,8 +17,6 @@ import tempfile
 import pypiper
 from pathlib import Path
 import psutil
-import pandas as pd
-import numpy as np
 from pypiper import build_command
 from refgenconf import RefGenConf as RGC, select_genome_config
 
@@ -438,22 +436,6 @@ def tool_path(tool_name):
 
     return os.path.join(os.path.dirname(os.path.dirname(__file__)),
                         TOOLS_FOLDER, tool_name)
-
-
-def rescale(n, after=[0,1], before=[]):
-    """
-    Helper function to rescale a vector between specified range of values
-    
-    :param numpy array n: a vector of numbers to be rescale 
-    :param list after: range of values to which to scale n 
-    :param list before: range of values in which n is contained
-    """
-    if not before:
-        before=[min(n), max(n)]
-    if (before[1] - before[0]) == 0:
-        return n
-    return (((after[1] - after[0]) * (n - before[0]) / 
-             (before[1] - before[0])) + after[0])
 
 
 def check_commands(commands, ignore=''):
@@ -2154,22 +2136,11 @@ def main():
             pm.run(cmd, peak_output_file, nofail=True)
             if (os.path.exists(peak_output_file) and 
                     os.stat(peak_output_file).st_size > 0):
-                df = pd.read_csv(peak_output_file, sep='\t', header=None,
-                                 names=("chr", "start", "end", "name", "score",
-                                        "strand", "signalValue", "pValue",
-                                        "qValue", "peak"))
-                nineNine = df['signalValue'].quantile(q=0.99)
-                df.loc[df['signalValue'] > nineNine, 'signalValue'] = nineNine
-
-                # rescale score to be between 100 and 1000. 
-                # See https://fureylab.web.unc.edu/software/fseq/
-                df['score'] = rescale(np.log(df['signalValue']), [100, 1000])
-
-                # ensure score is a whole integer value
-                df['score'] = pd.to_numeric(df['score'].round(),
-                                            downcast='integer')
-                df.to_csv(peak_output_file, sep='\t',
-                          header=False, index=False)
+                cmd = tool_path("clean_peaks.py")
+                cmd += " -m fseq"
+                cmd += " -i " + peak_output_file
+                cmd += " -o " + peak_output_file
+                pm.run(cmd, lock_name=peak_output_file + '.lock')
 
                 line_count = int(ngstk.count_lines(peak_output_file).strip())
                 num_peaks = max(0, line_count - 1)
@@ -2409,29 +2380,12 @@ def main():
         if not os.path.exists(bigNarrowPeak) or args.new_start:
             if (os.path.exists(peak_output_file) and 
                     os.stat(peak_output_file).st_size > 0):
-                df = pd.read_csv(peak_output_file, sep='\t', header=None,
-                                 names=("V1","V2","V3","V4","V5","V6",
-                                        "V7","V8","V9","V10"))
-                nineNine = df['V5'].quantile(q=0.99)
-                df.loc[df['V5'] > nineNine, 'V5'] = nineNine
-
-                # rescale score to be between 0 and 1000
-                df['V5'] = rescale(np.log(df['V5']), [0, 1000])
-
-                cs = pd.read_csv(res.chrom_sizes, sep='\t', header=None,
-                                 names=("V1","V2"))
-                df = df.merge(cs, on="V1")
-                df.columns = ["V1","V2","V3","V4","V5","V6",
-                              "V7","V8","V9","V10","V11"]
-                # make sure 'chromEnd' positions are not greater than the 
-                # max chrom_size
-                n = np.array(df['V3'].values.tolist())
-                df['V3'] = np.where(n > df['V11'], df['V11'], n).tolist()
-
-                df = df.drop(columns=["V11"])
-                # ensure score is a whole integer value
-                df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
-                df.to_csv(temp.name, sep='\t', header=False, index=False)
+                cmd = tool_path("clean_peaks.py")
+                cmd += " -m bigbed"
+                cmd += " -i " + peak_output_file
+                cmd += " -o " + temp.name
+                cmd += " -s " + res.chrom_sizes
+                pm.run(cmd, lock_name=temp.name + '.lock')
                 pm.clean_add(temp.name)
 
                 as_file = os.path.join(peak_folder, "bigNarrowPeak.as")
