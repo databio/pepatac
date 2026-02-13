@@ -38,6 +38,7 @@ sample_interface:
     {% if sample.no_fifo is defined %} --noFIFO {% endif %}
     {% if sample.lite is defined %} --lite {% endif %}
     {% if sample.skipqc is defined %} --skipqc {% endif %}
+    --pipestat-config {pipestat.config_file}
 
 compute:
   conda_env: pepatac
