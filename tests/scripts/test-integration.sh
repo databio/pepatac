@@ -16,7 +16,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TESTS_DIR="$SCRIPT_DIR/.."
 
 SERVICES_SCRIPT="$SCRIPT_DIR/services.sh"
-BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-databio/pepatac:1.0.13}"
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-databio/pepatac:1.0.14}"
 
 # Colors for output
 GREEN='\033[0;32m'

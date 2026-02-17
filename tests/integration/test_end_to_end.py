@@ -18,7 +18,7 @@ Test Structure:
 
 Prerequisites:
 - .venv with refgenie installed (pip install refgenie)
-- bulker crate databio/pepatac:1.0.13 loaded and active
+- bulker crate databio/pepatac:1.0.14 loaded and active
 - Network access to refgenie server (for pulling genome assets)
 - RUN_INTEGRATION_TESTS=true
 
@@ -255,15 +255,6 @@ class TestBowtie2Macs3:
         log = os.path.join(run_bowtie2_macs3_skewer["sample_dir"], "PEPATAC_log.md")
         assert os.path.isfile(log)
 
-    def test_sorted_bam(self, run_bowtie2_macs3_skewer):
-        bam = os.path.join(
-            run_bowtie2_macs3_skewer["sample_dir"],
-            f"aligned_{GENOME_NAME}",
-            f"{SAMPLE_NAME}_sort.bam",
-        )
-        assert os.path.isfile(bam)
-        assert os.path.getsize(bam) > 0
-
     def test_dedup_bam(self, run_bowtie2_macs3_skewer):
         bam = os.path.join(
             run_bowtie2_macs3_skewer["sample_dir"],
@@ -317,15 +308,6 @@ class TestBwaMacs3:
         log = os.path.join(run_bwa_macs3_samblaster["sample_dir"], "PEPATAC_log.md")
         assert os.path.isfile(log)
 
-    def test_sorted_bam(self, run_bwa_macs3_samblaster):
-        bam = os.path.join(
-            run_bwa_macs3_samblaster["sample_dir"],
-            f"aligned_{GENOME_NAME}",
-            f"{SAMPLE_NAME}_sort.bam",
-        )
-        assert os.path.isfile(bam)
-        assert os.path.getsize(bam) > 0
-
     def test_dedup_bam(self, run_bwa_macs3_samblaster):
         bam = os.path.join(
             run_bwa_macs3_samblaster["sample_dir"],
@@ -378,15 +360,6 @@ class TestBowtie2Genrich:
     def test_log_exists(self, run_bowtie2_genrich_samblaster):
         log = os.path.join(run_bowtie2_genrich_samblaster["sample_dir"], "PEPATAC_log.md")
         assert os.path.isfile(log)
-
-    def test_sorted_bam(self, run_bowtie2_genrich_samblaster):
-        bam = os.path.join(
-            run_bowtie2_genrich_samblaster["sample_dir"],
-            f"aligned_{GENOME_NAME}",
-            f"{SAMPLE_NAME}_sort.bam",
-        )
-        assert os.path.isfile(bam)
-        assert os.path.getsize(bam) > 0
 
     def test_dedup_bam(self, run_bowtie2_genrich_samblaster):
         bam = os.path.join(

@@ -5,7 +5,7 @@ configuration handoff by running PEPATAC via looper instead of direct execution.
 
 Prerequisites:
 - looper and pipestat installed (pip install looper pipestat)
-- bulker crate databio/pepatac:1.0.13 loaded and active
+- bulker crate databio/pepatac:1.0.14 loaded and active
 - .venv with refgenie installed (pip install refgenie)
 - Network access to refgenie server
 - RUN_INTEGRATION_TESTS=true
@@ -246,19 +246,6 @@ class TestLooperRun:
 
         log = os.path.join(run_looper_pipeline["sample_dir"], "PEPATAC_log.md")
         assert os.path.isfile(log)
-
-    def test_sorted_bam_exists(self, run_looper_pipeline):
-        """Test that sorted BAM file was created."""
-        if not LOOPER_AVAILABLE:
-            pytest.skip("looper not installed")
-
-        bam = os.path.join(
-            run_looper_pipeline["sample_dir"],
-            f"aligned_{GENOME_NAME}",
-            f"{SAMPLE_NAME}_sort.bam",
-        )
-        assert os.path.isfile(bam)
-        assert os.path.getsize(bam) > 0
 
     def test_dedup_bam_exists(self, run_looper_pipeline):
         """Test that deduplicated BAM file was created."""

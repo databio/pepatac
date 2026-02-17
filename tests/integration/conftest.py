@@ -1,7 +1,7 @@
 """Integration test fixtures for PEPATAC pipeline.
 
 These tests require:
-- bulker crate databio/pepatac:1.0.13 loaded
+- bulker crate databio/pepatac:1.0.14 loaded
 - RUN_INTEGRATION_TESTS=true environment variable
 
 Run via: tests/scripts/test-integration.sh

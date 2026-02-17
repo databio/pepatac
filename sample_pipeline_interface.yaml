@@ -42,7 +42,7 @@ sample_interface:
 
 compute:
   conda_env: pepatac
-  bulker_crate:  databio/pepatac:1.0.12
+  bulker_crate:  databio/pepatac:1.0.14
   size_dependent_variables: resources-sample.tsv
 bioconductor:
   readFunName: runCOCOA

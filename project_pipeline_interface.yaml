@@ -11,7 +11,7 @@ project_interface:
     -r {looper.results_subdir}
     --pipestat-config {pipestat.config_file}
 compute:
-  bulker_crate: databio/pepatac:1.0.10
+  bulker_crate: databio/pepatac:1.0.14
   size_dependent_variables: resources-project.tsv
 
 bioconductor:

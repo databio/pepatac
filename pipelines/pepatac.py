@@ -1276,7 +1276,7 @@ def main():
         cmd1 += " OUTPUT=" + rmdup_bam
         cmd1 += " METRICS_FILE=" + metrics_file
         cmd1 += " VALIDATION_STRINGENCY=LENIENT"
-        cmd1 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " + dedup_log
+        cmd1 += " ASSUME_SORT_ORDER=coordinate REMOVE_DUPLICATES=true > " + dedup_log
         cmd2 = tools.samtools + " index " + rmdup_bam
     elif args.deduplicator == "samblaster":
         nProc = max(int(pm.cores / 4), 1)
