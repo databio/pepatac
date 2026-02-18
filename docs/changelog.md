@@ -1,6 +1,10 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [0.12.6] -- 2026-02-17
+- smoothWig.pl: Fix off-by-one errors in smoothing window calculation and boundary handling
+- bamSitesToWig.py: Fix coordinate conversion from 0-based BAM to 1-based wiggle format
+
 ## [0.12.5] -- 2025-09-23
 - Fix tutorial typos.
 

@@ -1,6 +1,14 @@
 #! /usr/bin/env perl
 
 # By Nathan Sheffield, University of Virginia, 2018
+# Version 2.0.0 - 2026-02-17
+#
+# Changes in v2.0.0:
+# - Fix off-by-one errors in smoothing window boundaries
+# - Fix end site calculation to use original cut position (not clamped start)
+# - Count duplicate cuts at the same position (previously skipped)
+# - Default scale to 1 to prevent division by zero
+# - Handle empty input gracefully
 
 # This is an incredibly fast Perl utility that converts cut sites
 # (coordinates) into a wiggle-like output.
@@ -29,7 +37,7 @@ my $chrSize = shift;       # Size of chromosome is the first argument
 my $smoothSize = shift;    # Smooth size is 2nd argument
 my $stepSize = shift;      # Step size
 my $variableStep = shift;  # Fourth argument is whether to use variable or fixed
-my $scale = shift;         # Fifth argument is scaling factor
+my $scale = shift || 1;    # Fifth argument is scaling factor (default 1 to avoid division by zero)
 
 $countIndex = 1;
 $currentCount = 0;
@@ -54,27 +62,28 @@ print $header;
 my @closers;
 
 $cutSite = <>; # Grab the first cut
+exit 0 if !defined($cutSite);  # No cuts, nothing to do
 $cutSite -= $smoothSize;
-$endSite = $cutSite + $smoothSize*2;
+$endSite = $cutSite + $smoothSize*2 + 1;
+$currentCount++;
 
 if ($variableStep) {
-	# Cycle to the first cut
-	while ($countIndex < $cutSite) {
-		$countIndex += $stepSize;	
+	# Set countIndex to the first print position (multiple of stepSize) at or after cutSite
+	# This avoids the cycling bug where we overshoot valid positions
+	if ($cutSite > 0) {
+		# Calculate: ceiling of cutSite to nearest stepSize
+		$countIndex = int(($cutSite + $stepSize - 1) / $stepSize) * $stepSize;
 	}
 	$previousCut = $cutSite;
 
 	# Loop through cuts, converting to wiggle format
 	while($cutSite = <>) {
 		$cutSite -= $smoothSize;
-		$currentCount++;
-		push @closers, $cutSite + $smoothSize*2;
 		chomp($cutSite);
-		# if it's a duplicate read...
-		if ($cutSite == $previousCut) {
-			next;  # skip to next read
-		}
+		# Duplicate reads at the same position are counted (not skipped)
+		# Each read represents a separate biological observation
 
+		# Print positions up to this cut with the OLD count
 		while ($countIndex < $cutSite) {
 			while ($endSite == $countIndex) {
 				$currentCount--;
@@ -88,6 +97,14 @@ if ($variableStep) {
 			$countIndex++;
 		}
 
+		# THEN increment for the new cut
+		$currentCount++;
+		my $newEndSite = $cutSite + $smoothSize*2 + 1;
+		if (!defined($endSite)) {
+			$endSite = $newEndSite;
+		} else {
+			push @closers, $newEndSite;
+		}
 		$previousCut = $cutSite;
 	} # end while
 
@@ -105,24 +122,28 @@ if ($variableStep) {
 	}
 } else {  # Use fixedStep wiggle format
 	# Print out 0s until the first cut
-	while ($countIndex < $cutSite) {
+	# Calculate the first print position at or after cutSite
+	my $firstPrintPos = int(($cutSite + $stepSize - 1) / $stepSize) * $stepSize;
+	while ($countIndex < $firstPrintPos) {
 		print "0\n";
-		$countIndex += $stepSize;	
+		$countIndex += $stepSize;
 	}
 	$previousCut = $cutSite;
 
 	# Loop through cuts, converting to wiggle format
 	while($cutSite = <>) {
 		$cutSite -= $smoothSize;
-		$currentCount++;
-		push @closers, $cutSite + $smoothSize*2;
 		chomp($cutSite);
-		# if it's a duplicate read...
+		# Handle duplicate cuts at the same position
 		if ($cutSite == $previousCut) {
-			next; # skip to next read
+			# Increment count and add closer, but don't print (we're at same position)
+			$currentCount++;
+			my $newEndSite = $cutSite + $smoothSize*2 + 1;
+			push @closers, $newEndSite;
+			next;
 		}
 
-		# and print out all 0s between them
+		# Print positions up to this cut with the OLD count
 		while ($countIndex < $cutSite) {
 			# print ":".$countIndex.":".$endSite.":";
 			while ($endSite == $countIndex) {
@@ -136,6 +157,14 @@ if ($variableStep) {
 			$countIndex++;
 		}
 
+		# THEN increment for the new cut
+		$currentCount++;
+		my $newEndSite = $cutSite + $smoothSize*2 + 1;
+		if (!defined($endSite)) {
+			$endSite = $newEndSite;
+		} else {
+			push @closers, $newEndSite;
+		}
 		$previousCut = $cutSite;
 	} # end while
 
