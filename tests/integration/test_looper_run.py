@@ -5,7 +5,7 @@ configuration handoff by running PEPATAC via looper instead of direct execution.
 
 Prerequisites:
 - looper and pipestat installed (pip install looper pipestat)
-- bulker crate databio/pepatac:1.1.1 loaded and active
+- bulker crate databio/pepatac cached and active
 - .venv with refgenie installed (pip install refgenie)
 - Network access to refgenie server
 - RUN_INTEGRATION_TESTS=true
@@ -35,7 +35,8 @@ except ImportError:
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 SAMPLE_PIFACE = os.path.join(PROJECT_ROOT, "sample_pipeline_interface.yaml")
 PROJECT_PIFACE = os.path.join(PROJECT_ROOT, "project_pipeline_interface.yaml")
-VENV_DIR = os.path.join(PROJECT_ROOT, ".venv")
+TESTS_DIR = os.path.dirname(os.path.dirname(__file__))
+VENV_DIR = os.environ.get("PEPATAC_TEST_VENV", os.path.join(TESTS_DIR, ".venv"))
 REFGENIE = os.path.join(VENV_DIR, "bin", "refgenie")
 
 GENOME_NAME = "hg38_chr22"
@@ -44,12 +45,26 @@ SAMPLE_NAME = "test1"
 
 
 def _seek_asset(asset_path, config_path):
-    """Use refgenie seek to resolve an asset path."""
+    """Use refgenie seek to resolve an asset path.
+
+    Resolves symlinks because refgenie returns alias paths that use
+    relative symlinks to the data directory. Containerized tools
+    (via bulker/Docker) can't follow these since Docker only mounts
+    the paths it sees in the command arguments.
+    """
     result = subprocess.run(
         [REFGENIE, "seek", asset_path, "-c", config_path],
         capture_output=True, text=True, timeout=30,
     )
-    return result.stdout.strip()
+    path = result.stdout.strip()
+    if os.path.exists(path):
+        return os.path.realpath(path)
+    for ext in [".1.bt2", ".fa", ".fasta", ".amb"]:
+        candidate = path + ext
+        if os.path.exists(candidate):
+            resolved = os.path.realpath(candidate)
+            return resolved[: -len(ext)]
+    return path
 
 
 def _read_stats(sample_dir):

@@ -16,7 +16,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TESTS_DIR="$SCRIPT_DIR/.."
 
 SERVICES_SCRIPT="$SCRIPT_DIR/services.sh"
-BULKER_MANIFEST="$TESTS_DIR/bulker_manifest.yaml"
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-local/bulker_manifest}"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -81,10 +81,43 @@ if [ "$INSTALL_DEV_LOOPER" = "true" ]; then
     fi
 fi
 
+# Bootstrap test venv with refgenie if needed
+VENV_DIR="$TESTS_DIR/.venv"
+if [ ! -d "$VENV_DIR" ]; then
+    echo -e "${YELLOW}Creating test venv at ${VENV_DIR}...${NC}"
+    python3 -m venv "$VENV_DIR"
+fi
+if [ ! -f "$VENV_DIR/bin/refgenie" ]; then
+    echo -e "${YELLOW}Installing refgenie into test venv...${NC}"
+    "$VENV_DIR/bin/pip" install refgenie > /dev/null 2>&1 || echo -e "${RED}Failed to install refgenie${NC}"
+fi
+export PEPATAC_TEST_VENV="$VENV_DIR"
+
+# Install crate from local manifest if not already cached
+MANIFEST="$TESTS_DIR/bulker_manifest.yaml"
+if ! bulker crate list 2>/dev/null | grep -q "${BULKER_CRATE}"; then
+    if [ -f "$MANIFEST" ]; then
+        echo -e "${YELLOW}Crate ${BULKER_CRATE} not cached. Installing from local manifest...${NC}"
+        bulker crate install "$MANIFEST"
+    else
+        echo -e "${RED}ERROR: Crate ${BULKER_CRATE} not cached and no manifest at ${MANIFEST}${NC}"
+        exit 1
+    fi
+fi
+
 # Verify environment
 echo -e "${GREEN}Verifying test environment...${NC}"
 "$SERVICES_SCRIPT" start
 
+# Activate bulker crate by extracting its PATH
+BULKER_PATH=$(bulker activate --echo "${BULKER_CRATE}" 2>/dev/null | grep "^export PATH=" | sed 's/^export PATH="//' | sed 's/"$//' | cut -d: -f1)
+if [ -z "$BULKER_PATH" ]; then
+    echo -e "${RED}ERROR: Could not get crate path for ${BULKER_CRATE}${NC}"
+    exit 1
+fi
+
+export PATH="${BULKER_PATH}:${PATH}"
+export BULKERCRATE="$BULKER_CRATE"
 export RUN_INTEGRATION_TESTS=true
 
 # Enable local refgenieserver tests if --local was passed
@@ -95,26 +128,13 @@ if [ "$USE_LOCAL_SERVER" = true ]; then
 fi
 
 echo -e "\n${GREEN}Running integration tests...${NC}"
+echo "  Crate PATH: ${BULKER_PATH}"
+if [ "$USE_LOCAL_SERVER" = true ]; then
+    echo "  Local refgenieserver: http://localhost:${PEPATAC_TEST_REFGENIESERVER_PORT}"
+fi
 echo ""
 
 cd "$PROJECT_ROOT"
-
-# Activate bulker crate (prepends shims to PATH)
-# Prefer the published crate; fall back to local manifest for testing unreleased changes.
-BULKER_CRATE="${PEPATAC_BULKER_CRATE:-databio/pepatac:1.1.2}"
-if command -v bulker &> /dev/null; then
-    if bulker crate inspect "$BULKER_CRATE" &> /dev/null; then
-        echo -e "${GREEN}Activating published bulker crate: $BULKER_CRATE${NC}"
-        eval "$(bulker activate --echo "$BULKER_CRATE")"
-    elif [ -f "$BULKER_MANIFEST" ]; then
-        echo -e "${YELLOW}Published crate not found; using local manifest: $BULKER_MANIFEST${NC}"
-        eval "$(bulker activate --echo "$BULKER_MANIFEST")"
-    else
-        echo -e "${YELLOW}No bulker crate available; some tests may skip${NC}"
-    fi
-else
-    echo -e "${YELLOW}bulker not found; running tests without containerized tools (some may skip)${NC}"
-fi
 
 set +e
 python3 -m pytest "$TESTS_DIR/integration/" -v "$@"

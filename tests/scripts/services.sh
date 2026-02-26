@@ -14,19 +14,55 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Bulkers crate configuration
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-local/bulker_manifest}"
+
+# Required tools for basic pipeline execution
+REQUIRED_TOOLS=(bowtie2 samtools macs3 skewer samblaster bedtools)
+
 # Refgenieserver configuration
 REFGENIESERVER_PORT="${PEPATAC_TEST_REFGENIESERVER_PORT:-8765}"
 REFGENIESERVER_PID_FILE="/tmp/refgenieserver-pepatac-test.pid"
 TEST_DATA_DIR="${PEPATAC_TEST_REFGENIE_DATA:-${PROJECT_ROOT}/tests/data/refgenie}"
 REFGENIE_CONFIG="${TEST_DATA_DIR}/archive/genome_config.yaml"
-REFGENIESERVER="${PROJECT_ROOT}/.venv/bin/refgenieserver"
+REFGENIESERVER="${PROJECT_ROOT}/tests/.venv/bin/refgenieserver"
 
 check_bulker() {
     if ! command -v bulker &>/dev/null; then
-        echo "ERROR: bulker is not installed."
+        echo "ERROR: bulker is not installed. Install with: cargo install bulker"
         return 1
     fi
     echo "  bulker: $(bulker --version 2>&1 | head -1)"
+}
+
+check_crate_cached() {
+    if ! bulker crate list 2>/dev/null | grep -q "${BULKER_CRATE}"; then
+        echo "ERROR: Bulkers crate ${BULKER_CRATE} is not cached."
+        echo "  Install it with: bulker crate install ${BULKER_CRATE}"
+        return 1
+    fi
+    echo "  Crate cached: ${BULKER_CRATE}"
+}
+
+check_tools() {
+    # Get the crate's shim directory from bulker activate --echo
+    local crate_path
+    crate_path=$(bulker activate --echo "${BULKER_CRATE}" 2>/dev/null | grep "^export PATH=" | sed 's/^export PATH="//' | sed 's/"$//' | cut -d: -f1)
+    local missing=()
+
+    for tool in "${REQUIRED_TOOLS[@]}"; do
+        if [ -x "${crate_path}/${tool}" ]; then
+            echo "  ${tool}: OK"
+        else
+            echo "  ${tool}: MISSING"
+            missing+=("$tool")
+        fi
+    done
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "WARNING: Missing tools: ${missing[*]}"
+        echo "  These tools may not be available in the crate (check system PATH as fallback)."
+    fi
 }
 
 start_refgenieserver() {
@@ -87,6 +123,12 @@ case "$1" in
         echo "Checking bulker..."
         check_bulker
         echo ""
+        echo "Checking crate..."
+        check_crate_cached
+        echo ""
+        echo "Checking tools..."
+        check_tools
+        echo ""
         echo "Starting services..."
         start_refgenieserver
         echo ""
@@ -100,6 +142,10 @@ case "$1" in
         echo "=== PEPATAC Test Environment Status ==="
         echo ""
         check_bulker 2>/dev/null || echo "  bulker: NOT INSTALLED"
+        check_crate_cached 2>/dev/null || echo "  Crate: NOT CACHED"
+        echo ""
+        echo "Tool availability:"
+        check_tools 2>/dev/null || true
         echo ""
         echo "Services:"
         check_refgenieserver
@@ -108,6 +154,7 @@ case "$1" in
         echo "Usage: $0 {start|stop|status}"
         echo ""
         echo "Environment variables:"
+        echo "  PEPATAC_TEST_BULKER_CRATE            - Bulkers crate (default: databio/pepatac)"
         echo "  PEPATAC_TEST_REFGENIESERVER_PORT     - Local server port (default: 8765)"
         echo "  PEPATAC_TEST_REFGENIE_DATA           - Local refgenie data dir (default: tests/data/refgenie)"
         exit 1

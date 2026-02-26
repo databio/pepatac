@@ -1,7 +1,7 @@
 """Integration test fixtures for PEPATAC pipeline.
 
 These tests require:
-- bulker crate databio/pepatac:1.1.2 loaded
+- bulker crate databio/pepatac cached
 - RUN_INTEGRATION_TESTS=true environment variable
 
 Run via: tests/scripts/test-integration.sh
@@ -24,7 +24,7 @@ TESTS_DIR = os.path.dirname(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.dirname(TESTS_DIR)
 PIPELINES_DIR = os.path.join(PROJECT_ROOT, "pipelines")
 TOOLS_DIR = os.path.join(PROJECT_ROOT, "tools")
-VENV_DIR = os.path.join(PROJECT_ROOT, ".venv")
+VENV_DIR = os.environ.get("PEPATAC_TEST_VENV", os.path.join(TESTS_DIR, ".venv"))
 REFGENIE = os.path.join(VENV_DIR, "bin", "refgenie")
 
 # Add pipelines dir to path so we can import pepatac
@@ -101,11 +101,10 @@ def refgenie_config(test_output_factory):
     Pulls fasta, bowtie2_index, and bwa_index for hg38_chr22.
     Shared across test_end_to_end.py and test_looper_run.py.
     """
-    if not os.path.isfile(REFGENIE):
-        pytest.skip(
-            f"refgenie not found at {REFGENIE}. "
-            f"Run: python3 -m venv {VENV_DIR} && {VENV_DIR}/bin/pip install refgenie"
-        )
+    assert os.path.isfile(REFGENIE), (
+        f"refgenie not found at {REFGENIE}. "
+        f"test-integration.sh should have bootstrapped this automatically."
+    )
 
     genome_dir = str(test_output_factory("refgenie"))
     config_path = os.path.join(genome_dir, "genome_config.yaml")
