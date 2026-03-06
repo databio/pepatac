@@ -17,8 +17,6 @@ import tempfile
 import pypiper
 from pathlib import Path
 import psutil
-import pandas as pd
-import numpy as np
 from pypiper import build_command
 from refgenconf import RefGenConf as RGC, select_genome_config
 
@@ -40,7 +38,7 @@ def parse_arguments():
     ###########################################################################
     parser = ArgumentParser(description='PEPATAC version ' + __version__)
     parser = pypiper.add_pypiper_args(parser, groups=
-        ['pypiper', 'looper', 'ngs'],
+        ['pypiper', 'looper', 'ngs', 'pipestat'],
         required=["input", "genome", "sample_name", "output_parent",
                   "chrom_sizes", "genome_index"])
 
@@ -440,22 +438,6 @@ def tool_path(tool_name):
                         TOOLS_FOLDER, tool_name)
 
 
-def rescale(n, after=[0,1], before=[]):
-    """
-    Helper function to rescale a vector between specified range of values
-    
-    :param numpy array n: a vector of numbers to be rescale 
-    :param list after: range of values to which to scale n 
-    :param list before: range of values in which n is contained
-    """
-    if not before:
-        before=[min(n), max(n)]
-    if (before[1] - before[0]) == 0:
-        return n
-    return (((after[1] - after[0]) * (n - before[0]) / 
-             (before[1] - before[0])) + after[0])
-
-
 def check_commands(commands, ignore=''):
     """
     Check if command(s) can be called
@@ -512,7 +494,8 @@ def main():
         os.path.join(args.output_parent, args.sample_name))
     global pm
     pm = pypiper.PipelineManager(
-        name="PEPATAC", outfolder=outfolder,pipestat_record_identifier=args.sample_name, args=args, version=__version__)
+        name="PEPATAC", outfolder=outfolder, pipestat_record_identifier=args.sample_name,
+        args=args, version=__version__)
     global ngstk
     ngstk = pypiper.NGSTk(pm=pm)
 
@@ -1260,10 +1243,11 @@ def main():
         if not dr and not dr.strip():
             pm.info("DEBUG: dr didn't work correctly")
             dr = ar
+        dr = float(dr)
         if args.deduplicator == "samtools":
-            dr = float(dr)/2
-        
-        pdar = float(ar) - float(dr)
+            dr = dr/2
+
+        pdar = ar - dr
         dar = round(float(pdar) * 100 / float(tr), 2)
         dte = round(float(pdar) * 100 / float(rr), 2)
         
@@ -1292,7 +1276,7 @@ def main():
         cmd1 += " OUTPUT=" + rmdup_bam
         cmd1 += " METRICS_FILE=" + metrics_file
         cmd1 += " VALIDATION_STRINGENCY=LENIENT"
-        cmd1 += " ASSUME_SORTED=true REMOVE_DUPLICATES=true > " + dedup_log
+        cmd1 += " ASSUME_SORT_ORDER=coordinate REMOVE_DUPLICATES=true > " + dedup_log
         cmd2 = tools.samtools + " index " + rmdup_bam
     elif args.deduplicator == "samblaster":
         nProc = max(int(pm.cores / 4), 1)
@@ -1802,6 +1786,7 @@ def main():
     ############################################################################
     #                          Determine TSS enrichment                        #
     ############################################################################
+    Tss_enrich = None
     if not os.path.exists(res.refgene_tss):
         print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}"
               .format(res.refgene_tss))
@@ -1856,6 +1841,9 @@ def main():
     ############################################################################
     #                         Fragment distribution                            #
     ############################################################################
+    frag_len = None
+    fragL_dis2 = None
+    fragL_count = None
     if args.paired_end:
         pm.timestamp("### Plot fragment distribution")
         frag_len = os.path.join(QC_folder,
@@ -1932,6 +1920,7 @@ def main():
     name_sort_rmdup = os.path.join(map_genome_folder,
                                    args.sample_name + "_namesort_dedup.bam")
 
+    peak_coverage_gz = None
     peak_folder = os.path.join(param.outfolder, "peak_calling_" +
                                args.genome_assembly)
     ngstk.make_dir(peak_folder)
@@ -2147,22 +2136,11 @@ def main():
             pm.run(cmd, peak_output_file, nofail=True)
             if (os.path.exists(peak_output_file) and 
                     os.stat(peak_output_file).st_size > 0):
-                df = pd.read_csv(peak_output_file, sep='\t', header=None,
-                                 names=("chr", "start", "end", "name", "score",
-                                        "strand", "signalValue", "pValue",
-                                        "qValue", "peak"))
-                nineNine = df['signalValue'].quantile(q=0.99)
-                df.loc[df['signalValue'] > nineNine, 'signalValue'] = nineNine
-
-                # rescale score to be between 100 and 1000. 
-                # See https://fureylab.web.unc.edu/software/fseq/
-                df['score'] = rescale(np.log(df['signalValue']), [100, 1000])
-
-                # ensure score is a whole integer value
-                df['score'] = pd.to_numeric(df['score'].round(),
-                                            downcast='integer')
-                df.to_csv(peak_output_file, sep='\t',
-                          header=False, index=False)
+                cmd = tool_path("clean_peaks.py")
+                cmd += " -m fseq"
+                cmd += " -i " + peak_output_file
+                cmd += " -o " + peak_output_file
+                pm.run(cmd, lock_name=peak_output_file + '.lock')
 
                 line_count = int(ngstk.count_lines(peak_output_file).strip())
                 num_peaks = max(0, line_count - 1)
@@ -2402,29 +2380,12 @@ def main():
         if not os.path.exists(bigNarrowPeak) or args.new_start:
             if (os.path.exists(peak_output_file) and 
                     os.stat(peak_output_file).st_size > 0):
-                df = pd.read_csv(peak_output_file, sep='\t', header=None,
-                                 names=("V1","V2","V3","V4","V5","V6",
-                                        "V7","V8","V9","V10"))
-                nineNine = df['V5'].quantile(q=0.99)
-                df.loc[df['V5'] > nineNine, 'V5'] = nineNine
-
-                # rescale score to be between 0 and 1000
-                df['V5'] = rescale(np.log(df['V5']), [0, 1000])
-
-                cs = pd.read_csv(res.chrom_sizes, sep='\t', header=None,
-                                 names=("V1","V2"))
-                df = df.merge(cs, on="V1")
-                df.columns = ["V1","V2","V3","V4","V5","V6",
-                              "V7","V8","V9","V10","V11"]
-                # make sure 'chromEnd' positions are not greater than the 
-                # max chrom_size
-                n = np.array(df['V3'].values.tolist())
-                df['V3'] = np.where(n > df['V11'], df['V11'], n).tolist()
-
-                df = df.drop(columns=["V11"])
-                # ensure score is a whole integer value
-                df['V5'] = pd.to_numeric(df['V5'].round(), downcast='integer')
-                df.to_csv(temp.name, sep='\t', header=False, index=False)
+                cmd = tool_path("clean_peaks.py")
+                cmd += " -m bigbed"
+                cmd += " -i " + peak_output_file
+                cmd += " -o " + temp.name
+                cmd += " -s " + res.chrom_sizes
+                pm.run(cmd, lock_name=temp.name + '.lock')
                 pm.clean_add(temp.name)
 
                 as_file = os.path.join(peak_folder, "bigNarrowPeak.as")

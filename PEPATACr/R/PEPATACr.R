@@ -1719,7 +1719,7 @@ reducePeaks <- function(input, sample_name, chr_sizes, output=NA, normalize=FALS
         # ensure sorted
         setorderv(final, cols = c("chr", "start"))
         # can't extend past chromosome
-        for (i in nrow(c_size)) {
+        for (i in seq_len(nrow(c_size))) {
             final[chr == c_size$chr[i] & end > c_size$size[i],
                   end := c_size$size[i]]
         }
@@ -3027,7 +3027,7 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
             # ensure sorted
             setorderv(reduce_dt, cols = c("chr", "start"))
             # can't extend past chromosome
-            for (i in nrow(c_size)) {
+            for (i in seq_len(nrow(c_size))) {
                 reduce_dt[chr == c_size$chr[i] & end > c_size$size[i],
                           end := c_size$size[i]]
             }
