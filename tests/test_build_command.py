@@ -35,7 +35,7 @@ class TestBasicBuildCommand:
 
     def test_raw_string_is_unchanged(self):
         """ Single raw text command is returned as such. """
-        text = "".join(random.choice(string.letters))
+        text = "".join(random.choice(string.ascii_letters))
         assert text == build_command(text)
 
 
