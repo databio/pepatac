@@ -1,6 +1,10 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+- Update bulker crate to databio/pepatac:1.1.1 (fix broken openjdk image)
+- Update test scripts for Rust bulker CLI
+
 ## [0.12.6] -- 2026-02-17
 - smoothWig.pl: Fix off-by-one errors in smoothing window calculation and boundary handling
 - bamSitesToWig.py: Fix coordinate conversion from 0-based BAM to 1-based wiggle format

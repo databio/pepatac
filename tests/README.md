@@ -16,7 +16,7 @@ Integration tests verify the pipeline's argument parsing, tool resolution, PEP c
 ### Prerequisites
 
 1. **bulker** installed and configured: `pip install bulker`
-2. **PEPATAC bulker crate** loaded: `bulker load databio/pepatac:1.0.14 -r`
+2. **PEPATAC bulker crate** loaded: `bulker load databio/pepatac:1.1.1 -r`
 3. **microtest** repo cloned (for config loading tests): `git clone https://github.com/databio/microtest.git ~/code/microtest`
 
 ### Running integration tests

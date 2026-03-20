@@ -1,6 +1,6 @@
 manifest:
   name: pepatac
-  version: 1.1.0
+  version: 1.1.1
   imports:
   - bulker/alpine:default
   - bulker/coreutils:default
@@ -33,7 +33,7 @@ manifest:
   - command: hmmratac
     docker_image: quay.io/biocontainers/hmmratac:1.2.10--hdfd78af_1
   - command: java
-    docker_image: openjdk
+    docker_image: eclipse-temurin:21-jre
     docker_args: "-i"
   - command: macs3
     docker_image: quay.io/biocontainers/macs3:3.0.3--py310h397c9d8_0
