@@ -6,7 +6,7 @@ PEPATAC - ATACseq pipeline
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
 
-__version__ = "0.12.5"
+__version__ = "0.13.0"
 
 
 from argparse import ArgumentParser

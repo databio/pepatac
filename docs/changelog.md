@@ -5,9 +5,12 @@ All notable changes to this project will be documented in this file.
 - Update bulker crate to databio/pepatac:1.1.1 (fix broken openjdk image)
 - Update test scripts for Rust bulker CLI
 
-## [0.12.6] -- 2026-02-17
+## [0.13.0] -- 2026-03-06
+- Extract peak cleaning into separate script (`tools/clean_peaks.py`). Fix [#295](https://github.com/databio/pepatac/issues/295)
+- Update to latest pipestat; add integration and regression tests
+- Fix clip chrom end bug in PEPATACr
 - smoothWig.pl: Fix off-by-one errors in smoothing window calculation and boundary handling
-- bamSitesToWig.py: Fix coordinate conversion from 0-based BAM to 1-based wiggle format
+- Update bulker crate to databio/pepatac:1.1.0
 
 ## [0.12.5] -- 2025-09-23
 - Fix tutorial typos.
