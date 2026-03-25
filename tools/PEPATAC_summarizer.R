@@ -71,6 +71,10 @@ p <- add_argument(p, arg="min-score", short="-s", default=5,
 p <- add_argument(p, arg="min-olap", short="-l", default=1,
                   help=paste0("A minimum number of overlapping bases to",
                               " defined peaks as overlapping."))
+p <- add_argument(p, arg="--frip-ref-peaks", short="-F",
+                  help=paste0("Path to a reference peak set to use for ",
+                              "the count table instead of computed ",
+                              "consensus peaks."))
 # Parse the command line arguments
 argv <- parse_args(p)
 
@@ -270,7 +274,8 @@ if (!file.exists(counts_path) || argv$new_start && !argv$skip_table) {
                                          argv$poverlap,
                                          argv$normalized,
                                          argv$cutoff,
-										 argv$min_olap)
+										 argv$min_olap,
+                                         argv$frip_ref_peaks)
     if (!length(counts_paths) == 0) {
         for (counts_table in counts_paths) {
             if (file.exists(counts_table)) {

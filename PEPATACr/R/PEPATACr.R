@@ -2775,12 +2775,17 @@ readPepatacPeakCounts = function(prj, results_subdir) {
 #' @param poverlap Weight counts by the percentage overlap with peak
 #' @param norm Use normalized read counts
 #' @param cutoff Only keep peaks present in the `cutoff` number of samples
-#' @param min_olap  A minimum number of bases between peaks to be 
+#' @param min_olap  A minimum number of bases between peaks to be
 #'					considered overlapping.
+#' @param ref_peaks Optional path to a reference peak set file (narrowPeak/BED).
+#'                  When provided, this peak set is used for count table
+#'                  generation instead of the computed consensus peaks or
+#'                  per-sample peaks.
 #' @keywords project peak counts
 #' @export
 peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
-                       poverlap=FALSE, norm=FALSE, cutoff=2, min_olap=1) {
+                       poverlap=FALSE, norm=FALSE, cutoff=2, min_olap=1,
+                       ref_peaks=NA) {
     # Produce output directory (if needed)
     dir.create(summary_dir, showWarnings = FALSE)
 
@@ -2790,6 +2795,65 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
 
     setDT(sample_table)[assets[asset == 'chrom_sizes', ],
                         c_path := i.path, on = 'sample_name']
+
+    # If a reference peak set is provided, generate per-sample coverage files
+    if (!is.na(ref_peaks) && !is.null(ref_peaks) && file.exists(ref_peaks)) {
+        message("Using provided reference peak set: ", ref_peaks)
+        ref_peaks <- normalizePath(ref_peaks)
+        for (i in seq_len(nrow(sample_table))) {
+            s_name  <- sample_table$sample_name[i]
+            s_genome <- sample_table$genome[i]
+            peak_dir <- file.path(results_subdir, s_name,
+                                  paste0("peak_calling_", s_genome))
+            ref_cov  <- file.path(peak_dir,
+                                  paste0(s_name, "_ref_peaks_coverage.bed"))
+            # Skip if coverage file already exists
+            if (file.exists(ref_cov) && file.info(ref_cov)$size > 0) {
+                next
+            }
+            # Find the deduplicated BAM
+            bam_path <- file.path(results_subdir, s_name,
+                                  paste0("aligned_", s_genome),
+                                  paste0(s_name, "_sort_dedup.bam"))
+            if (!file.exists(bam_path)) {
+                warning("Cannot find BAM for sample ", s_name, ": ", bam_path)
+                next
+            }
+            # Get chrom sizes for sorting
+            c_path <- sample_table$c_path[i]
+            if (is.na(c_path) || !file.exists(c_path)) {
+                warning("Cannot find chrom sizes for sample ", s_name)
+                next
+            }
+            # Sort reference peaks by chromosome order
+            sorted_ref <- file.path(peak_dir, "sorted_reference_peaks.narrowPeak")
+            sort_cmd <- paste("bedtools sort -i", shQuote(ref_peaks),
+                              "-faidx", shQuote(c_path), ">", shQuote(sorted_ref))
+            system(sort_cmd)
+            # Compute coverage
+            cov_cmd <- paste("bedtools coverage -sorted -a", shQuote(sorted_ref),
+                             "-b", shQuote(bam_path),
+                             "-g", shQuote(c_path),
+                             "| uniq >", shQuote(ref_cov))
+            system(cov_cmd)
+            # Normalize: append normalized column (base_counts/sum*1M)
+            # Column 12 is read_count in narrowPeak+coverage output
+            norm_cov <- file.path(peak_dir,
+                                  paste0(s_name, "_norm_ref_peaks_coverage.bed"))
+            norm_cmd <- paste0(
+                "awk 'BEGIN{OFS=\"\\t\";} ",
+                "NR==FNR{sum += $12; next}{if (sum <= 0){sum = 1} ",
+                "print $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, ",
+                "$12, $13, $14, ($12/sum*1000000)}' ",
+                shQuote(ref_cov), " ", shQuote(ref_cov),
+                " > ", shQuote(norm_cov))
+            system(norm_cmd)
+            file.rename(norm_cov, ref_cov)
+            # Clean up sorted reference
+            unlink(sorted_ref)
+            message("  Generated coverage for sample: ", s_name)
+        }
+    }
 
     # check if coverage files are compressed
     if (any(file.exists(file.path(results_subdir,

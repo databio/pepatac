@@ -63,6 +63,11 @@ def parse_arguments():
     parser.add_argument("-l", "--min-olap", default=1,
                         help="A minimum number of overlapping bases to " +
                              "defined peaks as overlapping.")
+    parser.add_argument("--frip-ref-peaks", default=None,
+                        dest="frip_ref_peaks", type=str,
+                        help="Path to a reference peak set (narrowPeak/BED) "
+                             "to use for the project count table instead of "
+                             "the computed consensus peaks.")
     args = parser.parse_args()
     return args
 
@@ -114,6 +119,8 @@ def main():
         cmd += " --poverlap"
     if args.normalized:
         cmd += " --normalized"
+    if args.frip_ref_peaks:
+        cmd += " --frip-ref-peaks " + os.path.abspath(args.frip_ref_peaks)
 
     complexity_file = os.path.join(
         outfolder, f"{args.name}_libComplexity.pdf")
