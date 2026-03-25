@@ -100,9 +100,18 @@ echo ""
 cd "$PROJECT_ROOT"
 
 # Activate bulker crate (prepends shims to PATH)
-if command -v bulker &> /dev/null && [ -f "$BULKER_MANIFEST" ]; then
-    echo -e "${GREEN}Activating bulker crate: $BULKER_MANIFEST${NC}"
-    eval "$(bulker activate --echo "$BULKER_MANIFEST")"
+# Prefer the published crate; fall back to local manifest for testing unreleased changes.
+BULKER_CRATE="${PEPATAC_BULKER_CRATE:-databio/pepatac:1.1.2}"
+if command -v bulker &> /dev/null; then
+    if bulker crate inspect "$BULKER_CRATE" &> /dev/null; then
+        echo -e "${GREEN}Activating published bulker crate: $BULKER_CRATE${NC}"
+        eval "$(bulker activate --echo "$BULKER_CRATE")"
+    elif [ -f "$BULKER_MANIFEST" ]; then
+        echo -e "${YELLOW}Published crate not found; using local manifest: $BULKER_MANIFEST${NC}"
+        eval "$(bulker activate --echo "$BULKER_MANIFEST")"
+    else
+        echo -e "${YELLOW}No bulker crate available; some tests may skip${NC}"
+    fi
 else
     echo -e "${YELLOW}bulker not found; running tests without containerized tools (some may skip)${NC}"
 fi

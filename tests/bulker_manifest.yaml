@@ -44,10 +44,10 @@ manifest:
   - command: preseq
     docker_image: quay.io/biocontainers/preseq:2.0.3--hf53bd2b_3
   - command: R
-    docker_image: databio/rpipe:0.3.1
+    docker_image: databio/rpipe:0.4.0
     docker_command: R
   - command: Rscript
-    docker_image: databio/rpipe:0.3.1
+    docker_image: databio/rpipe:0.4.0
   - command: samblaster
     docker_image: quay.io/biocontainers/samblaster:0.1.26--h9f5acd7_2
     docker_args: "-i"

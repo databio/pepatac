@@ -2436,26 +2436,19 @@ plotLibSizes <- function(prj, summary_dir, stats) {
 #' @param sample_name A list project sample names
 #' @param yaml_file A project level stats summary yaml file
 yamlToDT <- function(sample_name, yaml_file) {
-    sample_DT <- data.table::as.data.table(yaml_file$PEPATAC$sample[[sample_name]])
-    remove_cols <- c("Library complexity",
-                     "TSS enrichment",
-                     "TSS distance distribution",
-                     "Fragment distribution",
-                     "Peak chromosome distribution",
-                     "Peak partition distribution",
-                     "cFRiF",
-                     "FRiF",
-                     "FastQC report r1",
-                     "FastQC report r2",
-                     "meta")
-    cols_present <- character()
-    for (column_name in remove_cols) {
-        if (any(grepl(column_name, names(sample_DT)))) {
-            cols_present <- c(cols_present, column_name)
-        }
+    sample_data <- yaml_file$PEPATAC$sample[[sample_name]]
+    if (is.null(sample_data)) {
+        return(NULL)
     }
-    sample_DT[, (cols_present) := NULL]
-    sample_DT <- unique(sample_DT)
+    # Keep only scalar (length-1) values; drop nested objects (images, files)
+    is_scalar <- vapply(sample_data, function(x) {
+        length(x) == 1 && !is.list(x)
+    }, logical(1))
+    scalar_data <- sample_data[is_scalar]
+    if (length(scalar_data) == 0) {
+        return(NULL)
+    }
+    sample_DT <- data.table::as.data.table(scalar_data)
     sample_DT$sample_name <- sample_name
     return(sample_DT)
 }
@@ -2487,8 +2480,14 @@ summarizer <- function(project, output_dir) {
     dir.create(summary_dir, showWarnings = FALSE)
 
     # convert yaml to data.table object
+    project_samples <- pepr::sampleTable(project)$sample_name
     stats <- data.table::rbindlist(lapply(project_samples, FUN=yamlToDT,
                                           yaml_file=summary_file), fill=TRUE)
+
+    if (is.null(stats) || nrow(stats) == 0) {
+        warning("No sample statistics found in summary file.")
+        return(FALSE)
+    }
 
     # Set absent values in table to zero
     stats[is.na(stats)]   <- 0
