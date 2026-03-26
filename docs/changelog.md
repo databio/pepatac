@@ -1,6 +1,10 @@
 # Change log
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+- Update bulker crate to databio/pepatac:1.1.1 (fix broken openjdk image)
+- Update test scripts for Rust bulker CLI
+
 ## [0.13.0] -- 2026-03-06
 - Extract peak cleaning into separate script (`tools/clean_peaks.py`). Fix [#295](https://github.com/databio/pepatac/issues/295)
 - Update to latest pipestat; add integration and regression tests

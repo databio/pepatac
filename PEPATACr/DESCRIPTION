@@ -7,6 +7,8 @@ Description: Installs required libraries to calculate the fraction of reads in f
 BiocViews:
 Depends: R (>= 4.0), GenomicRanges
 Imports: data.table, pepr, gplots, grid, ggplot2, optigrab, scales, yaml, GenomicDistributions, GenomicDistributionsData
+Suggests: testthat (>= 3.0.0)
+Config/testthat/edition: 3
 License: BSD 2-Clause "Simplified" License
 Encoding: UTF-8
 LazyData: true

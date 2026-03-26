@@ -1,0 +1,86 @@
+PEPATAC:
+  project: {}
+  sample:
+    test1:
+      meta:
+        pipestat_modified_time: '2026-02-13 18:32:54'
+        pipestat_created_time: '2026-02-13 18:32:27'
+      File_mb: 1
+      Read_type: paired
+      Genome: hg38_chr22
+      Raw_reads: '25000'
+      Fastq_reads: 25000
+      Trimmed_reads: 25000
+      Trim_loss_rate: 0.0
+      Mapped_reads: '3332'
+      QC_filtered_reads: 2832
+      Aligned_reads: '500'
+      Alignment_rate: 2.0
+      Total_efficiency: 2.0
+      Mitochondrial_reads: 0
+      NRF: 1.0
+      PBC1: 1.0
+      PBC2: 250.0
+      Unmapped_reads: 21668
+      Duplicate_reads: 0.0
+      Dedup_aligned_reads: 500.0
+      Dedup_alignment_rate: 2.0
+      Dedup_total_efficiency: 2.0
+      NFR_frac: 0.388
+      mono_frac: 0.228
+      di_frac: 0.076
+      tri_frac: 0.004
+      poly_frac: 0.0
+      Read_length: 75
+      Genome_size: 42746242
+      Peak_count: 19
+      FRiP: 0.108
+      Picard_est_lib_size: 5000
+      FRiP_ref: 0.09
+      Fragment distribution:
+        path: /tmp/test1_fragLenDistribution.pdf
+        thumbnail_path: /tmp/test1_fragLenDistribution.png
+        title: Fragment distribution
+        annotation: PEPATAC
+      Library complexity:
+        path: /tmp/test1_libComplexity.pdf
+        thumbnail_path: /tmp/test1_libComplexity.png
+        title: Library complexity
+      TSS enrichment:
+        path: /tmp/test1_TSSenrichment.pdf
+        thumbnail_path: /tmp/test1_TSSenrichment.png
+        title: TSS enrichment
+      Motif analysis:
+        path: /tmp/test1_motif.html
+        title: Motif analysis
+        thumbnail_path: /tmp/test1_motif.png
+      Peak chromosome distribution:
+        path: /tmp/test1_peakChromDist.pdf
+        thumbnail_path: /tmp/test1_peakChromDist.png
+        title: Peak chromosome distribution
+      Peak partition distribution:
+        path: /tmp/test1_peakPartDist.pdf
+        thumbnail_path: /tmp/test1_peakPartDist.png
+        title: Peak partition distribution
+      cFRiF:
+        path: /tmp/test1_cFRiF.pdf
+        thumbnail_path: /tmp/test1_cFRiF.png
+        title: cFRiF
+      FRiF:
+        path: /tmp/test1_FRiF.pdf
+        thumbnail_path: /tmp/test1_FRiF.png
+        title: FRiF
+      FastQC report r1:
+        path: /tmp/test1_fastqc_r1.html
+        thumbnail_path: /tmp/test1_fastqc_r1.png
+        title: FastQC report r1
+      FastQC report r2:
+        path: /tmp/test1_fastqc_r2.html
+        thumbnail_path: /tmp/test1_fastqc_r2.png
+        title: FastQC report r2
+      TSS distance distribution:
+        path: /tmp/test1_tssDist.pdf
+        thumbnail_path: /tmp/test1_tssDist.png
+        title: TSS distance distribution
+      Time: '0:00:27'
+      Success: '02-13-18:32:54'
