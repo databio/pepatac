@@ -18,7 +18,6 @@ import pypiper
 from pathlib import Path
 import psutil
 from pypiper import build_command
-from refgenconf import RefGenConf as RGC, select_genome_config
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"

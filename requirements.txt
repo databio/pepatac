@@ -17,4 +17,4 @@ psutil>=5.8
 pysam>=0.16
 python-Levenshtein>=0.12
 pyyaml>=3.13
-refgenconf>=0.12.2
+refgenie>=1.0.0
