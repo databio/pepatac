@@ -279,3 +279,124 @@ populator completes in <1s. Perf comparison vs. refgenconf deferred.
 ## Validation run
 
 (Filled below by step 9.)
+
+## Validation-discovered findings
+
+The following gaps surfaced during the end-to-end validation run on
+Rivanna (step 9 of the plan).
+
+### `Refgenie(database_config_path=...)` rejects str
+
+**Symptom:** the populator passed the var_templates value (a str) directly
+to `Refgenie(database_config_path=...)`, which exploded:
+
+```
+File "/.../refgenie/refgenie.py", line 428, in get_database_config
+    if not (cp := config_path or config.database_config_path).exists():
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'exists'
+```
+
+The signature is annotated `database_config_path: Path | None = None`,
+but the constructor has no coercion — pass a str and it crashes
+deep inside `get_database_config` at line 428.
+
+**Workaround on this branch:** the populator coerces str → Path
+before calling Refgenie. Fixed in
+refgenie/refgenie1@nsheff-refactor-2 commit `bb01338`.
+
+**Recommended upstream fix:** make `Refgenie.__init__` (and
+`get_database_config`) accept `str | Path | None` and coerce
+internally, OR raise a typed error when given a str. The current
+behavior makes integration code flaky for any caller that has a path
+as a string (most do — env vars, YAML configs, CLI args).
+
+Refgenie1 file: `refgenie/refgenie/refgenie.py:428`.
+
+### Looper `_update_namespaces` requires the namespace to pre-exist
+
+**Symptom:** the populator's first version returned a NEW dict
+`{"refgenie": paths_dict}` without mutating the input `namespaces`.
+Looper crashed:
+
+```
+File "/.../looper/conductor.py", line 927, in _update_namespaces
+    x[namespace][key] = val
+    ~^^^^^^^^^^^
+KeyError: 'refgenie'
+```
+
+Reading the code: looper's `_update_namespaces(x, y)` iterates the
+returned `y` and does `x[namespace][key] = val` per leaf — which
+requires `x[namespace]` to already exist. Refgenconf's populator
+mutated input first via `namespaces["refgenie"] = paths_dict`, then
+returned `rgc.populate(namespaces)` (returning the same dict).
+
+**Workaround on this branch:** the refgenie1 populator now also
+mutates input `namespaces["refgenie"] = paths_dict` before returning.
+Fixed in refgenie/refgenie1@nsheff-refactor-2 commit `33e70b8`.
+
+**Recommended fix:** this is a looper API contract that's not
+documented anywhere readable. Either (a) update `_update_namespaces`
+to handle missing top-level namespaces (`x.setdefault(namespace, {})`),
+(b) document the contract in `looper/conductor.py:_exec_pre_submit`
+docstring, or (c) accept the mutation pattern as the contract and
+write it down.
+
+Looper file: `looper/looper/conductor.py:898-927`.
+
+### Looper 2.1.x dropped the positional config argument
+
+**Symptom:** plan step 9.4 documents `looper run /path/to/.looper.yaml`.
+Looper 2.1.1 (the version cleanly installable into the refgenie1 venv)
+errors out:
+
+```
+looper: error: unrecognized arguments: looper_test.yaml
+```
+
+The new CLI requires `looper run -c <yaml>` (the `-c/--config` flag).
+This is a looper-side breaking change orthogonal to refgenie1, but it
+matters because the plan's instructions are wrong for current looper.
+
+**Workaround on this branch:** invoked `looper run -c looper_test.yaml`.
+
+**Recommended fix:** update the plan's step 9.4 (and any PEPATAC docs
+that show `looper run <yaml>`) to use `-c`. Out of scope for the
+refgenie1 branch but worth mentioning as a downstream UX issue.
+
+### Refgenie1 venv lacked pip; `python -m pip` failed
+
+**Symptom:** the refgenie1 venv on Rivanna was created with `uv` and
+has no pip module installed. Trying `python -m pip install looper`
+gives `No module named pip`. The plan's step 8.3 assumes pip works.
+
+**Workaround:** used `uv pip install looper` from the refgenie1 src
+directory (which has a `pyproject.toml` so uv resolves correctly).
+
+**Recommended fix:** the refgenie1 deploy plan should either install
+pip into the venv post-creation, OR document `uv pip` as the
+canonical install command for adding deps.
+
+### `bulker activate` shell syntax requires `eval "$(bulker activate ...)"`
+
+The `bulker activate <crate>` command emits shell `export` and
+`alias`/symlink commands to stdout that the user is expected to
+`eval`. The plan's step 9.4 uses a bare `bulker activate
+databio/pepatac:1.1.0 && looper run ...`, which is wrong: that runs
+bulker as a no-op (its output is discarded) and then runs looper
+with no crate-shimmed PATH.
+
+**Workaround on this branch:** wrapped invocations with
+`eval "$(bulker activate databio/pepatac:1.1.0)"` in the validation
+sbatch script.
+
+**Recommended fix:** update the plan's step 9.4 to show the eval
+form, OR file a bulker issue requesting `bulker activate` in the
+current shell (a la `conda activate` post-init).
+
+## Validation run
+
+(See `validation/RUN_NOTES.md` for runtime, output paths, and the
+binary diff vs. dev — filled in by the cluster job.)
+
