@@ -608,15 +608,6 @@ def main():
     
     # Add primary genome annotation files to resources
     res.genome_index = args.genome_index
-
-    if res.genome_index.endswith("."):
-        # Replace last occurrence of . with genome name
-        res.genome_index = os.path.abspath((
-            res.genome_index[:res.genome_index.rfind(".")] + 
-            args.genome_assembly)
-        )
-        if args.aligner.lower() == "bwa":
-            res.genome_index += ".fa"
     pm.debug(f"primary genome index: {args.genome_index}")
     
     if (args.chrom_sizes and os.path.isfile(args.chrom_sizes) and
@@ -931,13 +922,6 @@ def main():
         for prealignment in res.prealignment_index:
             pm.debug(f"prealignment: {prealignment}")
             genome, genome_index = prealignment.split('=')
-            if genome_index.endswith("."):
-                # Replace last occurrence of . with genome name
-                genome_index = genome_index[:genome_index.rfind(".")] + genome
-                genome_index = os.path.abspath(genome_index)
-                #genome_index = genome_index.replace('.',genome)
-                if args.aligner.lower() == "bwa":
-                    genome_index += ".fa"
             pm.debug(f"Aligning with {args.aligner} to {genome_index}")           
             if args.no_fifo:
                 unmap_fq1, unmap_fq2 = _align(
