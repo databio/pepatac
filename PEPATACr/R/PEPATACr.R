@@ -1423,12 +1423,13 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         if (file.exists(file.path(input)) && info$size != 0) {
             in_file  <- data.table::fread(file.path(input))
         } else {
-            out_file <- file.path(output, paste(basename(sample_path),
-                                                output_type,
-                                                "partition_dist.pdf",
-                                                sep="_"))
-            system2(paste("touch"), out_file)
-            quit()
+            # No input data — return an empty ggplot so the caller's
+            # pdf()/png() writes a blank placeholder at the expected
+            # target path. (Earlier versions tried to touch a hard-coded
+            # *_partition_dist.pdf inside `output` treating it as a
+            # directory, which silently dropped the placeholder when
+            # `output` was a file path. See #232.)
+            return(ggplot())
         }
     }
 
@@ -2855,29 +2856,33 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
         }
     }
 
-    # check if coverage files are compressed
-    if (any(file.exists(file.path(results_subdir,
-                        sample_names, paste0("peak_calling_", genomes),
-                        paste0(sample_names, "_ref_peaks_coverage.bed.gz"))))) {
-        ext <- ".bed.gz"
-    } else if (any(file.exists(file.path(results_subdir,
-                        sample_names, paste0("peak_calling_", genomes),
-                        paste0(sample_names, "_peaks_coverage.bed.gz"))))) {
-        ext <- ".bed.gz"
-    } else {
-        ext <- ".bed"
+    # Detect extension independently for reference vs sample peak coverage,
+    # since users commonly have *_peaks_coverage.bed.gz from the first sample
+    # run plus *_ref_peaks_coverage.bed from the re-run (or vice versa). A
+    # single shared `ext` defeats the ref-peaks lookup in that mixed state.
+    detect_ext <- function(suffix) {
+        for (e in c(".bed.gz", ".bed")) {
+            if (any(file.exists(file.path(
+                results_subdir,
+                sample_names, paste0("peak_calling_", genomes),
+                paste0(sample_names, suffix, e))))) {
+                return(e)
+            }
+        }
+        return(NA_character_)
     }
+    ref_ext      <- detect_ext("_ref_peaks_coverage")
+    fallback_ext <- detect_ext("_peaks_coverage")
+    if (is.na(fallback_ext)) fallback_ext <- ".bed"
 
     # Use reference peak coverage file if available
-    if (any(file.exists(file.path(results_subdir,
-                        sample_names, paste0("peak_calling_", genomes),
-                        paste0(sample_names, "_ref_peaks_coverage", ext))))) {
-        peak_file_name = paste0("_ref_peaks_coverage", ext)
+    if (!is.na(ref_ext)) {
+        peak_file_name = paste0("_ref_peaks_coverage", ref_ext)
         reference = TRUE
     } else {
         warning("Peak coverage files are not derived from a singular reference peak set.")
         reference = FALSE
-        peak_file_name = paste0("_peaks_coverage", ext)
+        peak_file_name = paste0("_peaks_coverage", fallback_ext)
     }
     
     # generate paths to peak coverage files

@@ -118,6 +118,11 @@ def parse_arguments():
                         help="Skip FastQC. Useful for bugs in FastQC "
                              "that appear with some sequence read files.")
 
+    parser.add_argument("--skip-dedup", dest="skip_dedup", action='store_true',
+                        help="Skip duplicate removal. Recommended for protocols "
+                             "where duplicates are biologically meaningful "
+                             "(e.g. CUT&Tag, CUT&RUN).")
+
     # Prealignment genome assets
     parser.add_argument("--prealignment-names", default=[], type=str,
                         nargs="+",
@@ -342,9 +347,9 @@ def _align(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             pm.run([cmd1, cmd2, cmd3, cmd4, filter_pair], out_fastq_r2_gz)
         else:
             if args.keep:
-                pm.run(cmd, mapped_bam)
+                pm.run([cmd1, cmd2, cmd3, cmd4], mapped_bam)
             else:
-                pm.run(cmd, out_fastq_tmp_gz)
+                pm.run([cmd1, cmd2, cmd3, cmd4], out_fastq_tmp_gz)
 
         cmd = tools.samtools + " view -c " + mapped_bam
         align_exact = pm.checkprint(cmd)       
@@ -981,6 +986,12 @@ def main():
         pm.debug("{} is released! \n".format(os.path.abspath(fq)))
         return True
     
+    handle_fail_msg = (
+        "Fastq filter_paired_fq.pl function did not complete successfully. "
+        "Re-run with `--keep` or `--noFIFO` to bypass the non-blocking "
+        "filter_pair path, which relies on psutil process introspection "
+        "and can fail in environments where it lacks permission to inspect "
+        "other processes' file handles.")
     if args.paired_end and not os.path.exists(mapping_genome_bam):
         if not pypiper.is_gzipped_fastq(unmap_fq1):
             checks = 1
@@ -989,9 +1000,7 @@ def main():
                 checks += 1
                 pm.debug("Check count fq1: {}".format(str(checks)))
             if checks > 100 and not no_handle(unmap_fq1):
-                err_msg = ("Fastq filter_paired_fq.pl function did not "
-                           "complete successfully. Try running the pipeline "
-                           "with `--keep`.")
+                pm.fail_pipeline(IOError(handle_fail_msg))
         if not pypiper.is_gzipped_fastq(unmap_fq2):
             checks = 1
             # Check unmap_fq2
@@ -999,10 +1008,7 @@ def main():
                 checks += 1
                 pm.debug("Check count fq2: {}".format(str(checks)))
             if checks > 100 and not no_handle(unmap_fq2):
-                err_msg = ("Fastq filter_paired_fq.pl function did not "
-                           "complete successfully. Try running the pipeline "
-                           "with `--keep`.")
-                pm.fail_pipeline(IOError(err_msg))
+                pm.fail_pipeline(IOError(handle_fail_msg))
 
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
@@ -1222,6 +1228,17 @@ def main():
         pm.report_result("Picard_est_lib_size", picard_est_lib_size)
 
     def post_dup_aligned_reads(dedup_log):
+        if args.skip_dedup:
+            ar = float(pm.get_stat("Aligned_reads"))
+            tr = float(pm.get_stat("Trimmed_reads"))
+            rr = float(pm.get_stat("Raw_reads"))
+            pm.report_result("Duplicate_reads", 0)
+            pm.report_result("Dedup_aligned_reads", ar)
+            pm.report_result("Dedup_alignment_rate",
+                             round(float(ar) * 100 / float(tr), 2))
+            pm.report_result("Dedup_total_efficiency",
+                             round(float(ar) * 100 / float(rr), 2))
+            return
         if args.deduplicator == "picard":
             cmd = ("grep -A2 'METRICS CLASS' " + dedup_log +
                    " | tail -n 1 | awk '{print $(NF-3)}'")
@@ -1269,8 +1286,14 @@ def main():
         java_settings = '-Xmx{mem}'.format(mem=pm.mem)
     else:
         java_settings = param.java_settings.params
-    if args.deduplicator == "picard":
-        cmd1 = (tools.java + " " + java_settings + " -jar " + 
+    if args.skip_dedup:
+        # User opted out of duplicate removal (e.g. CUT&Tag/CUT&RUN protocols).
+        # Reuse the post-alignment BAM as the "dedup" endpoint so downstream
+        # steps can find _sort_dedup.bam without a code-path fork.
+        cmd1 = "cp {} {}".format(mapping_genome_bam, rmdup_bam)
+        cmd2 = tools.samtools + " index " + rmdup_bam
+    elif args.deduplicator == "picard":
+        cmd1 = (tools.java + " " + java_settings + " -jar " +
                 tools.picard + " MarkDuplicates")
         cmd1 += " INPUT=" + mapping_genome_bam
         cmd1 += " OUTPUT=" + rmdup_bam

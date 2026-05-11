@@ -309,12 +309,6 @@ properties:
           required:
             - path
             - title
-        Time:
-          type: string
-          description: "time"
-        Success:
-          type: string
-          description: "success"
   project:
     type: object
     properties:
@@ -412,9 +406,3 @@ properties:
         required:
           - path
           - title
-      Time:
-        type: string
-        description: "Total elapsed pipeline time"
-      Success:
-        type: string
-        description: "Timestamp when pipeline completed successfully"
