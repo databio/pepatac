@@ -226,6 +226,7 @@ dependencies:
   - pyyaml=6.0.2=py310h5eee18b_0
   - pyzmq=26.2.0=py310h6a678d5_0
   - r-abind=1.4_5=r43h142f84f_0
+  - r-argparser
   - r-askpass=1.2.0=r43h76d94ec_0
   - r-assertthat=0.2.1=r43h6115d3f_0
   - r-backports=1.4.1=r43h76d94ec_0
@@ -372,6 +373,7 @@ dependencies:
   - r-ps=1.7.5=r43h76d94ec_0
   - r-purrr=1.0.2=r43h76d94ec_0
   - r-quantmod=0.4.25=r43h6115d3f_0
+  - r-r.utils
   - r-r6=2.5.1=r43h6115d3f_0
   - r-ragg=1.2.6=r43h884c59f_0
   - r-randomforest=4.7_1.1=r43h640688f_0
@@ -477,10 +479,10 @@ dependencies:
   - typing-extensions=4.12.2=py310h06a4308_0
   - typing_extensions=4.12.2=py310h06a4308_0
   - tzdata=2024b=h04d1e81_0
-  - ucsc-bedgraphtobigwig=377=h0b8a92a_2
-  - ucsc-bedtobigbed=473=he8037a5_0
-  - ucsc-bigwigmerge=377=h0b8a92a_2
-  - ucsc-stringify=472=he8037a5_0
+  - ucsc-bedgraphtobigwig
+  - ucsc-bedtobigbed
+  - ucsc-bigwigmerge
+  - ucsc-stringify
   - urllib3=2.2.3=py310h06a4308_0
   - wcwidth=0.2.5=pyhd3eb1b0_0
   - webencodings=0.5.1=py310h06a4308_1
