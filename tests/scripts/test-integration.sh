@@ -13,7 +13,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-TESTS_DIR="$SCRIPT_DIR/.."
+TESTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SERVICES_SCRIPT="$SCRIPT_DIR/services.sh"
 # Full crate identifier including tag — `bulker exec` is strict about the
@@ -173,8 +173,20 @@ cd "$PROJECT_ROOT"
 # Run pytest inside `bulker exec` so the crate's shim dir is on PATH for
 # tool resolution (bowtie2, samtools, macs3, etc.), while pytest itself
 # runs in the caller's python -- which already has pepatac's requirements.
+#
+# Default test target is the integration/ directory; user-supplied
+# positional args (test file paths, -k filters, etc.) take precedence.
+# Previously the script passed BOTH the default target AND $@, which
+# could feed pytest two overlapping test roots and cause `tests/conftest.py`
+# to be loaded twice (manifesting as duplicate pytest_addoption registration).
+if [ $# -eq 0 ]; then
+    PYTEST_TARGETS=("$TESTS_DIR/integration/")
+else
+    PYTEST_TARGETS=("$@")
+fi
+
 set +e
-bulker exec "${BULKER_CRATE}" -- "${ACTIVE_PYTHON}" -m pytest "$TESTS_DIR/integration/" -v "$@"
+bulker exec "${BULKER_CRATE}" -- "${ACTIVE_PYTHON}" -m pytest -v "${PYTEST_TARGETS[@]}"
 PYTEST_EXIT=$?
 set -e
 

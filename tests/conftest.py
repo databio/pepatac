@@ -11,13 +11,25 @@ import pytest
 
 
 def pytest_addoption(parser):
-    """Add custom pytest command-line options."""
-    parser.addoption(
-        "--keep-test-outputs",
-        action="store_true",
-        default=False,
-        help="Preserve test outputs in tests/test_outputs/ for debugging",
-    )
+    """Add custom pytest command-line options.
+
+    Idempotent: if pytest loads this conftest twice via different paths
+    (e.g. when the repo is symlinked or bind-mounted into a second
+    location and pytest walks both during collection), the second
+    addoption call would otherwise raise ValueError. Swallow that
+    specific case so the test run continues — the option is the same
+    in both invocations.
+    """
+    try:
+        parser.addoption(
+            "--keep-test-outputs",
+            action="store_true",
+            default=False,
+            help="Preserve test outputs in tests/test_outputs/ for debugging",
+        )
+    except ValueError as e:
+        if "already added" not in str(e):
+            raise
 
 
 def pytest_configure(config):
