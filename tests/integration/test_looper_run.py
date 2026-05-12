@@ -212,12 +212,24 @@ class TestLooperDryRun:
 
 @pytest.fixture(scope="module")
 def run_looper_pipeline(looper_test_config):
-    """Run the pipeline via looper and return results."""
+    """Run the pipeline via looper and return results.
+
+    Forces `--compute local` so the test exercises the pipeline output
+    paths regardless of whichever divvy/compute environment the host
+    happens to be configured for. Without this, looper inherits the
+    system's $DIVCFG default -- on HPC clusters that typically means
+    submitting via sbatch to whatever partition+account the system
+    defaults to, which can fail for reasons unrelated to the pipeline
+    (e.g. "Invalid account or account/partition combination" on Rivanna).
+    Tests that want to exercise the actual cluster-submission path
+    should be a separate parameterization.
+    """
     if not LOOPER_AVAILABLE:
         pytest.skip("looper not installed")
 
-    # Run looper (not dry-run)
-    result = looper_main(test_args=["run", "--config", looper_test_config])
+    # Run looper (not dry-run); force local compute to avoid HPC submission
+    result = looper_main(test_args=["run", "--config", looper_test_config,
+                                    "--compute", "local"])
 
     # Parse looper config to find output directory
     with open(looper_test_config) as f:
