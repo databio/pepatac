@@ -38,12 +38,17 @@ check_bulker() {
 }
 
 check_crate_cached() {
-    if ! bulker crate list 2>/dev/null | grep -q "${BULKER_CRATE}"; then
-        echo "ERROR: Bulkers crate ${BULKER_CRATE} is not cached."
-        echo "  Install it with: bulker crate install ${BULKER_CRATE}"
+    # Probe via `bulker exec -- true` rather than `bulker crate list | grep`:
+    # bulker lists crate and tag in separate whitespace columns, so the old
+    # `grep "name:tag"` could never match. Exec is what we actually care
+    # about anyway, so test that directly.
+    if ! bulker exec "${BULKER_CRATE}" -- true >/dev/null 2>&1; then
+        echo "ERROR: Bulker crate ${BULKER_CRATE} is not exec-able."
+        echo "  For the default test crate: bulker crate install tests/bulker_manifest.yaml"
+        echo "  For a hub-hosted crate:     bulker crate install <namespace/crate:tag>"
         return 1
     fi
-    echo "  Crate cached: ${BULKER_CRATE}"
+    echo "  Crate exec-able: ${BULKER_CRATE}"
 }
 
 check_tools() {

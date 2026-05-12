@@ -96,14 +96,18 @@ if [ ! -f "$VENV_DIR/bin/refgenie" ]; then
 fi
 export PEPATAC_TEST_VENV="$VENV_DIR"
 
-# Install crate from local manifest if not already cached
+# Install crate from local manifest if not already exec-able. The earlier
+# `bulker crate list | grep` check was format-sensitive: bulker prints
+# crate and tag in separate whitespace-delimited columns, so a literal
+# 'bulker/pepatac:1.1.1' grep never matches. Use `bulker exec -- true`
+# instead — it directly tests what we care about (can we exec the crate?).
 MANIFEST="$TESTS_DIR/bulker_manifest.yaml"
-if ! bulker crate list 2>/dev/null | grep -q "${BULKER_CRATE}"; then
+if ! bulker exec "${BULKER_CRATE}" -- true >/dev/null 2>&1; then
     if [ -f "$MANIFEST" ]; then
-        echo -e "${YELLOW}Crate ${BULKER_CRATE} not cached. Installing from local manifest...${NC}"
+        echo -e "${YELLOW}Crate ${BULKER_CRATE} not exec-able. Installing from local manifest...${NC}"
         bulker crate install "$MANIFEST"
     else
-        echo -e "${RED}ERROR: Crate ${BULKER_CRATE} not cached and no manifest at ${MANIFEST}${NC}"
+        echo -e "${RED}ERROR: Crate ${BULKER_CRATE} not exec-able and no manifest at ${MANIFEST}${NC}"
         exit 1
     fi
 fi
