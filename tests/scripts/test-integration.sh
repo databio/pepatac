@@ -112,6 +112,19 @@ if ! bulker exec "${BULKER_CRATE}" -- true >/dev/null 2>&1; then
     fi
 fi
 
+# Capture the *currently active* python3 BEFORE entering `bulker exec`.
+# bulker's exec environment forwards `python3` as a host_command (see the
+# manifest), but its PATH ordering tends to resolve to whatever python3
+# the host hits first -- typically miniforge base, NOT the user's active
+# conda env. By passing the absolute path of the python that's active in
+# the caller's shell (e.g. pepatac-env's python), we get pytest, pypiper,
+# and the rest of the pepatac requirements without re-bootstrapping.
+ACTIVE_PYTHON="$(command -v python3)"
+if [ -z "$ACTIVE_PYTHON" ]; then
+    echo -e "${RED}ERROR: No python3 on PATH. Activate the pepatac conda env (or another env with pytest + pepatac requirements) first.${NC}"
+    exit 1
+fi
+
 # Verify environment
 echo -e "${GREEN}Verifying test environment...${NC}"
 "$SERVICES_SCRIPT" start
@@ -127,6 +140,7 @@ if [ "$USE_LOCAL_SERVER" = true ]; then
 fi
 
 echo -e "\n${GREEN}Running integration tests via bulker exec ${BULKER_CRATE}...${NC}"
+echo "  Using python: ${ACTIVE_PYTHON}"
 if [ "$USE_LOCAL_SERVER" = true ]; then
     echo "  Local refgenieserver: http://localhost:${PEPATAC_TEST_REFGENIESERVER_PORT}"
 fi
@@ -134,12 +148,11 @@ echo ""
 
 cd "$PROJECT_ROOT"
 
-# Run pytest inside `bulker exec` so the crate's shim dir is on PATH for the
-# duration of the test process (and any subprocess pepatac.py spawns).
-# Avoids scraping `bulker activate --echo` output, which was format-fragile
-# across bulker versions.
+# Run pytest inside `bulker exec` so the crate's shim dir is on PATH for
+# tool resolution (bowtie2, samtools, macs3, etc.), while pytest itself
+# runs in the caller's python -- which already has pepatac's requirements.
 set +e
-bulker exec "${BULKER_CRATE}" -- python3 -m pytest "$TESTS_DIR/integration/" -v "$@"
+bulker exec "${BULKER_CRATE}" -- "${ACTIVE_PYTHON}" -m pytest "$TESTS_DIR/integration/" -v "$@"
 PYTEST_EXIT=$?
 set -e
 
