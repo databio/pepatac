@@ -1,7 +1,7 @@
 """Integration test fixtures for PEPATAC pipeline.
 
 These tests require:
-- bulker crate bulker/pepatac cached
+- bulker crate bulker/pepatac:1.1.1 cached
 - RUN_INTEGRATION_TESTS=true environment variable
 
 Run via: tests/scripts/test-integration.sh

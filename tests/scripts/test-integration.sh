@@ -16,7 +16,10 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TESTS_DIR="$SCRIPT_DIR/.."
 
 SERVICES_SCRIPT="$SCRIPT_DIR/services.sh"
-BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-bulker/pepatac}"
+# Full crate identifier including tag — `bulker exec` is strict about the
+# tag (bare 'bulker/pepatac' resolves to 'bulker/pepatac:default' and goes
+# hub-shopping). Must track the `version:` field in tests/bulker_manifest.yaml.
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-bulker/pepatac:1.1.1}"
 
 # Colors for output
 GREEN='\033[0;32m'

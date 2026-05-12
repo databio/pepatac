@@ -15,7 +15,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Bulkers crate configuration
-BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-bulker/pepatac}"
+# Full crate identifier including tag — `bulker exec` is strict about the
+# tag. Must track the `version:` field in tests/bulker_manifest.yaml.
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-bulker/pepatac:1.1.1}"
 
 # Required tools for basic pipeline execution
 REQUIRED_TOOLS=(bowtie2 samtools macs3 skewer samblaster bedtools)
@@ -153,7 +155,7 @@ case "$1" in
         echo "Usage: $0 {start|stop|status}"
         echo ""
         echo "Environment variables:"
-        echo "  PEPATAC_TEST_BULKER_CRATE            - Bulkers crate (default: bulker/pepatac)"
+        echo "  PEPATAC_TEST_BULKER_CRATE            - Bulkers crate (default: bulker/pepatac:1.1.1)"
         echo "  PEPATAC_TEST_REFGENIESERVER_PORT     - Local server port (default: 8765)"
         echo "  PEPATAC_TEST_REFGENIE_DATA           - Local refgenie data dir (default: tests/data/refgenie)"
         exit 1
