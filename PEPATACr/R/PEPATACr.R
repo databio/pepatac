@@ -2784,6 +2784,35 @@ readPepatacPeakCounts = function(prj, results_subdir) {
 #'                  per-sample peaks.
 #' @keywords project peak counts
 #' @export
+
+#' Detect the on-disk extension of peak coverage files for a given suffix.
+#'
+#' Internal helper used by \code{peakCounts}. Scans the expected
+#' \code{<results_subdir>/<sample>/peak_calling_<genome>/<sample><suffix><ext>}
+#' paths, preferring \code{.bed.gz} over \code{.bed}, and returns the first
+#' extension found. Returns \code{NA_character_} if no file matches. Kept
+#' separate (rather than a closure inside \code{peakCounts}) so the
+#' mixed-state detection from #218/#219 is unit-testable.
+#'
+#' @param suffix Character; the part of the filename between sample_name and
+#'   the extension, e.g. \code{"_peaks_coverage"} or \code{"_ref_peaks_coverage"}.
+#' @param results_subdir Character; project results directory.
+#' @param sample_names Character vector of sample names.
+#' @param genomes Character vector of genome assemblies, one per sample.
+#' @return One of \code{".bed.gz"}, \code{".bed"}, or \code{NA_character_}.
+.detectPeakCoverageExt <- function(suffix, results_subdir,
+                                   sample_names, genomes) {
+    for (e in c(".bed.gz", ".bed")) {
+        if (any(file.exists(file.path(
+            results_subdir,
+            sample_names, paste0("peak_calling_", genomes),
+            paste0(sample_names, suffix, e))))) {
+            return(e)
+        }
+    }
+    return(NA_character_)
+}
+
 peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                        poverlap=FALSE, norm=FALSE, cutoff=2, min_olap=1,
                        ref_peaks=NA) {
@@ -2860,19 +2889,11 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
     # since users commonly have *_peaks_coverage.bed.gz from the first sample
     # run plus *_ref_peaks_coverage.bed from the re-run (or vice versa). A
     # single shared `ext` defeats the ref-peaks lookup in that mixed state.
-    detect_ext <- function(suffix) {
-        for (e in c(".bed.gz", ".bed")) {
-            if (any(file.exists(file.path(
-                results_subdir,
-                sample_names, paste0("peak_calling_", genomes),
-                paste0(sample_names, suffix, e))))) {
-                return(e)
-            }
-        }
-        return(NA_character_)
-    }
-    ref_ext      <- detect_ext("_ref_peaks_coverage")
-    fallback_ext <- detect_ext("_peaks_coverage")
+    # (Helper is hoisted to .detectPeakCoverageExt() so it can be unit-tested.)
+    ref_ext      <- .detectPeakCoverageExt("_ref_peaks_coverage",
+                                           results_subdir, sample_names, genomes)
+    fallback_ext <- .detectPeakCoverageExt("_peaks_coverage",
+                                           results_subdir, sample_names, genomes)
     if (is.na(fallback_ext)) fallback_ext <- ".bed"
 
     # Use reference peak coverage file if available
