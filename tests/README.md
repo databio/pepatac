@@ -75,7 +75,7 @@ INSTALL_DEV_LOOPER=true ./tests/scripts/test-integration.sh
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PEPATAC_TEST_BULKER_CRATE` | `databio/pepatac` | Bulkers crate name |
+| `PEPATAC_TEST_BULKER_CRATE` | `bulker/pepatac` | Bulkers crate name (matches what `bulker` caches `tests/bulker_manifest.yaml` under) |
 | `PEPATAC_TEST_REFGENIESERVER_PORT` | `8765` | Local refgenieserver port |
 | `PEPATAC_TEST_REFGENIE_DATA` | `tests/data/refgenie` | Local refgenie test data directory |
 | `REFGENIE_DEV_WORKSPACE` | `/home/nsheff/Dropbox/workspaces/refgenie/repos` | Path to refgenie dev repos |

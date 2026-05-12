@@ -16,7 +16,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TESTS_DIR="$SCRIPT_DIR/.."
 
 SERVICES_SCRIPT="$SCRIPT_DIR/services.sh"
-BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-local/bulker_manifest}"
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-bulker/pepatac}"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -109,14 +109,6 @@ fi
 echo -e "${GREEN}Verifying test environment...${NC}"
 "$SERVICES_SCRIPT" start
 
-# Activate bulker crate by extracting its PATH
-BULKER_PATH=$(bulker activate --echo "${BULKER_CRATE}" 2>/dev/null | grep "^export PATH=" | sed 's/^export PATH="//' | sed 's/"$//' | cut -d: -f1)
-if [ -z "$BULKER_PATH" ]; then
-    echo -e "${RED}ERROR: Could not get crate path for ${BULKER_CRATE}${NC}"
-    exit 1
-fi
-
-export PATH="${BULKER_PATH}:${PATH}"
 export BULKERCRATE="$BULKER_CRATE"
 export RUN_INTEGRATION_TESTS=true
 
@@ -127,8 +119,7 @@ if [ "$USE_LOCAL_SERVER" = true ]; then
     echo -e "${GREEN}Using local refgenieserver on port ${PEPATAC_TEST_REFGENIESERVER_PORT}${NC}"
 fi
 
-echo -e "\n${GREEN}Running integration tests...${NC}"
-echo "  Crate PATH: ${BULKER_PATH}"
+echo -e "\n${GREEN}Running integration tests via bulker exec ${BULKER_CRATE}...${NC}"
 if [ "$USE_LOCAL_SERVER" = true ]; then
     echo "  Local refgenieserver: http://localhost:${PEPATAC_TEST_REFGENIESERVER_PORT}"
 fi
@@ -136,8 +127,12 @@ echo ""
 
 cd "$PROJECT_ROOT"
 
+# Run pytest inside `bulker exec` so the crate's shim dir is on PATH for the
+# duration of the test process (and any subprocess pepatac.py spawns).
+# Avoids scraping `bulker activate --echo` output, which was format-fragile
+# across bulker versions.
 set +e
-python3 -m pytest "$TESTS_DIR/integration/" -v "$@"
+bulker exec "${BULKER_CRATE}" -- python3 -m pytest "$TESTS_DIR/integration/" -v "$@"
 PYTEST_EXIT=$?
 set -e
 
