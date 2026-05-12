@@ -112,16 +112,38 @@ if ! bulker exec "${BULKER_CRATE}" -- true >/dev/null 2>&1; then
     fi
 fi
 
-# Capture the *currently active* python3 BEFORE entering `bulker exec`.
-# bulker's exec environment forwards `python3` as a host_command (see the
-# manifest), but its PATH ordering tends to resolve to whatever python3
-# the host hits first -- typically miniforge base, NOT the user's active
-# conda env. By passing the absolute path of the python that's active in
-# the caller's shell (e.g. pepatac-env's python), we get pytest, pypiper,
-# and the rest of the pepatac requirements without re-bootstrapping.
-ACTIVE_PYTHON="$(command -v python3)"
+# Identify the python that has pepatac's runtime deps (pytest, pypiper,
+# refgenconf, etc.) installed. We can't trust `command -v python3` alone
+# -- on HPC where a `module load` fires AFTER `conda activate`, the
+# module's PATH prepend buries the conda env's bin/ behind miniforge
+# base, so `python3` resolves to miniforge (no pytest) even when the
+# user's "(pepatac-env)" prompt suggests otherwise.
+#
+# Strategy: walk a candidate list and pick the FIRST python that actually
+# imports pytest. CONDA_PREFIX-based path is preferred, then PATH-based,
+# then a few common conda layouts.
+PYTHON_CANDIDATES=()
+[ -n "$CONDA_PREFIX" ] && PYTHON_CANDIDATES+=("$CONDA_PREFIX/bin/python3")
+[ -n "$VIRTUAL_ENV" ]  && PYTHON_CANDIDATES+=("$VIRTUAL_ENV/bin/python3")
+PYTHON_CANDIDATES+=("$(command -v python3 2>/dev/null)")
+PYTHON_CANDIDATES+=("$(command -v python 2>/dev/null)")
+
+ACTIVE_PYTHON=""
+for candidate in "${PYTHON_CANDIDATES[@]}"; do
+    [ -z "$candidate" ] && continue
+    [ -x "$candidate" ] || continue
+    if "$candidate" -c "import pytest" >/dev/null 2>&1; then
+        ACTIVE_PYTHON="$candidate"
+        break
+    fi
+done
+
 if [ -z "$ACTIVE_PYTHON" ]; then
-    echo -e "${RED}ERROR: No python3 on PATH. Activate the pepatac conda env (or another env with pytest + pepatac requirements) first.${NC}"
+    echo -e "${RED}ERROR: No python3 found with pytest installed. Tried:${NC}"
+    for candidate in "${PYTHON_CANDIDATES[@]}"; do
+        [ -n "$candidate" ] && echo "  - ${candidate}"
+    done
+    echo "Install pytest into your active env (e.g. pepatac-env): pip install pytest"
     exit 1
 fi
 
