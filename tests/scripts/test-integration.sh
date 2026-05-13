@@ -154,6 +154,16 @@ echo -e "${GREEN}Verifying test environment...${NC}"
 export BULKERCRATE="$BULKER_CRATE"
 export RUN_INTEGRATION_TESTS=true
 
+# Stop Python inside `bulker exec` (which is apptainer/singularity on HPC)
+# from loading the host's user-site packages. By default apptainer mounts
+# $HOME and Python auto-prepends ~/.local/lib/pythonX.Y/site-packages to
+# sys.path, so a stale `pip install --user`-style package on the host can
+# shadow the container's clean install (we hit this with an old MACS3
+# 3.0.0b1 in ~/.local/ silently overriding the container's MACS3 3.0.3
+# and crashing peak calling). Setting PYTHONNOUSERSITE=1 makes Python
+# ignore user-site no matter what's in ~/.local/.
+export PYTHONNOUSERSITE=1
+
 # Enable local refgenieserver tests if --local was passed
 if [ "$USE_LOCAL_SERVER" = true ]; then
     export RUN_LOCAL_REFGENIE_TESTS=true
