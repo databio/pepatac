@@ -214,22 +214,28 @@ class TestLooperDryRun:
 def run_looper_pipeline(looper_test_config):
     """Run the pipeline via looper and return results.
 
-    Forces `--compute local` so the test exercises the pipeline output
-    paths regardless of whichever divvy/compute environment the host
-    happens to be configured for. Without this, looper inherits the
-    system's $DIVCFG default -- on HPC clusters that typically means
-    submitting via sbatch to whatever partition+account the system
-    defaults to, which can fail for reasons unrelated to the pipeline
-    (e.g. "Invalid account or account/partition combination" on Rivanna).
-    Tests that want to exercise the actual cluster-submission path
-    should be a separate parameterization.
+    Forces `-p local` (i.e. `--package local`) so the test exercises the
+    pipeline output paths regardless of whichever divvy/compute environment
+    the host happens to be configured for. Without this, looper inherits
+    the system's $DIVCFG default -- on HPC clusters that typically means
+    submitting via sbatch to whatever partition+account the system defaults
+    to, which can fail for reasons unrelated to the pipeline (e.g.
+    "Invalid account or account/partition combination" on Rivanna).
+
+    NOTE on flag naming: looper 2.x's `--compute` is for k=v overrides of
+    the currently-selected package (`--compute cores=4 mem=8000`), NOT for
+    selecting a package. Package selection is `-p` / `--package`. Same
+    pattern peppro uses in tests/test_integration.py.
+
+    Tests that want to exercise the actual cluster-submission path should
+    be a separate parameterization.
     """
     if not LOOPER_AVAILABLE:
         pytest.skip("looper not installed")
 
     # Run looper (not dry-run); force local compute to avoid HPC submission
     result = looper_main(test_args=["run", "--config", looper_test_config,
-                                    "--compute", "local"])
+                                    "-p", "local"])
 
     # Parse looper config to find output directory
     with open(looper_test_config) as f:
