@@ -2569,7 +2569,7 @@ def main():
                     for pos, anno in enumerate(ft_list):
                         # working files
                         anno_file = os.path.join(QC_folder, str(anno))
-                        valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
+                        valid_name = str(re.sub(r'[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
                         file_name = os.path.join(QC_folder, valid_name)
                         anno_sort = os.path.join(QC_folder,
                                                  valid_name + "_sort.bed")
@@ -2656,7 +2656,7 @@ def main():
                     for pos, anno in enumerate(ft_list):
                         # working files
                         anno_file = os.path.join(QC_folder, str(anno))
-                        valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
+                        valid_name = str(re.sub(r'[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
                         file_name = os.path.join(QC_folder, valid_name)
                         anno_sort = os.path.join(QC_folder,
                                                  valid_name + "_sort.bed")
