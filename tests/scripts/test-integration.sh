@@ -162,7 +162,16 @@ export RUN_INTEGRATION_TESTS=true
 # 3.0.0b1 in ~/.local/ silently overriding the container's MACS3 3.0.3
 # and crashing peak calling). Setting PYTHONNOUSERSITE=1 makes Python
 # ignore user-site no matter what's in ~/.local/.
+#
+# IMPORTANT: apptainer/singularity does NOT pass host env vars through to
+# the container by default -- it filters them at the container boundary.
+# To force a var across, use the SINGULARITYENV_X / APPTAINERENV_X prefix
+# convention (the var inside the container ends up as just X). Setting
+# all three forms covers: parent process, singularity (older apptainer),
+# and apptainer (current name).
 export PYTHONNOUSERSITE=1
+export SINGULARITYENV_PYTHONNOUSERSITE=1
+export APPTAINERENV_PYTHONNOUSERSITE=1
 
 # Enable local refgenieserver tests if --local was passed
 if [ "$USE_LOCAL_SERVER" = true ]; then
