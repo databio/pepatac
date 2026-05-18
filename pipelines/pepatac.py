@@ -2772,23 +2772,24 @@ def main():
     #            Remove all but final output files to save space               #
     ############################################################################
     if args.lite:
-        # Remove everything but ultimate outputs
-        pm.clean_add(frag_len)
-        pm.clean_add(fragL_dis2)
-        pm.clean_add(fragL_count)
-        pm.clean_add(peak_coverage_gz)
-        pm.clean_add(shift_bed_gz)
-        pm.clean_add(Tss_enrich)
-        pm.clean_add(mapping_genome_bam)
-        pm.clean_add(mapping_genome_index)
-        pm.clean_add(failQC_genome_bam)
-        pm.clean_add(unmap_genome_bam)
-        pm.clean_add(NFR_bam)
-        pm.clean_add(mono_bam)
-        pm.clean_add(di_bam)
-        pm.clean_add(tri_bam)
+        # Remove everything but ultimate outputs. Several of these variables
+        # (frag_len, fragL_dis2, fragL_count, Tss_enrich, peak_coverage_gz)
+        # are initialized to None and only get a real path inside conditional
+        # code paths that may be skipped (e.g. --skipqc bypasses the QC step
+        # that populates frag_len/Tss_enrich). Skip falsy entries so we don't
+        # add None into pypiper's cleanup_list, which would crash _cleanup()
+        # later when it tries to debug-log a non-string entry.
+        for path in (frag_len, fragL_dis2, fragL_count, peak_coverage_gz,
+                     shift_bed_gz, Tss_enrich, mapping_genome_bam,
+                     mapping_genome_index, failQC_genome_bam,
+                     unmap_genome_bam, NFR_bam, mono_bam, di_bam, tri_bam):
+            if path:
+                pm.clean_add(path)
         for unmapped_fq in to_compress:
-            if not unmapped_fq:
+            # Previously `if not unmapped_fq` -- inverted check meant the body
+            # only ran for falsy entries, which would have crashed on
+            # `None + ".gz"` or registered the literal ".gz" as a cleanup glob.
+            if unmapped_fq:
                 pm.clean_add(unmapped_fq + ".gz")
 
 
