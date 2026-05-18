@@ -14,8 +14,14 @@ for (i in required_libraries) {
                 suppressWarnings(library(i, character.only=TRUE)))
         },
         error=function(e) {
-            message("Error: Install the \"", i,
-                    "\" R package before proceeding.")
+            # Surface the actual load error so callers can distinguish a
+            # genuinely-missing package from a load failure (ABI mismatch,
+            # missing system lib, etc.); previously the handler showed only
+            # an "install the package" hint regardless of cause.
+            message("Error loading required R package \"", i, "\": ",
+                    conditionMessage(e))
+            message("If \"", i,
+                    "\" is not installed, install it before proceeding.")
             return(NULL)
         },
         warning=function(e) {
@@ -26,7 +32,13 @@ for (i in required_libraries) {
     if (length(loadLibrary)!=0) {
         suppressWarnings(library(i, character.only=TRUE))
     } else {
-        quit()
+        # Non-zero status so pypiper (or any caller checking returncode) sees
+        # the missing dependency as a real failure rather than silently
+        # marking the step complete. Previously `quit()` defaulted to status 0
+        # and downstream steps (e.g. samtools view -L on the un-produced
+        # _peaks_normalized.narrowPeak) crashed several stages later with
+        # confusing "file not found" errors.
+        quit(status=1)
     }
 }
 

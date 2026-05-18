@@ -115,9 +115,9 @@ fi
 # Identify the python that has pepatac's runtime deps (pytest, pypiper,
 # refgenconf, etc.) installed. We can't trust `command -v python3` alone
 # -- on HPC where a `module load` fires AFTER `conda activate`, the
-# module's PATH prepend buries the conda env's bin/ behind miniforge
-# base, so `python3` resolves to miniforge (no pytest) even when the
-# user's "(pepatac-env)" prompt suggests otherwise.
+# module's PATH prepend can bury the conda env's bin/ behind a base
+# install, so `python3` resolves to the base interpreter (no pytest)
+# even when the user's conda-env prompt suggests otherwise.
 #
 # Strategy: walk a candidate list and pick the FIRST python that actually
 # imports pytest. CONDA_PREFIX-based path is preferred, then PATH-based,
@@ -143,7 +143,7 @@ if [ -z "$ACTIVE_PYTHON" ]; then
     for candidate in "${PYTHON_CANDIDATES[@]}"; do
         [ -n "$candidate" ] && echo "  - ${candidate}"
     done
-    echo "Install pytest into your active env (e.g. pepatac-env): pip install pytest"
+    echo "Install pytest into your active conda/venv env: pip install pytest"
     exit 1
 fi
 
@@ -172,6 +172,17 @@ export RUN_INTEGRATION_TESTS=true
 export PYTHONNOUSERSITE=1
 export SINGULARITYENV_PYTHONNOUSERSITE=1
 export APPTAINERENV_PYTHONNOUSERSITE=1
+
+# Same problem on the R side: apptainer's $HOME mount plus host
+# R_LIBS_USER / R_LIBS / R_LIBS_SITE makes the container's R prefer
+# host-built R packages over its own bundled ones. When the host packages
+# were built against a different R version than the container's, package
+# loading fails on ABI mismatches even though the container has the
+# packages installed correctly. Override R_LIBS_USER so the container's R
+# falls back to its bundled site-library.
+export R_LIBS_USER=/dev/null
+export SINGULARITYENV_R_LIBS_USER=/dev/null
+export APPTAINERENV_R_LIBS_USER=/dev/null
 
 # Enable local refgenieserver tests if --local was passed
 if [ "$USE_LOCAL_SERVER" = true ]; then
