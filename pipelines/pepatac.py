@@ -2505,15 +2505,16 @@ def main():
         if os.path.isfile(anno_local):
             if args.qc_backend == "gtars":
                 from tools.pepatac_qc_gtars import (plot_chrom_distribution,
-                                                    plot_partition_distribution)
+                                                    plot_partition_distribution,
+                                                    plot_tss_distance)
                 if not os.path.exists(chr_PDF) or args.new_start:
                     plot_chrom_distribution(peak_output_file, res.chrom_sizes,
                                             chr_PDF, chr_PNG)
                     pm.report_object("Peak chromosome distribution", chr_PDF,
                                      anchor_image=chr_PNG)
                 if not os.path.exists(TSSdist_PDF) or args.new_start:
-                    # TSS distance uses TssIndex - placeholder for now
-                    pm.run(cmd2, TSSdist_PDF)
+                    plot_tss_distance(peak_output_file, res.refgene_tss,
+                                      TSSdist_PDF, TSSdist_PNG)
                     pm.report_object("TSS distance distribution", TSSdist_PDF,
                                      anchor_image=TSSdist_PNG)
                 if not os.path.exists(gd_PDF) or args.new_start:
@@ -2808,15 +2809,22 @@ def main():
 
             if args.qc_backend == "gtars":
                 from tools.pepatac_qc_gtars import plot_frif
+                try:
+                    total_reads = int(read_count)
+                except (TypeError, ValueError):
+                    total_reads = None
+                denom = total_reads if not args.prioritize else genome_size
                 # cFRiF plot
                 plot_frif(cov_files, None, cFRiF_PDF, cFRiF_PNG,
                           cumulative=True, priority=args.prioritize,
-                          reads=not args.prioritize)
+                          reads=not args.prioritize,
+                          genome_size=denom)
                 pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
                 # FRiF plot
                 plot_frif(cov_files, None, FRiF_PDF, FRiF_PNG,
                           cumulative=False, priority=args.prioritize,
-                          reads=not args.prioritize)
+                          reads=not args.prioritize,
+                          genome_size=denom)
                 pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
             else:
                 for cov in cov_files:
