@@ -18,7 +18,9 @@ Integration tests verify pipeline execution with real bioinformatics tools via b
 ### Prerequisites
 
 - **bulker** installed: `cargo install bulker`
-- **Docker** running (bulker uses it for containerized tools)
+- A container runtime that bulker can dispatch to:
+  - **Docker** (typical on developer machines), or
+  - **Singularity** / **Apptainer** (typical on HPC). Bulker auto-detects.
 
 Everything else (venv, refgenie, crate) is bootstrapped automatically by the script.
 
@@ -75,7 +77,7 @@ INSTALL_DEV_LOOPER=true ./tests/scripts/test-integration.sh
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PEPATAC_TEST_BULKER_CRATE` | `bulker/pepatac:1.1.1` | Full crate identifier (must track the `version:` field in `tests/bulker_manifest.yaml` — `bulker exec` requires an exact tag match) |
+| `PEPATAC_TEST_BULKER_CRATE` | `databio/pepatac:1.1.3` | Full crate identifier (most recent published tag on hub.bulker.io — `bulker exec` requires an exact tag match) |
 | `PEPATAC_TEST_REFGENIESERVER_PORT` | `8765` | Local refgenieserver port |
 | `PEPATAC_TEST_REFGENIE_DATA` | `tests/data/refgenie` | Local refgenie test data directory |
 | `REFGENIE_DEV_WORKSPACE` | `/home/nsheff/Dropbox/workspaces/refgenie/repos` | Path to refgenie dev repos |

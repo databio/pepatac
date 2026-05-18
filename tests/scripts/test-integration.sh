@@ -17,9 +17,10 @@ TESTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SERVICES_SCRIPT="$SCRIPT_DIR/services.sh"
 # Full crate identifier including tag — `bulker exec` is strict about the
-# tag (bare 'bulker/pepatac' resolves to 'bulker/pepatac:default' and goes
-# hub-shopping). Must track the `version:` field in tests/bulker_manifest.yaml.
-BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-bulker/pepatac:1.1.1}"
+# tag (bare `databio/pepatac` resolves to `databio/pepatac:default` and goes
+# hub-shopping). Default to the most recent published tag of the production
+# crate so tests run against what end users get.
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-databio/pepatac:1.1.3}"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -96,18 +97,20 @@ if [ ! -f "$VENV_DIR/bin/refgenie" ]; then
 fi
 export PEPATAC_TEST_VENV="$VENV_DIR"
 
-# Install crate from local manifest if not already exec-able. The earlier
-# `bulker crate list | grep` check was format-sensitive: bulker prints
+# Install crate if not already exec-able. Default is the production
+# `databio/pepatac:<tag>` crate from hub.bulker.io, so the install fetches
+# from the hub. If the user overrides PEPATAC_TEST_BULKER_CRATE to a local
+# file path or a different registry crate, `bulker crate install` handles
+# all three forms. Use `bulker exec -- true` to probe -- a previous
+# attempt to grep `bulker crate list` was format-sensitive (bulker prints
 # crate and tag in separate whitespace-delimited columns, so a literal
-# 'bulker/pepatac:1.1.1' grep never matches. Use `bulker exec -- true`
-# instead — it directly tests what we care about (can we exec the crate?).
-MANIFEST="$TESTS_DIR/bulker_manifest.yaml"
+# 'name:tag' grep never matches).
 if ! bulker exec "${BULKER_CRATE}" -- true >/dev/null 2>&1; then
-    if [ -f "$MANIFEST" ]; then
-        echo -e "${YELLOW}Crate ${BULKER_CRATE} not exec-able. Installing from local manifest...${NC}"
-        bulker crate install "$MANIFEST"
-    else
-        echo -e "${RED}ERROR: Crate ${BULKER_CRATE} not exec-able and no manifest at ${MANIFEST}${NC}"
+    echo -e "${YELLOW}Crate ${BULKER_CRATE} not exec-able. Installing...${NC}"
+    if ! bulker crate install "${BULKER_CRATE}"; then
+        echo -e "${RED}ERROR: Failed to install crate ${BULKER_CRATE}${NC}"
+        echo -e "${RED}  If using the default hub crate, check network access to hub.bulker.io.${NC}"
+        echo -e "${RED}  If using a local manifest, pass its path via PEPATAC_TEST_BULKER_CRATE.${NC}"
         exit 1
     fi
 fi

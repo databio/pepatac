@@ -5,7 +5,7 @@ configuration handoff by running PEPATAC via looper instead of direct execution.
 
 Prerequisites:
 - looper and pipestat installed (pip install looper pipestat)
-- bulker crate bulker/pepatac:1.1.1 cached and active
+- bulker crate databio/pepatac:1.1.3 cached and active
 - .venv with refgenie installed (pip install refgenie)
 - Network access to refgenie server
 - RUN_INTEGRATION_TESTS=true
