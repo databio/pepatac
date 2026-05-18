@@ -58,6 +58,16 @@ def parse_arguments():
                         default="macs3", choices=PEAK_CALLERS,
                         help="Name of peak caller.")
 
+    parser.add_argument("--qc-backend", dest="qc_backend", type=str.lower,
+                        default="r", choices=["r", "gtars"],
+                        help="Backend for QC calculations: r (default, uses "
+                             "PEPATACr/GenomicDistributions) or gtars (fast Rust).")
+
+    parser.add_argument("--gtf", dest="gtf", type=str, default=None,
+                        help="Path to GTF gene annotation file. Required for "
+                             "partition plots when using --qc-backend gtars. "
+                             "Download from GENCODE: gencode.v44.basic.annotation.gtf.gz")
+
     parser.add_argument("-gs", "--genome-size", default="2.7e9", type=str.lower,
                         help="Effective genome size. It can be 1.0e+9 "
                         "or 1000000000: e.g. human (2.7e9), mouse (1.87e9), "
@@ -1825,14 +1835,18 @@ def main():
                 pm.report_result("TSS_score", 0)
                 pass
         
-        # Call Rscript to plot TSS Enrichment
+        # Plot TSS Enrichment
         Tss_pdf = os.path.join(QC_folder,  args.sample_name +
                                "_TSS_enrichment.pdf")
         Tss_png = os.path.join(QC_folder,  args.sample_name +
                                "_TSS_enrichment.png")
-        cmd = (tools.Rscript + " " + tool_path("PEPATAC.R") + 
-               " tss -i " + Tss_enrich)
-        pm.run(cmd, Tss_pdf, nofail=True)
+        if args.qc_backend == "gtars":
+            from tools.pepatac_qc_gtars import plot_tss_enrichment
+            plot_tss_enrichment(Tss_enrich, Tss_pdf, Tss_png)
+        else:
+            cmd = (tools.Rscript + " " + tool_path("PEPATAC.R") +
+                   " tss -i " + Tss_enrich)
+            pm.run(cmd, Tss_pdf, nofail=True)
 
         pm.report_object("TSS enrichment", Tss_pdf, anchor_image=Tss_png)
 
@@ -1863,11 +1877,20 @@ def main():
         fragL_dis2 = os.path.join(QC_folder, args.sample_name +
                                   "_fragLenDistribution.txt")
 
-        cmd3 = (tools.Rscript + " " + tool_path("PEPATAC.R") +
-                " frag -l " + frag_len + " -c " + fragL_count +
-                " -p " + fragL_dis1 + " -t " + fragL_dis2)
+        # Run data generation commands first
+        pm.run([cmd1, cmd2], fragL_count, nofail=True)
 
-        pm.run([cmd1, cmd2, cmd3], fragL_dis1, nofail=True)
+        # Plot with selected backend
+        if args.qc_backend == "gtars":
+            from tools.pepatac_qc_gtars import plot_fragment_distribution
+            plot_fragment_distribution(frag_len, fragL_count, fragL_dis1,
+                                       fragL_dis2, fragL_png)
+        else:
+            cmd3 = (tools.Rscript + " " + tool_path("PEPATAC.R") +
+                    " frag -l " + frag_len + " -c " + fragL_count +
+                    " -p " + fragL_dis1 + " -t " + fragL_dis2)
+            pm.run(cmd3, fragL_dis1, nofail=True)
+
         pm.report_object("Fragment distribution", fragL_dis1,
                          anchor_image=fragL_png)
     else: 
@@ -2456,18 +2479,43 @@ def main():
                 ])
 
         if os.path.isfile(anno_local):
-            if not os.path.exists(chr_PDF) or args.new_start:
-                pm.run(cmd1, chr_PDF)
-                pm.report_object("Peak chromosome distribution", chr_PDF,
-                                 anchor_image=chr_PNG)
-            if not os.path.exists(TSSdist_PDF) or args.new_start:
-                pm.run(cmd2, TSSdist_PDF)
-                pm.report_object("TSS distance distribution", TSSdist_PDF,
-                                 anchor_image=TSSdist_PNG)
-            if not os.path.exists(gd_PDF) or args.new_start:
-                pm.run(cmd3, gd_PDF)
-                pm.report_object("Peak partition distribution", gd_PDF,
-                                 anchor_image=gd_PNG)
+            if args.qc_backend == "gtars":
+                from tools.pepatac_qc_gtars import (plot_chrom_distribution,
+                                                    plot_partition_distribution)
+                if not os.path.exists(chr_PDF) or args.new_start:
+                    plot_chrom_distribution(peak_output_file, res.chrom_sizes,
+                                            chr_PDF, chr_PNG)
+                    pm.report_object("Peak chromosome distribution", chr_PDF,
+                                     anchor_image=chr_PNG)
+                if not os.path.exists(TSSdist_PDF) or args.new_start:
+                    # TSS distance uses TssIndex - placeholder for now
+                    pm.run(cmd2, TSSdist_PDF)
+                    pm.report_object("TSS distance distribution", TSSdist_PDF,
+                                     anchor_image=TSSdist_PNG)
+                if not os.path.exists(gd_PDF) or args.new_start:
+                    if args.gtf and os.path.exists(args.gtf):
+                        plot_partition_distribution(peak_output_file, args.gtf,
+                                                    args.genome_assembly, gd_PDF, gd_PNG)
+                        pm.report_object("Peak partition distribution", gd_PDF,
+                                         anchor_image=gd_PNG)
+                    else:
+                        # Fall back to R if no GTF provided
+                        pm.run(cmd3, gd_PDF)
+                        pm.report_object("Peak partition distribution", gd_PDF,
+                                         anchor_image=gd_PNG)
+            else:
+                if not os.path.exists(chr_PDF) or args.new_start:
+                    pm.run(cmd1, chr_PDF)
+                    pm.report_object("Peak chromosome distribution", chr_PDF,
+                                     anchor_image=chr_PNG)
+                if not os.path.exists(TSSdist_PDF) or args.new_start:
+                    pm.run(cmd2, TSSdist_PDF)
+                    pm.report_object("TSS distance distribution", TSSdist_PDF,
+                                     anchor_image=TSSdist_PNG)
+                if not os.path.exists(gd_PDF) or args.new_start:
+                    pm.run(cmd3, gd_PDF)
+                    pm.report_object("Peak partition distribution", gd_PDF,
+                                     anchor_image=gd_PNG)
 
 
         ########################################################################
@@ -2731,17 +2779,32 @@ def main():
         FRiF_cmd.append("--bed")
 
         if anno_list:
-            for cov in anno_list:
-                if os.path.isfile(cov) and os.stat(cov).st_size > 0:
+            cov_files = [cov for cov in anno_list
+                         if os.path.isfile(cov) and os.stat(cov).st_size > 0]
+
+            if args.qc_backend == "gtars":
+                from tools.pepatac_qc_gtars import plot_frif
+                # cFRiF plot
+                plot_frif(cov_files, None, cFRiF_PDF, cFRiF_PNG,
+                          cumulative=True, priority=args.prioritize,
+                          reads=not args.prioritize)
+                pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
+                # FRiF plot
+                plot_frif(cov_files, None, FRiF_PDF, FRiF_PNG,
+                          cumulative=False, priority=args.prioritize,
+                          reads=not args.prioritize)
+                pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+            else:
+                for cov in cov_files:
                     cFRiF_cmd.append(cov)
                     FRiF_cmd.append(cov)
-            cmd = build_command(cFRiF_cmd)
-            pm.run(cmd, cFRiF_PDF, nofail=False)
-            pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
+                cmd = build_command(cFRiF_cmd)
+                pm.run(cmd, cFRiF_PDF, nofail=False)
+                pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
 
-            cmd = build_command(FRiF_cmd)
-            pm.run(cmd, FRiF_PDF, nofail=False)
-            pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+                cmd = build_command(FRiF_cmd)
+                pm.run(cmd, FRiF_PDF, nofail=False)
+                pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
 
 
     ############################################################################
