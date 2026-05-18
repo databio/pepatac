@@ -173,16 +173,28 @@ export PYTHONNOUSERSITE=1
 export SINGULARITYENV_PYTHONNOUSERSITE=1
 export APPTAINERENV_PYTHONNOUSERSITE=1
 
-# Same problem on the R side: apptainer's $HOME mount plus host
-# R_LIBS_USER / R_LIBS / R_LIBS_SITE makes the container's R prefer
-# host-built R packages over its own bundled ones. When the host packages
-# were built against a different R version than the container's, package
-# loading fails on ABI mismatches even though the container has the
-# packages installed correctly. Override R_LIBS_USER so the container's R
-# falls back to its bundled site-library.
+# Same problem on the R side: apptainer's $HOME mount makes the host's
+# ~/.Renviron and ~/.Rprofile visible to the container's R. R sources
+# them at startup AFTER reading existing env vars, so any R_LIBS_USER /
+# R_LIBS / R_LIBS_SITE / .libPaths() they set OVERRIDES whatever we
+# export. The result: the container's R loads host-built packages, and
+# if the host packages were built against a different R version than
+# the container's, loading fails on ABI mismatches even though the
+# container has the packages installed correctly.
+#
+# Point R_ENVIRON_USER / R_PROFILE_USER at /dev/null so the container's
+# R skips the host's user-config files entirely and falls back to its
+# bundled site-library. R_LIBS_USER override is belt-and-suspenders in
+# case neither Renviron is sourced.
 export R_LIBS_USER=/dev/null
+export R_ENVIRON_USER=/dev/null
+export R_PROFILE_USER=/dev/null
 export SINGULARITYENV_R_LIBS_USER=/dev/null
+export SINGULARITYENV_R_ENVIRON_USER=/dev/null
+export SINGULARITYENV_R_PROFILE_USER=/dev/null
 export APPTAINERENV_R_LIBS_USER=/dev/null
+export APPTAINERENV_R_ENVIRON_USER=/dev/null
+export APPTAINERENV_R_PROFILE_USER=/dev/null
 
 # Enable local refgenieserver tests if --local was passed
 if [ "$USE_LOCAL_SERVER" = true ]; then
