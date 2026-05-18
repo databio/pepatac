@@ -68,6 +68,9 @@ def parse_arguments():
                         help="Path to a reference peak set (narrowPeak/BED) "
                              "to use for the project count table instead of "
                              "the computed consensus peaks.")
+    parser.add_argument("--summarizer", default="python",
+                        choices=["python", "R"],
+                        help="Summarizer implementation to use (default: python)")
     args = parser.parse_args()
     return args
 
@@ -106,9 +109,15 @@ def main():
         yaml.dump(yaml_dict, file)
     print(f"Summary (n={num_samples}: {project_stats_file})")
 
-    cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
-           f"{args.config_file} {args.output_parent} "
-           f"{args.results} {args.cutoff} {args.min_score} {args.min_olap}")
+    if args.summarizer == "python":
+        cmd = (f"python -m pepatac_summarizer "
+               f"{args.config_file} {args.output_parent} "
+               f"{args.results} --cutoff {args.cutoff} "
+               f"--min-score {args.min_score} --min-olap {args.min_olap}")
+    else:
+        cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
+               f"{args.config_file} {args.output_parent} "
+               f"{args.results} {args.cutoff} {args.min_score} {args.min_olap}")
     if args.new_start:
         cmd += " --new-start"
     if args.skip_consensus:
