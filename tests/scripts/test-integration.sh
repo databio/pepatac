@@ -199,6 +199,18 @@ export APPTAINERENV_R_LIBS_USER=/dev/null
 export APPTAINERENV_R_ENVIRON_USER=/dev/null
 export APPTAINERENV_R_PROFILE_USER=/dev/null
 
+# Prepend the conda env's lib dir to LD_LIBRARY_PATH so compiled Python
+# extensions (matplotlib's _c_internal_utils, etc.) find the conda-bundled
+# libstdc++.so.6 instead of an older /lib64/libstdc++.so.6 on RHEL/Rocky
+# hosts -- the latter often lacks recent GLIBCXX_3.4.x symbols the wheels
+# need, and the conda env's libstdc++ does. Propagate through the
+# apptainer boundary with the SINGULARITYENV_ / APPTAINERENV_ prefix.
+if [ -n "$CONDA_PREFIX" ] && [ -d "$CONDA_PREFIX/lib" ]; then
+    export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:${LD_LIBRARY_PATH-}"
+    export SINGULARITYENV_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    export APPTAINERENV_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+fi
+
 # Enable local refgenieserver tests if --local was passed
 if [ "$USE_LOCAL_SERVER" = true ]; then
     export RUN_LOCAL_REFGENIE_TESTS=true

@@ -164,7 +164,18 @@ Compiled Python wheels (e.g. matplotlib's `_c_internal_utils.so`)
 built against a newer libstdc++ won't load on RHEL/Rocky HPC nodes
 whose `/lib64/libstdc++.so.6` is older. The conda env almost certainly
 ships a newer `libstdc++.so.6` under `$CONDA_PREFIX/lib/`; force its
-use by prepending the env's lib dir to `LD_LIBRARY_PATH`:
+use by prepending the env's lib dir to `LD_LIBRARY_PATH`. The
+integration runner already does this and propagates it through the
+apptainer boundary:
+
+```bash
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
+export SINGULARITYENV_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+export APPTAINERENV_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+```
+
+For ad-hoc test runs outside the runner (e.g. running the summarizer
+tests directly), the first export alone is usually enough:
 
 ```bash
 LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" \
