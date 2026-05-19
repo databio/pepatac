@@ -20,6 +20,15 @@ import psutil
 from pypiper import build_command
 from refgenconf import RefGenConf as RGC, select_genome_config
 
+# Make sibling `tools/` importable when this script is invoked directly
+# (`python pepatac.py ...`), since sys.path[0] is the script's directory
+# (`pipelines/`) and `tools/` is the sibling project-level package.
+# Needed for `from tools.pepatac_qc_gtars import ...` inside the
+# --qc-backend gtars branches.
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
 ALIGNERS = ["bowtie2", "bwa"]
