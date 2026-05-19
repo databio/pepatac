@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.14.0] -- 2026-05-19
+
 ### Added
 - `--qc-backend` flag to select between gtars (Python/Rust) and R backends for QC plots; defaults to `r` for backward compatibility.
 - New Python `pepatac_summarizer` package replacing the R-based project summarizer.
