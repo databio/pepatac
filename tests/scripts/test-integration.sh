@@ -203,12 +203,15 @@ export APPTAINERENV_R_PROFILE_USER=/dev/null
 # extensions (matplotlib's _c_internal_utils, etc.) find the conda-bundled
 # libstdc++.so.6 instead of an older /lib64/libstdc++.so.6 on RHEL/Rocky
 # hosts -- the latter often lacks recent GLIBCXX_3.4.x symbols the wheels
-# need, and the conda env's libstdc++ does. Propagate through the
-# apptainer boundary with the SINGULARITYENV_ / APPTAINERENV_ prefix.
+# need, and the conda env's libstdc++ does. pepatac.py runs as a host
+# subprocess (not inside `bulker exec`), so this only needs to be set
+# for the host process; do NOT propagate via SINGULARITYENV_ /
+# APPTAINERENV_ because the bulker crate is alpine/musl-based and other
+# conda libs (libattr etc.) are glibc-linked. Pulling them into the
+# alpine container with LD_LIBRARY_PATH would break tools at launch with
+# "Error relocating ... __strndup: symbol not found".
 if [ -n "$CONDA_PREFIX" ] && [ -d "$CONDA_PREFIX/lib" ]; then
     export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:${LD_LIBRARY_PATH-}"
-    export SINGULARITYENV_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-    export APPTAINERENV_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 fi
 
 # Enable local refgenieserver tests if --local was passed
