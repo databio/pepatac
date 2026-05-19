@@ -2,8 +2,43 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
-- Update bulker crate to databio/pepatac:1.1.1 (fix broken openjdk image)
-- Update test scripts for Rust bulker CLI
+
+### Added
+- `--qc-backend` flag to select between gtars (Python/Rust) and R backends for QC plots; defaults to `r` for backward compatibility.
+- New Python `pepatac_summarizer` package replacing the R-based project summarizer.
+- `--skip-dedup` flag for protocols where duplicates are biologically meaningful (e.g. CUT&Tag, CUT&RUN). [#249](https://github.com/databio/pepatac/issues/249)
+- Integration test suite under `tests/integration/`: `test_failure_detection`, `test_pipeline`, `test_looper_run`, `test_end_to_end` — 56 tests exercising the full pipeline against `databio/pepatac:1.1.3`.
+- PEPATACr regression tests for `peakCounts` extension-detection ([#218](https://github.com/databio/pepatac/issues/218), [#219](https://github.com/databio/pepatac/issues/219)) and `plotAnno` empty-input fallback ([#232](https://github.com/databio/pepatac/issues/232)).
+- Documentation: TSSE cutoff guidance with `refgene_anno` asset reference ([#235](https://github.com/databio/pepatac/issues/235)); custom adapter file usage ([#252](https://github.com/databio/pepatac/issues/252)); `$REFGENIE`-required workaround when using manual paths ([#251](https://github.com/databio/pepatac/issues/251)); `PEPATAC_completed.flag` handling in the count-table workflow ([#215](https://github.com/databio/pepatac/issues/215)); `TypeError: 'NoneType' object is not iterable` troubleshooting ([#216](https://github.com/databio/pepatac/issues/216)); `_peaks_coverage.bed` and `_ref_peaks_coverage.bed` column formats ([#233](https://github.com/databio/pepatac/issues/233)); "Running a non-refgenie genome through looper" subsection ([#231](https://github.com/databio/pepatac/issues/231)).
+
+### Changed
+- Bump bulker crate to `databio/pepatac:1.1.3`.
+- Pin `refgenconf>=0.13.1` so installs land on the yacman-1.0-compatible refgenconf release; older `refgenconf` paired with current `yacman` raised `AttributeError: module 'yacman' has no attribute 'YacAttMap'` at pipeline import.
+- Pin `GenomicDistributions (>= 1.4.6)` and `GenomicDistributionsData (>= 1.0.0)` in `PEPATACr/DESCRIPTION` to avoid the `chromSizes_hg38` / `TSS_hg38` namespace mismatch when one side is upgraded without the other. [#230](https://github.com/databio/pepatac/issues/230)
+- Add `r-argparser` to `requirements-conda.yml` for `tools/PEPATAC_summarizer.R`. [#228](https://github.com/databio/pepatac/issues/228)
+- Add `r-r.utils` to `requirements-conda.yml` and `R.utils` to `PEPATACr/DESCRIPTION` Imports (required by `data.table::fread` for `.bed.gz`). [#229](https://github.com/databio/pepatac/issues/229)
+- Relax pinned `ucsc-bedgraphtobigwig`, `ucsc-bedtobigbed`, `ucsc-bigwigmerge`, `ucsc-stringify` builds in `requirements-conda.yml` (the `377` builds required openssl 1.1.1 and conflicted with the env's openssl 3.x). [#321](https://github.com/databio/pepatac/issues/321)
+- Test scripts: switch from `bulker activate --echo` PATH-extraction to `bulker exec`; force local compute package; block host R-lib / Python user-site leak through the apptainer container boundary.
+- `tools/PEPATAC.R`: required-library load failure now exits non-zero and surfaces the underlying `conditionMessage(e)` so callers can distinguish a missing package from a load-time failure (ABI mismatch, missing system library, etc.).
+- Docs (`docs/install.md`): drop dead `run-container.md` link; refresh intro now that containers were removed in 0.12.0 and the path is `bulker` / conda / native.
+- Docs (`tests/README.md`): note that bulker can dispatch to Docker *or* Singularity / Apptainer.
+
+### Fixed
+- `pipelines/pepatac.py` `_align()`: single-end + bwa branch referenced an undefined `cmd`; mirror the paired chain (minus `filter_pair`) for both `--keep` and no-keep paths. [#299](https://github.com/databio/pepatac/issues/299)
+- `pipelines/pepatac.py` post-prealignment handle check: `unmap_fq1` branch set an error string but never called `pm.fail_pipeline`, so a stuck filter on R1 wouldn't surface; both branches now fail consistently and the error message points at the `psutil` introspection cause and recommends both `--keep` and `--noFIFO` as workarounds. [#234](https://github.com/databio/pepatac/issues/234)
+- `pipelines/pepatac.py` `--lite` cleanup: variables that may be `None` when QC paths are skipped (e.g. `frag_len`, `Tss_enrich` under `--skipqc`) were unconditionally `pm.clean_add`-ed, slipping `None` into pypiper's cleanup list and crashing `_cleanup()` at the very end of an otherwise successful run. Guard with `if path:`. Also fix the inverted condition in the trailing `to_compress` loop.
+- `pepatac_output_schema.yaml`: FastQC report objects (`object_type: file`) had `thumbnail_path` declared as required `string`, but pipestat synthesizes the field as `None` for non-image reports. Allow `null` and drop from `required` so pipestat ≥0.12 doesn't raise `SchemaValidationErrorDuringReport` in `check_trim`.
+- `pepatac_output_schema.yaml`: Restore `Time` and `Success` entries so `pm.stop_pipeline()`'s `report_result("Time", ...)` doesn't raise `ColumnNotFoundError`. pipestat 0.13.0+ permits keys in both `samples:` and `project:`. [#322](https://github.com/databio/pepatac/issues/322) [#305](https://github.com/databio/pepatac/issues/305)
+- `PEPATACr::peakCounts()`: extension-detection now runs independently for `_ref_peaks_coverage` and `_peaks_coverage`, so a mixed-state setup (one compressed, one uncompressed) no longer falls through to the "not derived from a singular reference peak set" warning. [#218](https://github.com/databio/pepatac/issues/218) [#219](https://github.com/databio/pepatac/issues/219)
+- `PEPATACr::plotAnno()`: empty-input fallback was constructing `file.path(<output_pdf>, ...)` (treating an output `.pdf` as a directory) and `quit()`ing the R session; replace with `return(ggplot())` so the caller's `pdf()`/`png()` produces a clean blank placeholder. [#232](https://github.com/databio/pepatac/issues/232)
+- `sample_pipeline_interface.yaml`: guard every `refgenie[sample.genome]` lookup with `sample.genome in refgenie`; non-refgenie genomes now fall through to per-sample paths instead of crashing with an `attmap.AttMap` `AttributeError`. [#231](https://github.com/databio/pepatac/issues/231)
+- `tools/bamQC.py`, `tools/bamSitesToWig.py`: define `_LOGGER` at module level so `pararead` workers re-importing under multiprocessing `spawn` don't hit `NameError`. [#266](https://github.com/databio/pepatac/issues/266)
+- `checkinstall`: three `curl`-into-variable bugs that stored file contents in a variable used as a path downstream; switch to `mktemp` + `curl -fsSL -o`. [#226](https://github.com/databio/pepatac/issues/226)
+- `pipelines/pepatac.py`: use raw strings in two `re.sub` patterns to silence Python 3.12 `SyntaxWarning: invalid escape sequence '\w'`.
+- Docs (`docs/faq.md`): expanded TSSE entry with `refgene_anno` source asset, hg38-tuned threshold caveat, and pointer at ENCODE ATAC-seq data standards. [#235](https://github.com/databio/pepatac/issues/235)
+
+### Removed
+- Old R-based `PEPATACr/tests/testthat/{testthat.R,helper-fixtures.R,test-summarizer.R,test-utilities.R,test-yamlToDT.R}` — superseded by the Python summarizer package and its test suite at `tests/test_summarizer.py` / `tests/test_summarizer_integration.py`.
 
 ## [0.13.0] -- 2026-03-06
 - Extract peak cleaning into separate script (`tools/clean_peaks.py`). Fix [#295](https://github.com/databio/pepatac/issues/295)
