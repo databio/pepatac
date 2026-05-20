@@ -71,7 +71,7 @@ Assets may also be managed manually and specified directly to the pipeline.  Whi
 > export REFGENIE=/tmp/empty_refgenie.yaml
 > ```
 >
-> A proper "no refgenie" path is being addressed as part of the in-progress refgenie 1.0 migration.
+> A proper "no refgenie" path is on the roadmap; until then the empty-config workaround is the supported approach.
 
 ### Running a non-refgenie genome through `looper`
 
@@ -113,7 +113,7 @@ refgenie pull rCRSd/fasta
 refgenie pull human_repeats/fasta
 ```
 
-The unhelpful error message is upstream behavior in `refgenconf` and is replaced wholesale by the in-progress refgenie 1.0 migration (PR #327).
+The unhelpful error message is upstream behavior in `refgenconf`; the eventual fix lives there.
 
 Custom blacklisted regions may be specified using the `--blacklist </path/to/your_blacklist.bed.gz>`. The blacklisted region file must simply be a `BED` formatted file to function correctly. The [`refgenie blacklist` asset](http://refgenie.databio.org/en/latest/available_assets/#blacklist) uses the [ENCODE blacklists](https://github.com/Boyle-Lab/Blacklist) by default.
 
