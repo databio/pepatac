@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Bump bulker crate to `databio/pepatac:1.1.3`.
 - Pin `refgenconf>=0.13.1` so installs land on the yacman-1.0-compatible refgenconf release; older `refgenconf` paired with current `yacman` raised `AttributeError: module 'yacman' has no attribute 'YacAttMap'` at pipeline import.
+- Pin `looper>=2.1.1` and `yacman>=1.0.0` (and align the `requirements-conda.yml` strict pins to match). `looper==2.0.1` paired with yacman 1.0+ raised `TypeError: YAMLConfigManager.__init__() takes from 1 to 4 positional arguments but 6 were given` from `looper/divvy.py:52`'s `ComputingConfiguration.__init__` because the yacman 1.0 constructor reduced its positional arg count; looper 2.1.1 handles the new signature.
+- Bump `requirements-conda.yml` strict pins for `pipestat==0.13.1` and `refgenconf==0.13.1` to match `requirements.txt`.
 - Pin `GenomicDistributions (>= 1.4.6)` and `GenomicDistributionsData (>= 1.0.0)` in `PEPATACr/DESCRIPTION` to avoid the `chromSizes_hg38` / `TSS_hg38` namespace mismatch when one side is upgraded without the other. [#230](https://github.com/databio/pepatac/issues/230)
 - Add `r-argparser` to `requirements-conda.yml` for `tools/PEPATAC_summarizer.R`. [#228](https://github.com/databio/pepatac/issues/228)
 - Add `r-r.utils` to `requirements-conda.yml` and `R.utils` to `PEPATACr/DESCRIPTION` Imports (required by `data.table::fread` for `.bed.gz`). [#229](https://github.com/databio/pepatac/issues/229)

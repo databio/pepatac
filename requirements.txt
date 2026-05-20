@@ -1,9 +1,9 @@
 # Core pepkit stack
 eido>=0.2.4
-looper>=2.0.1
+looper>=2.1.1
 pipestat>=0.12.1
 ubiquerg>=0.8.1
-yacman>=0.9.3
+yacman>=1.0.0
 
 # Pipeline runtime dependencies
 bio>=0.2.4
