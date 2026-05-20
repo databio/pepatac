@@ -375,6 +375,12 @@ def empty_refgenie_config(tmp_path, monkeypatch):
     if result.returncode != 0:
         pytest.skip(f"refgenie init failed: {result.stderr}")
     monkeypatch.setenv("REFGENIE", str(config_path))
+    # Don't inherit the host's $DIVCFG. On HPC nodes it points at a
+    # SLURM-flavored divvy config; looper 2.0.1 paired with newer
+    # yacman crashes with `TypeError: YAMLConfigManager.__init__()
+    # takes from 1 to 4 positional arguments but 6 were given` when
+    # loading it, killing the test for reasons unrelated to #251.
+    monkeypatch.delenv("DIVCFG", raising=False)
     return str(config_path)
 
 
@@ -447,7 +453,7 @@ class TestLooperRunWithoutRefgenie:
         `'$REFGENIE'` (the exact failure mode reported in #251)."""
         result = looper_main(test_args=[
             "run", "--config", no_refgenie_looper_config["looper_config"],
-            "--dry-run", "-p", "local",
+            "--dry-run",
         ])
         assert isinstance(result, dict)
         assert "Commands submitted" in result
@@ -461,7 +467,7 @@ class TestLooperRunWithoutRefgenie:
         isn't in the empty refgenie config)."""
         looper_main(test_args=[
             "run", "--config", no_refgenie_looper_config["looper_config"],
-            "--dry-run", "-p", "local",
+            "--dry-run",
         ])
         script_path = os.path.join(
             no_refgenie_looper_config["results_dir"],
