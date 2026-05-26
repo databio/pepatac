@@ -15,7 +15,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Bulkers crate configuration
-BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-local/bulker_manifest}"
+# Full crate identifier including tag — `bulker exec` is strict about the
+# tag. Must track the `version:` field in tests/bulker_manifest.yaml.
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-databio/pepatac:1.1.3}"
 
 # Required tools for basic pipeline execution
 REQUIRED_TOOLS=(bowtie2 samtools macs3 skewer samblaster bedtools)
@@ -36,22 +38,26 @@ check_bulker() {
 }
 
 check_crate_cached() {
-    if ! bulker crate list 2>/dev/null | grep -q "${BULKER_CRATE}"; then
-        echo "ERROR: Bulkers crate ${BULKER_CRATE} is not cached."
-        echo "  Install it with: bulker crate install ${BULKER_CRATE}"
+    # Probe via `bulker exec -- true` rather than `bulker crate list | grep`:
+    # bulker lists crate and tag in separate whitespace columns, so the old
+    # `grep "name:tag"` could never match. Exec is what we actually care
+    # about anyway, so test that directly.
+    if ! bulker exec "${BULKER_CRATE}" -- true >/dev/null 2>&1; then
+        echo "ERROR: Bulker crate ${BULKER_CRATE} is not exec-able."
+        echo "  For the default test crate: bulker crate install tests/bulker_manifest.yaml"
+        echo "  For a hub-hosted crate:     bulker crate install <namespace/crate:tag>"
         return 1
     fi
-    echo "  Crate cached: ${BULKER_CRATE}"
+    echo "  Crate exec-able: ${BULKER_CRATE}"
 }
 
 check_tools() {
-    # Get the crate's shim directory from bulker activate --echo
-    local crate_path
-    crate_path=$(bulker activate --echo "${BULKER_CRATE}" 2>/dev/null | grep "^export PATH=" | sed 's/^export PATH="//' | sed 's/"$//' | cut -d: -f1)
+    # Use `bulker exec` to resolve each tool inside the crate environment.
+    # This sidesteps scraping `bulker activate --echo` output (format-fragile
+    # across bulker versions) and matches how test-integration.sh runs pytest.
     local missing=()
-
     for tool in "${REQUIRED_TOOLS[@]}"; do
-        if [ -x "${crate_path}/${tool}" ]; then
+        if bulker exec "${BULKER_CRATE}" -- which "${tool}" >/dev/null 2>&1; then
             echo "  ${tool}: OK"
         else
             echo "  ${tool}: MISSING"
@@ -154,7 +160,7 @@ case "$1" in
         echo "Usage: $0 {start|stop|status}"
         echo ""
         echo "Environment variables:"
-        echo "  PEPATAC_TEST_BULKER_CRATE            - Bulkers crate (default: databio/pepatac)"
+        echo "  PEPATAC_TEST_BULKER_CRATE            - Bulkers crate (default: databio/pepatac:1.1.3)"
         echo "  PEPATAC_TEST_REFGENIESERVER_PORT     - Local server port (default: 8765)"
         echo "  PEPATAC_TEST_REFGENIE_DATA           - Local refgenie data dir (default: tests/data/refgenie)"
         exit 1

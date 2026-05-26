@@ -1,9 +1,9 @@
 # Core pepkit stack
 eido>=0.2.4
-looper>=2.0.1
+looper>=2.1.1
 pipestat>=0.12.1
 ubiquerg>=0.8.1
-yacman>=0.9.3
+yacman>=1.0.0
 
 # Pipeline runtime dependencies
 bio>=0.2.4
@@ -12,9 +12,15 @@ logmuse>=0.2.7
 numpy>=1.21
 pandas>=1.4
 pararead>=0.7.0
-piper>=0.14.3
+piper>=0.15.1
 psutil>=5.8
 pysam>=0.16
 python-Levenshtein>=0.12
 pyyaml>=3.13
 refgenie>=1.0.0
+# gtars Python binding: >=0.6.1 carries the 4-arg Region(chr, start, end, rest)
+# API the Python summarizer / qc_gtars code targets, plus stability headroom
+# over the bare floor (v0.5.0). geniml can pull in a pre-PyPI 0.0.x as a
+# transitive dep on some envs (3-arg Region API) -- the pin here forces an
+# upgrade past that.
+gtars>=0.6.1

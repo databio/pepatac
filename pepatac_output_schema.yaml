@@ -56,12 +56,19 @@ properties:
             path:
               type: string
             thumbnail_path:
-              type: string
+              # FastQC outputs an HTML report with no thumbnail. pipestat
+              # always synthesizes the field in the reported dict but as
+              # None when there's no thumbnail, so the schema has to accept
+              # null too. (Without this, newer pipestat raises
+              # SchemaValidationErrorDuringReport: None is not of type
+              # 'string' from check_trim().)
+              type:
+                - string
+                - "null"
             title:
               type: string
           required:
             - path
-            - thumbnail_path
             - title
         FastQC report r2:
           title: "FastQC report r2"
@@ -72,12 +79,14 @@ properties:
             path:
               type: string
             thumbnail_path:
-              type: string
+              # See note on FastQC report r1.
+              type:
+                - string
+                - "null"
             title:
               type: string
           required:
             - path
-            - thumbnail_path
             - title
         Aligned_reads_rCRSd:
           type: number

@@ -6,7 +6,7 @@ Maintainer: Jason Smith <jasonsmith@virginia.edu>
 Description: Installs required libraries to calculate the fraction of reads in features, TSS enrichments, and fragment length distributions. 
 BiocViews:
 Depends: R (>= 4.0), GenomicRanges
-Imports: data.table, pepr, gplots, grid, ggplot2, optigrab, scales, yaml, GenomicDistributions, GenomicDistributionsData
+Imports: data.table, pepr, gplots, grid, ggplot2, optigrab, scales, yaml, GenomicDistributions (>= 1.4.6), GenomicDistributionsData (>= 1.0.0), R.utils
 Suggests: testthat (>= 3.0.0)
 Config/testthat/edition: 3
 License: BSD 2-Clause "Simplified" License

@@ -114,12 +114,13 @@ fi
 if [ -f "requirements.txt" ]; then
     REQS="requirements.txt"
 else
-    REQS=$(curl https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt)
+    REQS=$(mktemp)
+    curl -fsSL https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt -o "$REQS"
 fi
 
 while IFS= read -r line; do
     [ "${line:0:1}" = "#" ] && continue
-    
+
     if [[ $line == *","* ]]; then
         IFS=',' read -r -a array <<< "$line"
         first_half=${array[0]}
@@ -480,7 +481,8 @@ else
         if [ -f "requirements.txt" ]; then
             REQS="requirements.txt"
         else
-            REQS=$(curl https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt)
+            REQS=$(mktemp)
+            curl -fsSL https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt -o "$REQS"
         fi
 
         while IFS= read -r line; do
@@ -820,9 +822,10 @@ if [ $? -eq 0 ]; then
 fi
 
 if [ -f "$CWD/pipelines/pepatac.py" ]; then
-    PIPELINE=$(cat "$CWD/pipelines/pepatac.py")
+    PIPELINE="$CWD/pipelines/pepatac.py"
 else
-    PIPELINE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/pipelines/pepatac.py)
+    PIPELINE=$(mktemp --suffix=.py)
+    curl -fsSL https://raw.githubusercontent.com/databio/pepatac/master/pipelines/pepatac.py -o "$PIPELINE"
 fi
 
 CMD_CHECK=$(bulker run ${CRATE} $PIPELINE --help)

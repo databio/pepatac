@@ -13,10 +13,14 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-TESTS_DIR="$SCRIPT_DIR/.."
+TESTS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SERVICES_SCRIPT="$SCRIPT_DIR/services.sh"
-BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-local/bulker_manifest}"
+# Full crate identifier including tag — `bulker exec` is strict about the
+# tag (bare `databio/pepatac` resolves to `databio/pepatac:default` and goes
+# hub-shopping). Default to the most recent published tag of the production
+# crate so tests run against what end users get.
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-databio/pepatac:1.1.3}"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -93,32 +97,122 @@ if [ ! -f "$VENV_DIR/bin/refgenie" ]; then
 fi
 export PEPATAC_TEST_VENV="$VENV_DIR"
 
-# Install crate from local manifest if not already cached
-MANIFEST="$TESTS_DIR/bulker_manifest.yaml"
-if ! bulker crate list 2>/dev/null | grep -q "${BULKER_CRATE}"; then
-    if [ -f "$MANIFEST" ]; then
-        echo -e "${YELLOW}Crate ${BULKER_CRATE} not cached. Installing from local manifest...${NC}"
-        bulker crate install "$MANIFEST"
-    else
-        echo -e "${RED}ERROR: Crate ${BULKER_CRATE} not cached and no manifest at ${MANIFEST}${NC}"
+# Install crate if not already exec-able. Default is the production
+# `databio/pepatac:<tag>` crate from hub.bulker.io, so the install fetches
+# from the hub. If the user overrides PEPATAC_TEST_BULKER_CRATE to a local
+# file path or a different registry crate, `bulker crate install` handles
+# all three forms. Use `bulker exec -- true` to probe -- a previous
+# attempt to grep `bulker crate list` was format-sensitive (bulker prints
+# crate and tag in separate whitespace-delimited columns, so a literal
+# 'name:tag' grep never matches).
+if ! bulker exec "${BULKER_CRATE}" -- true >/dev/null 2>&1; then
+    echo -e "${YELLOW}Crate ${BULKER_CRATE} not exec-able. Installing...${NC}"
+    if ! bulker crate install "${BULKER_CRATE}"; then
+        echo -e "${RED}ERROR: Failed to install crate ${BULKER_CRATE}${NC}"
+        echo -e "${RED}  If using the default hub crate, check network access to hub.bulker.io.${NC}"
+        echo -e "${RED}  If using a local manifest, pass its path via PEPATAC_TEST_BULKER_CRATE.${NC}"
         exit 1
     fi
+fi
+
+# Identify the python that has pepatac's runtime deps (pytest, pypiper,
+# refgenconf, etc.) installed. We can't trust `command -v python3` alone
+# -- on HPC where a `module load` fires AFTER `conda activate`, the
+# module's PATH prepend can bury the conda env's bin/ behind a base
+# install, so `python3` resolves to the base interpreter (no pytest)
+# even when the user's conda-env prompt suggests otherwise.
+#
+# Strategy: walk a candidate list and pick the FIRST python that actually
+# imports pytest. CONDA_PREFIX-based path is preferred, then PATH-based,
+# then a few common conda layouts.
+PYTHON_CANDIDATES=()
+[ -n "$CONDA_PREFIX" ] && PYTHON_CANDIDATES+=("$CONDA_PREFIX/bin/python3")
+[ -n "$VIRTUAL_ENV" ]  && PYTHON_CANDIDATES+=("$VIRTUAL_ENV/bin/python3")
+PYTHON_CANDIDATES+=("$(command -v python3 2>/dev/null)")
+PYTHON_CANDIDATES+=("$(command -v python 2>/dev/null)")
+
+ACTIVE_PYTHON=""
+for candidate in "${PYTHON_CANDIDATES[@]}"; do
+    [ -z "$candidate" ] && continue
+    [ -x "$candidate" ] || continue
+    if "$candidate" -c "import pytest" >/dev/null 2>&1; then
+        ACTIVE_PYTHON="$candidate"
+        break
+    fi
+done
+
+if [ -z "$ACTIVE_PYTHON" ]; then
+    echo -e "${RED}ERROR: No python3 found with pytest installed. Tried:${NC}"
+    for candidate in "${PYTHON_CANDIDATES[@]}"; do
+        [ -n "$candidate" ] && echo "  - ${candidate}"
+    done
+    echo "Install pytest into your active conda/venv env: pip install pytest"
+    exit 1
 fi
 
 # Verify environment
 echo -e "${GREEN}Verifying test environment...${NC}"
 "$SERVICES_SCRIPT" start
 
-# Activate bulker crate by extracting its PATH
-BULKER_PATH=$(bulker activate --echo "${BULKER_CRATE}" 2>/dev/null | grep "^export PATH=" | sed 's/^export PATH="//' | sed 's/"$//' | cut -d: -f1)
-if [ -z "$BULKER_PATH" ]; then
-    echo -e "${RED}ERROR: Could not get crate path for ${BULKER_CRATE}${NC}"
-    exit 1
-fi
-
-export PATH="${BULKER_PATH}:${PATH}"
 export BULKERCRATE="$BULKER_CRATE"
 export RUN_INTEGRATION_TESTS=true
+
+# Stop Python inside `bulker exec` (which is apptainer/singularity on HPC)
+# from loading the host's user-site packages. By default apptainer mounts
+# $HOME and Python auto-prepends ~/.local/lib/pythonX.Y/site-packages to
+# sys.path, so a stale `pip install --user`-style package on the host can
+# shadow the container's clean install (we hit this with an old MACS3
+# 3.0.0b1 in ~/.local/ silently overriding the container's MACS3 3.0.3
+# and crashing peak calling). Setting PYTHONNOUSERSITE=1 makes Python
+# ignore user-site no matter what's in ~/.local/.
+#
+# IMPORTANT: apptainer/singularity does NOT pass host env vars through to
+# the container by default -- it filters them at the container boundary.
+# To force a var across, use the SINGULARITYENV_X / APPTAINERENV_X prefix
+# convention (the var inside the container ends up as just X). Setting
+# all three forms covers: parent process, singularity (older apptainer),
+# and apptainer (current name).
+export PYTHONNOUSERSITE=1
+export SINGULARITYENV_PYTHONNOUSERSITE=1
+export APPTAINERENV_PYTHONNOUSERSITE=1
+
+# Same problem on the R side: apptainer's $HOME mount makes the host's
+# ~/.Renviron and ~/.Rprofile visible to the container's R. R sources
+# them at startup AFTER reading existing env vars, so any R_LIBS_USER /
+# R_LIBS / R_LIBS_SITE / .libPaths() they set OVERRIDES whatever we
+# export. The result: the container's R loads host-built packages, and
+# if the host packages were built against a different R version than
+# the container's, loading fails on ABI mismatches even though the
+# container has the packages installed correctly.
+#
+# Point R_ENVIRON_USER / R_PROFILE_USER at /dev/null so the container's
+# R skips the host's user-config files entirely and falls back to its
+# bundled site-library. R_LIBS_USER override is belt-and-suspenders in
+# case neither Renviron is sourced.
+export R_LIBS_USER=/dev/null
+export R_ENVIRON_USER=/dev/null
+export R_PROFILE_USER=/dev/null
+export SINGULARITYENV_R_LIBS_USER=/dev/null
+export SINGULARITYENV_R_ENVIRON_USER=/dev/null
+export SINGULARITYENV_R_PROFILE_USER=/dev/null
+export APPTAINERENV_R_LIBS_USER=/dev/null
+export APPTAINERENV_R_ENVIRON_USER=/dev/null
+export APPTAINERENV_R_PROFILE_USER=/dev/null
+
+# Prepend the conda env's lib dir to LD_LIBRARY_PATH so compiled Python
+# extensions (matplotlib's _c_internal_utils, etc.) find the conda-bundled
+# libstdc++.so.6 instead of an older /lib64/libstdc++.so.6 on RHEL/Rocky
+# hosts -- the latter often lacks recent GLIBCXX_3.4.x symbols the wheels
+# need, and the conda env's libstdc++ does. pepatac.py runs as a host
+# subprocess (not inside `bulker exec`), so this only needs to be set
+# for the host process; do NOT propagate via SINGULARITYENV_ /
+# APPTAINERENV_ because the bulker crate is alpine/musl-based and other
+# conda libs (libattr etc.) are glibc-linked. Pulling them into the
+# alpine container with LD_LIBRARY_PATH would break tools at launch with
+# "Error relocating ... __strndup: symbol not found".
+if [ -n "$CONDA_PREFIX" ] && [ -d "$CONDA_PREFIX/lib" ]; then
+    export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:${LD_LIBRARY_PATH-}"
+fi
 
 # Enable local refgenieserver tests if --local was passed
 if [ "$USE_LOCAL_SERVER" = true ]; then
@@ -127,8 +221,8 @@ if [ "$USE_LOCAL_SERVER" = true ]; then
     echo -e "${GREEN}Using local refgenieserver on port ${PEPATAC_TEST_REFGENIESERVER_PORT}${NC}"
 fi
 
-echo -e "\n${GREEN}Running integration tests...${NC}"
-echo "  Crate PATH: ${BULKER_PATH}"
+echo -e "\n${GREEN}Running integration tests via bulker exec ${BULKER_CRATE}...${NC}"
+echo "  Using python: ${ACTIVE_PYTHON}"
 if [ "$USE_LOCAL_SERVER" = true ]; then
     echo "  Local refgenieserver: http://localhost:${PEPATAC_TEST_REFGENIESERVER_PORT}"
 fi
@@ -136,8 +230,23 @@ echo ""
 
 cd "$PROJECT_ROOT"
 
+# Run pytest inside `bulker exec` so the crate's shim dir is on PATH for
+# tool resolution (bowtie2, samtools, macs3, etc.), while pytest itself
+# runs in the caller's python -- which already has pepatac's requirements.
+#
+# Default test target is the integration/ directory; user-supplied
+# positional args (test file paths, -k filters, etc.) take precedence.
+# Previously the script passed BOTH the default target AND $@, which
+# could feed pytest two overlapping test roots and cause `tests/conftest.py`
+# to be loaded twice (manifesting as duplicate pytest_addoption registration).
+if [ $# -eq 0 ]; then
+    PYTEST_TARGETS=("$TESTS_DIR/integration/")
+else
+    PYTEST_TARGETS=("$@")
+fi
+
 set +e
-python3 -m pytest "$TESTS_DIR/integration/" -v "$@"
+bulker exec "${BULKER_CRATE}" -- "${ACTIVE_PYTHON}" -m pytest -v "${PYTEST_TARGETS[@]}"
 PYTEST_EXIT=$?
 set -e
 
