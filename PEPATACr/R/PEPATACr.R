@@ -25,7 +25,7 @@ NULL
 theme_PEPATAC <- function(base_family = "sans", ...){
   ggplot2::theme_classic(base_family = base_family, base_size = 14, ...) +
   ggplot2::theme(
-    axis.line = element_line(size = 0.5),
+    axis.line = element_line(linewidth = 0.5),
     axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
@@ -36,7 +36,7 @@ theme_PEPATAC <- function(base_family = "sans", ...){
     aspect.ratio = 1,
     legend.position = "none",
     plot.title = element_text(hjust = 0.5),
-    panel.border = element_rect(colour = "black", fill=NA, size=0.5)
+    panel.border = element_rect(colour = "black", fill=NA, linewidth=0.5)
   )
 }
 
