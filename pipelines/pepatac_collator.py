@@ -110,7 +110,12 @@ def main():
     print(f"Summary (n={num_samples}: {project_stats_file})")
 
     if args.summarizer == "python":
-        cmd = (f"python -m pepatac_summarizer "
+        # pepatac_summarizer is a path-based package under tools/ (no
+        # setup.py), so it is only importable when tools/ is on PYTHONPATH.
+        # Put it there for the subprocess so `runp` is self-contained.
+        tools_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                 "tools")
+        cmd = (f"PYTHONPATH={tools_dir}:$PYTHONPATH python -m pepatac_summarizer "
                f"{args.config_file} {args.output_parent} "
                f"{args.results} --cutoff {args.cutoff} "
                f"--min-score {args.min_score} --min-olap {args.min_olap}")
