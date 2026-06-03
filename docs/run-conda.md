@@ -10,18 +10,17 @@ git clone https://github.com/databio/pepatac.git
 
 ## 2: Install bioinformatic tools
 
-You will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/), [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml), [preseq (v2.0+)](http://smithlabresearch.org/software/preseq/), [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster), [samtools (v1.7+)](http://www.htslib.org/), [skewer (v0.1.126+)](https://github.com/relipmoc/skewer), [UCSC tools](http://hgdownload.soe.ucsc.edu/admin/exe/) (wigToBigWig, bigWigCat, bedToBigBed), [pigz (v2.3.4+)](https://zlib.net/pigz/). 
-
-Optionally, `PEPATAC` can report on fastq quality ([FastQC](https://www.bioinformatics.babraham.ac.uk/projects/download.html#fastqc)) and utilize swappable tools for adapter removal ([trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)), deduplication ([picard](https://broadinstitute.github.io/picard/)), and signal track generation ([seqOutBias](https://github.com/guertinlab/seqOutBias), [bedGraphToBigWig](http://hgdownload.soe.ucsc.edu/admin/exe/), and [bigWigMerge](http://hgdownload.soe.ucsc.edu/admin/exe/)).
-
-Be prepared for this initial installation process to take more than an hour to complete.
-
-From the `pepatac/` repository directory:
+`conda` installs all the required tools for you — you do **not** need to install any of them by hand. From the `pepatac/` repository directory:
 ```{bash}
 conda env create -f requirements-conda.yml
 ```
+This creates the `pepatac` environment containing the required tools — `bedtools`, `bowtie2`, `samtools`, `preseq`, `samblaster`, `skewer`, `macs3`, `pigz`, and the UCSC utilities — alongside `FastQC` (fastq QC) and `picard` (deduplication).
 
-Note: The subsequent steps all assume you have installed using `conda`.  Alternatively, you can [follow instructions to install each individual program natively](detailed-install.md).
+`PEPATAC` also supports swappable alternatives that are *not* in the default environment: aligner `bwa`, trimmer `trimmomatic`, and peak callers `fseq`/`genrich`/`hmmratac`/`homer`, plus `seqOutBias` for signal tracks. Install any you need with `conda install -c bioconda <tool>`.
+
+Be prepared for this initial installation to take a while to complete.
+
+Note: the subsequent steps all assume you installed with `conda`. To install each program natively instead, [follow the detailed native-install instructions](detailed-install.md).
 
 ## 3. Install python packages
 
@@ -45,15 +44,19 @@ export R_LIBS="$CONDA_PREFIX/lib/R/library"
 export R_LIBS_USER="$CONDA_PREFIX/lib/R/library"
 ```
 
-From the `pepatac/` directory, open `R` and install the following packages:
-Note: if receiving an error for GenomicDistributionsData_0.0.2.tar.gz, download the file manually and install directly using `install.packages("local/path/to/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)`
+From the `pepatac/` directory, open `R` and install the following packages.
+`GenomicDistributions` and `GenomicDistributionsData` are now on Bioconductor,
+so install them via `BiocManager` (the old `install_github` /
+`big.databio.org` tarball route is deprecated):
 ```{R}
 install.packages('argparser')
 install.packages("optigrab")
-devtools::install_github("databio/GenomicDistributions")
-#increase the download.file time limits:
-options(timeout = max(1000, getOption("timeout")))
-install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+BiocManager::install(c("GenomicDistributions", "GenomicDistributionsData"))
+# XML is a transitive dependency of GenomicDistributions::getChromSizes();
+# install it explicitly if chromosome/TSS-distance plots fail with
+# "there is no package called 'XML'".
+install.packages("XML")
 devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")
 ```
 
