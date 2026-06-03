@@ -458,7 +458,7 @@ dependencies:
   - rpds-py=0.10.6=py310h4aa5aa6_1
   - rust-gtars=0.8.0
   - samblaster=0.1.26=h9948957_6
-  - samtools
+  - samtools=1.23.1=ha83d96e_0
   - sed=4.8=h7b6447c_0
   - send2trash=1.8.2=py310h06a4308_0
   - setuptools=75.1.0=py310h06a4308_0
