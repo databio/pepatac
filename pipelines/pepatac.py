@@ -1178,10 +1178,21 @@ def main():
     ngstk.make_dir(QC_folder)
 
     bamQC = os.path.join(QC_folder, args.sample_name + "_bamQC.tsv")
-    cmd = tool_path("bamQC.py")
-    cmd += " -i " + mapping_genome_bam
-    cmd += " -c " + str(pm.cores)
-    cmd += " -o " + bamQC
+    if args.qc_backend == "gtars":
+        gtars_cmd_callable = ngstk.check_command("gtars")
+        if gtars_cmd_callable:
+            cmd = "gtars uniwig bamqc"
+            cmd += " -i " + mapping_genome_bam
+            cmd += " -o " + bamQC
+        else:
+            pm.fail_pipeline(RuntimeError(
+                "Could not call 'gtars'. "
+                "Confirm the required gtars tool is in your PATH."))
+    else:
+        cmd = tool_path("bamQC.py")
+        cmd += " -i " + mapping_genome_bam
+        cmd += " -c " + str(pm.cores)
+        cmd += " -o " + bamQC
 
     def report_bam_qc(bamqc_log):
         # Reported BAM QC metrics via the bamQC metrics file
