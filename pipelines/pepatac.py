@@ -1136,8 +1136,12 @@ def main():
     else:
         bam_file = mapping_genome_bam
 
-    # Determine mitochondrial read counts
+    # Determine mitochondrial read counts. Contig names are configurable via
+    # pepatac.yaml `parameters: mito_names`; fall back to the common default
+    # so existing configs keep working.
     mito_name = ["chrM", "ChrM", "ChrMT", "chrMT", "M", "MT", "rCRSd"]
+    if "mito_names" in param and param.mito_names:
+        mito_name = list(param.mito_names)
 
     if not pm.get_stat("Mitochondrial_reads") or args.new_start:
         cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
