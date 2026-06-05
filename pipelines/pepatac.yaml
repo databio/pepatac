@@ -39,6 +39,9 @@ resources:
 
 parameters:  # parameters passed to bioinformatic tools, subclassed by tool
 # Adjust/Add/Remove parameters for individual tools here
+  # Mitochondrial contig names used for mito read counting/removal (and bamQC).
+  # Edit for custom assemblies, e.g. Ensembl "MT" or a RefSeq accession.
+  mito_names: ["chrM", "ChrM", "ChrMT", "chrMT", "M", "MT", "rCRSd"]
   bowtie2_pre: # Modify bowtie2 prealignment settings
     params: ''
     # pipeline default: -k 1 -D 20 -R 3 -N 1 -L 20 -i S,1,0.50

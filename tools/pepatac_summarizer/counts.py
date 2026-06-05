@@ -1,8 +1,14 @@
-"""Peak counts table generation using gtars."""
+"""Peak counts table generation using bedtools multicov."""
 
+import subprocess
 from pathlib import Path
 import pandas as pd
-from gtars.models import RegionSet, Region
+
+
+def _ensure_indexed(bam_path: Path) -> None:
+    """bedtools multicov requires a BAM index; create one if missing."""
+    if not Path(f"{bam_path}.bai").exists():
+        subprocess.run(["samtools", "index", str(bam_path)], check=True)
 
 
 def calculate_peak_counts(
@@ -14,7 +20,17 @@ def calculate_peak_counts(
     normalized: bool = False,
     poverlap: bool = False,
 ) -> dict[str, str]:
-    """Generate peak counts table per genome using gtars.
+    """Generate a peak counts table per genome using ``bedtools multicov``.
+
+    For each genome, count the reads from every sample's deduplicated BAM
+    that overlap each consensus peak, producing a chr/start/end x sample
+    coverage table.
+
+    Note: this previously used ``gtars.models.RegionSet.from_bam`` /
+    ``count_overlaps``, but no released gtars (through 0.8.0) provides those
+    APIs, so the counts step silently produced zeros. Reimplemented with
+    ``bedtools multicov`` (already a PEPATAC dependency). Revisit if a future
+    gtars adds BAM-to-RegionSet support.
 
     Args:
         sample_table: DataFrame with sample_name and genome columns
@@ -39,7 +55,7 @@ def calculate_peak_counts(
 
         genome_samples = sample_table[sample_table["genome"] == genome]
 
-        # Load peaks into RegionSet
+        # Read peaks for the chr/start/end anchor columns + row count.
         peaks_df = pd.read_csv(
             consensus_file, sep="\t", header=None,
             names=["chr", "start", "end", "name", "score", "strand",
@@ -49,45 +65,69 @@ def calculate_peak_counts(
         if peaks_df.empty:
             continue
 
-        peak_regions = [
-            Region(row["chr"], int(row["start"]), int(row["end"]), "")
-            for _, row in peaks_df.iterrows()
-        ]
-        peaks_rs = RegionSet.from_regions(peak_regions)
-
+        n_peaks = len(peaks_df)
         counts_data = {
             "chr": peaks_df["chr"].tolist(),
             "start": peaks_df["start"].tolist(),
             "end": peaks_df["end"].tolist(),
         }
 
+        # Resolve each sample's dedup BAM; collect the present (indexed) ones
+        # for a single bedtools multicov call. Default every sample to zeros
+        # so missing/failed BAMs still get a column.
+        sample_counts = {s: [0] * n_peaks for s in genome_samples["sample_name"]}
+        present_samples = []
+        present_bams = []
         for _, row in genome_samples.iterrows():
             sample = row["sample_name"]
             bam_path = (
                 results_path / sample / f"aligned_{genome}" /
                 f"{sample}_sort_dedup.bam"
             )
-
             if not bam_path.exists():
                 print(f"BAM not found: {bam_path}")
-                counts_data[sample] = [0] * len(peaks_df)
                 continue
-
             try:
-                # Read BAM as RegionSet and count overlaps
-                reads_rs = RegionSet.from_bam(str(bam_path))
-                sample_counts = list(peaks_rs.count_overlaps(reads_rs))
+                _ensure_indexed(bam_path)
+            except subprocess.CalledProcessError as e:
+                print(f"Could not index {bam_path}: {e}; skipping {sample}")
+                continue
+            present_samples.append(sample)
+            present_bams.append(str(bam_path))
 
-                if normalized and sample_counts:
-                    total = sum(sample_counts)
-                    if total > 0:
-                        sample_counts = [c / total * 1e6 for c in sample_counts]
+        # bedtools multicov appends one count column per -bams entry (in the
+        # given order) to each input BED region, preserving the peaks order.
+        if present_bams:
+            try:
+                result = subprocess.run(
+                    ["bedtools", "multicov", "-bams", *present_bams,
+                     "-bed", str(consensus_file)],
+                    capture_output=True, text=True, check=True,
+                )
+                n = len(present_bams)
+                cols = {s: [] for s in present_samples}
+                for line in result.stdout.splitlines():
+                    if not line.strip():
+                        continue
+                    fields = line.split("\t")
+                    for sample, value in zip(present_samples, fields[-n:]):
+                        cols[sample].append(int(value))
+                for sample, col in cols.items():
+                    if len(col) != n_peaks:
+                        print(f"multicov row count mismatch for {sample} "
+                              f"({len(col)} vs {n_peaks}); leaving zeros")
+                        continue
+                    if normalized:
+                        total = sum(col)
+                        if total > 0:
+                            col = [c / total * 1e6 for c in col]
+                    sample_counts[sample] = col
+            except (subprocess.CalledProcessError, ValueError) as e:
+                print(f"bedtools multicov failed for {genome}: {e}")
 
-                counts_data[sample] = sample_counts
-
-            except Exception as e:
-                print(f"Failed to count reads for {sample}: {e}")
-                counts_data[sample] = [0] * len(peaks_df)
+        # Emit sample columns in sample-table order.
+        for sample in genome_samples["sample_name"]:
+            counts_data[sample] = sample_counts[sample]
 
         counts_df = pd.DataFrame(counts_data)
         output_file = summary_path / f"{project_name}_{genome}_peaks_coverage.tsv"

@@ -1135,8 +1135,12 @@ def main():
     else:
         bam_file = mapping_genome_bam
 
-    # Determine mitochondrial read counts
+    # Determine mitochondrial read counts. Contig names are configurable via
+    # pepatac.yaml `parameters: mito_names`; fall back to the common default
+    # so existing configs keep working.
     mito_name = ["chrM", "ChrM", "ChrMT", "chrMT", "M", "MT", "rCRSd"]
+    if "mito_names" in param and param.mito_names:
+        mito_name = list(param.mito_names)
 
     if not pm.get_stat("Mitochondrial_reads") or args.new_start:
         cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
@@ -2532,11 +2536,22 @@ def main():
                     pm.report_object("Peak chromosome distribution", chr_PDF,
                                      anchor_image=chr_PNG)
                 if not os.path.exists(TSSdist_PDF) or args.new_start:
-                    if hasattr(res, 'refgene_tss') and os.path.exists(res.refgene_tss):
+                    if hasattr(res, 'refgene_tss') and res.refgene_tss and os.path.exists(res.refgene_tss):
                         plot_tss_distance(peak_output_file, res.refgene_tss,
                                           TSSdist_PDF, TSSdist_PNG)
                         pm.report_object("TSS distance distribution", TSSdist_PDF,
                                          anchor_image=TSSdist_PNG)
+                    else:
+                        # No TSS annotation available. The TSS distance plot
+                        # needs a TSS reference BED, which the pipeline gets
+                        # from the refgenie `refgene_anno` asset (refgene_tss
+                        # seek key) via --TSS-name. If neither is present there
+                        # is nothing to plot against, so skip with guidance.
+                        print("No TSS annotation available; skipping TSS "
+                              "distance distribution plot. Provide --TSS-name "
+                              "or build the refgenie `refgene_anno` asset for "
+                              "genome '{}' to enable it.".format(
+                                  args.genome_assembly))
                 if not os.path.exists(gd_PDF) or args.new_start:
                     if args.gtf and os.path.exists(args.gtf):
                         plot_partition_distribution(peak_output_file, args.gtf,
