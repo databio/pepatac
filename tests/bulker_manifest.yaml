@@ -1,5 +1,5 @@
 manifest:
-  name: pepatac
+  name: databio/pepatac
   version: 1.1.4
   imports:
   - bulker/alpine:default
