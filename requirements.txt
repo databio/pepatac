@@ -24,3 +24,8 @@ refgenconf>=0.13.1
 # transitive dep on some envs (3-arg Region API) -- the pin here forces an
 # upgrade past that.
 gtars>=0.6.1
+# pyBigWig: read per-sample coverage tracks for the reproducible consensus
+# confidence annotations (signal-centeredness, bimodality) and --recenter.
+# Optional at runtime (consensus.py degrades gracefully if absent), but pinned
+# so the annotations are available by default.
+pyBigWig>=0.3.18
