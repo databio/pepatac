@@ -1,6 +1,6 @@
 manifest:
   name: pepatac
-  version: 1.1.1
+  version: 1.1.4
   imports:
   - bulker/alpine:default
   - bulker/coreutils:default
@@ -61,4 +61,4 @@ manifest:
   - command: trimmomatic
     docker_image: quay.io/biocontainers/trimmomatic:0.39--hdfd78af_2
   - command: gtars
-    docker_image: quay.io/biocontainers/rust-gtars:0.6.0--h885253a_0
+    docker_image: quay.io/biocontainers/rust-gtars:0.9.0--ha3ccbb0_0
