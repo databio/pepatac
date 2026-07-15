@@ -66,7 +66,7 @@ def parse_arguments():
     parser.add_argument("-l", "--min-olap", default=1,
                         help="A minimum number of overlapping bases to " +
                              "defined peaks as overlapping.")
-    parser.add_argument("-C", "--consensus-method", default=None,
+    parser.add_argument("--consensus-method", default=None,
                         choices=["legacy", "reproducible"],
                         help="Consensus peak method passed to the Python "
                              "summarizer (default: its own default, "
