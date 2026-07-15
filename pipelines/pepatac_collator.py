@@ -57,12 +57,25 @@ def parse_arguments():
     parser.add_argument("-m", "--cutoff", default=2,
                         help="Only keep peaks present in at least this " +
                              "number of samples.")
-    parser.add_argument("-s", "--min-score", default=5,
-                        help="A minimum peak score to keep an " +
-                             "individual peak.")
+    parser.add_argument("-s", "--min-score", default=None,
+                        help="A minimum peak score to keep an individual "
+                             "peak. If unset, the summarizer's method-aware "
+                             "default applies (5 for legacy; 0 for "
+                             "reproducible, so reproducibility gates inclusion "
+                             "instead of a hard score floor).")
     parser.add_argument("-l", "--min-olap", default=1,
                         help="A minimum number of overlapping bases to " +
                              "defined peaks as overlapping.")
+    parser.add_argument("-C", "--consensus-method", default=None,
+                        choices=["legacy", "reproducible"],
+                        help="Consensus peak method passed to the Python "
+                             "summarizer (default: its own default, "
+                             "'reproducible'). 'legacy' reproduces prior "
+                             "consensus peak sets.")
+    parser.add_argument("--repro-cutoff", default=None,
+                        help="reproducible method: minimum fraction of samples "
+                             "a peak must be called in to be kept regardless of "
+                             "score (default 0.6).")
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
                         help="Path to a reference peak set (narrowPeak/BED) "
@@ -118,11 +131,22 @@ def main():
         cmd = (f"PYTHONPATH={tools_dir}:$PYTHONPATH python -m pepatac_summarizer "
                f"{args.config_file} {args.output_parent} "
                f"{args.results} --cutoff {args.cutoff} "
-               f"--min-score {args.min_score} --min-olap {args.min_olap}")
+               f"--min-olap {args.min_olap}")
+        # Only forward --min-score when explicitly set, so the summarizer's
+        # method-aware default (0 for reproducible, 5 for legacy) applies.
+        if args.min_score is not None:
+            cmd += f" --min-score {args.min_score}"
+        if args.consensus_method is not None:
+            cmd += f" --consensus-method {args.consensus_method}"
+        if args.repro_cutoff is not None:
+            cmd += f" --repro-cutoff {args.repro_cutoff}"
     else:
+        # The R summarizer has no reproducible method; keep the historical
+        # score floor of 5 when unset.
+        r_min_score = args.min_score if args.min_score is not None else 5
         cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
                f"{args.config_file} {args.output_parent} "
-               f"{args.results} {args.cutoff} {args.min_score} {args.min_olap}")
+               f"{args.results} {args.cutoff} {r_min_score} {args.min_olap}")
     if args.new_start:
         cmd += " --new-start"
     if args.skip_consensus:
