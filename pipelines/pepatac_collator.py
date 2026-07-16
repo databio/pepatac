@@ -28,17 +28,20 @@ def tool_path(tool_name):
                         "tools", tool_name)
 
 
-def report_file_link(pm, key, path, title):
+def report_file_link(pm, key, path, title=None):
     """
-    Report a text output as a plain file link, with no thumbnail.
+    Report a file output as a link, with no thumbnail.
+
+    Mirrors the helper of the same name in pepatac.py; see there for why path
+    results are reported as objects rather than plain strings.
 
     :param pypiper.PipelineManager pm: pipeline manager reporting the result
     :param str key: result name, as declared in the output schema
     :param str path: path to the reported file
-    :param str title: link text shown in the report
+    :param str title: link text; defaults to the result name
     """
     pm.pipestat.report(
-        values={key: {"path": path, "title": title, "annotation": pm.name}},
+        values={key: {"path": path, "title": str(title or key)}},
         record_identifier=pm.pipestat_record_identifier,
         force_overwrite=True,
     )

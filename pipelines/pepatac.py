@@ -200,6 +200,34 @@ def parse_arguments():
     return args
 
 
+def report_file_link(pm, key, path, title=None):
+    """
+    Report a file output as a link, with no thumbnail.
+
+    Use this instead of report_result() for path-valued results. Looper drives
+    pipestat from a config file, which leaves pipestat with
+    validate_results=False; in that mode pipestat rewrites any reported string
+    ending in .bed/.bam into {path, title} but leaves other extensions alone,
+    so reporting paths as strings renders inconsistently. Sending the object
+    ourselves keeps every path result the same shape.
+
+    TODO: revisit once pipestat honors a schema_path given in the config file
+    (it currently sets validate_results = schema_path is not None, checking
+    only the constructor argument). With validation on, these could go back to
+    plain report_result() strings.
+
+    :param pypiper.PipelineManager pm: pipeline manager reporting the result
+    :param str key: result name, as declared in the output schema
+    :param str path: path to the reported file
+    :param str title: link text; defaults to the result name
+    """
+    pm.pipestat.report(
+        values={key: {"path": path, "title": str(title or key)}},
+        record_identifier=pm.pipestat_record_identifier,
+        force_overwrite=True,
+    )
+
+
 def report_message(pm, report_file, message, annotation=None):
     """
     Writes a string to provided file in a safe way.
@@ -1394,7 +1422,7 @@ def main():
            follow=lambda: post_dup_stats(metrics_file))
 
     if os.path.exists(rmdup_bam):
-        pm.report_result("aligned_bam", rmdup_bam)
+        report_file_link(pm, "aligned_bam", rmdup_bam)
 
 
     ############################################################################
@@ -1849,9 +1877,9 @@ def main():
                        "Confirm the required gtars tool is in your PATH.")
 
     if os.path.exists(exact_target):
-        pm.report_result("exact_bw", exact_target)
+        report_file_link(pm, "exact_bw", exact_target)
     if os.path.exists(smooth_target):
-        pm.report_result("smooth_bw", smooth_target)
+        report_file_link(pm, "smooth_bw", smooth_target)
 
     ############################################################################
     #                          Determine TSS enrichment                        #
@@ -2338,9 +2366,9 @@ def main():
 
         # peak_output_file has reached its final value at this point
         if os.path.exists(peak_output_file):
-            pm.report_result("peak_file", peak_output_file)
+            report_file_link(pm, "peak_file", peak_output_file)
         if os.path.exists(summits_bed):
-            pm.report_result("summits_bed", summits_bed)
+            report_file_link(pm, "summits_bed", summits_bed)
 
         ########################################################################
         #                Determine the fraction of reads in peaks              #
@@ -2457,9 +2485,9 @@ def main():
         # that this run is about to delete.
         if not args.lite:
             if os.path.exists(peak_coverage_gz):
-                pm.report_result("coverage_file", peak_coverage_gz)
+                report_file_link(pm, "coverage_file", peak_coverage_gz)
             elif os.path.exists(peak_coverage):
-                pm.report_result("coverage_file", peak_coverage)
+                report_file_link(pm, "coverage_file", peak_coverage)
 
         pm.clean_add(peak_bed)
         pm.clean_add(chr_keep)
