@@ -8,24 +8,84 @@ properties:
     items:
       type: object
       properties:
+        # These are declared as file objects rather than plain strings so the
+        # report renders them as links. Reporting them as strings is not
+        # workable while looper drives pipestat from a config file: pipestat
+        # then runs with validate_results=False and silently rewrites any
+        # string ending in .bed/.bam into {path, title}, so the six would
+        # render inconsistently (see report_file_link in pipelines/pepatac.py).
         smooth_bw:
-          type: string
+          type: object
+          object_type: file
           description: "Smoothed signal track"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         exact_bw:
-          type: string
+          type: object
+          object_type: file
           description: "Nucleotide-resolution signal track"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         aligned_bam:
-          type: string
+          type: object
+          object_type: file
           description: "Coordinate sorted deduplicated, aligned BAM file"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         peak_file:
-          type: string
+          type: object
+          object_type: file
           description: "Sample peak file"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         coverage_file:
-          type: string
+          type: object
+          object_type: file
           description: "Sample peak coverage table"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         summits_bed:
-          type: string
+          type: object
+          object_type: file
           description: "Peak summit file"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         File_mb:
           type: number
           description: "size of file"
