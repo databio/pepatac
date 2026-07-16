@@ -28,6 +28,22 @@ def tool_path(tool_name):
                         "tools", tool_name)
 
 
+def report_file_link(pm, key, path, title):
+    """
+    Report a text output as a plain file link, with no thumbnail.
+
+    :param pypiper.PipelineManager pm: pipeline manager reporting the result
+    :param str key: result name, as declared in the output schema
+    :param str path: path to the reported file
+    :param str title: link text shown in the report
+    """
+    pm.pipestat.report(
+        values={key: {"path": path, "title": title, "annotation": pm.name}},
+        record_identifier=pm.pipestat_record_identifier,
+        force_overwrite=True,
+    )
+
+
 def parse_arguments():
     """
     Creat parser instance and parse command-line arguments passed to the pipeline
@@ -184,13 +200,9 @@ def main():
         pm.debug(f"genome: {genome}")
         consensus_peaks_file = os.path.join(
             outfolder, f"{args.name}_{genome}_consensusPeaks.narrowPeak")
-        consensus_peaks_thumbnail = os.path.join(
-            outfolder, f"{args.name}_{genome}_consensusPeaks.png")
         pm.debug(f"consensus_peaks_file: {consensus_peaks_file}")
         peak_coverage_file = os.path.join(
             outfolder, f"{args.name}_{genome}_peaks_coverage.tsv")
-        peak_coverage_thumbnail = os.path.join(
-            outfolder, f"{args.name}_{genome}_peaks_coverage.png")
         pm.debug(f"peak_coverage_file(s): {peak_coverage_file}")
 
     pm.run(cmd, [complexity_file, consensus_peaks_file, peak_coverage_file])
@@ -204,10 +216,16 @@ def main():
                      anchor_image=alignment_raw_thumbnail)
     pm.report_object("TSS_enrichment", TSS_enrichment_file,
                      anchor_image=TSS_enrichment_thumbnail)
-    pm.report_object("consensus_peaks_file", consensus_peaks_file,
-                     anchor_image=consensus_peaks_thumbnail)
-    pm.report_object("counts_table", peak_coverage_file,
-                     anchor_image=peak_coverage_thumbnail)
+
+    # The consensus peaks and counts table are text files, not plots. The
+    # schema types them as object_type: file and requires only path and title,
+    # and nothing renders a thumbnail for them, so link them directly.
+    # report_object() cannot do this: it always sets thumbnail_path, and a
+    # None thumbnail fails schema validation.
+    report_file_link(pm, "consensus_peaks_file", consensus_peaks_file,
+                     "Consensus peaks")
+    report_file_link(pm, "counts_table", peak_coverage_file,
+                     "Project peak coverage file")
 
     pm.stop_pipeline()
 

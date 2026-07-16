@@ -1248,7 +1248,18 @@ def main():
         cmd = ("awk -F'\t' -f " + tool_path("extract_picard_lib.awk") +
                " " + dedup_log)
         picard_est_lib_size = pm.checkprint(cmd)
-        pm.report_result("Picard_est_lib_size", picard_est_lib_size)
+        # awk emits nothing when the metrics file has no METRICS CLASS block,
+        # and the schema requires a number, so only report a parseable value
+        if not picard_est_lib_size or not picard_est_lib_size.strip():
+            pm.info("Could not extract ESTIMATED_LIBRARY_SIZE from {}"
+                    .format(dedup_log))
+            return
+        try:
+            pm.report_result("Picard_est_lib_size",
+                             float(picard_est_lib_size.strip()))
+        except ValueError:
+            pm.info("Unexpected ESTIMATED_LIBRARY_SIZE value: {}"
+                    .format(picard_est_lib_size.strip()))
 
     def post_dup_aligned_reads(dedup_log):
         if args.skip_dedup:
@@ -1373,10 +1384,19 @@ def main():
         pm.info("PEPATAC could not determine a valid deduplicator tool")
         pm.stop_pipeline()
 
+    def post_dup_stats(metrics_file):
+        post_dup_aligned_reads(metrics_file)
+        # ESTIMATED_LIBRARY_SIZE is only present in Picard's metrics file
+        if args.deduplicator == "picard":
+            estimate_lib_size(metrics_file)
+
     pm.run([cmd1, cmd2], rmdup_bam,
-           follow=lambda: post_dup_aligned_reads(metrics_file))
-    
-    
+           follow=lambda: post_dup_stats(metrics_file))
+
+    if os.path.exists(rmdup_bam):
+        pm.report_result("aligned_bam", rmdup_bam)
+
+
     ############################################################################
     #           Determine distribution of reads across nucleosomes             #
     ############################################################################
@@ -1828,6 +1848,10 @@ def main():
                        "Could not call \'gtars\'."
                        "Confirm the required gtars tool is in your PATH.")
 
+    if os.path.exists(exact_target):
+        pm.report_result("exact_bw", exact_target)
+    if os.path.exists(smooth_target):
+        pm.report_result("smooth_bw", smooth_target)
 
     ############################################################################
     #                          Determine TSS enrichment                        #
@@ -2311,8 +2335,13 @@ def main():
                 cmd2 = ("touch " + blacklist_target)
                 pm.run([cmd1, cmd2], blacklist_target)
                 peak_output_file = filter_peak
-        
-        
+
+        # peak_output_file has reached its final value at this point
+        if os.path.exists(peak_output_file):
+            pm.report_result("peak_file", peak_output_file)
+        if os.path.exists(summits_bed):
+            pm.report_result("summits_bed", summits_bed)
+
         ########################################################################
         #                Determine the fraction of reads in peaks              #
         ########################################################################
@@ -2341,7 +2370,7 @@ def main():
                              # pipeline_manager=pm)
             # pm.report_result("FRiP_Q1", round(frip, 2))
 
-        if os.path.exists(res.frip_ref_peaks):
+        if args.frip_ref_peaks and os.path.exists(res.frip_ref_peaks):
             if pm.get_stat("FRiP_ref") is None or args.new_start:
                 # Use an external reference set of peaks instead of the peaks
                 # called from this run
@@ -2382,8 +2411,8 @@ def main():
         # If you include reference peaks, calculate coverage using those
         # normalize to 1M tags/reads: (base_counts/sum(base_counts))*1000000)
         # sum(base_counts) is just the total number of bases in peaks
-        if os.path.exists(res.frip_ref_peaks):
-            sort_frip_ref_peaks = os.path.join(peak_folder, 
+        if args.frip_ref_peaks and os.path.exists(res.frip_ref_peaks):
+            sort_frip_ref_peaks = os.path.join(peak_folder,
                 "sorted_reference_peaks.narrowPeak")
             cmd1 = (tools.bedtools + " sort -i " + res.frip_ref_peaks +
                     " -faidx " + chr_order + " > " + sort_frip_ref_peaks)
@@ -2422,6 +2451,15 @@ def main():
                 # norm_peak_coverage_gz)
         #pm.run([cmd1, cmd2], norm_peak_coverage_gz)
         pm.run(cmd1, peak_coverage_gz)
+
+        # ziptool compresses in place, so the .gz is normally the survivor.
+        # --lite removes the coverage file below, so don't advertise a path
+        # that this run is about to delete.
+        if not args.lite:
+            if os.path.exists(peak_coverage_gz):
+                pm.report_result("coverage_file", peak_coverage_gz)
+            elif os.path.exists(peak_coverage):
+                pm.report_result("coverage_file", peak_coverage)
 
         pm.clean_add(peak_bed)
         pm.clean_add(chr_keep)
