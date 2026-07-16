@@ -20,7 +20,20 @@ For a run with a [reference peak set](reference_peaks.md) the project processing
 
 ## Count table *with* a PEPATAC produced consensus peak set
 
-To produce a count table using the project derived consensus peak set *requires* an iterative approach. After generating the initial consensus peak set for a project, you will need to use that as your reference peak set in your `PEP` (with the `frip_ref_peaks:` parameter) and run the sample processing pipeline again to produce peak counts for each of the samples. Because the pipeline *knows* what files have been produced already, it will only perform this step and skip the rest of the pipeline. Then, simply run the project level pipeline again and the count table will be derived from the consensus peak set! 
+To produce a count table using the project derived consensus peak set *requires* an iterative approach. After generating the initial consensus peak set for a project, you will need to use that as your reference peak set in your `PEP` (with the `frip_ref_peaks:` parameter) and run the sample processing pipeline again to produce peak counts for each of the samples. Because the pipeline *knows* what files have been produced already, it will only perform this step and skip the rest of the pipeline. Then, simply run the project level pipeline again and the count table will be derived from the consensus peak set!
+
+**Important:** the per-sample `<sample>_PEPATAC_completed.flag` files left from the first pass will block the re-run unless you either:
+
+- delete the completion flags before re-running:
+  ```console
+  find <output_dir>/results_pipeline -name '*_PEPATAC_completed.flag' -delete
+  ```
+- or pass `--ignore-flags` to `looper run` (see [Looper sample flags](https://looper.databio.org/en/latest/faq/#why-isnt-a-sample-being-processed-by-a-pipeline-not-submitting-flag-found-_statusflag)):
+  ```console
+  looper run --looper-config /path/to/.looper_config.yaml --ignore-flags
+  ```
+
+With the flag cleared, the pipeline detects that only the reference-peak-coverage step is missing and skips everything else.
 
 ## Run the count table generation manually
 

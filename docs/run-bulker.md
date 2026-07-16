@@ -19,6 +19,8 @@ git clone https://github.com/databio/pepatac.git
 
 ### 2. Install python package requirements
 
+`bulker` (next step) provides the bioinformatics tools (bowtie2, samtools, macs3, etc.) via containers, but `pepatac.py` itself is a Python script that needs its own deps (`pypiper`, `looper`, `refgenconf`, etc.). Install those into a Python 3.8+ environment:
+
 ```console
 pip install -r pepatac/requirements.txt
 ```
@@ -46,11 +48,13 @@ refgenie pull hg38/fasta hg38/bowtie2_index hg38/refgene_anno hg38/ensembl_gtf h
 refgenie build hg38/feat_annotation
 ```
 
-`PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
+`PEPATAC` also requires a `bowtie2_index` *and* a `fasta` asset for any pre-alignment genome — pulling only the index will cause a `TypeError: 'NoneType' object is not iterable` from refgenconf's pre-submit hook (it iterates all registered assets for all genomes and fails on partial pulls):
 
 ```console
-refgenie pull rCRSd/bowtie2_index
+refgenie pull rCRSd/bowtie2_index rCRSd/fasta
 ```
+
+If you use other prealignment genomes (e.g. `human_repeats`), pull both assets for each.
 
 #### 3b. Download assets manually
 
@@ -71,9 +75,9 @@ Check out [the `bulker` setup guide to install bulker](https://bulker.databio.or
 
 ### 5. Load the `PEPATAC` crate
 
-We've already produced a `bulker` crate for `PEPATAC` that requires all software needed to run the pipeline.  We can load this crate directly from the [`bulker registry`](http://hub.bulker.io/):
+We've already produced a `bulker` crate for `PEPATAC` that bundles all software needed to run the pipeline.  Pre-cache this crate directly from the [`bulker registry`](http://hub.bulker.io/) (container images are pulled on first use):
 ```console
-bulker load databio/pepatac:1.1.1 -r
+bulker crate install databio/pepatac:1.1.3
 ```
 
 ### 6. Activate the `PEPATAC` crate
@@ -81,7 +85,7 @@ bulker load databio/pepatac:1.1.1 -r
 Now that we've loaded the `PEPATAC` crate, we need to activate that specific crate so its included tools are available.
 ```console
 
-bulker activate databio/pepatac:1.1.1
+bulker activate databio/pepatac:1.1.3
 
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!
@@ -110,6 +114,21 @@ If you are using `refgenie`, you can grab the path to the `--chrom-sizes` and `-
 refgenie seek hg38/fasta.chrom_sizes
 refgenie seek hg38/bowtie2_index.dir
 refgenie seek rCRSd/bowtie2_index.dir
+```
+
+Each `refgenie seek` call prints a path on stdout — those paths plug into `pepatac.py` as the values of `--chrom-sizes`, `--genome-index`, and `--prealignment-index` (respectively). You can either copy-paste them or substitute them inline with `$(refgenie seek ...)`:
+
+```console
+pipelines/pepatac.py --single-or-paired paired \
+  --prealignment-index rCRSd=$(refgenie seek rCRSd/bowtie2_index.dir) \
+  --genome hg38 \
+  --genome-index $(refgenie seek hg38/bowtie2_index.dir) \
+  --chrom-sizes $(refgenie seek hg38/fasta.chrom_sizes) \
+  --sample-name test1 \
+  --input examples/data/test1_r1.fastq.gz \
+  --input2 examples/data/test1_r2.fastq.gz \
+  --genome-size hs \
+  -O $HOME/pepatac_test
 ```
 
 Alternatively, if you are *not* using `refgenie`, you can still grab premade `--chrom-sizes` and `--genome-index` files from the `refgenie` servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
@@ -146,6 +165,14 @@ With a single processor, this will take 20-30 minutes to complete.
 
 Since `bulker` automatically directs any calls to required software to instead be executed in containers, we can just run our project the exact same way we would when we installed everything natively!
 
+The example looper config at `examples/test_project/.looper_test.yaml` references two environment variables — `$CODE` (the parent of your `pepatac/` clone) and `$PROCESSED` (where output should land). Set both before running `looper`:
+
+```console
+export CODE=/path/to/parent/of/pepatac
+export PROCESSED=/path/to/output/directory
+```
+
+Add these to your `.bashrc` (or equivalent) if you want them to persist across sessions.
 
 **Run the pipeline with looper and refgenie**
 ```console

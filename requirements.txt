@@ -1,32 +1,30 @@
-bio>=0.2.4
-blosc2>=2.0.0
-clyent==1.2.1
-codecov>=2.0
-colorama>=0.3.9
-Cython>=0.29
-cykhash>=1.0.2  
+# Core pepkit stack
 eido>=0.2.4
-FuzzyTM>=0.4.0
-#fseq2>=2.0.2
-hypothesis==4.38.0
-jinja2
-jsonschema>=3.0.1
-logmuse>=0.2.7
-looper>=2.0.1
-MACS3>=3.0.0b1
-numpy<1.25,>=1.21
-oyaml>=1.0
-pararead>=0.7.0
-pandas>=1.4
-piper>=0.14.3
+looper>=2.1.1
 pipestat>=0.12.1
+ubiquerg>=0.8.1
+yacman>=1.0.0
+
+# Pipeline runtime dependencies
+bio>=0.2.4
+jinja2
+logmuse>=0.2.7
+numpy>=1.21
+pandas>=1.4
+pararead>=0.7.0
+piper>=0.14.3
 psutil>=5.8
-pyqt5<5.16
-pyqtwebengine<5.16
 pysam>=0.16
 python-Levenshtein>=0.12
 pyyaml>=3.13
-refgenconf>=0.12.2
-requests_mock
-ubiquerg>=0.8.1
-yacman>=0.9.3
+refgenconf>=0.13.1
+# gtars Python binding: used by the --qc-backend gtars path (qc_gtars.py);
+# consensus.py no longer uses it. Pinned to 0.9.x to stay aligned with the
+# rust-gtars CLI/container and conda env (all 0.9.x). Note: PyPI skipped 0.9.0
+# (the container's version) -- the lowest 0.9.x wheel on PyPI is 0.9.1.
+gtars>=0.9.1
+# pyBigWig: read per-sample coverage tracks for the reproducible consensus
+# confidence annotations (signal-centeredness, bimodality) and --recenter.
+# Optional at runtime (consensus.py degrades gracefully if absent), but pinned
+# so the annotations are available by default.
+pyBigWig>=0.3.18

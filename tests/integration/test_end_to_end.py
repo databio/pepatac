@@ -18,7 +18,7 @@ Test Structure:
 
 Prerequisites:
 - .venv with refgenie installed (pip install refgenie)
-- bulker crate databio/pepatac:1.1.1 loaded and active
+- bulker crate databio/pepatac:1.1.3 cached and active
 - Network access to refgenie server (for pulling genome assets)
 - RUN_INTEGRATION_TESTS=true
 
@@ -40,7 +40,8 @@ pytestmark = pytest.mark.skipif(
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 PIPELINE_SCRIPT = os.path.join(PROJECT_ROOT, "pipelines", "pepatac.py")
 COLLATOR_SCRIPT = os.path.join(PROJECT_ROOT, "pipelines", "pepatac_collator.py")
-VENV_DIR = os.path.join(PROJECT_ROOT, ".venv")
+TESTS_DIR = os.path.dirname(os.path.dirname(__file__))
+VENV_DIR = os.environ.get("PEPATAC_TEST_VENV", os.path.join(TESTS_DIR, ".venv"))
 REFGENIE = os.path.join(VENV_DIR, "bin", "refgenie")
 
 GENOME_NAME = "hg38_chr22"
@@ -74,6 +75,44 @@ CONFIGS = {
         "deduplicator": "samblaster",
         "index_asset": "bowtie2_index",
     },
+    # Single-end + bwa exercises the _align() SE+bwa code path that was
+    # previously crashing on an undefined `cmd` (issue #299).
+    "bwa_macs3_se_skewer": {
+        "aligner": "bwa",
+        "peak_caller": "macs3",
+        "peak_type": "variable",
+        "trimmer": "skewer",
+        "deduplicator": "samtools",
+        "index_asset": "bwa_index",
+        "single_end": True,
+    },
+    # --skip-dedup exercises the dedup-bypass path added for protocols
+    # where duplicates are biologically meaningful (CUT&Tag, CUT&RUN;
+    # issue #249). Pipeline should report Duplicate_reads=0 and pass
+    # Aligned_reads through as Dedup_aligned_reads.
+    "bowtie2_macs3_skipdedup": {
+        "aligner": "bowtie2",
+        "peak_caller": "macs3",
+        "peak_type": "fixed",
+        "trimmer": "skewer",
+        "deduplicator": "samtools",
+        "index_asset": "bowtie2_index",
+        "skip_dedup": True,
+    },
+    # --qc-backend gtars exercises the gtars-backed QC plotting path
+    # (tools/pepatac_qc_gtars.py) and the gtars-only partition plotter
+    # which requires a GTF. Catches wiring bugs between pepatac.py and
+    # the gtars Python summarizer that the R-default tests miss.
+    "bowtie2_macs3_gtars": {
+        "aligner": "bowtie2",
+        "peak_caller": "macs3",
+        "peak_type": "fixed",
+        "trimmer": "skewer",
+        "deduplicator": "samtools",
+        "index_asset": "bowtie2_index",
+        "qc_backend": "gtars",
+        "gtf": os.path.join(PROJECT_ROOT, "tests", "data", "hg38_chr22_test.gtf"),
+    },
 }
 
 
@@ -90,12 +129,26 @@ def _run_refgenie(args, config_path):
 
 
 def _seek_asset(asset_path, config_path):
-    """Use refgenie seek to resolve an asset path."""
+    """Use refgenie seek to resolve an asset path.
+
+    Resolves symlinks because refgenie returns alias paths that use
+    relative symlinks to the data directory. Containerized tools
+    (via bulker/Docker) can't follow these since Docker only mounts
+    the paths it sees in the command arguments.
+    """
     result = subprocess.run(
         [REFGENIE, "seek", asset_path, "-c", config_path],
         capture_output=True, text=True, timeout=30,
     )
-    return result.stdout.strip()
+    path = result.stdout.strip()
+    if os.path.exists(path):
+        return os.path.realpath(path)
+    for ext in [".1.bt2", ".fa", ".fasta", ".amb"]:
+        candidate = path + ext
+        if os.path.exists(candidate):
+            resolved = os.path.realpath(candidate)
+            return resolved[: -len(ext)]
+    return path
 
 
 def _read_stats(sample_dir):
@@ -170,8 +223,6 @@ def _run_pipeline(config_name, config, refgenie_config, test_output_factory):
         "--sample-name", SAMPLE_NAME,
         "--genome", GENOME_NAME,
         "--input", input_r1,
-        "--input2", input_r2,
-        "--single-or-paired", "paired",
         "--output-parent", str(output_dir),
         "--genome-index", genome_index,
         "--chrom-sizes", chrom_sizes,
@@ -188,6 +239,23 @@ def _run_pipeline(config_name, config, refgenie_config, test_output_factory):
         "-M", "4000",
         "-R",
     ]
+    # Paired-end is the default; single-end configs drop the R2 input.
+    if config.get("single_end"):
+        cmd.extend(["--single-or-paired", "single"])
+    else:
+        cmd.extend(["--input2", input_r2, "--single-or-paired", "paired"])
+    # Pass --skip-dedup through when set in the config (issue #249).
+    if config.get("skip_dedup"):
+        cmd.append("--skip-dedup")
+    # Pass --qc-backend + --gtf through when the config exercises the
+    # gtars QC path (issue: integration coverage gap for gtars). The gtars
+    # partition plotter requires a GTF; the TSS/fragment/chrom plotters
+    # don't but all live behind the same args.qc_backend == "gtars" gate.
+    # --skipqc only gates FastQC, not these plotters, so leave it set.
+    if config.get("qc_backend"):
+        cmd.extend(["--qc-backend", config["qc_backend"]])
+        if config.get("gtf"):
+            cmd.extend(["--gtf", config["gtf"]])
 
     result = subprocess.run(
         cmd, capture_output=True, text=True, timeout=900,
@@ -222,6 +290,36 @@ def run_bwa_macs3_samblaster(refgenie_config, test_output_factory):
     return _run_pipeline(
         "bwa_macs3_samblaster",
         CONFIGS["bwa_macs3_samblaster"],
+        refgenie_config,
+        test_output_factory,
+    )
+
+
+@pytest.fixture(scope="module")
+def run_bwa_macs3_se_skewer(refgenie_config, test_output_factory):
+    return _run_pipeline(
+        "bwa_macs3_se_skewer",
+        CONFIGS["bwa_macs3_se_skewer"],
+        refgenie_config,
+        test_output_factory,
+    )
+
+
+@pytest.fixture(scope="module")
+def run_bowtie2_macs3_skipdedup(refgenie_config, test_output_factory):
+    return _run_pipeline(
+        "bowtie2_macs3_skipdedup",
+        CONFIGS["bowtie2_macs3_skipdedup"],
+        refgenie_config,
+        test_output_factory,
+    )
+
+
+@pytest.fixture(scope="module")
+def run_bowtie2_macs3_gtars(refgenie_config, test_output_factory):
+    return _run_pipeline(
+        "bowtie2_macs3_gtars",
+        CONFIGS["bowtie2_macs3_gtars"],
         refgenie_config,
         test_output_factory,
     )
@@ -393,6 +491,175 @@ class TestBowtie2Genrich:
 
     def test_stats_content(self, run_bowtie2_genrich_samblaster):
         stats = _read_stats(run_bowtie2_genrich_samblaster["sample_dir"])
+        assert stats["Genome"] == GENOME_NAME
+        assert int(stats["Raw_reads"]) > 0
+        assert int(stats["Aligned_reads"]) > 0
+        assert 0 < float(stats["Alignment_rate"]) <= 100
+
+
+# ============================================================================
+# Config 4: single-end + bwa (regression coverage for #299)
+# ============================================================================
+
+class TestBwaMacs3SE:
+    """Single-end + bwa exercises the _align() SE+bwa code path that
+    previously crashed on an undefined `cmd` (issue #299)."""
+
+    def test_00_pipeline_succeeded(self, run_bwa_macs3_se_skewer):
+        """Pipeline must complete successfully before testing outputs.
+
+        Pre-fix, this assertion would fail because `_align()` raised
+        NameError on the very first SE+bwa pm.run() call.
+        """
+        _assert_pipeline_success(run_bwa_macs3_se_skewer)
+
+    def test_output_dir(self, run_bwa_macs3_se_skewer):
+        assert os.path.isdir(run_bwa_macs3_se_skewer["sample_dir"])
+
+    def test_log_exists(self, run_bwa_macs3_se_skewer):
+        log = os.path.join(run_bwa_macs3_se_skewer["sample_dir"], "PEPATAC_log.md")
+        assert os.path.isfile(log)
+
+    def test_dedup_bam(self, run_bwa_macs3_se_skewer):
+        bam = os.path.join(
+            run_bwa_macs3_se_skewer["sample_dir"],
+            f"aligned_{GENOME_NAME}",
+            f"{SAMPLE_NAME}_sort_dedup.bam",
+        )
+        assert os.path.isfile(bam)
+        assert os.path.getsize(bam) > 0
+
+    def test_peaks(self, run_bwa_macs3_se_skewer):
+        peaks = os.path.join(
+            run_bwa_macs3_se_skewer["sample_dir"],
+            f"peak_calling_{GENOME_NAME}",
+            f"{SAMPLE_NAME}_peaks.narrowPeak",
+        )
+        assert os.path.isfile(peaks)
+        assert os.path.getsize(peaks) > 0
+
+    def test_stats_content(self, run_bwa_macs3_se_skewer):
+        stats = _read_stats(run_bwa_macs3_se_skewer["sample_dir"])
+        assert stats["Genome"] == GENOME_NAME
+        assert stats["Read_type"].lower().startswith("single")
+        assert int(stats["Raw_reads"]) > 0
+        assert int(stats["Aligned_reads"]) > 0
+        assert 0 < float(stats["Alignment_rate"]) <= 100
+
+
+# ============================================================================
+# Config 5: bowtie2 + macs3 + --skip-dedup (regression coverage for #249)
+# ============================================================================
+
+class TestBowtie2Macs3SkipDedup:
+    """`--skip-dedup` bypasses duplicate removal (CUT&Tag/CUT&RUN protocols
+    where duplicates are biologically meaningful). The pipeline should:
+    - still complete successfully and produce a _sort_dedup.bam (the
+      mapping_genome_bam copied to the dedup endpoint),
+    - report Duplicate_reads=0,
+    - report Dedup_aligned_reads / Dedup_alignment_rate pass-through from
+      the aligned (pre-dedup) values."""
+
+    def test_00_pipeline_succeeded(self, run_bowtie2_macs3_skipdedup):
+        _assert_pipeline_success(run_bowtie2_macs3_skipdedup)
+
+    def test_output_dir(self, run_bowtie2_macs3_skipdedup):
+        assert os.path.isdir(run_bowtie2_macs3_skipdedup["sample_dir"])
+
+    def test_dedup_bam_exists(self, run_bowtie2_macs3_skipdedup):
+        """The _sort_dedup.bam is a copy of mapping_genome_bam under
+        --skip-dedup, so it should still exist for downstream tools."""
+        bam = os.path.join(
+            run_bowtie2_macs3_skipdedup["sample_dir"],
+            f"aligned_{GENOME_NAME}",
+            f"{SAMPLE_NAME}_sort_dedup.bam",
+        )
+        assert os.path.isfile(bam)
+        assert os.path.getsize(bam) > 0
+
+    def test_duplicate_reads_zero(self, run_bowtie2_macs3_skipdedup):
+        """Duplicate_reads is reported as 0 by post_dup_aligned_reads()
+        when args.skip_dedup is True."""
+        stats = _read_stats(run_bowtie2_macs3_skipdedup["sample_dir"])
+        assert int(stats["Duplicate_reads"]) == 0
+
+    def test_dedup_passes_through_aligned(self, run_bowtie2_macs3_skipdedup):
+        """With dedup skipped, Dedup_aligned_reads should equal Aligned_reads
+        (the post-dedup count = the pre-dedup count, since nothing was removed)."""
+        stats = _read_stats(run_bowtie2_macs3_skipdedup["sample_dir"])
+        assert int(stats["Aligned_reads"]) > 0
+        assert int(float(stats["Dedup_aligned_reads"])) == int(stats["Aligned_reads"])
+
+
+# ============================================================================
+# Config 6: bowtie2 + macs3 + --qc-backend gtars (gtars QC path coverage)
+# ============================================================================
+
+class TestBowtie2Macs3Gtars:
+    """`--qc-backend gtars` routes QC plot generation through the new
+    gtars-backed plotters in tools/pepatac_qc_gtars.py instead of the R
+    fallback. Exercises wiring between pepatac.py and the gtars Python
+    bindings (Region/RegionSet/PartitionList/TssIndex/calc_partitions).
+
+    The gtars-default tests above (TestBowtie2Macs3 etc.) don't pass
+    `--qc-backend`, so they run the R path. This class is the only
+    integration coverage for the gtars path -- which we want before
+    shipping it as a user-facing option."""
+
+    def test_00_pipeline_succeeded(self, run_bowtie2_macs3_gtars):
+        """Pipeline completes successfully with --qc-backend gtars + --gtf."""
+        _assert_pipeline_success(run_bowtie2_macs3_gtars)
+
+    def test_output_dir(self, run_bowtie2_macs3_gtars):
+        assert os.path.isdir(run_bowtie2_macs3_gtars["sample_dir"])
+
+    def test_dedup_bam(self, run_bowtie2_macs3_gtars):
+        bam = os.path.join(
+            run_bowtie2_macs3_gtars["sample_dir"],
+            f"aligned_{GENOME_NAME}",
+            f"{SAMPLE_NAME}_sort_dedup.bam",
+        )
+        assert os.path.isfile(bam)
+        assert os.path.getsize(bam) > 0
+
+    def test_peaks(self, run_bowtie2_macs3_gtars):
+        peaks = os.path.join(
+            run_bowtie2_macs3_gtars["sample_dir"],
+            f"peak_calling_{GENOME_NAME}",
+            f"{SAMPLE_NAME}_peaks.narrowPeak",
+        )
+        assert os.path.isfile(peaks)
+        assert os.path.getsize(peaks) > 0
+
+    def test_gtars_qc_plots_produced(self, run_bowtie2_macs3_gtars):
+        """The gtars plotters produce the same target PDFs/PNGs as R.
+
+        The fragment-distribution plot is always produced for paired-end
+        runs and exercises plot_fragment_distribution in
+        tools/pepatac_qc_gtars.py. The TSS enrichment plot is skipped
+        when the refgenie config lacks `refgene_tss` (which is the case
+        for the test's hg38_chr22 refgenie config), so we don't assert
+        on it -- the pipeline correctly logs "Skipping TSS -- TSS
+        enrichment requires TSS annotation file: refgene_tss" and moves
+        on. If a future test setup provides refgene_tss, the gtars
+        TSS plotter will fire via the same dispatch.
+        """
+        qc_dir = os.path.join(
+            run_bowtie2_macs3_gtars["sample_dir"],
+            f"QC_{GENOME_NAME}",
+        )
+        # Fragment distribution plot (paired-end only, this config is paired).
+        # Exercises plot_fragment_distribution -- this is the matplotlib
+        # import path that was the gating issue for gtars wiring.
+        frag_plot = os.path.join(
+            qc_dir, f"{SAMPLE_NAME}_fragLenDistribution.pdf"
+        )
+        assert os.path.isfile(frag_plot), (
+            f"gtars fragment distribution PDF not found: {frag_plot}"
+        )
+
+    def test_stats_content(self, run_bowtie2_macs3_gtars):
+        stats = _read_stats(run_bowtie2_macs3_gtars["sample_dir"])
         assert stats["Genome"] == GENOME_NAME
         assert int(stats["Raw_reads"]) > 0
         assert int(stats["Aligned_reads"]) > 0

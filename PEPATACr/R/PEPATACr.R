@@ -25,7 +25,7 @@ NULL
 theme_PEPATAC <- function(base_family = "sans", ...){
   ggplot2::theme_classic(base_family = base_family, base_size = 14, ...) +
   ggplot2::theme(
-    axis.line = element_line(size = 0.5),
+    axis.line = element_line(linewidth = 0.5),
     axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
@@ -36,7 +36,7 @@ theme_PEPATAC <- function(base_family = "sans", ...){
     aspect.ratio = 1,
     legend.position = "none",
     plot.title = element_text(hjust = 0.5),
-    panel.border = element_rect(colour = "black", fill=NA, size=0.5)
+    panel.border = element_rect(colour = "black", fill=NA, linewidth=0.5)
   )
 }
 
@@ -1423,12 +1423,13 @@ plotAnno <- function(plot = c("chromosome", "tss", "genomic"),
         if (file.exists(file.path(input)) && info$size != 0) {
             in_file  <- data.table::fread(file.path(input))
         } else {
-            out_file <- file.path(output, paste(basename(sample_path),
-                                                output_type,
-                                                "partition_dist.pdf",
-                                                sep="_"))
-            system2(paste("touch"), out_file)
-            quit()
+            # No input data — return an empty ggplot so the caller's
+            # pdf()/png() writes a blank placeholder at the expected
+            # target path. (Earlier versions tried to touch a hard-coded
+            # *_partition_dist.pdf inside `output` treating it as a
+            # directory, which silently dropped the placeholder when
+            # `output` was a file path. See #232.)
+            return(ggplot())
         }
     }
 
@@ -2783,6 +2784,35 @@ readPepatacPeakCounts = function(prj, results_subdir) {
 #'                  per-sample peaks.
 #' @keywords project peak counts
 #' @export
+
+#' Detect the on-disk extension of peak coverage files for a given suffix.
+#'
+#' Internal helper used by \code{peakCounts}. Scans the expected
+#' \code{<results_subdir>/<sample>/peak_calling_<genome>/<sample><suffix><ext>}
+#' paths, preferring \code{.bed.gz} over \code{.bed}, and returns the first
+#' extension found. Returns \code{NA_character_} if no file matches. Kept
+#' separate (rather than a closure inside \code{peakCounts}) so the
+#' mixed-state detection from #218/#219 is unit-testable.
+#'
+#' @param suffix Character; the part of the filename between sample_name and
+#'   the extension, e.g. \code{"_peaks_coverage"} or \code{"_ref_peaks_coverage"}.
+#' @param results_subdir Character; project results directory.
+#' @param sample_names Character vector of sample names.
+#' @param genomes Character vector of genome assemblies, one per sample.
+#' @return One of \code{".bed.gz"}, \code{".bed"}, or \code{NA_character_}.
+.detectPeakCoverageExt <- function(suffix, results_subdir,
+                                   sample_names, genomes) {
+    for (e in c(".bed.gz", ".bed")) {
+        if (any(file.exists(file.path(
+            results_subdir,
+            sample_names, paste0("peak_calling_", genomes),
+            paste0(sample_names, suffix, e))))) {
+            return(e)
+        }
+    }
+    return(NA_character_)
+}
+
 peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
                        poverlap=FALSE, norm=FALSE, cutoff=2, min_olap=1,
                        ref_peaks=NA) {
@@ -2855,29 +2885,25 @@ peakCounts <- function(sample_table, summary_dir, results_subdir, assets,
         }
     }
 
-    # check if coverage files are compressed
-    if (any(file.exists(file.path(results_subdir,
-                        sample_names, paste0("peak_calling_", genomes),
-                        paste0(sample_names, "_ref_peaks_coverage.bed.gz"))))) {
-        ext <- ".bed.gz"
-    } else if (any(file.exists(file.path(results_subdir,
-                        sample_names, paste0("peak_calling_", genomes),
-                        paste0(sample_names, "_peaks_coverage.bed.gz"))))) {
-        ext <- ".bed.gz"
-    } else {
-        ext <- ".bed"
-    }
+    # Detect extension independently for reference vs sample peak coverage,
+    # since users commonly have *_peaks_coverage.bed.gz from the first sample
+    # run plus *_ref_peaks_coverage.bed from the re-run (or vice versa). A
+    # single shared `ext` defeats the ref-peaks lookup in that mixed state.
+    # (Helper is hoisted to .detectPeakCoverageExt() so it can be unit-tested.)
+    ref_ext      <- .detectPeakCoverageExt("_ref_peaks_coverage",
+                                           results_subdir, sample_names, genomes)
+    fallback_ext <- .detectPeakCoverageExt("_peaks_coverage",
+                                           results_subdir, sample_names, genomes)
+    if (is.na(fallback_ext)) fallback_ext <- ".bed"
 
     # Use reference peak coverage file if available
-    if (any(file.exists(file.path(results_subdir,
-                        sample_names, paste0("peak_calling_", genomes),
-                        paste0(sample_names, "_ref_peaks_coverage", ext))))) {
-        peak_file_name = paste0("_ref_peaks_coverage", ext)
+    if (!is.na(ref_ext)) {
+        peak_file_name = paste0("_ref_peaks_coverage", ref_ext)
         reference = TRUE
     } else {
         warning("Peak coverage files are not derived from a singular reference peak set.")
         reference = FALSE
-        peak_file_name = paste0("_peaks_coverage", ext)
+        peak_file_name = paste0("_peaks_coverage", fallback_ext)
     }
     
     # generate paths to peak coverage files

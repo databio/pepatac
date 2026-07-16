@@ -8,24 +8,84 @@ properties:
     items:
       type: object
       properties:
+        # These are declared as file objects rather than plain strings so the
+        # report renders them as links. Reporting them as strings is not
+        # workable while looper drives pipestat from a config file: pipestat
+        # then runs with validate_results=False and silently rewrites any
+        # string ending in .bed/.bam into {path, title}, so the six would
+        # render inconsistently (see report_file_link in pipelines/pepatac.py).
         smooth_bw:
-          type: string
+          type: object
+          object_type: file
           description: "Smoothed signal track"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         exact_bw:
-          type: string
+          type: object
+          object_type: file
           description: "Nucleotide-resolution signal track"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         aligned_bam:
-          type: string
+          type: object
+          object_type: file
           description: "Coordinate sorted deduplicated, aligned BAM file"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         peak_file:
-          type: string
+          type: object
+          object_type: file
           description: "Sample peak file"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         coverage_file:
-          type: string
+          type: object
+          object_type: file
           description: "Sample peak coverage table"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         summits_bed:
-          type: string
+          type: object
+          object_type: file
           description: "Peak summit file"
+          properties:
+            path:
+              type: string
+            title:
+              type: string
+          required:
+            - path
+            - title
         File_mb:
           type: number
           description: "size of file"
@@ -56,12 +116,19 @@ properties:
             path:
               type: string
             thumbnail_path:
-              type: string
+              # FastQC outputs an HTML report with no thumbnail. pipestat
+              # always synthesizes the field in the reported dict but as
+              # None when there's no thumbnail, so the schema has to accept
+              # null too. (Without this, newer pipestat raises
+              # SchemaValidationErrorDuringReport: None is not of type
+              # 'string' from check_trim().)
+              type:
+                - string
+                - "null"
             title:
               type: string
           required:
             - path
-            - thumbnail_path
             - title
         FastQC report r2:
           title: "FastQC report r2"
@@ -72,12 +139,14 @@ properties:
             path:
               type: string
             thumbnail_path:
-              type: string
+              # See note on FastQC report r1.
+              type:
+                - string
+                - "null"
             title:
               type: string
           required:
             - path
-            - thumbnail_path
             - title
         Aligned_reads_rCRSd:
           type: number

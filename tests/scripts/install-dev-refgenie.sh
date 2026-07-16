@@ -17,7 +17,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-VENV_DIR="${PROJECT_ROOT}/.venv"
+VENV_DIR="${PROJECT_ROOT}/tests/.venv"
 PIP="${VENV_DIR}/bin/pip"
 
 # Colors for output
@@ -34,10 +34,14 @@ REFGENIESERVER_PATH="${REFGENIE_WORKSPACE}/refgenieserver"
 
 echo -e "${GREEN}=== Installing Dev Refgenie Tools ===${NC}"
 
-# Check venv exists
+# Create venv if it doesn't exist
+if [ ! -d "${VENV_DIR}" ]; then
+    echo -e "${YELLOW}Creating venv at ${VENV_DIR}...${NC}"
+    python3 -m venv "${VENV_DIR}"
+fi
+
 if [ ! -f "${PIP}" ]; then
     echo -e "${RED}ERROR: pip not found at ${PIP}${NC}"
-    echo "  Create venv: python3 -m venv ${VENV_DIR}"
     exit 1
 fi
 

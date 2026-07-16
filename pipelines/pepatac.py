@@ -6,7 +6,7 @@ PEPATAC - ATACseq pipeline
 __author__ = ["Jin Xu", "Nathan Sheffield", "Jason Smith"]
 __email__ = "jasonsmith@virginia.edu"
 
-__version__ = "0.13.1"
+__version__ = "0.14.0"
 
 
 from argparse import ArgumentParser
@@ -19,6 +19,15 @@ from pathlib import Path
 import psutil
 from pypiper import build_command
 from refgenconf import RefGenConf as RGC, select_genome_config
+
+# Make sibling `tools/` importable when this script is invoked directly
+# (`python pepatac.py ...`), since sys.path[0] is the script's directory
+# (`pipelines/`) and `tools/` is the sibling project-level package.
+# Needed for `from tools.pepatac_qc_gtars import ...` inside the
+# --qc-backend gtars branches.
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 TOOLS_FOLDER = "tools"
 ANNO_FOLDER = "anno"
@@ -58,6 +67,16 @@ def parse_arguments():
     parser.add_argument("--peak-caller", dest="peak_caller", type=str.lower,
                         default="macs3", choices=PEAK_CALLERS,
                         help="Name of peak caller.")
+
+    parser.add_argument("--qc-backend", dest="qc_backend", type=str.lower,
+                        default="r", choices=["r", "gtars"],
+                        help="Backend for QC calculations: r (default, uses "
+                             "PEPATACr/GenomicDistributions) or gtars (fast Rust).")
+
+    parser.add_argument("--gtf", dest="gtf", type=str, default=None,
+                        help="Path to GTF gene annotation file. Required for "
+                             "partition plots when using --qc-backend gtars. "
+                             "Download from GENCODE: gencode.v44.basic.annotation.gtf.gz")
 
     parser.add_argument("-gs", "--genome-size", default="2.7e9", type=str.lower,
                         help="Effective genome size. It can be 1.0e+9 "
@@ -118,6 +137,11 @@ def parse_arguments():
                         help="Skip FastQC. Useful for bugs in FastQC "
                              "that appear with some sequence read files.")
 
+    parser.add_argument("--skip-dedup", dest="skip_dedup", action='store_true',
+                        help="Skip duplicate removal. Recommended for protocols "
+                             "where duplicates are biologically meaningful "
+                             "(e.g. CUT&Tag, CUT&RUN).")
+
     # Prealignment genome assets
     parser.add_argument("--prealignment-names", default=[], type=str,
                         nargs="+",
@@ -174,6 +198,34 @@ def parse_arguments():
         raise SystemExit
 
     return args
+
+
+def report_file_link(pm, key, path, title=None):
+    """
+    Report a file output as a link, with no thumbnail.
+
+    Use this instead of report_result() for path-valued results. Looper drives
+    pipestat from a config file, which leaves pipestat with
+    validate_results=False; in that mode pipestat rewrites any reported string
+    ending in .bed/.bam into {path, title} but leaves other extensions alone,
+    so reporting paths as strings renders inconsistently. Sending the object
+    ourselves keeps every path result the same shape.
+
+    TODO: revisit once pipestat honors a schema_path given in the config file
+    (it currently sets validate_results = schema_path is not None, checking
+    only the constructor argument). With validation on, these could go back to
+    plain report_result() strings.
+
+    :param pypiper.PipelineManager pm: pipeline manager reporting the result
+    :param str key: result name, as declared in the output schema
+    :param str path: path to the reported file
+    :param str title: link text; defaults to the result name
+    """
+    pm.pipestat.report(
+        values={key: {"path": path, "title": str(title or key)}},
+        record_identifier=pm.pipestat_record_identifier,
+        force_overwrite=True,
+    )
 
 
 def report_message(pm, report_file, message, annotation=None):
@@ -342,9 +394,9 @@ def _align(args, tools, paired, useFIFO, unmap_fq1, unmap_fq2,
             pm.run([cmd1, cmd2, cmd3, cmd4, filter_pair], out_fastq_r2_gz)
         else:
             if args.keep:
-                pm.run(cmd, mapped_bam)
+                pm.run([cmd1, cmd2, cmd3, cmd4], mapped_bam)
             else:
-                pm.run(cmd, out_fastq_tmp_gz)
+                pm.run([cmd1, cmd2, cmd3, cmd4], out_fastq_tmp_gz)
 
         cmd = tools.samtools + " view -c " + mapped_bam
         align_exact = pm.checkprint(cmd)       
@@ -981,6 +1033,12 @@ def main():
         pm.debug("{} is released! \n".format(os.path.abspath(fq)))
         return True
     
+    handle_fail_msg = (
+        "Fastq filter_paired_fq.pl function did not complete successfully. "
+        "Re-run with `--keep` or `--noFIFO` to bypass the non-blocking "
+        "filter_pair path, which relies on psutil process introspection "
+        "and can fail in environments where it lacks permission to inspect "
+        "other processes' file handles.")
     if args.paired_end and not os.path.exists(mapping_genome_bam):
         if not pypiper.is_gzipped_fastq(unmap_fq1):
             checks = 1
@@ -989,9 +1047,7 @@ def main():
                 checks += 1
                 pm.debug("Check count fq1: {}".format(str(checks)))
             if checks > 100 and not no_handle(unmap_fq1):
-                err_msg = ("Fastq filter_paired_fq.pl function did not "
-                           "complete successfully. Try running the pipeline "
-                           "with `--keep`.")
+                pm.fail_pipeline(IOError(handle_fail_msg))
         if not pypiper.is_gzipped_fastq(unmap_fq2):
             checks = 1
             # Check unmap_fq2
@@ -999,10 +1055,7 @@ def main():
                 checks += 1
                 pm.debug("Check count fq2: {}".format(str(checks)))
             if checks > 100 and not no_handle(unmap_fq2):
-                err_msg = ("Fastq filter_paired_fq.pl function did not "
-                           "complete successfully. Try running the pipeline "
-                           "with `--keep`.")
-                pm.fail_pipeline(IOError(err_msg))
+                pm.fail_pipeline(IOError(handle_fail_msg))
 
     for unmapped_fq in to_compress:
         # Compress unmapped fastq reads
@@ -1111,8 +1164,12 @@ def main():
     else:
         bam_file = mapping_genome_bam
 
-    # Determine mitochondrial read counts
+    # Determine mitochondrial read counts. Contig names are configurable via
+    # pepatac.yaml `parameters: mito_names`; fall back to the common default
+    # so existing configs keep working.
     mito_name = ["chrM", "ChrM", "ChrMT", "chrMT", "M", "MT", "rCRSd"]
+    if "mito_names" in param and param.mito_names:
+        mito_name = list(param.mito_names)
 
     if not pm.get_stat("Mitochondrial_reads") or args.new_start:
         cmd = (tools.samtools + " idxstats " + bam_file + " | grep")
@@ -1219,9 +1276,31 @@ def main():
         cmd = ("awk -F'\t' -f " + tool_path("extract_picard_lib.awk") +
                " " + dedup_log)
         picard_est_lib_size = pm.checkprint(cmd)
-        pm.report_result("Picard_est_lib_size", picard_est_lib_size)
+        # awk emits nothing when the metrics file has no METRICS CLASS block,
+        # and the schema requires a number, so only report a parseable value
+        if not picard_est_lib_size or not picard_est_lib_size.strip():
+            pm.info("Could not extract ESTIMATED_LIBRARY_SIZE from {}"
+                    .format(dedup_log))
+            return
+        try:
+            pm.report_result("Picard_est_lib_size",
+                             float(picard_est_lib_size.strip()))
+        except ValueError:
+            pm.info("Unexpected ESTIMATED_LIBRARY_SIZE value: {}"
+                    .format(picard_est_lib_size.strip()))
 
     def post_dup_aligned_reads(dedup_log):
+        if args.skip_dedup:
+            ar = float(pm.get_stat("Aligned_reads"))
+            tr = float(pm.get_stat("Trimmed_reads"))
+            rr = float(pm.get_stat("Raw_reads"))
+            pm.report_result("Duplicate_reads", 0)
+            pm.report_result("Dedup_aligned_reads", ar)
+            pm.report_result("Dedup_alignment_rate",
+                             round(float(ar) * 100 / float(tr), 2))
+            pm.report_result("Dedup_total_efficiency",
+                             round(float(ar) * 100 / float(rr), 2))
+            return
         if args.deduplicator == "picard":
             cmd = ("grep -A2 'METRICS CLASS' " + dedup_log +
                    " | tail -n 1 | awk '{print $(NF-3)}'")
@@ -1269,8 +1348,14 @@ def main():
         java_settings = '-Xmx{mem}'.format(mem=pm.mem)
     else:
         java_settings = param.java_settings.params
-    if args.deduplicator == "picard":
-        cmd1 = (tools.java + " " + java_settings + " -jar " + 
+    if args.skip_dedup:
+        # User opted out of duplicate removal (e.g. CUT&Tag/CUT&RUN protocols).
+        # Reuse the post-alignment BAM as the "dedup" endpoint so downstream
+        # steps can find _sort_dedup.bam without a code-path fork.
+        cmd1 = "cp {} {}".format(mapping_genome_bam, rmdup_bam)
+        cmd2 = tools.samtools + " index " + rmdup_bam
+    elif args.deduplicator == "picard":
+        cmd1 = (tools.java + " " + java_settings + " -jar " +
                 tools.picard + " MarkDuplicates")
         cmd1 += " INPUT=" + mapping_genome_bam
         cmd1 += " OUTPUT=" + rmdup_bam
@@ -1327,10 +1412,19 @@ def main():
         pm.info("PEPATAC could not determine a valid deduplicator tool")
         pm.stop_pipeline()
 
+    def post_dup_stats(metrics_file):
+        post_dup_aligned_reads(metrics_file)
+        # ESTIMATED_LIBRARY_SIZE is only present in Picard's metrics file
+        if args.deduplicator == "picard":
+            estimate_lib_size(metrics_file)
+
     pm.run([cmd1, cmd2], rmdup_bam,
-           follow=lambda: post_dup_aligned_reads(metrics_file))
-    
-    
+           follow=lambda: post_dup_stats(metrics_file))
+
+    if os.path.exists(rmdup_bam):
+        report_file_link(pm, "aligned_bam", rmdup_bam)
+
+
     ############################################################################
     #           Determine distribution of reads across nucleosomes             #
     ############################################################################
@@ -1782,6 +1876,10 @@ def main():
                        "Could not call \'gtars\'."
                        "Confirm the required gtars tool is in your PATH.")
 
+    if os.path.exists(exact_target):
+        report_file_link(pm, "exact_bw", exact_target)
+    if os.path.exists(smooth_target):
+        report_file_link(pm, "smooth_bw", smooth_target)
 
     ############################################################################
     #                          Determine TSS enrichment                        #
@@ -1826,14 +1924,18 @@ def main():
                 pm.report_result("TSS_score", 0)
                 pass
         
-        # Call Rscript to plot TSS Enrichment
+        # Plot TSS Enrichment
         Tss_pdf = os.path.join(QC_folder,  args.sample_name +
                                "_TSS_enrichment.pdf")
         Tss_png = os.path.join(QC_folder,  args.sample_name +
                                "_TSS_enrichment.png")
-        cmd = (tools.Rscript + " " + tool_path("PEPATAC.R") + 
-               " tss -i " + Tss_enrich)
-        pm.run(cmd, Tss_pdf, nofail=True)
+        if args.qc_backend == "gtars":
+            from tools.pepatac_qc_gtars import plot_tss_enrichment
+            plot_tss_enrichment(Tss_enrich, Tss_pdf, Tss_png)
+        else:
+            cmd = (tools.Rscript + " " + tool_path("PEPATAC.R") +
+                   " tss -i " + Tss_enrich)
+            pm.run(cmd, Tss_pdf, nofail=True)
 
         pm.report_object("TSS enrichment", Tss_pdf, anchor_image=Tss_png)
 
@@ -1864,11 +1966,20 @@ def main():
         fragL_dis2 = os.path.join(QC_folder, args.sample_name +
                                   "_fragLenDistribution.txt")
 
-        cmd3 = (tools.Rscript + " " + tool_path("PEPATAC.R") +
-                " frag -l " + frag_len + " -c " + fragL_count +
-                " -p " + fragL_dis1 + " -t " + fragL_dis2)
+        # Run data generation commands first
+        pm.run([cmd1, cmd2], fragL_count, nofail=True)
 
-        pm.run([cmd1, cmd2, cmd3], fragL_dis1, nofail=True)
+        # Plot with selected backend
+        if args.qc_backend == "gtars":
+            from tools.pepatac_qc_gtars import plot_fragment_distribution
+            plot_fragment_distribution(frag_len, fragL_count, fragL_dis1,
+                                       fragL_dis2, fragL_png)
+        else:
+            cmd3 = (tools.Rscript + " " + tool_path("PEPATAC.R") +
+                    " frag -l " + frag_len + " -c " + fragL_count +
+                    " -p " + fragL_dis1 + " -t " + fragL_dis2)
+            pm.run(cmd3, fragL_dis1, nofail=True)
+
         pm.report_object("Fragment distribution", fragL_dis1,
                          anchor_image=fragL_png)
     else: 
@@ -2252,8 +2363,13 @@ def main():
                 cmd2 = ("touch " + blacklist_target)
                 pm.run([cmd1, cmd2], blacklist_target)
                 peak_output_file = filter_peak
-        
-        
+
+        # peak_output_file has reached its final value at this point
+        if os.path.exists(peak_output_file):
+            report_file_link(pm, "peak_file", peak_output_file)
+        if os.path.exists(summits_bed):
+            report_file_link(pm, "summits_bed", summits_bed)
+
         ########################################################################
         #                Determine the fraction of reads in peaks              #
         ########################################################################
@@ -2282,7 +2398,7 @@ def main():
                              # pipeline_manager=pm)
             # pm.report_result("FRiP_Q1", round(frip, 2))
 
-        if os.path.exists(res.frip_ref_peaks):
+        if args.frip_ref_peaks and os.path.exists(res.frip_ref_peaks):
             if pm.get_stat("FRiP_ref") is None or args.new_start:
                 # Use an external reference set of peaks instead of the peaks
                 # called from this run
@@ -2323,8 +2439,8 @@ def main():
         # If you include reference peaks, calculate coverage using those
         # normalize to 1M tags/reads: (base_counts/sum(base_counts))*1000000)
         # sum(base_counts) is just the total number of bases in peaks
-        if os.path.exists(res.frip_ref_peaks):
-            sort_frip_ref_peaks = os.path.join(peak_folder, 
+        if args.frip_ref_peaks and os.path.exists(res.frip_ref_peaks):
+            sort_frip_ref_peaks = os.path.join(peak_folder,
                 "sorted_reference_peaks.narrowPeak")
             cmd1 = (tools.bedtools + " sort -i " + res.frip_ref_peaks +
                     " -faidx " + chr_order + " > " + sort_frip_ref_peaks)
@@ -2363,6 +2479,15 @@ def main():
                 # norm_peak_coverage_gz)
         #pm.run([cmd1, cmd2], norm_peak_coverage_gz)
         pm.run(cmd1, peak_coverage_gz)
+
+        # ziptool compresses in place, so the .gz is normally the survivor.
+        # --lite removes the coverage file below, so don't advertise a path
+        # that this run is about to delete.
+        if not args.lite:
+            if os.path.exists(peak_coverage_gz):
+                report_file_link(pm, "coverage_file", peak_coverage_gz)
+            elif os.path.exists(peak_coverage):
+                report_file_link(pm, "coverage_file", peak_coverage)
 
         pm.clean_add(peak_bed)
         pm.clean_add(chr_keep)
@@ -2457,18 +2582,56 @@ def main():
                 ])
 
         if os.path.isfile(anno_local):
-            if not os.path.exists(chr_PDF) or args.new_start:
-                pm.run(cmd1, chr_PDF)
-                pm.report_object("Peak chromosome distribution", chr_PDF,
-                                 anchor_image=chr_PNG)
-            if not os.path.exists(TSSdist_PDF) or args.new_start:
-                pm.run(cmd2, TSSdist_PDF)
-                pm.report_object("TSS distance distribution", TSSdist_PDF,
-                                 anchor_image=TSSdist_PNG)
-            if not os.path.exists(gd_PDF) or args.new_start:
-                pm.run(cmd3, gd_PDF)
-                pm.report_object("Peak partition distribution", gd_PDF,
-                                 anchor_image=gd_PNG)
+            if args.qc_backend == "gtars":
+                from tools.pepatac_qc_gtars import (plot_chrom_distribution,
+                                                    plot_partition_distribution,
+                                                    plot_tss_distance)
+                if not os.path.exists(chr_PDF) or args.new_start:
+                    plot_chrom_distribution(peak_output_file, res.chrom_sizes,
+                                            chr_PDF, chr_PNG)
+                    pm.report_object("Peak chromosome distribution", chr_PDF,
+                                     anchor_image=chr_PNG)
+                if not os.path.exists(TSSdist_PDF) or args.new_start:
+                    if res.refgene_tss and os.path.exists(res.refgene_tss):
+                        plot_tss_distance(peak_output_file, res.refgene_tss,
+                                          TSSdist_PDF, TSSdist_PNG)
+                        pm.report_object("TSS distance distribution", TSSdist_PDF,
+                                         anchor_image=TSSdist_PNG)
+                    else:
+                        # No TSS annotation available. The TSS distance plot
+                        # needs a TSS reference BED, which the pipeline gets
+                        # from the refgenie `refgene_anno` asset (refgene_tss
+                        # seek key) via --TSS-name. If neither is present there
+                        # is nothing to plot against, so skip with guidance.
+                        print("No TSS annotation available; skipping TSS "
+                              "distance distribution plot. Provide --TSS-name "
+                              "or build the refgenie `refgene_anno` asset for "
+                              "genome '{}' to enable it.".format(
+                                  args.genome_assembly))
+                if not os.path.exists(gd_PDF) or args.new_start:
+                    if args.gtf and os.path.exists(args.gtf):
+                        plot_partition_distribution(peak_output_file, args.gtf,
+                                                    args.genome_assembly, gd_PDF, gd_PNG)
+                        pm.report_object("Peak partition distribution", gd_PDF,
+                                         anchor_image=gd_PNG)
+                    else:
+                        # Fall back to R if no GTF provided
+                        pm.run(cmd3, gd_PDF)
+                        pm.report_object("Peak partition distribution", gd_PDF,
+                                         anchor_image=gd_PNG)
+            else:
+                if not os.path.exists(chr_PDF) or args.new_start:
+                    pm.run(cmd1, chr_PDF)
+                    pm.report_object("Peak chromosome distribution", chr_PDF,
+                                     anchor_image=chr_PNG)
+                if not os.path.exists(TSSdist_PDF) or args.new_start:
+                    pm.run(cmd2, TSSdist_PDF)
+                    pm.report_object("TSS distance distribution", TSSdist_PDF,
+                                     anchor_image=TSSdist_PNG)
+                if not os.path.exists(gd_PDF) or args.new_start:
+                    pm.run(cmd3, gd_PDF)
+                    pm.report_object("Peak partition distribution", gd_PDF,
+                                     anchor_image=gd_PNG)
 
 
         ########################################################################
@@ -2546,7 +2709,7 @@ def main():
                     for pos, anno in enumerate(ft_list):
                         # working files
                         anno_file = os.path.join(QC_folder, str(anno))
-                        valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
+                        valid_name = str(re.sub(r'[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
                         file_name = os.path.join(QC_folder, valid_name)
                         anno_sort = os.path.join(QC_folder,
                                                  valid_name + "_sort.bed")
@@ -2633,7 +2796,7 @@ def main():
                     for pos, anno in enumerate(ft_list):
                         # working files
                         anno_file = os.path.join(QC_folder, str(anno))
-                        valid_name = str(re.sub('[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
+                        valid_name = str(re.sub(r'[^\w_.)( -]', '', anno).strip().replace(' ', '_'))
                         file_name = os.path.join(QC_folder, valid_name)
                         anno_sort = os.path.join(QC_folder,
                                                  valid_name + "_sort.bed")
@@ -2732,40 +2895,63 @@ def main():
         FRiF_cmd.append("--bed")
 
         if anno_list:
-            for cov in anno_list:
-                if os.path.isfile(cov) and os.stat(cov).st_size > 0:
+            cov_files = [cov for cov in anno_list
+                         if os.path.isfile(cov) and os.stat(cov).st_size > 0]
+
+            if args.qc_backend == "gtars":
+                from tools.pepatac_qc_gtars import plot_frif
+                try:
+                    total_reads = int(read_count)
+                except (TypeError, ValueError):
+                    total_reads = None
+                denom = total_reads if not args.prioritize else genome_size
+                # cFRiF plot
+                plot_frif(cov_files, None, cFRiF_PDF, cFRiF_PNG,
+                          cumulative=True, priority=args.prioritize,
+                          reads=not args.prioritize,
+                          genome_size=denom)
+                pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
+                # FRiF plot
+                plot_frif(cov_files, None, FRiF_PDF, FRiF_PNG,
+                          cumulative=False, priority=args.prioritize,
+                          reads=not args.prioritize,
+                          genome_size=denom)
+                pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+            else:
+                for cov in cov_files:
                     cFRiF_cmd.append(cov)
                     FRiF_cmd.append(cov)
-            cmd = build_command(cFRiF_cmd)
-            pm.run(cmd, cFRiF_PDF, nofail=False)
-            pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
+                cmd = build_command(cFRiF_cmd)
+                pm.run(cmd, cFRiF_PDF, nofail=False)
+                pm.report_object("cFRiF", cFRiF_PDF, anchor_image=cFRiF_PNG)
 
-            cmd = build_command(FRiF_cmd)
-            pm.run(cmd, FRiF_PDF, nofail=False)
-            pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
+                cmd = build_command(FRiF_cmd)
+                pm.run(cmd, FRiF_PDF, nofail=False)
+                pm.report_object("FRiF", FRiF_PDF, anchor_image=FRiF_PNG)
 
 
     ############################################################################
     #            Remove all but final output files to save space               #
     ############################################################################
     if args.lite:
-        # Remove everything but ultimate outputs
-        pm.clean_add(frag_len)
-        pm.clean_add(fragL_dis2)
-        pm.clean_add(fragL_count)
-        pm.clean_add(peak_coverage_gz)
-        pm.clean_add(shift_bed_gz)
-        pm.clean_add(Tss_enrich)
-        pm.clean_add(mapping_genome_bam)
-        pm.clean_add(mapping_genome_index)
-        pm.clean_add(failQC_genome_bam)
-        pm.clean_add(unmap_genome_bam)
-        pm.clean_add(NFR_bam)
-        pm.clean_add(mono_bam)
-        pm.clean_add(di_bam)
-        pm.clean_add(tri_bam)
+        # Remove everything but ultimate outputs. Several of these variables
+        # (frag_len, fragL_dis2, fragL_count, Tss_enrich, peak_coverage_gz)
+        # are initialized to None and only get a real path inside conditional
+        # code paths that may be skipped (e.g. --skipqc bypasses the QC step
+        # that populates frag_len/Tss_enrich). Skip falsy entries so we don't
+        # add None into pypiper's cleanup_list, which would crash _cleanup()
+        # later when it tries to debug-log a non-string entry.
+        for path in (frag_len, fragL_dis2, fragL_count, peak_coverage_gz,
+                     shift_bed_gz, Tss_enrich, mapping_genome_bam,
+                     mapping_genome_index, failQC_genome_bam,
+                     unmap_genome_bam, NFR_bam, mono_bam, di_bam, tri_bam):
+            if path:
+                pm.clean_add(path)
         for unmapped_fq in to_compress:
-            if not unmapped_fq:
+            # Previously `if not unmapped_fq` -- inverted check meant the body
+            # only ran for falsy entries, which would have crashed on
+            # `None + ".gz"` or registered the literal ".gz" as a cleanup glob.
+            if unmapped_fq:
                 pm.clean_add(unmapped_fq + ".gz")
 
 

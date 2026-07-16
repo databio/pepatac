@@ -87,6 +87,17 @@ echo -e "-----------------------------------------------------------"
 echo -e "Checking native installation...                            "
 NATIVE_INSTALL=0
 
+# "native" must mean system installs, not an active conda env: strip conda
+# (active env + base) from PATH so an activated env can't masquerade as native.
+PATH_SAVED="$PATH"
+if [ -n "$CONDA_PREFIX" ]; then
+    _cbase="$(conda info --base 2>/dev/null)"
+    PATH=$(printf '%s' "$PATH" | tr ':' '\n' \
+           | grep -vF "$CONDA_PREFIX/" | { [ -n "$_cbase" ] && grep -vF "$_cbase/" || cat; } \
+           | paste -sd:)
+fi
+hash -r
+
 # Check Python
 if ! is_executable "python"; then
     echo $(warn "WARNING: PEPATAC requires python 3.0 or greater. Install python and checkinstall again.")
@@ -114,12 +125,14 @@ fi
 if [ -f "requirements.txt" ]; then
     REQS="requirements.txt"
 else
-    REQS=$(curl https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt)
+    REQS=$(mktemp)
+    curl -fsSL https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt -o "$REQS"
 fi
 
 while IFS= read -r line; do
     [ "${line:0:1}" = "#" ] && continue
-    
+    [ -z "$(trim "$line")" ] && continue   # skip blank lines
+
     if [[ $line == *","* ]]; then
         IFS=',' read -r -a array <<< "$line"
         first_half=${array[0]}
@@ -439,6 +452,9 @@ echo -e "-----------------------------------------------------------"
 echo -e "Checking conda installation...                             "
 CONDA_INSTALL=0
 
+# restore PATH (conda was stripped from it for the native check above)
+PATH="$PATH_SAVED"; hash -r
+
 if ! is_executable "conda"; then
     echo $(warn "WARNING: Install conda to use conda environments and checkinstall again.")
     printf "\n"
@@ -446,11 +462,14 @@ if ! is_executable "conda"; then
 else
     eval "$(conda shell.bash hook)"
     
-    # Check if a pepatac conda environment exists
-    CONDA_ENVS=$(conda env list | grep -c '^pepatac\s')
+    # Which conda env to check. Default is the docs' `pepatac` name; override
+    # with PEPATAC_ENV=<name|/path/to/env> for an env built at a custom prefix
+    # (e.g. on HPC to avoid HOME quota): `PEPATAC_ENV=/path/to/env ./checkinstall`.
+    PEPATAC_ENV="${PEPATAC_ENV:-pepatac}"
     
-    if [[ "$CONDA_ENVS" == 1 ]]; then
-        conda activate pepatac
+    # present if it's an env prefix dir OR a named env conda knows about
+    if [ -d "$PEPATAC_ENV/conda-meta" ] || conda env list | awk '{print $1}' | grep -qxF "$PEPATAC_ENV"; then
+        conda activate "$PEPATAC_ENV"
 
         unset PYTHONPATH
         unset R_LIBS
@@ -480,11 +499,13 @@ else
         if [ -f "requirements.txt" ]; then
             REQS="requirements.txt"
         else
-            REQS=$(curl https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt)
+            REQS=$(mktemp)
+            curl -fsSL https://raw.githubusercontent.com/databio/pepatac/master/requirements.txt -o "$REQS"
         fi
 
         while IFS= read -r line; do
             [ "${line:0:1}" = "#" ] && continue
+            [ -z "$(trim "$line")" ] && continue   # skip blank lines
             
             if [[ $line == *","* ]]; then
                 IFS=',' read -r -a array <<< "$line"
@@ -812,25 +833,30 @@ else
     CRATE=$(echo $IFACE | tr " " "\n" | grep -A1 'bulker_crate' | tail -n 1)
 fi
 
-yes n | bulker load $CRATE
-if [ $? -eq 0 ]; then
-    echo $(warn "WARNING: Could not bulker load ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
+bulker crate install $CRATE </dev/null
+if [ $? -ne 0 ]; then
+    echo $(warn "WARNING: Could not install bulker crate ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
     printf "\n"
     BULKER_INSTALL=1
 fi
 
 if [ -f "$CWD/pipelines/pepatac.py" ]; then
-    PIPELINE=$(cat "$CWD/pipelines/pepatac.py")
+    PIPELINE="$CWD/pipelines/pepatac.py"
 else
-    PIPELINE=$(curl https://raw.githubusercontent.com/databio/pepatac/master/pipelines/pepatac.py)
+    PIPELINE=$(mktemp --suffix=.py)
+    curl -fsSL https://raw.githubusercontent.com/databio/pepatac/master/pipelines/pepatac.py -o "$PIPELINE"
 fi
 
-CMD_CHECK=$(bulker run ${CRATE} $PIPELINE --help)
+# Verify bulker can execute a containerized crate tool. (We test a crate
+# tool rather than pepatac.py --help so this check doesn't depend on the
+# Python orchestration stack — pypiper/looper — which the native/conda
+# sections already verify; otherwise an inactive env here gives a false fail.)
+CMD_CHECK=$(bulker exec ${CRATE} -- samtools --version 2>&1)
 EXIT_CODE=$(echo $?)
 isActivatable=$(echo "${EXIT_CODE}" | awk '{ print $1+0; exit }')
 if [ "$isActivatable" -eq 0 ]; then
     BULKER_INSTALL=0
-    echo -e $(success "SUCCESS: bulker run ${CRATE}")
+    echo -e $(success "SUCCESS: bulker exec ${CRATE}")
 else
     echo $(warn "WARNING: Could not activate the bulker crate, ${CRATE}. Check out https://bulker.databio.org/en/latest/install/.")
     printf "\n"

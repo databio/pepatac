@@ -5,7 +5,7 @@ configuration handoff by running PEPATAC via looper instead of direct execution.
 
 Prerequisites:
 - looper and pipestat installed (pip install looper pipestat)
-- bulker crate databio/pepatac:1.1.1 loaded and active
+- bulker crate databio/pepatac:1.1.3 cached and active
 - .venv with refgenie installed (pip install refgenie)
 - Network access to refgenie server
 - RUN_INTEGRATION_TESTS=true
@@ -35,7 +35,8 @@ except ImportError:
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 SAMPLE_PIFACE = os.path.join(PROJECT_ROOT, "sample_pipeline_interface.yaml")
 PROJECT_PIFACE = os.path.join(PROJECT_ROOT, "project_pipeline_interface.yaml")
-VENV_DIR = os.path.join(PROJECT_ROOT, ".venv")
+TESTS_DIR = os.path.dirname(os.path.dirname(__file__))
+VENV_DIR = os.environ.get("PEPATAC_TEST_VENV", os.path.join(TESTS_DIR, ".venv"))
 REFGENIE = os.path.join(VENV_DIR, "bin", "refgenie")
 
 GENOME_NAME = "hg38_chr22"
@@ -44,12 +45,26 @@ SAMPLE_NAME = "test1"
 
 
 def _seek_asset(asset_path, config_path):
-    """Use refgenie seek to resolve an asset path."""
+    """Use refgenie seek to resolve an asset path.
+
+    Resolves symlinks because refgenie returns alias paths that use
+    relative symlinks to the data directory. Containerized tools
+    (via bulker/Docker) can't follow these since Docker only mounts
+    the paths it sees in the command arguments.
+    """
     result = subprocess.run(
         [REFGENIE, "seek", asset_path, "-c", config_path],
         capture_output=True, text=True, timeout=30,
     )
-    return result.stdout.strip()
+    path = result.stdout.strip()
+    if os.path.exists(path):
+        return os.path.realpath(path)
+    for ext in [".1.bt2", ".fa", ".fasta", ".amb"]:
+        candidate = path + ext
+        if os.path.exists(candidate):
+            resolved = os.path.realpath(candidate)
+            return resolved[: -len(ext)]
+    return path
 
 
 def _read_stats(sample_dir):
@@ -197,12 +212,30 @@ class TestLooperDryRun:
 
 @pytest.fixture(scope="module")
 def run_looper_pipeline(looper_test_config):
-    """Run the pipeline via looper and return results."""
+    """Run the pipeline via looper and return results.
+
+    Forces `-p local` (i.e. `--package local`) so the test exercises the
+    pipeline output paths regardless of whichever divvy/compute environment
+    the host happens to be configured for. Without this, looper inherits
+    the system's $DIVCFG default -- on HPC clusters that typically means
+    submitting via sbatch to whatever partition+account the system defaults
+    to, which can fail for reasons unrelated to the pipeline (e.g.
+    "Invalid account or account/partition combination" on Rivanna).
+
+    NOTE on flag naming: looper 2.x's `--compute` is for k=v overrides of
+    the currently-selected package (`--compute cores=4 mem=8000`), NOT for
+    selecting a package. Package selection is `-p` / `--package`. Same
+    pattern peppro uses in tests/test_integration.py.
+
+    Tests that want to exercise the actual cluster-submission path should
+    be a separate parameterization.
+    """
     if not LOOPER_AVAILABLE:
         pytest.skip("looper not installed")
 
-    # Run looper (not dry-run)
-    result = looper_main(test_args=["run", "--config", looper_test_config])
+    # Run looper (not dry-run); force local compute to avoid HPC submission
+    result = looper_main(test_args=["run", "--config", looper_test_config,
+                                    "-p", "local"])
 
     # Parse looper config to find output directory
     with open(looper_test_config) as f:
@@ -316,3 +349,131 @@ class TestLooperCheck:
         # Check that sample status is present
         # The exact structure depends on pipestat configuration
         assert len(result) > 0
+
+
+@pytest.fixture
+def empty_refgenie_config(tmp_path, monkeypatch):
+    """Empty refgenie config to satisfy the pre-submit refgenconf hook.
+
+    Regression coverage for #251: even when every asset path is set at
+    the sample level, `sample_pipeline_interface.yaml`'s pre-submit hook
+    (`refgenconf.looper_refgenie_populate`) requires `$REFGENIE` to
+    expand to a readable refgenie config file -- otherwise looper fails
+    with `FileNotFoundError: [Errno 2] No such file or directory:
+    '$REFGENIE'` before the pipeline ever starts. The documented
+    workaround (`docs/assets.md`) is to point `$REFGENIE` at an empty
+    refgenie config; this fixture builds that config.
+    """
+    if not LOOPER_AVAILABLE:
+        pytest.skip("looper not installed")
+
+    config_path = tmp_path / "empty_refgenie.yaml"
+    result = subprocess.run(
+        [REFGENIE, "init", "-c", str(config_path)],
+        capture_output=True, text=True, timeout=30,
+    )
+    if result.returncode != 0:
+        pytest.skip(f"refgenie init failed: {result.stderr}")
+    monkeypatch.setenv("REFGENIE", str(config_path))
+    # Don't inherit the host's $DIVCFG. On HPC nodes it points at a
+    # SLURM-flavored divvy config; looper 2.0.1 paired with newer
+    # yacman crashes with `TypeError: YAMLConfigManager.__init__()
+    # takes from 1 to 4 positional arguments but 6 were given` when
+    # loading it, killing the test for reasons unrelated to #251.
+    monkeypatch.delenv("DIVCFG", raising=False)
+    return str(config_path)
+
+
+@pytest.fixture
+def no_refgenie_looper_config(tmp_path, empty_refgenie_config):
+    """Looper config + PEP with all asset paths set at the sample level.
+
+    Mirrors the user-reported #251 scenario: `--genome-index` and
+    `--chrom-sizes` provided directly, no refgenie lookup needed. Paths
+    are synthetic (the dry-run renders templates, it doesn't open the
+    asset files).
+    """
+    if not LOOPER_AVAILABLE:
+        pytest.skip("looper not installed")
+
+    looper_dir = tmp_path / "no_refgenie"
+    looper_dir.mkdir()
+    results_dir = looper_dir / "results"
+    results_dir.mkdir()
+
+    fake_index = str(tmp_path / "fake_bowtie2_index")
+    fake_chrom_sizes = str(tmp_path / "fake_genome.chrom.sizes")
+    input_r1 = os.path.join(PROJECT_ROOT, "examples", "data", "test1_r1.fastq.gz")
+    input_r2 = os.path.join(PROJECT_ROOT, "examples", "data", "test1_r2.fastq.gz")
+
+    sample_table = looper_dir / "samples.csv"
+    sample_table.write_text(
+        "sample_name,protocol,read1,read2,read_type,genome,"
+        "genome_index,chrom_sizes,genome_size\n"
+        f"{SAMPLE_NAME},ATAC-seq,{input_r1},{input_r2},paired,galGal6,"
+        f"{fake_index},{fake_chrom_sizes},1.05e9\n"
+    )
+
+    pep_config = looper_dir / "project_config.yaml"
+    pep_config.write_text(
+        f"pep_version: 2.1.0\nsample_table: {sample_table}\n"
+        f"name: pepatac_no_refgenie_test\n"
+    )
+
+    looper_config_path = looper_dir / ".looper.yaml"
+    schema_path = os.path.join(PROJECT_ROOT, "pepatac_output_schema.yaml")
+    looper_config_path.write_text(
+        f"pep_config: {pep_config}\noutput_dir: {results_dir}\n"
+        f"pipeline_interfaces:\n  - {SAMPLE_PIFACE}\n"
+        f"pipestat:\n"
+        f"  results_file_path: {results_dir}/results.yaml\n"
+        f"  output_schema: {schema_path}\n"
+    )
+
+    return {
+        "looper_config": str(looper_config_path),
+        "results_dir": str(results_dir),
+        "fake_index": fake_index,
+        "fake_chrom_sizes": fake_chrom_sizes,
+    }
+
+
+class TestLooperRunWithoutRefgenie:
+    """Regression coverage for #251.
+
+    Looper must succeed when samples specify every asset path manually,
+    provided `$REFGENIE` points at a valid (possibly empty) refgenie
+    config. See `docs/assets.md` for the workaround.
+    """
+
+    def test_dry_run_succeeds_with_empty_refgenie(
+        self, no_refgenie_looper_config, empty_refgenie_config
+    ):
+        """Looper dry-run completes without `FileNotFoundError` for
+        `'$REFGENIE'` (the exact failure mode reported in #251)."""
+        result = looper_main(test_args=[
+            "run", "--config", no_refgenie_looper_config["looper_config"],
+            "--dry-run",
+        ])
+        assert isinstance(result, dict)
+        assert "Commands submitted" in result
+        assert "1 of 1" in result["Commands submitted"]
+
+    def test_submission_script_uses_sample_paths(
+        self, no_refgenie_looper_config, empty_refgenie_config
+    ):
+        """Rendered command contains the sample-level paths from the
+        PEP, not refgenie-derived paths (since the genome `galGal6`
+        isn't in the empty refgenie config)."""
+        looper_main(test_args=[
+            "run", "--config", no_refgenie_looper_config["looper_config"],
+            "--dry-run",
+        ])
+        script_path = os.path.join(
+            no_refgenie_looper_config["results_dir"],
+            "submission", f"PEPATAC_{SAMPLE_NAME}.sub",
+        )
+        assert os.path.isfile(script_path)
+        cmd = open(script_path).read()
+        assert no_refgenie_looper_config["fake_index"] in cmd
+        assert no_refgenie_looper_config["fake_chrom_sizes"] in cmd

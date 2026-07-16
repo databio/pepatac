@@ -1,231 +1,209 @@
 
 # PEPATAC Tests
 
-## Unit Tests
+There are two ways to test PEPATAC:
 
-Run the existing unit tests (command builder tests) with:
+## 1. Unit tests
+
+No setup required. Run from the project root:
 
 ```bash
-pytest tests/test_build_command.py -v
+pytest tests/ --ignore=tests/integration -v
 ```
 
-## Integration Tests
+## 2. Integration tests
 
-Integration tests verify the pipeline's argument parsing, tool resolution, PEP config loading, schema validation, and bioinformatics tool availability via bulker.
+Integration tests verify pipeline execution with real bioinformatics tools via bulker containers.
 
 ### Prerequisites
 
-1. **bulker** installed and configured: `pip install bulker`
-2. **PEPATAC bulker crate** loaded: `bulker load databio/pepatac:1.1.1 -r`
-3. **microtest** repo cloned (for config loading tests): `git clone https://github.com/databio/microtest.git ~/code/microtest`
+- **bulker** installed: `cargo install bulker`
+- A container runtime that bulker can dispatch to:
+  - **Docker** (typical on developer machines), or
+  - **Singularity** / **Apptainer** (typical on HPC). Bulker auto-detects.
 
-### Running integration tests
+Everything else (venv, refgenie, crate) is bootstrapped automatically by the script.
+
+### Running
 
 ```bash
 ./tests/scripts/test-integration.sh
 ```
 
-This script:
-1. Verifies the bulker crate is loaded and tools are available
-2. Activates the bulker crate (adds containerized tools to PATH)
-3. Sets `RUN_INTEGRATION_TESTS=true`
-4. Runs `pytest tests/integration/ -v`
+The script automatically:
+1. Creates `tests/.venv` and installs refgenie if needed
+2. Installs the bulker crate from the local manifest if not cached
+3. Verifies bulker tools are available
+4. Sets `RUN_INTEGRATION_TESTS=true`
+5. Runs `pytest tests/integration/ -v`
 
-#### Preserving test outputs for debugging
-
-By default, test outputs are written to temporary directories that pytest cleans up automatically. To preserve outputs for debugging test failures, use the `--keep-test-outputs` flag:
-
-```bash
-./tests/scripts/test-integration.sh --keep-test-outputs
-```
-
-This writes all test outputs to `tests/test_outputs/` (gitignored) instead of temp directories. The directory is cleared at the start of each test run. Useful for inspecting pipeline outputs, logs, and intermediate files when debugging failed tests.
-
-### Running specific tests
+### Options
 
 ```bash
+# Run specific tests
 ./tests/scripts/test-integration.sh -k "test_help_flag"
-./tests/scripts/test-integration.sh -k "TestBulkerToolAvailability"
+
+# Preserve outputs for debugging (writes to tests/test_outputs/)
+./tests/scripts/test-integration.sh --keep-test-outputs
+
+# Skip slow end-to-end tests
+./tests/scripts/test-integration.sh --ignore=tests/integration/test_end_to_end.py
+
+# Install dev looper/pipestat from local repos
+INSTALL_DEV_LOOPER=true ./tests/scripts/test-integration.sh
+
+# Use local refgenieserver instead of remote
+./tests/scripts/test-integration.sh --local
 ```
 
 ### Test categories
 
-| Class | What it tests | File |
-|-------|---------------|------|
-| `TestArgumentParsing` | Pipeline `--help` flag and version output | `test_integration.py` |
-| `TestToolResolution` | `tool_path()` and `check_commands()` functions | `test_integration.py` |
-| `TestPepConfigLoading` | PEP configs load correctly with peppy | `test_integration.py` |
-| `TestSchemaValidation` | Configs validate against input/output schemas with eido | `test_integration.py` |
-| `TestBulkerToolAvailability` | Required bioinformatics tools are callable via bulker | `test_integration.py` |
-| `TestPipelineExecution` | Pipeline runs to completion on test data | `test_integration.py` |
-| `TestOutputDirectoryStructure` | Expected output directories are created | `test_integration.py` |
-| `TestOutputFiles` | Key output files (BAM, peaks, BigWig, stats) are produced | `test_integration.py` |
-| `TestStatsContent` | Stats file contains expected metrics with valid values | `test_integration.py` |
-| `TestLooperDryRun` | Looper command generation and Jinja2 template rendering | `test_looper_run.py` |
-| `TestLooperRun` | Full pipeline execution via looper with pipestat | `test_looper_run.py` |
-| `TestLooperCheck` | Looper status reporting via pipestat | `test_looper_run.py` |
+| File | Tests |
+|------|-------|
+| `test_integration.py` | Argument parsing, tool resolution, PEP config loading, schema validation, bulker tool availability, pipeline execution, output validation |
+| `test_end_to_end.py` | Full pipeline across 3 aligner/peak-caller configurations with refgenie assets |
+| `test_looper_run.py` | Pipeline execution via looper, Jinja2 template rendering, pipestat integration |
+| `test_local_refgenieserver.py` | Tests with dev refgenie tools and local server (requires `--local` flag) |
 
-### End-to-end test (`test_end_to_end.py`)
-
-The end-to-end test runs the full PEPATAC pipeline across 3 configurations:
-
-| Config | Aligner | Peak Caller | Deduplicator | Trimmer | Peak Type |
-|--------|---------|-------------|--------------|---------|-----------|
-| bowtie2_macs3_skewer | bowtie2 | macs3 | samtools | skewer | fixed |
-| bwa_macs3_samblaster | bwa | macs3 | samblaster | skewer | variable |
-| bowtie2_genrich_samblaster | bowtie2 | genrich | samblaster | skewer | variable |
-
-It creates a temporary refgenie environment, pulls `hg38_chr22` genome assets (fasta, bowtie2_index, bwa_index) from the refgenie server, runs the pipeline on `examples/data/test1` reads, and verifies output files (BAM, peaks, BigWig, stats).
-
-**Key details:**
-- Uses refgenie 0.12.1 from pip (installed in project `.venv`)
-- Local bulker manifest at `tests/bulker_manifest.yaml` (self-contained, gtars 0.6.0)
-- Requires network access (refgenie asset pulls) and Docker (bulker crate)
-- 23 tests total, runs in ~3 minutes with warm Docker cache
-
-To run only the fast tests:
-```bash
-./tests/scripts/test-integration.sh --ignore=tests/integration/test_end_to_end.py
-```
-
-To run only the end-to-end test:
-```bash
-./tests/scripts/test-integration.sh -k "test_end_to_end"
-```
-
-### Looper integration tests (`test_looper_run.py`)
-
-The looper integration tests verify that PEPATAC works correctly when run via looper instead of direct execution. These tests validate:
-
-- Pipeline interface Jinja2 template rendering
-- Pipestat configuration handoff
-- Looper command generation (dry-run)
-- Full pipeline execution via looper
-- Status reporting via looper check
-
-**Prerequisites:**
-- looper and pipestat installed: `pip install looper pipestat`
-- Same bulker/refgenie setup as end-to-end tests
-
-**To install dev versions of looper/pipestat:**
-```bash
-INSTALL_DEV_LOOPER=true ./tests/scripts/test-integration.sh -k "test_looper"
-```
-
-The script will look for looper/pipestat repos in standard locations (sibling directories or `~/code/`), or fall back to PyPI.
-
-**To run only looper tests:**
-```bash
-./tests/scripts/test-integration.sh -k "test_looper"
-```
-
-**What's tested:**
-
-| Test | What it checks |
-|------|----------------|
-| `test_looper_dry_run` | Looper generates valid commands from pipeline interface |
-| `test_pipeline_interface_jinja2_rendering` | Jinja2 conditionals and refgenie lookups render correctly |
-| `test_looper_run_success` | Pipeline completes successfully via looper |
-| `test_output_dir_created` | Sample output directory is created |
-| `test_log_file_exists` | Pipeline log file is generated |
-| `test_dedup_bam_exists` | Deduplicated BAM file is produced |
-| `test_signal_tracks_exist` | Signal track BigWig files are produced |
-| `test_peaks_exist` | Peak file is generated |
-| `test_stats_yaml_content` | Stats file contains valid metrics |
-| `test_looper_check` | Looper can retrieve pipeline status via pipestat |
-
-These tests use the same refgenie fixture as `test_end_to_end.py`, so genome assets are shared.
-
-### Dev refgenie testing (`test_local_refgenieserver.py`)
-
-Tests PEPATAC with development versions of the refgenie tool stack (refgenconf, refgenie, refgenieserver) using a local refgenieserver instead of the remote server. Useful for catching breaking changes in refgenie tools before release.
-
-#### Quick start
-
-```bash
-# 1. Install dev refgenie tools into the PEPATAC .venv
-./tests/scripts/install-dev-refgenie.sh
-
-# 2. Seed local test genome data (one-time)
-./tests/scripts/seed-local-refgenie.sh
-
-# 3. Start services (bulker + local refgenieserver)
-./tests/scripts/services.sh start
-
-# 4. Run tests with local server
-./tests/scripts/test-integration.sh --local
-```
-
-#### Scripts
+### Helper scripts
 
 | Script | Purpose |
 |--------|---------|
-| `install-dev-refgenie.sh` | Installs editable versions of refgenconf, refgenie, and refgenieserver from the refgenie workspace into `.venv`. Override workspace location with `REFGENIE_DEV_WORKSPACE=/path/to/repos` |
-| `seed-local-refgenie.sh` | Downloads `hg38_chr22` test genome assets and runs `refgenieserver archive` to prepare them for local serving. One-time setup. |
-| `services.sh` | Manages bulker crate and local refgenieserver (`start`, `stop`, `status`). Server is optional - tests work without it. |
+| `scripts/services.sh` | Manage bulker crate and local refgenieserver (`start`, `stop`, `status`) |
+| `scripts/install-dev-refgenie.sh` | Install editable refgenie tools from the refgenie workspace into `tests/.venv` |
+| `scripts/seed-local-refgenie.sh` | Download test genome assets and prepare them for local serving |
 
-#### Tests
-
-| Test | What it checks |
-|------|----------------|
-| `test_server_responds` | Local refgenieserver is running |
-| `test_genome_available` | Test genome is available on local server |
-| `test_fasta_asset_available` | Fasta asset is servable |
-| `test_refgenie_version` | Dev refgenie is installed |
-| `test_refgenie_pull_from_local` | Assets pull from local server |
-| `test_seek_fasta` | Fasta asset path resolution |
-| `test_seek_bowtie2_index` | Bowtie2 index path resolution |
-| `test_pipeline_with_local_assets` | Full pipeline run with locally-served assets |
-
-#### Environment variables
+### Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `REFGENIE_DEV_WORKSPACE` | `/home/nsheff/Dropbox/workspaces/refgenie/repos` | Path to refgenie workspace repos dir |
-| `PEPATAC_TEST_REFGENIESERVER_PORT` | `8765` | Port for local refgenieserver |
+| `PEPATAC_TEST_BULKER_CRATE` | `databio/pepatac:1.1.3` | Full crate identifier (most recent published tag on hub.bulker.io — `bulker exec` requires an exact tag match) |
+| `PEPATAC_TEST_REFGENIESERVER_PORT` | `8765` | Local refgenieserver port |
 | `PEPATAC_TEST_REFGENIE_DATA` | `tests/data/refgenie` | Local refgenie test data directory |
-| `RUN_LOCAL_REFGENIE_TESTS` | (unset) | Set to `true` to enable local server tests |
+| `REFGENIE_DEV_WORKSPACE` | `/home/nsheff/Dropbox/workspaces/refgenie/repos` | Path to refgenie dev repos |
+| `INSTALL_DEV_LOOPER` | (unset) | Set to `true` to install dev looper/pipestat |
 
-#### Troubleshooting
+## Running tests in an HPC environment
 
-**refgenieserver fails to start:**
-- Check that assets are archived: `refgenieserver archive -c tests/data/refgenie/genome_config.yaml --force`
-- Check port is free: `lsof -i :8765`
-- Try a different port: `PEPATAC_TEST_REFGENIESERVER_PORT=9876 ./tests/scripts/services.sh start`
+PEPATAC's tests target a developer machine by default. HPC nodes
+(SLURM-managed, container runtime is Singularity/Apptainer instead of
+Docker, modules layered on top of conda) introduce a handful of
+gotchas. Most are already handled in `tests/scripts/test-integration.sh`;
+collected here so the next person picking up the test suite on HPC
+doesn't have to re-discover them.
 
-**refgenie pull fails from local server:**
-- Verify server is running: `curl http://localhost:8765/v3/genomes/list`
-- Check server logs in the terminal where `services.sh start` was run
+### Container runtime: Singularity / Apptainer instead of Docker
 
-**Tests skip with "Local refgenieserver tests disabled":**
-- Use `--local` flag: `./tests/scripts/test-integration.sh --local`
-- Or set manually: `RUN_LOCAL_REFGENIE_TESTS=true pytest tests/integration/test_local_refgenieserver.py`
+`bulker` auto-detects the container runtime available on the host. On
+HPC nodes that's typically `apptainer` (or older `singularity`) instead
+of Docker; no extra config needed on bulker's side. The script's host-env
+hardening (next sections) is what differs between the two runtimes.
 
-### Environment gating
+### Active python may not be on `$PATH` first
 
-Integration tests are **skipped by default** when running `pytest` normally. They only run when `RUN_INTEGRATION_TESTS=true` is set, which the `test-integration.sh` script handles automatically. Local refgenieserver tests require `RUN_LOCAL_REFGENIE_TESTS=true` (set by `--local` flag).
+A subsequent `module load <foo>` after `conda activate <env>` can push
+the env's `bin/` behind the module's PATH prepend, so `command -v
+python3` resolves to a Python that doesn't have the test deps. The
+script tries `$CONDA_PREFIX/bin/python3`, `$VIRTUAL_ENV/bin/python3`,
+and PATH-based candidates in order, picking the first one that imports
+`pytest`. You shouldn't have to set anything for this -- if the
+banner shows the wrong python, that's a real bug.
 
-### Checking environment without running tests
+### Host user-site leaks into containers
+
+By default apptainer/singularity mounts `$HOME` into the container, so
+Python and R *inside* the container see the *host's* `~/.local/lib/...`
+(Python user-site) and `~/.Renviron`/`~/.Rprofile` (R user config). A
+stale `pip install --user <pkg>` or `R_LIBS_USER` setting on the host
+silently shadows the container's matching package and, if built against
+a different runtime version, crashes on ABI mismatch.
+
+The script defends against this by exporting the appropriate "no
+user-site" env var **plus the apptainer-prefixed alias** so it crosses
+the container boundary:
 
 ```bash
-./tests/scripts/services.sh status
+export PYTHONNOUSERSITE=1
+export SINGULARITYENV_PYTHONNOUSERSITE=1
+export APPTAINERENV_PYTHONNOUSERSITE=1
+
+export R_LIBS_USER=/dev/null
+export R_ENVIRON_USER=/dev/null
+export R_PROFILE_USER=/dev/null
+export SINGULARITYENV_R_LIBS_USER=/dev/null
+export SINGULARITYENV_R_ENVIRON_USER=/dev/null
+export SINGULARITYENV_R_PROFILE_USER=/dev/null
+export APPTAINERENV_R_LIBS_USER=/dev/null
+export APPTAINERENV_R_ENVIRON_USER=/dev/null
+export APPTAINERENV_R_PROFILE_USER=/dev/null
 ```
 
-## Basic MicroTests
+R is trickier than Python: `R_LIBS_USER` alone is not enough because R
+sources `~/.Renviron` *after* reading existing env vars, so any
+`R_LIBS_USER` set there silently overrides the one we passed in. Block
+the user config files with `R_ENVIRON_USER=/dev/null` and
+`R_PROFILE_USER=/dev/null` as well.
 
-#### Execution time should be less than 5 minutes.
+If you hit "package or namespace load failed" in R or "module not
+found" / "No such file or directory" in Python *despite* the package
+being installed in the container, suspect a host leak.
 
-This test assumes you've pulled the microtest repository and that it is parallel with the pepatac folder.
-`https://github.com/databio/microtest.git`
+### Looper compute package: don't inherit the system `$DIVCFG`
 
-Navigate to this folder and run:
+Looper integration fixtures call `looper run` without specifying a
+compute package. On HPC nodes with `$DIVCFG` pointing at a SLURM-defaulting
+divvy config, that defaults to `sbatch` submission with whatever
+partition/account combo the divcfg specifies -- usually one the test
+user doesn't have access to. Always pass `-p local` to fixtures running
+the pipeline in tests (matches the pattern in
+`tests/integration/test_looper_run.py::run_looper_pipeline`).
 
-`looper run -c .looper_microtest_basic.yaml`
+### C++ runtime ABI mismatch (`GLIBCXX_*` errors)
 
-For a 2nd set of options, run:
+Compiled Python wheels (e.g. matplotlib's `_c_internal_utils.so`)
+built against a newer libstdc++ won't load on RHEL/Rocky HPC nodes
+whose `/lib64/libstdc++.so.6` is older. The conda env almost certainly
+ships a newer `libstdc++.so.6` under `$CONDA_PREFIX/lib/`; force its
+use by prepending the env's lib dir to `LD_LIBRARY_PATH`. The
+integration runner already does this **on the host process only**:
 
-`looper run -c .looper_microtest_basic_02.yaml`
+```bash
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
+```
 
-For the 2nd test, you will need to set the paths to the picard and trimmomatic jar files:
-`export PICARD=/picard-2.27.5-0/picard.jar`
-`export TRIMMOMATIC=/trimmomatic-0.39-2/trimmomatic.jar`
+Do NOT propagate this into the apptainer container via
+`SINGULARITYENV_LD_LIBRARY_PATH` / `APPTAINERENV_LD_LIBRARY_PATH`.
+The bulker crate is alpine/musl-based; pulling in conda's glibc-linked
+libs (libattr etc.) breaks every containerized tool at launch with
+`Error relocating ... __strndup: symbol not found`. The matplotlib
+import happens in `pepatac.py`'s host Python (a subprocess of pytest,
+not inside `bulker exec`), so host-only LD_LIBRARY_PATH is sufficient.
+
+For ad-hoc test runs outside the runner (e.g. running the summarizer
+tests directly), the first export alone is usually enough:
+
+```bash
+LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" \
+    "$CONDA_PREFIX/bin/python3" -m pytest tests/test_summarizer.py -v
+```
+
+Verify the env has a sufficient `libstdc++`:
+
+```bash
+strings "$CONDA_PREFIX"/lib/libstdc++.so.6 | grep GLIBCXX_3.4.<NN>
+```
+
+(replace `<NN>` with the version the failing extension demands; the
+error message tells you which.) If the conda env's `libstdc++` is
+also too old, `conda install -n <env> -c conda-forge libstdcxx-ng`.
+
+### Pipestat dep coordination
+
+Newer pipestat (≥0.13.0) permits shared schema keys across `samples:`
+and `project:` blocks, which matters for `Time` and `Success`. Older
+pipestat (0.12.x) raises `SchemaError: Overlap between project- and
+sample-level keys` on the same schema. Newer pipestat also pulls in a
+newer `yacman` that requires `refgenconf>=0.13.1` to import. Coordinated
+upgrade: bump pipestat and refgenconf together in the env you run tests
+in. `requirements.txt` pins `refgenconf>=0.13.1`; if your env is older
+than that, upgrade before running tests.
