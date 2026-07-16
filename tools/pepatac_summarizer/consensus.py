@@ -271,19 +271,28 @@ def _rewrite_coords(line, start, end, summit_offset):
     return "\t".join(f)
 
 
-def _recenter_peaks(lines, conf_rows, bws, offset_threshold=0.25):
-    """Recenter off-center peaks on their signal max, preserving width.
+def _recenter_and_annotate(lines, conf_rows, bws, recenter=True,
+                           offset_threshold=0.25):
+    """Single pass over the per-sample signal: read each peak's coverage profile
+    ONCE and use it for BOTH (optional) recentering and the confidence
+    annotations, instead of reading it twice.
 
-    Overlap-guard: the shifted window is CLAMPED into the gap between its
-    already-placed left neighbor and its original-position right neighbor, and
-    the move is only applied if the clamped window fits without overlapping
-    either -- so recentering can never create a new overlapping peak. Boxed-in
-    peaks (no room) are left in place. Returns (lines, conf_rows, n_moved).
+    When ``recenter`` is True, off-center peaks are shifted onto their signal
+    max with the overlap-guard: the shifted window is CLAMPED into the gap
+    between the already-placed left neighbor and the original-position right
+    neighbor, applied only if it fits without overlap -- so recentering can
+    never create a new overlapping peak (boxed-in peaks stay put).
+    ``signal_offset`` is measured on the FINAL (post-shift) window;
+    ``bimodality`` is over the profile that was read (the peak-as-called window,
+    the relevant one for an over-merge signal). Returns
+    (lines, conf_rows, n_moved, annots), annots parallel to the outputs, each
+    (signal_offset, bimodality, empty).
     """
     recs = []
     for line, cr in zip(lines, conf_rows):
         recs.append({"line": line, "chrom": cr[0], "start": cr[1], "end": cr[2],
-                     "name": cr[3], "ns": cr[4], "repro": cr[5], "score": cr[6]})
+                     "name": cr[3], "ns": cr[4], "repro": cr[5], "score": cr[6],
+                     "annot": (0.0, float("nan"), True)})
 
     by_chrom = defaultdict(list)
     for i, r in enumerate(recs):
@@ -301,33 +310,40 @@ def _recenter_peaks(lines, conf_rows, bws, offset_threshold=0.25):
             right_bound = (recs[idxs[k + 1]]["start"] if k + 1 < len(idxs)
                            else None)
 
-            prof = _signal_profile(bws, chrom, s, e)
-            if prof.sum() > 0:
+            prof = _signal_profile(bws, chrom, s, e)      # the single read
+            _off0, bc, empty = _offset_bimodality(prof)
+            if not empty:
                 amax = s + int(_np.argmax(prof))
-                center = (s + e) / 2.0
-                offset = (amax - center) / (w / 2.0)
-                if abs(offset) > offset_threshold:
-                    new_start = amax - w // 2
-                    if new_start < left_bound:
-                        new_start = left_bound
-                    if right_bound is not None and new_start + w > right_bound:
-                        new_start = right_bound - w
-                    # apply only if it fits the gap without overlap and moved
-                    fits = (new_start >= 0 and new_start >= left_bound and
-                            (right_bound is None or new_start + w <= right_bound))
-                    if fits and new_start != s:
-                        new_end = new_start + w
-                        summit = min(max(amax - new_start, 0), w - 1)
-                        r["line"] = _rewrite_coords(r["line"], new_start,
-                                                    new_end, summit)
-                        r["start"], r["end"] = new_start, new_end
-                        n_moved += 1
+                if recenter:
+                    center = (s + e) / 2.0
+                    offset = (amax - center) / (w / 2.0)
+                    if abs(offset) > offset_threshold:
+                        new_start = amax - w // 2
+                        if new_start < left_bound:
+                            new_start = left_bound
+                        if right_bound is not None and new_start + w > right_bound:
+                            new_start = right_bound - w
+                        # apply only if it fits the gap without overlap and moved
+                        fits = (new_start >= 0 and new_start >= left_bound and
+                                (right_bound is None or new_start + w <= right_bound))
+                        if fits and new_start != s:
+                            new_end = new_start + w
+                            summit = min(max(amax - new_start, 0), w - 1)
+                            r["line"] = _rewrite_coords(r["line"], new_start,
+                                                        new_end, summit)
+                            r["start"], r["end"] = new_start, new_end
+                            n_moved += 1
+                # signal_offset on the FINAL (post-shift) window
+                fw = r["end"] - r["start"]
+                fc = (r["start"] + r["end"]) / 2.0
+                r["annot"] = ((amax - fc) / (fw / 2.0), bc, False)
             prev_final_end = r["end"]
 
     new_lines = [r["line"] for r in recs]
     new_conf = [(r["chrom"], r["start"], r["end"], r["name"], r["ns"],
                  r["repro"], r["score"]) for r in recs]
-    return new_lines, new_conf, n_moved
+    annots = [r["annot"] for r in recs]
+    return new_lines, new_conf, n_moved, annots
 
 
 def _summit_abs(line, start):
@@ -409,9 +425,10 @@ def _make_distinct_drop(lines, conf_rows):
             keep[i] = True
             starts.insert(idx, s)
             ends.insert(idx, e)
-    new_lines = [lines[i] for i in range(n) if keep[i]]
-    new_conf = [conf_rows[i] for i in range(n) if keep[i]]
-    return new_lines, new_conf, n - len(new_lines)
+    kept_idx = [i for i in range(n) if keep[i]]
+    new_lines = [lines[i] for i in kept_idx]
+    new_conf = [conf_rows[i] for i in kept_idx]
+    return new_lines, new_conf, kept_idx, n - len(kept_idx)
 
 
 def calculate_consensus_peaks(
@@ -490,16 +507,24 @@ def calculate_consensus_peaks(
 
         # Recentering + distinct are reproducible-mode refinements; legacy is
         # left byte-for-byte as the released method.
+        annots = None
         if method == REPRODUCIBLE:
-            if bws and recenter:
-                consensus_lines, confidence_rows, n_moved = _recenter_peaks(
-                    consensus_lines, confidence_rows, bws)
-                print(f"  recentered {n_moved} off-center peak(s) on signal max "
-                      "(overlap-guarded)")
+            # One signal pass: read each peak's coverage profile once and reuse
+            # it for both recentering (if enabled) and the confidence
+            # annotations, instead of reading it twice.
+            if bws:
+                consensus_lines, confidence_rows, n_moved, annots = \
+                    _recenter_and_annotate(consensus_lines, confidence_rows,
+                                           bws, recenter=recenter)
+                if recenter:
+                    print(f"  recentered {n_moved} off-center peak(s) on signal "
+                          "max (overlap-guarded)")
 
             if distinct == "drop":
-                consensus_lines, confidence_rows, n_drop = _make_distinct_drop(
-                    consensus_lines, confidence_rows)
+                consensus_lines, confidence_rows, kept_idx, n_drop = \
+                    _make_distinct_drop(consensus_lines, confidence_rows)
+                if annots is not None:
+                    annots = [annots[i] for i in kept_idx]
                 print(f"  dropped {n_drop} lower-confidence overlapping peak(s) "
                       "-> distinct fixed-width set")
             elif distinct == "trim":
@@ -521,15 +546,13 @@ def calculate_consensus_peaks(
             with open(conf_file, "w") as f:
                 header = ["chrom", "start", "end", "name", "n_samples",
                           "reproducibility", "score"]
-                if bws:
+                if annots is not None:
                     header += ["signal_offset", "bimodality", "high_confidence"]
                 f.write("\t".join(header) + "\n")
-                for row in confidence_rows:
-                    chrom, start, end = row[0], row[1], row[2]
+                for j, row in enumerate(confidence_rows):
                     out = list(row)
-                    if bws:
-                        off, bc, empty = _offset_bimodality(
-                            _signal_profile(bws, chrom, start, end))
+                    if annots is not None:
+                        off, bc, empty = annots[j]
                         centered = abs(off) <= 0.25
                         unimodal = (bc == bc) and bc <= _BC_BIMODAL  # bc==bc: not NaN
                         hi = int(centered and unimodal and not empty)
