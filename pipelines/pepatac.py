@@ -199,6 +199,34 @@ def parse_arguments():
     return args
 
 
+def report_file_link(pm, key, path, title=None):
+    """
+    Report a file output as a link, with no thumbnail.
+
+    Use this instead of report_result() for path-valued results. Looper drives
+    pipestat from a config file, which leaves pipestat with
+    validate_results=False; in that mode pipestat rewrites any reported string
+    ending in .bed/.bam into {path, title} but leaves other extensions alone,
+    so reporting paths as strings renders inconsistently. Sending the object
+    ourselves keeps every path result the same shape.
+
+    TODO: revisit once pipestat honors a schema_path given in the config file
+    (it currently sets validate_results = schema_path is not None, checking
+    only the constructor argument). With validation on, these could go back to
+    plain report_result() strings.
+
+    :param pypiper.PipelineManager pm: pipeline manager reporting the result
+    :param str key: result name, as declared in the output schema
+    :param str path: path to the reported file
+    :param str title: link text; defaults to the result name
+    """
+    pm.pipestat.report(
+        values={key: {"path": path, "title": str(title or key)}},
+        record_identifier=pm.pipestat_record_identifier,
+        force_overwrite=True,
+    )
+
+
 def report_message(pm, report_file, message, annotation=None):
     """
     Writes a string to provided file in a safe way.
@@ -1258,7 +1286,18 @@ def main():
         cmd = ("awk -F'\t' -f " + tool_path("extract_picard_lib.awk") +
                " " + dedup_log)
         picard_est_lib_size = pm.checkprint(cmd)
-        pm.report_result("Picard_est_lib_size", picard_est_lib_size)
+        # awk emits nothing when the metrics file has no METRICS CLASS block,
+        # and the schema requires a number, so only report a parseable value
+        if not picard_est_lib_size or not picard_est_lib_size.strip():
+            pm.info("Could not extract ESTIMATED_LIBRARY_SIZE from {}"
+                    .format(dedup_log))
+            return
+        try:
+            pm.report_result("Picard_est_lib_size",
+                             float(picard_est_lib_size.strip()))
+        except ValueError:
+            pm.info("Unexpected ESTIMATED_LIBRARY_SIZE value: {}"
+                    .format(picard_est_lib_size.strip()))
 
     def post_dup_aligned_reads(dedup_log):
         if args.skip_dedup:
@@ -1383,10 +1422,19 @@ def main():
         pm.info("PEPATAC could not determine a valid deduplicator tool")
         pm.stop_pipeline()
 
+    def post_dup_stats(metrics_file):
+        post_dup_aligned_reads(metrics_file)
+        # ESTIMATED_LIBRARY_SIZE is only present in Picard's metrics file
+        if args.deduplicator == "picard":
+            estimate_lib_size(metrics_file)
+
     pm.run([cmd1, cmd2], rmdup_bam,
-           follow=lambda: post_dup_aligned_reads(metrics_file))
-    
-    
+           follow=lambda: post_dup_stats(metrics_file))
+
+    if os.path.exists(rmdup_bam):
+        report_file_link(pm, "aligned_bam", rmdup_bam)
+
+
     ############################################################################
     #           Determine distribution of reads across nucleosomes             #
     ############################################################################
@@ -1838,6 +1886,10 @@ def main():
                        "Could not call \'gtars\'."
                        "Confirm the required gtars tool is in your PATH.")
 
+    if os.path.exists(exact_target):
+        report_file_link(pm, "exact_bw", exact_target)
+    if os.path.exists(smooth_target):
+        report_file_link(pm, "smooth_bw", smooth_target)
 
     ############################################################################
     #                          Determine TSS enrichment                        #
@@ -2321,8 +2373,13 @@ def main():
                 cmd2 = ("touch " + blacklist_target)
                 pm.run([cmd1, cmd2], blacklist_target)
                 peak_output_file = filter_peak
-        
-        
+
+        # peak_output_file has reached its final value at this point
+        if os.path.exists(peak_output_file):
+            report_file_link(pm, "peak_file", peak_output_file)
+        if os.path.exists(summits_bed):
+            report_file_link(pm, "summits_bed", summits_bed)
+
         ########################################################################
         #                Determine the fraction of reads in peaks              #
         ########################################################################
@@ -2351,7 +2408,7 @@ def main():
                              # pipeline_manager=pm)
             # pm.report_result("FRiP_Q1", round(frip, 2))
 
-        if os.path.exists(res.frip_ref_peaks):
+        if args.frip_ref_peaks and os.path.exists(res.frip_ref_peaks):
             if pm.get_stat("FRiP_ref") is None or args.new_start:
                 # Use an external reference set of peaks instead of the peaks
                 # called from this run
@@ -2392,8 +2449,8 @@ def main():
         # If you include reference peaks, calculate coverage using those
         # normalize to 1M tags/reads: (base_counts/sum(base_counts))*1000000)
         # sum(base_counts) is just the total number of bases in peaks
-        if os.path.exists(res.frip_ref_peaks):
-            sort_frip_ref_peaks = os.path.join(peak_folder, 
+        if args.frip_ref_peaks and os.path.exists(res.frip_ref_peaks):
+            sort_frip_ref_peaks = os.path.join(peak_folder,
                 "sorted_reference_peaks.narrowPeak")
             cmd1 = (tools.bedtools + " sort -i " + res.frip_ref_peaks +
                     " -faidx " + chr_order + " > " + sort_frip_ref_peaks)
@@ -2432,6 +2489,15 @@ def main():
                 # norm_peak_coverage_gz)
         #pm.run([cmd1, cmd2], norm_peak_coverage_gz)
         pm.run(cmd1, peak_coverage_gz)
+
+        # ziptool compresses in place, so the .gz is normally the survivor.
+        # --lite removes the coverage file below, so don't advertise a path
+        # that this run is about to delete.
+        if not args.lite:
+            if os.path.exists(peak_coverage_gz):
+                report_file_link(pm, "coverage_file", peak_coverage_gz)
+            elif os.path.exists(peak_coverage):
+                report_file_link(pm, "coverage_file", peak_coverage)
 
         pm.clean_add(peak_bed)
         pm.clean_add(chr_keep)
