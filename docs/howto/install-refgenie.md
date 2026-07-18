@@ -13,9 +13,10 @@ You have two options for using `refgenie` assemblies with `PEPATAC`. If you're u
 
 Pre-built genome indices exist for common genomes including: `hg38`, `hg19`, `mm10`, and `mm9`. You may [download the corresponding pre-indexed references](http://refgenie.databio.org/en/latest/download/) directly from the web or using `refgenie` on the command line.
 
-For example, get the `hg38` bowtie2 index:
+For example, build the `hg38` bowtie2 index (refgenie 1.0):
 ```console
-refgenie pull hg38/bowtie2_index
+refgenie genome init /path/to/hg38.fa --alias hg38
+refgenie add hg38/bowtie2_index --recipe bowtie2_index
 ```
 
 ### Build custom `refgenie` assemblies
@@ -24,11 +25,16 @@ For complete and detailed information on indexing your own genomes and building 
 
 ## 2: Configure the pipeline to use `refgenie` assemblies
 
-Once you've procured assemblies for all genomes you wish to use, you must point the pipeline to where you store these. You can do this in two ways, either: 1) with an environment variable, or 2) by adjusting a configuration option.
-The pipeline looks for genomes stored in a folder specified by the `resources.genome_config` attribute in the [pipeline config file](https://github.com/databio/pepatac/blob/dev/pipelines/pepatac.yaml). By default, this points to the shell variable `REFGENIE`, so all you have to do is set an environment variable to the location of your `refgenie` configuration file:
+Once you've registered assemblies and assets for all genomes you wish to use, the pipeline locates them via the refgenie 1.0 db config path:
+
 ```
-export REFGENIE="/path/to/genome_config.yaml"
+export REFGENIE_HOME_PATH="/path/to/your_refgenie_home"
+export REFGENIE_DB_CONFIG_PATH="$REFGENIE_HOME_PATH/refgenie_db_config.yaml"
 ```
-(Add this to your `.bashrc` or `.profile` to ensure it persists).
-Alternatively, you can skip the `REFGENIE` variable and simply change the value of that configuration option to point to the configuration file for `refgenie`. The advantage of using an environment variable is that it makes the configuration file portable, so the same pipeline can be run on any computing environment, as the location to reference assemblies is not hard-coded to a specific computing environment.
+
+(Add these to your `.bashrc` or `.profile` to ensure they persist.)
+
+The pipeline interface's `pre_submit` hook (`refgenie.looper_refgenie_populate_local`) reads `$REFGENIE_DB_CONFIG_PATH` from the environment and resolves all asset paths automatically.
+
+> **NOTE (refgenie1 branch):** The legacy `$REFGENIE` env var (pointing at a YAML config) is replaced by `$REFGENIE_DB_CONFIG_PATH` (pointing at refgenie 1.0's db config YAML). Update any inherited `.bashrc` accordingly.
 

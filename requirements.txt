@@ -12,16 +12,17 @@ logmuse>=0.2.7
 numpy>=1.21
 pandas>=1.4
 pararead>=0.7.0
-piper>=0.14.3
+piper>=0.15.1
 psutil>=5.8
 pysam>=0.16
 python-Levenshtein>=0.12
 pyyaml>=3.13
-refgenconf>=0.13.1
-# gtars Python binding: used by the --qc-backend gtars path (qc_gtars.py);
-# consensus.py no longer uses it. Pinned to 0.9.x to stay aligned with the
-# rust-gtars CLI/container and conda env (all 0.9.x). Note: PyPI skipped 0.9.0
-# (the container's version) -- the lowest 0.9.x wheel on PyPI is 0.9.1.
+refgenie>=1.0.0
+# gtars Python binding: pinned to 0.9.x to stay aligned with the rust-gtars
+# CLI/container and conda env (all 0.9.x), and to carry the 4-arg
+# Region(chr, start, end, rest) API the --qc-backend gtars path (qc_gtars.py)
+# targets. Note: PyPI skipped 0.9.0 (the container's version) -- the lowest
+# 0.9.x wheel on PyPI is 0.9.1.
 gtars>=0.9.1
 # pyBigWig: read per-sample coverage tracks for the reproducible consensus
 # confidence annotations (signal-centeredness, bimodality) and --recenter.
