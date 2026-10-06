@@ -37,28 +37,33 @@ Success! If you had any issues, feel free to [reach out to us with questions](co
 
 ## 2: Initialize `refgenie` and download assets
 
-As described in the various installation guides, `PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must always exist outside of any container system or alongside a native installation. Therefore, we still need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
+> **NOTE (refgenie1 branch):** This branch targets [refgenie 1.0+](https://github.com/refgenie/refgenie1), which uses `$REFGENIE_DB_CONFIG_PATH` (not `$REFGENIE`) and replaces `refgenie pull` with `refgenie genome init` + `refgenie add`. See [`docs/assets.md`](assets.md) for the canonical refgenie 1.0 setup. The legacy commands below are kept for reference only.
+
+As described in the various installation guides, `PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Refgenie 1.0 setup (this branch):
 
 ```console
-pip install refgenie
-export REFGENIE=/path/to/your/pepatac_tutorial/refgenie_config.yaml
-refgenie init -c $REFGENIE
+pip install "refgenie>=1.0.0"
+export REFGENIE_HOME_PATH=/path/to/your/pepatac_tutorial/refgenie_home
+export REFGENIE_DB_CONFIG_PATH=$REFGENIE_HOME_PATH/refgenie_db_config.yaml
+refgenie init
 ```
 
-Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
-
-Next, pull the assets you need. Replace `hg38` in the example below if you need to use a different genome assembly. If these assets are not available automatically for your genome of interest, then you'll need to [build them](annotation.md).
+Register a genome and add assets. Replace `hg38` if needed:
 
 ```console
-refgenie pull hg38/fasta hg38/bowtie2_index hg38/refgene_anno hg38/ensembl_gtf hg38/ensembl_rb
-refgenie build hg38/feat_annotation
+refgenie genome init /path/to/hg38.fa --alias hg38
+refgenie add hg38/fasta            --recipe fasta
+refgenie add hg38/bowtie2_index    --recipe bowtie2_index
+refgenie add hg38/refgene_anno     --recipe refgene_anno
+refgenie add hg38/feat_annotation  --recipe feat_annotation
 ```
 
 `PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
 
 ```console
-refgenie pull rCRSd/fasta
-refgenie pull rCRSd/bowtie2_index
+refgenie genome init /path/to/rCRSd.fa --alias rCRSd
+refgenie add rCRSd/fasta         --recipe fasta
+refgenie add rCRSd/bowtie2_index --recipe bowtie2_index
 ```
 
 ## 3: Download tutorial read files

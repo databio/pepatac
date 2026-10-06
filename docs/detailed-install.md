@@ -248,28 +248,26 @@ Before we analyze anything, we also need a reference genome. You can use our rec
 
 ### 4a: Initialize `refgenie` and download assets
 
-`PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must still be available natively. Therefore, we need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
+> **NOTE (refgenie1 branch):** This branch targets [refgenie 1.0+](https://github.com/refgenie/refgenie1). See [`docs/assets.md`](assets.md) for canonical setup.
 
 ```console
-pip install refgenie
-export REFGENIE=/path/to/your_genome_folder/genome_config.yaml
-refgenie init -c $REFGENIE
+pip install "refgenie>=1.0.0"
+export REFGENIE_HOME_PATH=/path/to/your_refgenie_home
+export REFGENIE_DB_CONFIG_PATH=$REFGENIE_HOME_PATH/refgenie_db_config.yaml
+refgenie init
+refgenie genome init /path/to/hg38.fa --alias hg38
+refgenie add hg38/fasta            --recipe fasta
+refgenie add hg38/bowtie2_index    --recipe bowtie2_index
+refgenie add hg38/refgene_anno     --recipe refgene_anno
+refgenie add hg38/feat_annotation  --recipe feat_annotation
 ```
 
-Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
-
-Next, pull the assets you need. Replace `hg38` in the example below if you need to use a different genome assembly. If these assets are not available automatically for your genome of interest, then you'll need to [build them](annotation.md). Download these required assets with this command:
+`PEPATAC` also requires `fasta` and `bowtie2_index` assets for any pre-alignment genomes:
 
 ```console
-refgenie pull hg38/fasta hg38/bowtie2_index hg38/refgene_anno hg38/ensembl_gtf hg38/ensembl_rb
-refgenie build hg38/feat_annotation
-```
-
-`PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
-
-```console
-refgenie pull rCRSd/fasta
-refgenie pull rCRSd/bowtie2_index
+refgenie genome init /path/to/rCRSd.fa --alias rCRSd
+refgenie add rCRSd/fasta         --recipe fasta
+refgenie add rCRSd/bowtie2_index --recipe bowtie2_index
 ```
 
 ### 4b: Download assets manually

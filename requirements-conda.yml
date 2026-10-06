@@ -526,8 +526,7 @@ dependencies:
       - pydantic-core==2.27.2
       - pyfaidx==0.8.1.3
       - pysam==0.22.1
-      - refgenconf==0.13.1
-      - refgenie==0.12.1
+      - refgenie>=1.0.0
       - scikit-learn==1.6.1
       - scipy==1.15.0
       - threadpoolctl==3.5.0

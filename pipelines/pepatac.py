@@ -18,7 +18,6 @@ import pypiper
 from pathlib import Path
 import psutil
 from pypiper import build_command
-from refgenconf import RefGenConf as RGC, select_genome_config
 
 # Make sibling `tools/` importable when this script is invoked directly
 # (`python pepatac.py ...`), since sys.path[0] is the script's directory
@@ -1211,10 +1210,21 @@ def main():
     ngstk.make_dir(QC_folder)
 
     bamQC = os.path.join(QC_folder, args.sample_name + "_bamQC.tsv")
-    cmd = tool_path("bamQC.py")
-    cmd += " -i " + mapping_genome_bam
-    cmd += " -c " + str(pm.cores)
-    cmd += " -o " + bamQC
+    if args.qc_backend == "gtars":
+        gtars_cmd_callable = ngstk.check_command("gtars")
+        if gtars_cmd_callable:
+            cmd = "gtars uniwig bamqc"
+            cmd += " -i " + mapping_genome_bam
+            cmd += " -o " + bamQC
+        else:
+            pm.fail_pipeline(RuntimeError(
+                "Could not call 'gtars'. "
+                "Confirm the required gtars tool is in your PATH."))
+    else:
+        cmd = tool_path("bamQC.py")
+        cmd += " -i " + mapping_genome_bam
+        cmd += " -c " + str(pm.cores)
+        cmd += " -o " + bamQC
 
     def report_bam_qc(bamqc_log):
         # Reported BAM QC metrics via the bamQC metrics file
@@ -1319,7 +1329,7 @@ def main():
         rr = float(pm.get_stat("Raw_reads"))
         tr = float(pm.get_stat("Trimmed_reads"))
 
-        if not dr and not dr.strip():
+        if not dr or not dr.strip():
             pm.info("DEBUG: dr didn't work correctly")
             dr = ar
         dr = float(dr)
@@ -2592,7 +2602,7 @@ def main():
                     pm.report_object("Peak chromosome distribution", chr_PDF,
                                      anchor_image=chr_PNG)
                 if not os.path.exists(TSSdist_PDF) or args.new_start:
-                    if res.refgene_tss and os.path.exists(res.refgene_tss):
+                    if hasattr(res, 'refgene_tss') and res.refgene_tss and os.path.exists(res.refgene_tss):
                         plot_tss_distance(peak_output_file, res.refgene_tss,
                                           TSSdist_PDF, TSSdist_PNG)
                         pm.report_object("TSS distance distribution", TSSdist_PDF,

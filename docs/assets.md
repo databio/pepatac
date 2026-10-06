@@ -24,30 +24,44 @@
 
 ## Using `refgenie` managed assets
 
-`PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must be available natively. Therefore, you need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
+`PEPATAC` (this branch) targets [refgenie 1.0+](https://github.com/refgenie/refgenie1) (the SQLModel-backed reimplementation), not legacy refgenie 0.12.x.
+
+`refgenie` 1.0 splits genome registration from asset acquisition: you first `refgenie genome init` from a FASTA, then `refgenie add` each asset (which builds it locally from the registered recipes, or pulls from a subscribed source).
+
+Install and initialize refgenie 1.0:
 
 ```console
-pip install refgenie
-export REFGENIE=/path/to/your_genome_folder/genome_config.yaml
-refgenie init -c $REFGENIE
+pip install "refgenie>=1.0.0"
+export REFGENIE_HOME_PATH=/path/to/your_refgenie_home
+export REFGENIE_DB_CONFIG_PATH=$REFGENIE_HOME_PATH/refgenie_db_config.yaml
+refgenie init
 ```
 
-Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
+Add the `export REFGENIE_HOME_PATH` and `export REFGENIE_DB_CONFIG_PATH` lines to your `.bashrc` or `.profile` to ensure they persist. Note: legacy refgenie used `$REFGENIE` pointing at a YAML config; refgenie 1.0 uses `$REFGENIE_DB_CONFIG_PATH` pointing at the SQLite-backed db config. Update any inherited `.bashrc` accordingly.
 
-Next, pull the assets you need. Replace `hg38` in the example below if you need to use a different genome assembly. If these assets are not available automatically for your genome of interest, then you'll need to [build them](annotation.md). Download all standard assets for `hg38` like so:
+Next, register a genome and add assets. Replace `hg38` if you need a different assembly:
 
 ```console
-refgenie pull hg38/fasta hg38/bowtie2_index hg38/refgene_anno hg38/ensembl_gtf hg38/ensembl_rb hg38/blacklist
-refgenie build hg38/feat_annotation
+# Register a genome from a FASTA file
+refgenie genome init /path/to/hg38.fa --alias hg38
+
+# Add each asset (recipes ship in refgenie/recipes; subscribe to a source if pulling)
+refgenie add hg38/fasta            --recipe fasta
+refgenie add hg38/bowtie2_index    --recipe bowtie2_index
+refgenie add hg38/refgene_anno     --recipe refgene_anno
+refgenie add hg38/blacklist        --recipe blacklist
+refgenie add hg38/feat_annotation  --recipe feat_annotation
 ```
 
 `PEPATAC` also requires a `bowtie2_index` asset for any prealignment genomes:
 
 ```console
-refgenie pull rCRSd/fasta rCRSd/bowtie2_index human_repeats/fasta human_repeats/bowtie2_index
+refgenie genome init /path/to/rCRSd.fa --alias rCRSd
+refgenie add rCRSd/fasta         --recipe fasta
+refgenie add rCRSd/bowtie2_index --recipe bowtie2_index
 ```
 
-If you prefer `bwa` for alignment, you would use the [`refgenie bwa_index`](http://refgenie.databio.org/en/latest/available_assets/#bwa_index) instead.
+If you prefer `bwa` for alignment, you would use a `bwa_index` recipe instead. (Note: the `bwa_index` and `tallymer_index` asset classes may not yet ship in `refgenie/recipes`; check that repo or build manually.)
 
 Furthermore, you can [learn more about using `seqOutBias` and the required `tallymer_index` here](sob.md).
 
