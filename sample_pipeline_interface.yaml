@@ -51,4 +51,4 @@ var_templates:
   refgenie_db_config: "$REFGENIE_DB_CONFIG_PATH"
 pre_submit:
   python_functions:
-  - refgenie.looper_refgenie_populate_local
+  - refgenie.integrations.looper.populate

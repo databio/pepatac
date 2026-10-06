@@ -34,7 +34,7 @@ export REFGENIE_DB_CONFIG_PATH="$REFGENIE_HOME_PATH/refgenie_db_config.yaml"
 
 (Add these to your `.bashrc` or `.profile` to ensure they persist.)
 
-The pipeline interface's `pre_submit` hook (`refgenie.looper_refgenie_populate_local`) reads `$REFGENIE_DB_CONFIG_PATH` from the environment and resolves all asset paths automatically.
+The pipeline interface's `pre_submit` hook (`refgenie.integrations.looper.populate`) reads `$REFGENIE_DB_CONFIG_PATH` from the environment and resolves all asset paths automatically.
 
 > **NOTE (refgenie1 branch):** The legacy `$REFGENIE` env var (pointing at a YAML config) is replaced by `$REFGENIE_DB_CONFIG_PATH` (pointing at refgenie 1.0's db config YAML). Update any inherited `.bashrc` accordingly.
 
