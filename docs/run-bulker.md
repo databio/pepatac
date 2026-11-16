@@ -75,9 +75,9 @@ Check out [the `bulker` setup guide to install bulker](https://bulker.databio.or
 
 ### 5. Load the `PEPATAC` crate
 
-We've already produced a `bulker` crate for `PEPATAC` that requires all software needed to run the pipeline.  We can load this crate directly from the [`bulker registry`](http://hub.bulker.io/):
+We've already produced a `bulker` crate for `PEPATAC` that bundles all software needed to run the pipeline.  Pre-cache this crate directly from the [`bulker registry`](http://hub.bulker.io/) (container images are pulled on first use):
 ```console
-bulker load databio/pepatac:1.1.3 -r
+bulker crate install databio/pepatac:1.1.3
 ```
 
 ### 6. Activate the `PEPATAC` crate

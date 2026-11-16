@@ -42,8 +42,12 @@ def load_stats_summary(yaml_path: str | Path) -> pd.DataFrame | None:
         return None
 
     df = pd.DataFrame(rows)
-    df = df.fillna(0)
-    df = df.replace("", 0)
+    # fillna/replace on these heterogeneous (object-dtype) stat columns
+    # triggers pandas' deprecated silent-downcast FutureWarning; opt into the
+    # future behavior and downcast explicitly via infer_objects.
+    with pd.option_context("future.no_silent_downcasting", True):
+        df = df.fillna(0).infer_objects(copy=False)
+        df = df.replace("", 0).infer_objects(copy=False)
     return df
 
 

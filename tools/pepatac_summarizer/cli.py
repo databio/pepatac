@@ -32,10 +32,45 @@ def main():
                         help="Do not calculate peak counts table")
     parser.add_argument("-m", "--cutoff", type=int, default=2,
                         help="Min samples for consensus peaks")
-    parser.add_argument("-s", "--min-score", type=float, default=5,
-                        help="Min peak score")
+    parser.add_argument("-s", "--min-score", type=float, default=None,
+                        help="Min peak score. If unset, defaults to 5 for "
+                             "'legacy' (released behavior) and 0 for "
+                             "'reproducible' (reproducibility gates inclusion; "
+                             "set this to re-impose a score floor).")
     parser.add_argument("-l", "--min-olap", type=int, default=1,
                         help="Min overlap bases")
+    parser.add_argument("-C", "--consensus-method",
+                        choices=["legacy", "reproducible"], default="reproducible",
+                        help="Consensus peak method. 'reproducible' (default) "
+                             "gates inclusion on cross-sample reproducibility "
+                             "(rescues weak-but-reproducible peaks; min_score "
+                             "becomes an optional floor) and writes a confidence "
+                             "sidecar. 'legacy' reproduces the released "
+                             "collapsePeaks behavior exactly (for recreating "
+                             "prior consensus peak sets).")
+    parser.add_argument("--repro-cutoff", type=float, default=0.6,
+                        help="reproducible method: keep a peak called in at "
+                             "least this fraction of samples regardless of "
+                             "score (default 0.6).")
+    parser.add_argument("--no-recenter", action="store_false", dest="recenter",
+                        help="reproducible method: disable the default signal-max "
+                             "recentering of off-center consensus peaks. By "
+                             "default, off-center peaks are shifted onto their "
+                             "signal max (overlap-guarded, so a recenter never "
+                             "collides with a neighbor); this requires pyBigWig "
+                             "and the per-sample coverage tracks (it is skipped "
+                             "gracefully if they are absent).")
+    parser.add_argument("--distinct", choices=["none", "drop", "trim"],
+                        default="drop",
+                        help="reproducible method: make consensus peaks "
+                             "non-overlapping. 'drop' (default) drops the "
+                             "lower-confidence peak of each overlap, keeping "
+                             "fixed width (matches the fixed-width count-"
+                             "comparability rationale; ~1%% fewer peaks). 'trim' "
+                             "trims overlaps to their midpoint (keeps every peak "
+                             "but yields sub-500bp widths). 'none' leaves "
+                             "overlaps. Distinct peaks avoid read double-counting "
+                             "in the counts step.")
     parser.add_argument("-F", "--frip-ref-peaks",
                         help="Reference peak set for counts table")
     parser.add_argument("-V", "--poverlap", action="store_true",
@@ -94,11 +129,19 @@ def main():
         str(results_subdir), str(summary_dir), project_name
     )
 
+    # Method-aware min_score default: legacy keeps the released floor of 5;
+    # reproducible defaults to 0 so reproducibility (not score) gates inclusion.
+    min_score = args.min_score
+    if min_score is None:
+        min_score = 5.0 if args.consensus_method == "legacy" else 0.0
+
     consensus_files = {}
     if not args.skip_consensus:
         consensus_files = calculate_consensus_peaks(
             sample_table, str(summary_dir), str(results_subdir), project_name,
-            min_samples=args.cutoff, min_score=args.min_score, min_olap=args.min_olap
+            min_samples=args.cutoff, min_score=min_score, min_olap=args.min_olap,
+            method=args.consensus_method, repro_cutoff=args.repro_cutoff,
+            recenter=args.recenter, distinct=args.distinct
         )
 
     if not args.skip_table and consensus_files:

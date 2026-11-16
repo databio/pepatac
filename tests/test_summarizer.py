@@ -24,13 +24,23 @@ def sample_results(tmp_path):
 
     (aligned_dir / "sample1_sort_dedup.bam").touch()
     (aligned_dir / "sample1_sort_dedup.bam.bai").touch()
-    (aligned_dir / "hg38.chrom.sizes").write_text("chr1\t248956422\nchr2\t242193529\n")
+    (aligned_dir / "sample1_smooth_shift.bw").touch()
 
     peak_content = "chr1\t1000\t2000\tpeak1\t100\t.\t50.0\t10.0\t5.0\t500\n"
     (peak_dir / "sample1_peaks_normalized.narrowPeak").write_text(peak_content)
 
     preseq_content = "TOTAL_READS\tEXPECTED_DISTINCT\n1000000\t800000\n2000000\t1500000\n"
     (qc_dir / "sample1_preseq_yield.txt").write_text(preseq_content)
+
+    # pepatac.py records the resolved reference assets here and appends, so a
+    # re-run of the sample repeats every row verbatim.
+    rows = (
+        "chrom_sizes\t/genomes/hg38/fasta/default/hg38.chrom.sizes\tPEPATAC\n"
+        "genome_config\t/genomes/genomes.yaml\tPEPATAC\n"
+        "fasta\t/genomes/hg38/fasta/default/hg38.fa\tPEPATAC\n"
+        "genome\thg38\tPEPATAC\n"
+    )
+    (sample_dir / "assets.tsv").write_text(rows + rows)
 
     return tmp_path
 
@@ -40,10 +50,28 @@ def test_create_assets_summary(sample_results):
     assets = create_assets_summary(["sample1"], str(sample_results))
 
     assert not assets.empty
-    assert "sample_name" in assets.columns
-    assert "asset" in assets.columns
-    assert "path" in assets.columns
+    assert list(assets.columns) == ["sample_name", "asset", "path", "annotation"]
     assert "sample1" in assets["sample_name"].values
+
+    # reference assets come from assets.tsv, not from globbing outputs
+    assert {"chrom_sizes", "genome_config", "fasta", "genome"} <= set(assets["asset"])
+
+    # the re-run's repeated rows collapse to one each
+    chrom_sizes = assets.loc[assets["asset"] == "chrom_sizes", "path"].tolist()
+    assert chrom_sizes == ["/genomes/hg38/fasta/default/hg38.chrom.sizes"]
+    assert len(assets) == 4
+    assert (assets["annotation"] == "PEPATAC").all()
+
+
+def test_create_assets_summary_missing_file(tmp_path):
+    """Samples without an assets.tsv are skipped with a warning."""
+    (tmp_path / "sample1").mkdir()
+
+    with pytest.warns(UserWarning, match="missing for 1 samples"):
+        assets = create_assets_summary(["sample1"], str(tmp_path))
+
+    assert assets.empty
+    assert list(assets.columns) == ["sample_name", "asset", "path", "annotation"]
 
 
 def test_parse_narrowpeak_line():

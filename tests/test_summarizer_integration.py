@@ -54,6 +54,13 @@ def multi_sample_project(tmp_path):
             "PEPATAC": {"sample": {sample: {"aligned_reads": 5000000}}}
         }))
 
+        (sample_dir / "assets.tsv").write_text(
+            f"genome_config\t{tmp_path}/genomes.yaml\tPEPATAC\n"
+            f"chrom_sizes\t{aligned_dir}/hg38.chrom.sizes\tPEPATAC\n"
+            f"fasta\t{tmp_path}/hg38.fa\tPEPATAC\n"
+            "genome\thg38\tPEPATAC\n"
+        )
+
     config_file = tmp_path / "project_config.yaml"
     sample_table_file = tmp_path / "samples.csv"
 
