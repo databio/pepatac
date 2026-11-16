@@ -519,13 +519,14 @@ dependencies:
       - pararead==0.8.0
       - pephubclient==0.4.5
       - peppy==0.40.7
-      - piper==0.14.3
+      - piper==0.15.1
       - pipestat==0.13.1
       - pydantic==2.10.4
       - pydantic-argparse==0.9.0
       - pydantic-core==2.27.2
       - pyfaidx==0.8.1.3
       - pysam==0.22.1
+      - matplotlib>=3.5
       - refgenie>=1.0.0a2
       - scikit-learn==1.6.1
       - scipy==1.15.0
