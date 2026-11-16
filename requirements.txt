@@ -17,7 +17,7 @@ psutil>=5.8
 pysam>=0.16
 python-Levenshtein>=0.12
 pyyaml>=3.13
-refgenie>=1.0.0
+refgenie>=1.0.0a2
 # gtars Python binding: used by the --qc-backend gtars path (qc_gtars.py);
 # consensus.py no longer uses it. Pinned to 0.9.x to stay aligned with the
 # rust-gtars CLI/container and conda env (all 0.9.x). Note: PyPI skipped 0.9.0
