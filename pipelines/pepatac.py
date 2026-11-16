@@ -1884,20 +1884,30 @@ def main():
     #                          Determine TSS enrichment                        #
     ############################################################################
     Tss_enrich = None
-    if not os.path.exists(res.refgene_tss):
+    tss_annotation = getattr(res, 'refgene_tss', None)
+    if not (tss_annotation and os.path.exists(tss_annotation)):
         print("Skipping TSS -- TSS enrichment requires TSS annotation file: {}"
-              .format(res.refgene_tss))
+              .format(tss_annotation))
     else:
         pm.timestamp("### Calculate TSS enrichment")
 
         Tss_enrich = os.path.join(QC_folder, args.sample_name +
                                   "_TSS_enrichment.txt")
         cmd = tool_path("pyTssEnrichment.py")
-        cmd += " -a " + rmdup_bam + " -b " + res.refgene_tss + " -p ends"
+        cmd += " -a " + rmdup_bam + " -b " + tss_annotation + " -p ends"
         cmd += " -c " + str(pm.cores)
         cmd += " -z -v -s 6 -o " + Tss_enrich
         pm.run(cmd, Tss_enrich, nofail=True)
 
+    if Tss_enrich and not os.path.exists(Tss_enrich):
+        # pyTssEnrichment runs with nofail=True so one unusable TSS file does
+        # not stop the run. Without its output there is no score and no plot,
+        # so skip both instead of raising FileNotFoundError below.
+        pm.warning("Skipping TSS score and plot: {} was not produced."
+                   .format(Tss_enrich))
+        Tss_enrich = None
+
+    if Tss_enrich:
         if not pm.get_stat('TSS_score') or args.new_start:
             with open(Tss_enrich) as f:
                 floats = list(map(float, f))
