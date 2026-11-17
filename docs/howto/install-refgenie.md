@@ -5,7 +5,7 @@ One feature of the pipeline is prealignments, which siphons off reads by alignin
 
 ## 1: Using `refgenie` assemblies
 
-PEPATAC 0.14 uses the legacy refgenie line: refgenie 0.12 or 0.13, read through `refgenconf`. Genome folders made by either version work. Install the 0.13 command-line tool with `pip install "refgenie>=0.13.0,<1.0.0"`; refgenie 0.12.1 cannot run alongside the `refgenconf` 0.13.1 that PEPATAC needs, and refgenie 1.0 is not supported until PEPATAC 0.15.
+PEPATAC 0.15 requires refgenie 1.0 (version 1.0.0a3 or newer). Install it with `pip install "refgenie>=1.0.0a3"`. PEPATAC 0.15 does not work with refgenie 0.12 or 0.13; if you need those, use PEPATAC 0.14.
 
 You have two options for using `refgenie` assemblies with `PEPATAC`. If you're using a common genome, you can probably download an existing [`refgenie` assembly](http://refgenomes.databio.org/).  Alternatively, you can create your own ([see `refgenie` for detailed instructions](http://refgenie.databio.org/en/latest/build/)).
 
@@ -15,10 +15,20 @@ You have two options for using `refgenie` assemblies with `PEPATAC`. If you're u
 
 Pre-built genome indices exist for common genomes including: `hg38`, `hg19`, `mm10`, and `mm9`. You may [download the corresponding pre-indexed references](http://refgenie.databio.org/en/latest/download/) directly from the web or using `refgenie` on the command line.
 
-For example, get the `hg38` bowtie2 index:
+For example, download the `hg38` bowtie2 index (refgenie 1.0):
 ```console
 refgenie pull hg38/bowtie2_index
 ```
+
+To build one for a genome the server does not carry, register the genome from
+its FASTA first:
+```console
+refgenie genome init --fasta /path/to/mygenome.fa -n mygenome
+refgenie build mygenome/bowtie2_index
+```
+
+A fresh refgenie install has no recipes. If `refgenie build` cannot find one,
+it prints the commands that register refgenie's standard recipes.
 
 ### Build custom `refgenie` assemblies
 
@@ -26,11 +36,22 @@ For complete and detailed information on indexing your own genomes and building 
 
 ## 2: Configure the pipeline to use `refgenie` assemblies
 
-Once you've procured assemblies for all genomes you wish to use, you must point the pipeline to where you store these. You can do this in two ways, either: 1) with an environment variable, or 2) by adjusting a configuration option.
-The pipeline looks for genomes stored in a folder specified by the `resources.genome_config` attribute in the [pipeline config file](https://github.com/databio/pepatac/blob/dev/pipelines/pepatac.yaml). By default, this points to the shell variable `REFGENIE`, so all you have to do is set an environment variable to the location of your `refgenie` configuration file:
+Once you have the assets for all the genomes you want to use, point the pipeline
+at your refgenie folder:
+
 ```
-export REFGENIE="/path/to/genome_config.yaml"
+export REFGENIE_HOME_PATH="/path/to/your_refgenie_home"
 ```
-(Add this to your `.bashrc` or `.profile` to ensure it persists).
-Alternatively, you can skip the `REFGENIE` variable and simply change the value of that configuration option to point to the configuration file for `refgenie`. The advantage of using an environment variable is that it makes the configuration file portable, so the same pipeline can be run on any computing environment, as the location to reference assemblies is not hard-coded to a specific computing environment.
+
+(Add this to your `.bashrc` or `.profile` to ensure it persists.)
+
+The pipeline interface's `pre_submit` hook,
+`refgenie.integrations.looper.populate`, then resolves every asset path for you,
+so a sample only needs `genome` and `prealignment_names`. The hook reads
+`$REFGENIE_DB_CONFIG_PATH` when you set it and otherwise falls back to
+refgenie's default, `$REFGENIE_HOME_PATH/refgenie_db_config.yaml`.
+
+> **Upgrading from refgenie 0.12:** the old `$REFGENIE` variable pointed at a
+> YAML config file and is no longer read. Set `$REFGENIE_HOME_PATH` instead, and
+> remove `$REFGENIE` from your shell startup files.
 

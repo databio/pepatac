@@ -96,10 +96,13 @@ def microtest_dir():
 
 @pytest.fixture(scope="session")
 def refgenie_config(test_output_factory):
-    """Set up a shared refgenie environment with genome assets.
+    """Set up a shared refgenie 1.0 environment with genome assets.
 
     Pulls fasta, bowtie2_index, and bwa_index for hg38_chr22.
     Shared across test_end_to_end.py and test_looper_run.py.
+
+    Returns the refgenie database config path; pass it to refgenie as
+    `$REFGENIE_DB_CONFIG_PATH` (refgenie 1.0 has no `-c` flag).
     """
     assert os.path.isfile(REFGENIE), (
         f"refgenie not found at {REFGENIE}. "
@@ -107,20 +110,23 @@ def refgenie_config(test_output_factory):
     )
 
     genome_dir = str(test_output_factory("refgenie"))
-    config_path = os.path.join(genome_dir, "genome_config.yaml")
+    config_path = os.path.join(genome_dir, "refgenie_db_config.yaml")
+    env = {k: v for k, v in os.environ.items() if k != "REFGENIE"}
+    env["REFGENIE_HOME_PATH"] = genome_dir
+    env["REFGENIE_DB_CONFIG_PATH"] = config_path
 
-    # Initialize refgenie
-    subprocess.run(
-        [REFGENIE, "init", "-c", config_path, "-s", "http://refgenomes.databio.org"],
-        capture_output=True, text=True, timeout=30,
+    # Initialize refgenie (subscribes to the default server)
+    result = subprocess.run(
+        [REFGENIE, "init"], env=env,
+        capture_output=True, text=True, timeout=60,
     )
-    assert os.path.isfile(config_path), f"refgenie init failed"
+    assert os.path.isfile(config_path), f"refgenie init failed:\n{result.stderr}"
 
     # Pull genome assets (all assets needed by any test)
     needed_assets = ["fasta", "bowtie2_index", "bwa_index"]
     for asset in needed_assets:
         result = subprocess.run(
-            [REFGENIE, "pull", f"hg38_chr22/{asset}", "--no-large", "-c", config_path],
+            [REFGENIE, "pull", f"hg38_chr22/{asset}"], env=env,
             capture_output=True, text=True, timeout=300,
         )
         if result.returncode != 0:

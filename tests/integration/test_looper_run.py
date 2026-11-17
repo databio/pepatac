@@ -6,8 +6,8 @@ configuration handoff by running PEPATAC via looper instead of direct execution.
 Prerequisites:
 - looper and pipestat installed (pip install looper pipestat)
 - bulker crate databio/pepatac:1.1.4 cached and active
-- .venv with refgenie installed (pip install refgenie)
-- Network access to refgenie server
+- .venv with refgenie 1.0 installed (pip install "refgenie>=1.0.0a3")
+- Network access to the refgenie server
 - RUN_INTEGRATION_TESTS=true
 
 Each test takes ~2-3 minutes. Can be run independently of test_end_to_end.py.
@@ -44,6 +44,13 @@ REFGENIE_SERVER = "http://refgenomes.databio.org"
 SAMPLE_NAME = "test1"
 
 
+def _refgenie_env(config_path):
+    """Environment that points refgenie 1.0 at the test database."""
+    env = {k: v for k, v in os.environ.items() if k != "REFGENIE"}
+    env["REFGENIE_DB_CONFIG_PATH"] = config_path
+    return env
+
+
 def _seek_asset(asset_path, config_path):
     """Use refgenie seek to resolve an asset path.
 
@@ -53,7 +60,7 @@ def _seek_asset(asset_path, config_path):
     the paths it sees in the command arguments.
     """
     result = subprocess.run(
-        [REFGENIE, "seek", asset_path, "-c", config_path],
+        [REFGENIE, "seek", asset_path], env=_refgenie_env(config_path),
         capture_output=True, text=True, timeout=30,
     )
     path = result.stdout.strip()
@@ -106,8 +113,7 @@ def looper_test_config(refgenie_config, test_output_factory):
     results_dir.mkdir()
 
     # Get refgenie paths
-    chrom_sizes_path = _seek_asset(f"{GENOME_NAME}/fasta", refgenie_config)
-    chrom_sizes = os.path.splitext(chrom_sizes_path)[0] + ".chrom.sizes"
+    chrom_sizes = _seek_asset(f"{GENOME_NAME}/fasta.chrom_sizes", refgenie_config)
     bowtie2_index = _seek_asset(f"{GENOME_NAME}/bowtie2_index", refgenie_config)
 
     # Resolve test input files
@@ -142,8 +148,10 @@ pipestat:
 """
     looper_config_path.write_text(looper_config_content)
 
-    # Set REFGENIE env var so pipeline interface templates can use it
-    os.environ["REFGENIE"] = refgenie_config
+    # Point the pipeline interface's refgenie pre_submit hook at the test
+    # database (it reads $REFGENIE_DB_CONFIG_PATH).
+    os.environ["REFGENIE_DB_CONFIG_PATH"] = refgenie_config
+    os.environ.pop("REFGENIE", None)
 
     return str(looper_config_path)
 
@@ -208,6 +216,9 @@ class TestLooperDryRun:
         # Check that refgenie lookups resolved
         assert "--chrom-sizes" in cmd
         assert "--genome-index" in cmd
+        # The sample table has no fasta, so only the refgenie hook can
+        # supply --fasta.
+        assert "--fasta" in cmd
 
 
 @pytest.fixture(scope="module")
@@ -390,28 +401,32 @@ class TestLooperRunPerSampleStats:
 
 @pytest.fixture
 def empty_refgenie_config(tmp_path, monkeypatch):
-    """Empty refgenie config to satisfy the pre-submit refgenconf hook.
+    """Empty refgenie 1.0 database for the pre-submit refgenie hook.
 
-    Regression coverage for #251: even when every asset path is set at
-    the sample level, `sample_pipeline_interface.yaml`'s pre-submit hook
-    (`refgenconf.looper_refgenie_populate`) requires `$REFGENIE` to
-    expand to a readable refgenie config file -- otherwise looper fails
-    with `FileNotFoundError: [Errno 2] No such file or directory:
-    '$REFGENIE'` before the pipeline ever starts. The documented
-    workaround (`docs/assets.md`) is to point `$REFGENIE` at an empty
-    refgenie config; this fixture builds that config.
+    Regression coverage for #251: when every asset path is set at the
+    sample level, looper must still run. Under refgenconf the
+    pre-submit hook failed with `FileNotFoundError: ... '$REFGENIE'`
+    unless `$REFGENIE` pointed at a refgenie config. The refgenie 1.0
+    hook (`refgenie.integrations.looper.populate`) needs no workaround;
+    this fixture points `$REFGENIE_DB_CONFIG_PATH` at an empty database
+    so the test does not depend on the host's own refgenie setup.
     """
     if not LOOPER_AVAILABLE:
         pytest.skip("looper not installed")
 
-    config_path = tmp_path / "empty_refgenie.yaml"
+    home = tmp_path / "empty_refgenie"
+    config_path = home / "refgenie_db_config.yaml"
+    env = _refgenie_env(str(config_path))
+    env["REFGENIE_HOME_PATH"] = str(home)
     result = subprocess.run(
-        [REFGENIE, "init", "-c", str(config_path)],
+        [REFGENIE, "init", "--no-default-server"], env=env,
         capture_output=True, text=True, timeout=30,
     )
     if result.returncode != 0:
         pytest.skip(f"refgenie init failed: {result.stderr}")
-    monkeypatch.setenv("REFGENIE", str(config_path))
+    monkeypatch.delenv("REFGENIE", raising=False)
+    monkeypatch.setenv("REFGENIE_HOME_PATH", str(home))
+    monkeypatch.setenv("REFGENIE_DB_CONFIG_PATH", str(config_path))
     # Don't inherit the host's $DIVCFG. On HPC nodes it points at a
     # SLURM-flavored divvy config; looper 2.0.1 paired with newer
     # yacman crashes with `TypeError: YAMLConfigManager.__init__()
@@ -479,15 +494,14 @@ class TestLooperRunWithoutRefgenie:
     """Regression coverage for #251.
 
     Looper must succeed when samples specify every asset path manually,
-    provided `$REFGENIE` points at a valid (possibly empty) refgenie
-    config. See `docs/assets.md` for the workaround.
+    here with an empty refgenie 1.0 database.
     """
 
     def test_dry_run_succeeds_with_empty_refgenie(
         self, no_refgenie_looper_config, empty_refgenie_config
     ):
-        """Looper dry-run completes without `FileNotFoundError` for
-        `'$REFGENIE'` (the exact failure mode reported in #251)."""
+        """Looper dry-run completes without the `FileNotFoundError`
+        reported in #251."""
         result = looper_main(test_args=[
             "run", "--config", no_refgenie_looper_config["looper_config"],
             "--dry-run",
@@ -501,7 +515,7 @@ class TestLooperRunWithoutRefgenie:
     ):
         """Rendered command contains the sample-level paths from the
         PEP, not refgenie-derived paths (since the genome `galGal6`
-        isn't in the empty refgenie config)."""
+        isn't in the empty refgenie database)."""
         looper_main(test_args=[
             "run", "--config", no_refgenie_looper_config["looper_config"],
             "--dry-run",

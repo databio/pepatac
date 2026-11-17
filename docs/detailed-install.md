@@ -248,31 +248,35 @@ Before we analyze anything, we also need a reference genome. You can use our rec
 
 ### 4a: Initialize `refgenie` and download assets
 
-`PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must still be available natively. Therefore, we need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
+`PEPATAC` needs [`refgenie`](https://refgenie.org) 1.0 or newer. Install it,
+point it at a folder, and initialize:
 
 ```console
-pip install "refgenie>=0.13.0,<1.0.0"
-export REFGENIE=/path/to/your_genome_folder/genome_config.yaml
-refgenie init -c $REFGENIE
+pip install "refgenie>=1.0.0a3"
+export REFGENIE_HOME_PATH=/path/to/your_refgenie_home
+refgenie init
 ```
 
-PEPATAC 0.14 uses the legacy refgenie line: refgenie 0.12 or 0.13, read through `refgenconf`. Genome folders made by either version work. Install the 0.13 command-line tool as shown; refgenie 0.12.1 cannot run alongside the `refgenconf` 0.13.1 that PEPATAC needs, and refgenie 1.0 is not supported until PEPATAC 0.15.
+PEPATAC 0.15 requires refgenie 1.0 (version 1.0.0a3 or newer). It does not
+work with refgenie 0.12 or 0.13; if you need those, use PEPATAC 0.14.
 
-Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
-
-Next, pull the assets you need. Replace `hg38` in the example below if you need to use a different genome assembly. If these assets are not available automatically for your genome of interest, then you'll need to [build them](annotation.md). Download these required assets with this command:
+Add the `export` line to your `.bashrc` or `.profile` so it persists. Then
+download the assets you need, replacing `hg38` if you use another assembly:
 
 ```console
-refgenie pull hg38/fasta hg38/bowtie2_index hg38/refgene_anno hg38/ensembl_gtf hg38/ensembl_rb
-refgenie build hg38/feat_annotation
+refgenie pull hg38/fasta hg38/bowtie2_index
 ```
 
-`PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
+`PEPATAC` also requires `fasta` and `bowtie2_index` assets for any pre-alignment genomes:
 
 ```console
-refgenie pull rCRSd/fasta
-refgenie pull rCRSd/bowtie2_index
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
 ```
+
+The TSS, blacklist and feature annotation files are not on the public asset
+server yet. You can either name them in your PEP, or build them yourself; see
+[Configure assets](assets.md) for both routes. If you used refgenie 0.12
+before, that page also lists what changed.
 
 ### 4b: Download assets manually
 
