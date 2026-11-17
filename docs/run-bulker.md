@@ -34,10 +34,12 @@ We [recommend `refgenie` to manage all required and optional genome assets](run-
 `PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must still exist outside of a container system. Therefore, we need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
 
 ```console
-pip install refgenie
+pip install "refgenie>=0.13.0,<1.0.0"
 export REFGENIE=/path/to/your_genome_folder/genome_config.yaml
 refgenie init -c $REFGENIE
 ```
+
+PEPATAC 0.14 uses the legacy refgenie line: refgenie 0.12 or 0.13, read through `refgenconf`. Genome folders made by either version work. Install the 0.13 command-line tool as shown; refgenie 0.12.1 cannot run alongside the `refgenconf` 0.13.1 that PEPATAC needs, and refgenie 1.0 is not supported until PEPATAC 0.15.
 
 Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
 
@@ -77,7 +79,7 @@ Check out [the `bulker` setup guide to install bulker](https://bulker.databio.or
 
 We've already produced a `bulker` crate for `PEPATAC` that bundles all software needed to run the pipeline.  Pre-cache this crate directly from the [`bulker registry`](http://hub.bulker.io/) (container images are pulled on first use):
 ```console
-bulker crate install databio/pepatac:1.1.3
+bulker crate install databio/pepatac:1.1.4
 ```
 
 ### 6. Activate the `PEPATAC` crate
@@ -85,7 +87,7 @@ bulker crate install databio/pepatac:1.1.3
 Now that we've loaded the `PEPATAC` crate, we need to activate that specific crate so its included tools are available.
 ```console
 
-bulker activate databio/pepatac:1.1.3
+bulker activate databio/pepatac:1.1.4
 
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!

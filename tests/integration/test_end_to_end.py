@@ -18,7 +18,7 @@ Test Structure:
 
 Prerequisites:
 - .venv with refgenie installed (pip install refgenie)
-- bulker crate databio/pepatac:1.1.3 cached and active
+- bulker crate databio/pepatac:1.1.4 cached and active
 - Network access to refgenie server (for pulling genome assets)
 - RUN_INTEGRATION_TESTS=true
 

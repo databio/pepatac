@@ -20,7 +20,7 @@ SERVICES_SCRIPT="$SCRIPT_DIR/services.sh"
 # tag (bare `databio/pepatac` resolves to `databio/pepatac:default` and goes
 # hub-shopping). Default to the most recent published tag of the production
 # crate so tests run against what end users get.
-BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-databio/pepatac:1.1.3}"
+BULKER_CRATE="${PEPATAC_TEST_BULKER_CRATE:-databio/pepatac:1.1.4}"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -135,20 +135,41 @@ ACTIVE_PYTHON=""
 for candidate in "${PYTHON_CANDIDATES[@]}"; do
     [ -z "$candidate" ] && continue
     [ -x "$candidate" ] || continue
-    if "$candidate" -c "import pytest" >/dev/null 2>&1; then
+    # Probe with PYTHONNOUSERSITE=1, because that is how python will run
+    # inside `bulker exec` (see the note further down). A bare `import pytest`
+    # probe is not enough: the host system python usually satisfies it from
+    # ~/.local, and then PYTHONNOUSERSITE=1 takes those packages away again,
+    # so the pipeline's `#!/usr/bin/env python` helper scripts die with
+    # ModuleNotFoundError. Require pararead too -- bamQC.py needs it, and it
+    # is the dependency that exposed this.
+    if PYTHONNOUSERSITE=1 "$candidate" -c "import pytest, pararead" >/dev/null 2>&1; then
         ACTIVE_PYTHON="$candidate"
         break
     fi
 done
 
 if [ -z "$ACTIVE_PYTHON" ]; then
-    echo -e "${RED}ERROR: No python3 found with pytest installed. Tried:${NC}"
+    echo -e "${RED}ERROR: No python3 found that can import pytest and pararead"
+    echo -e "       with user-site packages disabled. Tried:${NC}"
     for candidate in "${PYTHON_CANDIDATES[@]}"; do
         [ -n "$candidate" ] && echo "  - ${candidate}"
     done
-    echo "Install pytest into your active conda/venv env: pip install pytest"
+    echo "Install pepatac's requirements into your active conda/venv env:"
+    echo "  pip install -r requirements.txt -r requirements-test.txt"
     exit 1
 fi
+
+# Put the chosen interpreter's bin dir first on PATH, so that the pipeline's
+# helper scripts resolve to it too. tools/bamQC.py, tools/pyTssEnrichment.py and
+# friends start with `#!/usr/bin/env python`, so they run under whatever python
+# PATH offers -- NOT under ${ACTIVE_PYTHON}. Without this, they pick up the host
+# system python, which has pepatac's requirements only via ~/.local, and
+# PYTHONNOUSERSITE=1 below deliberately hides those. The result was
+# `ModuleNotFoundError: No module named 'pararead'` from bamQC.py, failing every
+# pipeline-running test. The crate's shim dir is prepended by `bulker exec`
+# afterwards, so containerized tools (bowtie2, samtools, macs3) still win.
+PATH="$(dirname "${ACTIVE_PYTHON}"):${PATH}"
+export PATH
 
 # Verify environment
 echo -e "${GREEN}Verifying test environment...${NC}"

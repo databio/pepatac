@@ -5,6 +5,8 @@ One feature of the pipeline is prealignments, which siphons off reads by alignin
 
 ## 1: Using `refgenie` assemblies
 
+PEPATAC 0.14 uses the legacy refgenie line: refgenie 0.12 or 0.13, read through `refgenconf`. Genome folders made by either version work. Install the 0.13 command-line tool with `pip install "refgenie>=0.13.0,<1.0.0"`; refgenie 0.12.1 cannot run alongside the `refgenconf` 0.13.1 that PEPATAC needs, and refgenie 1.0 is not supported until PEPATAC 0.15.
+
 You have two options for using `refgenie` assemblies with `PEPATAC`. If you're using a common genome, you can probably download an existing [`refgenie` assembly](http://refgenomes.databio.org/).  Alternatively, you can create your own ([see `refgenie` for detailed instructions](http://refgenie.databio.org/en/latest/build/)).
 
 *Reminder, if you followed the [install directions](../install.md), `refgenie` is already included!*

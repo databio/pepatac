@@ -12,19 +12,22 @@ logmuse>=0.2.7
 numpy>=1.21
 pandas>=1.4
 pararead>=0.7.0
-piper>=0.14.3
+piper>=0.15.2
 psutil>=5.8
 pysam>=0.16
 python-Levenshtein>=0.12
 pyyaml>=3.13
 refgenconf>=0.13.1
+# matplotlib: the Python summarizer and the gtars QC backend
+# (tools/pepatac_summarizer/plots/, tools/pepatac_qc_gtars.py) import it.
+matplotlib>=3.5
 # gtars Python binding: used by the --qc-backend gtars path (qc_gtars.py);
 # consensus.py no longer uses it. Pinned to 0.9.x to stay aligned with the
 # rust-gtars CLI/container and conda env (all 0.9.x). Note: PyPI skipped 0.9.0
 # (the container's version) -- the lowest 0.9.x wheel on PyPI is 0.9.1.
 gtars>=0.9.1
 # pyBigWig: read per-sample coverage tracks for the reproducible consensus
-# confidence annotations (signal-centeredness, bimodality) and --recenter.
+# confidence annotations (signal-centeredness, bimodality) and recentering.
 # Optional at runtime (consensus.py degrades gracefully if absent), but pinned
 # so the annotations are available by default.
 pyBigWig>=0.3.18

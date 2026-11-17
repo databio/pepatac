@@ -5,7 +5,7 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.12.4"
+__version__ = "0.14.0"
 
 from argparse import ArgumentParser
 import os
@@ -95,6 +95,16 @@ def parse_arguments():
                         help="reproducible method: minimum fraction of samples "
                              "a peak must be called in to be kept regardless of "
                              "score (default 0.6).")
+    parser.add_argument("--no-recenter", action="store_true",
+                        dest="no_recenter", default=False,
+                        help="reproducible method: turn off recentering of "
+                             "off-center consensus peaks onto their signal "
+                             "max (on by default in the Python summarizer).")
+    parser.add_argument("--distinct", default=None,
+                        choices=["none", "drop", "trim"],
+                        help="reproducible method: how to remove overlaps "
+                             "between consensus peaks (default: the Python "
+                             "summarizer's own default, 'drop').")
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
                         help="Path to a reference peak set (narrowPeak/BED) "
@@ -159,6 +169,10 @@ def main():
             cmd += f" --consensus-method {args.consensus_method}"
         if args.repro_cutoff is not None:
             cmd += f" --repro-cutoff {args.repro_cutoff}"
+        if args.no_recenter:
+            cmd += " --no-recenter"
+        if args.distinct is not None:
+            cmd += f" --distinct {args.distinct}"
     else:
         # The R summarizer has no reproducible method; keep the historical
         # score floor of 5 when unset.

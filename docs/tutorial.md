@@ -40,10 +40,12 @@ Success! If you had any issues, feel free to [reach out to us with questions](co
 As described in the various installation guides, `PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must always exist outside of any container system or alongside a native installation. Therefore, we still need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
 
 ```console
-pip install refgenie
+pip install "refgenie>=0.13.0,<1.0.0"
 export REFGENIE=/path/to/your/pepatac_tutorial/refgenie_config.yaml
 refgenie init -c $REFGENIE
 ```
+
+PEPATAC 0.14 uses the legacy refgenie line: refgenie 0.12 or 0.13, read through `refgenconf`. Genome folders made by either version work. Install the 0.13 command-line tool as shown; refgenie 0.12.1 cannot run alongside the `refgenconf` 0.13.1 that PEPATAC needs, and refgenie 1.0 is not supported until PEPATAC 0.15.
 
 Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
 
