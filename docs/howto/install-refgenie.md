@@ -23,9 +23,12 @@ refgenie pull hg38/bowtie2_index
 To build one for a genome the server does not carry, register the genome from
 its FASTA first:
 ```console
-refgenie genome init /path/to/mygenome.fa --alias mygenome
+refgenie genome init --fasta /path/to/mygenome.fa -n mygenome
 refgenie build mygenome/bowtie2_index
 ```
+
+A fresh refgenie install has no recipes. If `refgenie build` cannot find one,
+it prints the commands that register refgenie's standard recipes.
 
 ### Build custom `refgenie` assemblies
 

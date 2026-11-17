@@ -128,17 +128,17 @@ Now we simply run the pipeline like you would with a native installation, but we
 If you are using `refgenie`, you can grab the path to the `--chrom-sizes` and `--genome-index` files as follows:
 ```console
 refgenie seek hg38/fasta.chrom_sizes
-refgenie seek hg38/bowtie2_index.dir
-refgenie seek rCRSd/bowtie2_index.dir
+refgenie seek hg38/bowtie2_index
+refgenie seek rCRSd/bowtie2_index
 ```
 
 Each `refgenie seek` call prints a path on stdout — those paths plug into `pepatac.py` as the values of `--chrom-sizes`, `--genome-index`, and `--prealignment-index` (respectively). You can either copy-paste them or substitute them inline with `$(refgenie seek ...)`:
 
 ```console
 pipelines/pepatac.py --single-or-paired paired \
-  --prealignment-index rCRSd=$(refgenie seek rCRSd/bowtie2_index.dir) \
+  --prealignment-index rCRSd=$(refgenie seek rCRSd/bowtie2_index) \
   --genome hg38 \
-  --genome-index $(refgenie seek hg38/bowtie2_index.dir) \
+  --genome-index $(refgenie seek hg38/bowtie2_index) \
   --chrom-sizes $(refgenie seek hg38/fasta.chrom_sizes) \
   --sample-name test1 \
   --input examples/data/test1_r1.fastq.gz \

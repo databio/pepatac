@@ -127,8 +127,8 @@ Start by running the example project (`test_config.yaml`) in the `examples/test_
 If you are using `refgenie`, you can grab the path to the `--chrom-sizes` and `--genome-index` files as follows:
 ```console
 refgenie seek hg38/fasta.chrom_sizes
-refgenie seek hg38/bowtie2_index.dir
-refgenie seek rCRSd/bowtie2_index.dir
+refgenie seek hg38/bowtie2_index
+refgenie seek rCRSd/bowtie2_index
 ```
 
 Alternatively, if you are *not* using `refgenie`, you can still grab premade `--chrom-sizes` and `--genome-index` files from the `refgenie` servers. `Refgenie` uses algorithmically derived genome digests under-the-hood to unambiguously define genomes. That's what you'll see being used in the example below when we manually download these assets. Therefore, `2230c535660fb4774114bfa966a62f823fdb6d21acf138d4` is the digest for the human readable alias, "hg38", and `94e0d21feb576e6af61cd2a798ad30682ef2428bb7eabbb4` is the digest for "rCRSd."
