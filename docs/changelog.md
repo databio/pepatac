@@ -14,7 +14,9 @@ All notable changes to this project will be documented in this file.
 - Report per-sample output files to pipestat as file links (`aligned_bam`, `exact_bw`, `smooth_bw`, `peak_file`, `summits_bed`, `coverage_file`) plus `Picard_est_lib_size`, and the project `consensus_peaks_file` and `counts_table`, with matching `pepatac_output_schema.yaml` entries.
 - `--skip-dedup` flag for protocols where duplicates are biologically meaningful (e.g. CUT&Tag, CUT&RUN). [#249](https://github.com/databio/pepatac/issues/249)
 - Configurable mitochondrial contig names via `parameters: mito_names` in `pepatac.yaml` (previously hardcoded), so custom assemblies (e.g. Ensembl `MT`, RefSeq accessions) can be supported without editing pipeline code; falls back to the prior default list when the key is absent.
-- Integration test suite under `tests/integration/`: `test_failure_detection`, `test_pipeline`, `test_looper_run`, `test_end_to_end`, which exercise the full pipeline against `databio/pepatac:1.1.4`, including regression coverage for the manual-paths-with-empty-`$REFGENIE` workflow ([#251](https://github.com/databio/pepatac/issues/251)).
+- `pipelines/pepatac_collator.py`: `--summarizer {python,R}` picks the project summarizer (default `python`).
+- `--gtf` gives a GTF gene annotation for the partition plot under `--qc-backend gtars`.
+- Expanded integration test suite under `tests/integration/`: `test_failure_detection`, `test_pipeline`, `test_looper_run`, `test_end_to_end`, which exercise the full pipeline against `databio/pepatac:1.1.4`, including regression coverage for the manual-paths-with-empty-`$REFGENIE` workflow ([#251](https://github.com/databio/pepatac/issues/251)).
 - PEPATACr regression tests for `peakCounts` extension-detection ([#218](https://github.com/databio/pepatac/issues/218), [#219](https://github.com/databio/pepatac/issues/219)) and `plotAnno` empty-input fallback ([#232](https://github.com/databio/pepatac/issues/232)).
 - Documentation: TSSE cutoff guidance with `refgene_anno` asset reference ([#235](https://github.com/databio/pepatac/issues/235)); custom adapter file usage ([#252](https://github.com/databio/pepatac/issues/252)); `$REFGENIE`-required workaround when using manual paths ([#251](https://github.com/databio/pepatac/issues/251)); `PEPATAC_completed.flag` handling in the count-table workflow ([#215](https://github.com/databio/pepatac/issues/215)); `TypeError: 'NoneType' object is not iterable` troubleshooting ([#216](https://github.com/databio/pepatac/issues/216)); `_peaks_coverage.bed` and `_ref_peaks_coverage.bed` column formats ([#233](https://github.com/databio/pepatac/issues/233)); "Running a non-refgenie genome through looper" subsection ([#231](https://github.com/databio/pepatac/issues/231)).
 
@@ -49,6 +51,7 @@ All notable changes to this project will be documented in this file.
 - `pipelines/pepatac_collator.py`: version now matches the pipeline (0.14.0; was 0.12.4).
 - Test scripts and test docs default to crate `databio/pepatac:1.1.4`.
 - Bump `pytest` to 9.0.3 in `requirements-test.txt`; anchor the pytest rootdir at the project root via `pytest.ini`.
+- `requirements.txt` no longer installs MACS3. Install `macs3` separately.
 
 ### Fixed
 - `pipelines/pepatac.py` `_align()`: single-end + bwa branch referenced an undefined `cmd`; mirror the paired chain (minus `filter_pair`) for both `--keep` and no-keep paths. [#299](https://github.com/databio/pepatac/issues/299)
@@ -68,6 +71,8 @@ All notable changes to this project will be documented in this file.
 - `pipelines/pepatac.py`: put the project root on `sys.path` so `tools.pepatac_qc_gtars` imports when `pepatac.py` runs as a script.
 - `tests/test_summarizer*.py`: update the `collapse_peaks` tests for its `(lines, confidence_rows)` return value.
 - `tools/pepatac_summarizer/utils.py`: silence the pandas `fillna`/`replace` silent-downcasting `FutureWarning` (opt into `future.no_silent_downcasting` and downcast explicitly via `infer_objects`).
+- `tools/pepatac_summarizer`: `--frip-ref-peaks` builds the counts table on the reference peaks again, also with `--skip-consensus`. `--poverlap` is not supported and now logs a warning. [#324](https://github.com/databio/pepatac/issues/324)
+- `requirements.txt`: raise the `pipestat` floor to `>=0.13.1`; older versions fail on the 0.14 output schema. [#322](https://github.com/databio/pepatac/issues/322)
 
 ### Removed
 - Old R-based `PEPATACr/tests/testthat/{testthat.R,helper-fixtures.R,test-summarizer.R,test-utilities.R,test-yamlToDT.R}` — superseded by the Python summarizer package and its test suite at `tests/test_summarizer.py` / `tests/test_summarizer_integration.py`.
@@ -84,6 +89,8 @@ All notable changes to this project will be documented in this file.
 - Fix clip chrom end bug in PEPATACr
 - smoothWig.pl: Fix off-by-one errors in smoothing window calculation and boundary handling
 - Update bulker crate to databio/pepatac:1.1.0
+- Both pipeline interfaces pass `--pipestat-config {pipestat.config_file}` to the pipeline.
+- Picard `MarkDuplicates` uses `ASSUME_SORT_ORDER=coordinate` instead of `ASSUME_SORTED=true`.
 
 ## [0.12.5] -- 2025-09-23
 - Fix tutorial typos.
