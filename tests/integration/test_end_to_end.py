@@ -1,7 +1,7 @@
 """End-to-end integration test for the PEPATAC pipeline.
 
 Runs the full pipeline on test data using a temporary refgenie environment
-with the hg38_chr22 genome (small, fast). Uses refgenie 0.12.1 from the
+with the hg38_chr22 genome (small, fast). Uses refgenie 1.0 from the
 project .venv to pull genome assets from the refgenie server.
 
 Tests multiple pipeline configurations (aligner, peak caller, trimmer,
@@ -17,7 +17,7 @@ Test Structure:
     fast when the pipeline fails, rather than passing despite pipeline failure.
 
 Prerequisites:
-- .venv with refgenie installed (pip install refgenie)
+- .venv with refgenie 1.0 installed (pip install "refgenie>=1.0.0a3")
 - bulker crate databio/pepatac:1.1.4 cached and active
 - Network access to refgenie server (for pulling genome assets)
 - RUN_INTEGRATION_TESTS=true
@@ -116,10 +116,18 @@ CONFIGS = {
 }
 
 
+def _refgenie_env(config_path):
+    """Environment that points refgenie 1.0 at the test database."""
+    env = {k: v for k, v in os.environ.items() if k != "REFGENIE"}
+    env["REFGENIE_DB_CONFIG_PATH"] = config_path
+    return env
+
+
 def _run_refgenie(args, config_path):
     """Run a refgenie command using the .venv binary."""
-    cmd = [REFGENIE] + args + ["-c", config_path]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    cmd = [REFGENIE] + args
+    result = subprocess.run(cmd, env=_refgenie_env(config_path),
+                            capture_output=True, text=True, timeout=300)
     if result.returncode != 0:
         pytest.fail(
             f"refgenie {' '.join(args)} failed (rc={result.returncode}):\n"
@@ -137,7 +145,7 @@ def _seek_asset(asset_path, config_path):
     the paths it sees in the command arguments.
     """
     result = subprocess.run(
-        [REFGENIE, "seek", asset_path, "-c", config_path],
+        [REFGENIE, "seek", asset_path], env=_refgenie_env(config_path),
         capture_output=True, text=True, timeout=30,
     )
     path = result.stdout.strip()
@@ -214,8 +222,7 @@ def _run_pipeline(config_name, config, refgenie_config, test_output_factory):
     genome_index = _seek_asset(
         f"{GENOME_NAME}/{config['index_asset']}", refgenie_config
     )
-    chrom_sizes_path = _seek_asset(f"{GENOME_NAME}/fasta", refgenie_config)
-    chrom_sizes = os.path.splitext(chrom_sizes_path)[0] + ".chrom.sizes"
+    chrom_sizes = _seek_asset(f"{GENOME_NAME}/fasta.chrom_sizes", refgenie_config)
 
     schema_path = os.path.join(PROJECT_ROOT, "pepatac_output_schema.yaml")
     cmd = [

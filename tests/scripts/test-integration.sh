@@ -85,15 +85,18 @@ if [ "$INSTALL_DEV_LOOPER" = "true" ]; then
     fi
 fi
 
-# Bootstrap test venv with refgenie if needed
+# Bootstrap test venv with refgenie 1.0 if needed. A venv left over from
+# refgenie 0.12 is upgraded: the tests use the refgenie 1.0 command line.
+# Quote the pin: under PEP 440, a bare `refgenie` or `>=1.0.0` skips the
+# 1.0.0a pre-releases.
 VENV_DIR="$TESTS_DIR/.venv"
 if [ ! -d "$VENV_DIR" ]; then
     echo -e "${YELLOW}Creating test venv at ${VENV_DIR}...${NC}"
     python3 -m venv "$VENV_DIR"
 fi
-if [ ! -f "$VENV_DIR/bin/refgenie" ]; then
-    echo -e "${YELLOW}Installing refgenie into test venv...${NC}"
-    "$VENV_DIR/bin/pip" install refgenie > /dev/null 2>&1 || echo -e "${RED}Failed to install refgenie${NC}"
+if ! env -u REFGENIE "$VENV_DIR/bin/refgenie" --version 2>/dev/null | grep -q "^refgenie 1\."; then
+    echo -e "${YELLOW}Installing refgenie 1.0 into test venv...${NC}"
+    "$VENV_DIR/bin/pip" install "refgenie>=1.0.0a3" > /dev/null 2>&1 || echo -e "${RED}Failed to install refgenie${NC}"
 fi
 export PEPATAC_TEST_VENV="$VENV_DIR"
 
@@ -116,7 +119,7 @@ if ! bulker exec "${BULKER_CRATE}" -- true >/dev/null 2>&1; then
 fi
 
 # Identify the python that has pepatac's runtime deps (pytest, pypiper,
-# refgenconf, etc.) installed. We can't trust `command -v python3` alone
+# refgenie, etc.) installed. We can't trust `command -v python3` alone
 # -- on HPC where a `module load` fires AFTER `conda activate`, the
 # module's PATH prepend can bury the conda env's bin/ behind a base
 # install, so `python3` resolves to the base interpreter (no pytest)

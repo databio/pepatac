@@ -31,7 +31,7 @@ Everything else (venv, refgenie, crate) is bootstrapped automatically by the scr
 ```
 
 The script automatically:
-1. Creates `tests/.venv` and installs refgenie if needed
+1. Creates `tests/.venv` and installs refgenie 1.0 if needed (a venv with refgenie 0.12 is upgraded)
 2. Installs the bulker crate from the local manifest if not cached
 3. Verifies bulker tools are available
 4. Sets `RUN_INTEGRATION_TESTS=true`
@@ -63,7 +63,7 @@ INSTALL_DEV_LOOPER=true ./tests/scripts/test-integration.sh
 | `test_integration.py` | Argument parsing, tool resolution, PEP config loading, schema validation, bulker tool availability, pipeline execution, output validation |
 | `test_end_to_end.py` | Full pipeline across 3 aligner/peak-caller configurations with refgenie assets |
 | `test_looper_run.py` | Pipeline execution via looper, Jinja2 template rendering, pipestat integration |
-| `test_local_refgenieserver.py` | Tests with dev refgenie tools and local server (requires `--local` flag) |
+| `test_local_refgenieserver.py` | Tests with dev refgenie tools and local server (requires `--local` flag). Still written for refgenie 0.12, `refgenconf` and `refgenieserver`, as are `install-dev-refgenie.sh` and `seed-local-refgenie.sh`; they do not run with refgenie 1.0 yet. |
 
 ### Helper scripts
 
@@ -202,8 +202,5 @@ also too old, `conda install -n <env> -c conda-forge libstdcxx-ng`.
 Newer pipestat (≥0.13.0) permits shared schema keys across `samples:`
 and `project:` blocks, which matters for `Time` and `Success`. Older
 pipestat (0.12.x) raises `SchemaError: Overlap between project- and
-sample-level keys` on the same schema. Newer pipestat also pulls in a
-newer `yacman` that requires `refgenconf>=0.13.1` to import. Coordinated
-upgrade: bump pipestat and refgenconf together in the env you run tests
-in. `requirements.txt` pins `refgenconf>=0.13.1`; if your env is older
-than that, upgrade before running tests.
+sample-level keys` on the same schema. If your env has an older
+pipestat, upgrade it before running tests.
