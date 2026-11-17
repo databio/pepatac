@@ -1,7 +1,7 @@
 # Core pepkit stack
 eido>=0.2.4
 looper>=2.1.1
-pipestat>=0.12.1
+pipestat>=0.13.1
 ubiquerg>=0.8.1
 yacman>=1.0.0
 
