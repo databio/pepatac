@@ -470,3 +470,260 @@ Pipeline-side: **partial pass** — completed through alignment and
 dedup; failed at signal generation due to an unrelated gtars-rs bug.
 A full successful end-to-end vs. dev-branch parity comparison is not
 possible until the gtars bug is fixed.
+
+---
+
+# Re-validation against refgenie 1.0.0a2 (2026-11-16)
+
+Re-run of the whole migration against refgenie **1.0.0a2** (PyPI, published
+2026-11-14), after merging `origin/dev` @ `9d9bc9b` into this branch. Tested
+locally (laptop, every job under `systemd-run --user --scope -p MemoryMax=6G`),
+not on Rivanna.
+
+## Verdict
+
+**Pass.** refgenie 1.0.0a2 resolves every asset PEPATAC asks for, the looper
+`pre_submit` hook now ships inside refgenie itself, and a small paired-end
+sample ran end to end to peak annotation with exit code 0.
+
+## What a2 fixed (findings above now obsolete)
+
+| Finding above | Status in a2 |
+|---|---|
+| No `looper_refgenie_populate` equivalent | **Fixed.** refgenie ships `refgenie.integrations.looper.populate`, which sets `namespaces["refgenie"]` in place and reads `var_templates.refgenie_db_config`. PEPATAC just names it in `pre_submit.python_functions`. |
+| Missing `list_seek_keys_values` equivalent | **Fixed.** `Refgenie.paths()` returns a lazy `paths[alias][group][seek_key]` view, so only the seek keys a template actually reads are resolved. `to_dict()` walks it all if you want the plain nested dict. |
+| `seek` returns `Path`, not `str` | **Fixed.** The `paths()` view returns `str`. |
+| Default-asset selection split across methods | **Fixed.** The `paths()` view picks the group's default asset itself. |
+| `Refgenie(database_config_path=...)` rejects `str` | **Fixed.** The looper hook coerces to `Path`, and a path that does not exist falls back to the default database instead of silently opening an empty one. All three of `"$REFGENIE_DB_CONFIG_PATH"` (unexpanded), `""` and `None` resolve correctly. |
+| `refgenie --version` not supported | **Fixed.** `refgenie --version` prints `refgenie 1.0.0a2`. |
+| No `refgenie asset list` subcommand | **Fixed.** There is an `asset` command group, plus `list`, `listr`, `seek`, `seekr`. |
+| `refgenie pull` removed | **Fixed.** `refgenie pull hg38/fasta hg38/bowtie2_index` works again, and `refgenie init` subscribes to `https://api.refgenie.org` for you. |
+| `bowtie2_index.dir` does not exist | **Resolved as designed.** Still no `dir` seek key, and none is needed: `bowtie2_index.bowtie2_index` is the index prefix, which is what bowtie2 wants. Verified end to end. |
+| `bwa_index` / `tallymer_index` asset classes missing | **Fixed in `refgenie/recipes`.** Both asset classes and recipes now exist on that repo's `refgenie1` branch. Seek keys are `bwa_index.bwa_index` and `tallymer_index.search_file`, which is exactly what this branch's templates use. |
+| gtars `uniwig` panics on a missing `@PG VN:` tag | **Fixed in rust-gtars 0.9.0.** `dev` bumped the conda pin from 0.8.0 to 0.9.0 and the merge kept it; `gtars uniwig` returned 0 on the bowtie2 + samtools BAM. |
+
+## Changes this branch needed for a2
+
+1. `sample_pipeline_interface.yaml`: `pre_submit.python_functions` is now
+   `refgenie.integrations.looper.populate`. The previous value,
+   `refgenie.looper_refgenie_populate_local`, never existed in any released
+   refgenie and no module on this branch provided it, so the branch as it stood
+   could not have run.
+2. `sample_pipeline_interface.yaml`: restored the `sample.genome in refgenie`
+   and `p in refgenie` guards the branch had dropped. Looper renders with
+   `jinja2.StrictUndefined`, so for a genome refgenie does not know,
+   `refgenie[sample.genome].fasta is defined` raises instead of evaluating
+   false:
+
+   ```
+   UndefinedError: 'refgenie.core.paths.AssetPaths object' has no attribute 'noSuchGenome'
+   ```
+
+   With the guard it renders `false` and the sample's own `chrom_sizes` /
+   `TSS_name` / `blacklist` attributes are used instead, which is the documented
+   non-refgenie path.
+3. `requirements.txt` / `requirements-conda.yml`: `refgenie>=1.0.0a2`, not
+   `refgenie>=1.0.0`. Under PEP 440, `>=1.0.0` **excludes** the `1.0.0a2`
+   prerelease, so the old pin could not install a2.
+4. Restored `--skip-dedup` to the command template; the branch had dropped it
+   while `pipelines/pepatac.py` still defines the flag.
+
+## Still open on the refgenie side
+
+### The three PEPATAC annotation assets are not served
+
+`https://api.refgenie.org` currently serves only `fasta`, `fasta_index`,
+`bowtie2_index`, `bwa_index`, `hisat2_index` and `suffixerator_index`. It serves
+no `refgene_anno`, `blacklist`, `feat_annotation` or `tallymer_index` for any
+genome, so `refgenie pull hg38/refgene_anno` fails:
+
+```
+ERROR: hg38/refgene_anno.refgene_tss: Asset group '<digest>/refgene_anno' not found.
+       If a subscribed server has it: refgenie pull hg38/refgene_anno
+```
+
+This is a content gap, not a code bug, but it is the single biggest user-facing
+regression from refgenie 0.12, where these were pullable. PEPATAC degrades
+correctly without them (no TSS plot, no blacklist filtering, no feature
+annotation), and `docs/assets.md` now documents both ways around it. Publishing
+these assets for at least hg38 and mm10 would close it.
+
+### A fresh install has no recipes or asset classes
+
+`refgenie recipe list` and `refgenie asset-class list` are empty right after
+`refgenie init`, so `refgenie build hg38/refgene_anno` cannot work until the user
+registers the recipe by hand:
+
+```
+refgenie asset-class add --source <url>/asset_classes/refgene_anno_asset_class.yaml
+refgenie recipe add      --source <url>/recipes/refgene_anno_asset_recipe.yaml
+```
+
+Both commands work and accept a local path or a URL. Two smaller snags: the
+flag is `--source` and positional paths are rejected, and the recipes that match
+refgenie 1.0 live on the **`refgenie1` branch** of `refgenie/recipes`, while that
+repo's default branch is `master`. Seeding a default recipe set at `init`, or
+shipping a `refgenie recipe add --all` for the standard set, would help.
+
+### `gtars uniwig` and chromosome names containing `|`
+
+Not a refgenie bug, recorded because the test genome triggers it. `hg38_chr22`
+carries unplaced scaffolds named `ref|NT_011520.13|`. `gtars uniwig -y bw`
+prints one `Error opening file: No such file or directory (os error 2)` per such
+scaffold and still exits 0, leaving per-scaffold `.bw` files whose names contain
+`|`. Harmless for hg38 proper. Worth a gtars issue.
+
+## PEPATAC-side bugs found and fixed here
+
+### TSS enrichment failure killed the run despite `nofail=True`
+
+`pipelines/pepatac.py` ran `pyTssEnrichment.py` with `nofail=True` and then
+immediately did `with open(Tss_enrich)`, so any failure of that step crashed the
+pipeline instead of skipping the TSS score:
+
+```
+FileNotFoundError: [Errno 2] No such file or directory: '.../test1_TSS_enrichment.txt'
+```
+
+Now guarded: a missing output warns and skips the score and the plot. This
+matters more under refgenie 1.0 than before, because with `refgene_anno`
+unavailable from the server, more users will pass hand-made TSS files.
+
+### `pyTssEnrichment.py` divided by zero chunks
+
+`chunksize = maxi/int(options.c)` floored to 0 whenever the TSS file had fewer
+rows than the core count, giving `ValueError: range() arg 3 must not be zero`.
+Now `max(1, maxi // cores)`; identical for any real TSS file.
+
+### `matplotlib` was never declared
+
+`tools/pepatac_summarizer/plots/` and `tools/pepatac_qc_gtars.py` import
+`matplotlib`, which appeared in neither `requirements.txt` nor
+`requirements-conda.yml` (only the unrelated `matplotlib-inline`). The test suite
+could not even be collected in a clean environment. Added to both. This is a
+`dev` gap, not a refgenie one.
+
+### `piper` pinned inconsistently
+
+`requirements.txt` asks for `piper>=0.15.1` but `requirements-conda.yml` pinned
+`piper==0.14.3`, so the conda environment could not satisfy the pipeline. Conda
+pin raised to `0.15.1`.
+
+## Test results
+
+Environment: `uv venv` on Python 3.12, `refgenie==1.0.0a2` plus this branch's
+`requirements.txt`. Tools from the `databio/pepatac:1.1.4` bulker crate over
+Docker. refgenie home seeded with `refgenie pull hg38_chr22/fasta
+hg38_chr22/bowtie2_index rCRSd/fasta rCRSd/bowtie2_index` (116 MB total).
+
+1. **`refgenie pull`** — all four assets pulled. `refgenie seek` resolves
+   `hg38_chr22/fasta`, `fasta.chrom_sizes`, `fasta.fai`, `rCRSd/bowtie2_index`
+   to real files under `genomes/alias/<alias>/...`, which is friendlier than the
+   digest paths a1 handed back.
+2. **Unit tests** — `pytest tests`: 54 passed, 89 skipped, 5 failed. All 5
+   failures reproduce identically on a clean `origin/dev` checkout, so none come
+   from this branch; see the PR notes for the `collapse_peaks` tuple-return
+   mismatch.
+3. **looper `pre_submit` hook** — `looper run --dry-run` renders
+   `--chrom-sizes`, `--genome-index`, `--prealignment-index rCRSd=...` and
+   `--fasta` to a2 paths, and silently omits `--TSS-name`, `--blacklist` and
+   `--anno-name` because those assets are absent. Exactly the intended behavior.
+4. **End to end, `--qc-backend r`** — exit 0 in 43 s, peak RSS 0.04 GB. Ran
+   trimming, FastQC, rCRSd prealignment, hg38_chr22 alignment, dedup, fragment
+   classification, `gtars uniwig` signal tracks, macs3 peak calling, FRiP, peak
+   coverage and bigBed. `preseq` failed as expected on a sample this shallow
+   (`nofail=True`).
+5. **End to end, `--qc-backend gtars`** — exit 0 in 38 s.
+6. **End to end, `--qc-backend gtars --anno-name <bed.gz>`, no TSS** — exit 0,
+   and printed "No TSS annotation available; skipping TSS distance distribution
+   plot" once, which is the merge resolution for the conflict between this
+   branch's `hasattr` guard and dev's `else` branch.
+7. **End to end with a TSS file** — this is what surfaced the two
+   `pyTssEnrichment` bugs above; passes after the fixes.
+
+## Not tested, needs Rivanna
+
+A real-size run. Everything above uses `hg38_chr22` (52 MB bowtie2 index), which
+fits in the 6 GB laptop cap; a full hg38 bowtie2 index needs roughly 4-8 GB of
+resident memory for `bowtie2` alone and about 4 GB on disk. The specific gaps:
+
+- Full hg38 paired-end sample against refgenie 1.0.0a2 `hg38/bowtie2_index`,
+  with `rCRSd` and `human_repeats` prealignments, compared output-for-output
+  against a `dev` + refgenie 0.12 run of the same sample.
+- `refgene_anno`, `blacklist` and `feat_annotation` built on the cluster through
+  `refgenie asset-class add` / `recipe add` / `build`, so the TSS, blacklist and
+  feature-annotation paths are exercised through refgenie rather than by hand.
+- `--sob` with a real `tallymer_index`, and `--aligner bwa` with a real
+  `bwa_index`. Neither path has ever run under refgenie 1.0.
+- A multi-sample project, to exercise the project-level pipeline and the
+  consensus-peak work from `dev`.
+
+## Found while committing the a2 work (2026-11-16)
+
+### A half-pulled prealignment genome stops `looper` with a cryptic error
+
+The prealignment loop in `sample_pipeline_interface.yaml` guards on the genome
+but not on the asset:
+
+```jinja
+{% for p in sample.prealignment_names %}
+  {% if p in refgenie %} { p ~ '=' ~ refgenie[p].bowtie2_index.bowtie2_index } {% endif %}
+{% endfor %}
+```
+
+`p in refgenie` is true as soon as refgenie knows the genome, so a genome that
+was registered but never had its aligner index pulled raises at render time
+under `StrictUndefined`:
+
+```
+UndefinedError: 'refgenie.core.paths.GenomePaths object' has no attribute 'bowtie2_index'
+```
+
+Verified directly against 1.0.0a2 and the `paths()` view. This is the refgenie
+1.0 version of the old refgenconf `TypeError: 'NoneType' object is not
+iterable`, and `docs/assets.md` and `docs/run-bulker.md` now document it with
+that wording.
+
+**Left as is, deliberately.** Adding `and refgenie[p].bowtie2_index is defined`
+would make the template match the other lookups, but it would also silently drop
+a prealignment genome, which changes alignment results without telling the user.
+Failing loudly is arguably right; the error message is the real problem. Nathan's
+call. Note that `feat/bamqc` has no guard here at all, not even `p in refgenie`.
+
+### A malformed TSS file still kills the run, later
+
+With `--qc-backend gtars`, a TSS file that exists but is not parseable as BED
+gets past the (now guarded) enrichment step and then crashes the peak
+annotation step:
+
+```
+pipelines/pepatac.py:2606 -> tools/pepatac_qc_gtars.py:182
+  tss_rs = RegionSet(tss_bed)
+RuntimeError: Error parsing region: Error in parsing start position: [...]
+```
+
+Both `dev` and this branch guard that call with `os.path.exists()` only, so this
+is **pre-existing `dev` behavior, not a refgenie 1.0 regression**, and it is left
+alone here. Worth a follow-up issue: the gtars QC backend should treat an
+unparseable annotation the same way it treats a missing one.
+
+### Docs leftovers the migration had missed
+
+`docs/run-bulker.md` was still entirely on refgenie 0.12 (`pip install refgenie`,
+`export REFGENIE=...genome_config.yaml`, `refgenie init -c $REFGENIE`, and a pull
+of `refgene_anno` / `ensembl_gtf` / `ensembl_rb` that the server no longer
+serves), and it named `refgenconf` as a dependency to install. `docs/assets.md`
+still carried the refgenie 0.12 "point `$REFGENIE` at an empty config" workaround
+for manual paths, which 1.0.0a2 makes unnecessary, and a
+`genome_config: ${REFGENIE}` example that `pipelines/pepatac.yaml` had already
+migrated to `${REFGENIE_DB_CONFIG_PATH}`. All fixed in the docs commit.
+
+### Verified doc claims against the installed a2
+
+- `refgenie build --files refgene=...` is the right flag, and `refgene` is the
+  recipe's actual input file key (`refgenie recipe list`).
+- `refgenie build --container` exists.
+- `refgenie list -g <genome>` still works in 1.0.
+- refgenie 1.0 does print a migration warning when `$REFGENIE` is still set.
+- `REFGENIE_HOME_PATH` alone is enough: with `REFGENIE_DB_CONFIG_PATH` unset,
+  `Refgenie()` still resolved both test genomes.
