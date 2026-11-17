@@ -1,6 +1,6 @@
 manifest:
-  name: pepatac
-  version: 1.1.1
+  name: databio/pepatac
+  version: 1.1.4
   imports:
   - bulker/alpine:default
   - bulker/coreutils:default
@@ -17,7 +17,7 @@ manifest:
     docker_args: "-i"
     docker_image: quay.io/biocontainers/bedtools:2.31.1--h13024bc_3
   - command: bowtie2
-    docker_image: quay.io/biocontainers/bowtie2:2.5.4--he96a11b_7
+    docker_image: quay.io/biocontainers/bowtie2:2.5.5--ha27dd3b_0
   - command: bwa
     docker_image: quay.io/biocontainers/bwa:0.7.17--h7132678_9
   - command: fastqc
@@ -61,4 +61,4 @@ manifest:
   - command: trimmomatic
     docker_image: quay.io/biocontainers/trimmomatic:0.39--hdfd78af_2
   - command: gtars
-    docker_image: quay.io/biocontainers/rust-gtars:0.6.0--h885253a_0
+    docker_image: quay.io/biocontainers/rust-gtars:0.9.0--ha3ccbb0_0

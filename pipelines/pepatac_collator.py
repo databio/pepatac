@@ -5,7 +5,7 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.12.4"
+__version__ = "0.14.0"
 
 from argparse import ArgumentParser
 import os
@@ -26,6 +26,25 @@ def tool_path(tool_name):
 
     return os.path.join(os.path.dirname(os.path.dirname(__file__)),
                         "tools", tool_name)
+
+
+def report_file_link(pm, key, path, title=None):
+    """
+    Report a file output as a link, with no thumbnail.
+
+    Mirrors the helper of the same name in pepatac.py; see there for why path
+    results are reported as objects rather than plain strings.
+
+    :param pypiper.PipelineManager pm: pipeline manager reporting the result
+    :param str key: result name, as declared in the output schema
+    :param str path: path to the reported file
+    :param str title: link text; defaults to the result name
+    """
+    pm.pipestat.report(
+        values={key: {"path": path, "title": str(title or key)}},
+        record_identifier=pm.pipestat_record_identifier,
+        force_overwrite=True,
+    )
 
 
 def parse_arguments():
@@ -57,17 +76,43 @@ def parse_arguments():
     parser.add_argument("-m", "--cutoff", default=2,
                         help="Only keep peaks present in at least this " +
                              "number of samples.")
-    parser.add_argument("-s", "--min-score", default=5,
-                        help="A minimum peak score to keep an " +
-                             "individual peak.")
+    parser.add_argument("-s", "--min-score", default=None,
+                        help="A minimum peak score to keep an individual "
+                             "peak. If unset, the summarizer's method-aware "
+                             "default applies (5 for legacy; 0 for "
+                             "reproducible, so reproducibility gates inclusion "
+                             "instead of a hard score floor).")
     parser.add_argument("-l", "--min-olap", default=1,
                         help="A minimum number of overlapping bases to " +
                              "defined peaks as overlapping.")
+    parser.add_argument("--consensus-method", default=None,
+                        choices=["legacy", "reproducible"],
+                        help="Consensus peak method passed to the Python "
+                             "summarizer (default: its own default, "
+                             "'reproducible'). 'legacy' reproduces prior "
+                             "consensus peak sets.")
+    parser.add_argument("--repro-cutoff", default=None,
+                        help="reproducible method: minimum fraction of samples "
+                             "a peak must be called in to be kept regardless of "
+                             "score (default 0.6).")
+    parser.add_argument("--no-recenter", action="store_true",
+                        dest="no_recenter", default=False,
+                        help="reproducible method: turn off recentering of "
+                             "off-center consensus peaks onto their signal "
+                             "max (on by default in the Python summarizer).")
+    parser.add_argument("--distinct", default=None,
+                        choices=["none", "drop", "trim"],
+                        help="reproducible method: how to remove overlaps "
+                             "between consensus peaks (default: the Python "
+                             "summarizer's own default, 'drop').")
     parser.add_argument("--frip-ref-peaks", default=None,
                         dest="frip_ref_peaks", type=str,
                         help="Path to a reference peak set (narrowPeak/BED) "
                              "to use for the project count table instead of "
                              "the computed consensus peaks.")
+    parser.add_argument("--summarizer", default="python",
+                        choices=["python", "R"],
+                        help="Summarizer implementation to use (default: python)")
     args = parser.parse_args()
     return args
 
@@ -106,9 +151,35 @@ def main():
         yaml.dump(yaml_dict, file)
     print(f"Summary (n={num_samples}: {project_stats_file})")
 
-    cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
-           f"{args.config_file} {args.output_parent} "
-           f"{args.results} {args.cutoff} {args.min_score} {args.min_olap}")
+    if args.summarizer == "python":
+        # pepatac_summarizer is a path-based package under tools/ (no
+        # setup.py), so it is only importable when tools/ is on PYTHONPATH.
+        # Put it there for the subprocess so `runp` is self-contained.
+        tools_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                 "tools")
+        cmd = (f"PYTHONPATH={tools_dir}:$PYTHONPATH python -m pepatac_summarizer "
+               f"{args.config_file} {args.output_parent} "
+               f"{args.results} --cutoff {args.cutoff} "
+               f"--min-olap {args.min_olap}")
+        # Only forward --min-score when explicitly set, so the summarizer's
+        # method-aware default (0 for reproducible, 5 for legacy) applies.
+        if args.min_score is not None:
+            cmd += f" --min-score {args.min_score}"
+        if args.consensus_method is not None:
+            cmd += f" --consensus-method {args.consensus_method}"
+        if args.repro_cutoff is not None:
+            cmd += f" --repro-cutoff {args.repro_cutoff}"
+        if args.no_recenter:
+            cmd += " --no-recenter"
+        if args.distinct is not None:
+            cmd += f" --distinct {args.distinct}"
+    else:
+        # The R summarizer has no reproducible method; keep the historical
+        # score floor of 5 when unset.
+        r_min_score = args.min_score if args.min_score is not None else 5
+        cmd = (f"Rscript {tool_path('PEPATAC_summarizer.R')} "
+               f"{args.config_file} {args.output_parent} "
+               f"{args.results} {args.cutoff} {r_min_score} {args.min_olap}")
     if args.new_start:
         cmd += " --new-start"
     if args.skip_consensus:
@@ -146,13 +217,9 @@ def main():
         pm.debug(f"genome: {genome}")
         consensus_peaks_file = os.path.join(
             outfolder, f"{args.name}_{genome}_consensusPeaks.narrowPeak")
-        consensus_peaks_thumbnail = os.path.join(
-            outfolder, f"{args.name}_{genome}_consensusPeaks.png")
         pm.debug(f"consensus_peaks_file: {consensus_peaks_file}")
         peak_coverage_file = os.path.join(
             outfolder, f"{args.name}_{genome}_peaks_coverage.tsv")
-        peak_coverage_thumbnail = os.path.join(
-            outfolder, f"{args.name}_{genome}_peaks_coverage.png")
         pm.debug(f"peak_coverage_file(s): {peak_coverage_file}")
 
     pm.run(cmd, [complexity_file, consensus_peaks_file, peak_coverage_file])
@@ -166,10 +233,16 @@ def main():
                      anchor_image=alignment_raw_thumbnail)
     pm.report_object("TSS_enrichment", TSS_enrichment_file,
                      anchor_image=TSS_enrichment_thumbnail)
-    pm.report_object("consensus_peaks_file", consensus_peaks_file,
-                     anchor_image=consensus_peaks_thumbnail)
-    pm.report_object("counts_table", peak_coverage_file,
-                     anchor_image=peak_coverage_thumbnail)
+
+    # The consensus peaks and counts table are text files, not plots. The
+    # schema types them as object_type: file and requires only path and title,
+    # and nothing renders a thumbnail for them, so link them directly.
+    # report_object() cannot do this: it always sets thumbnail_path, and a
+    # None thumbnail fails schema validation.
+    report_file_link(pm, "consensus_peaks_file", consensus_peaks_file,
+                     "Consensus peaks")
+    report_file_link(pm, "counts_table", peak_coverage_file,
+                     "Project peak coverage file")
 
     pm.stop_pipeline()
 

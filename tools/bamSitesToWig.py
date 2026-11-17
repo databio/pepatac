@@ -8,6 +8,7 @@ __email__ = "nathan@code.databio.org"
 
 from argparse import ArgumentParser
 import itertools # Used for nested region looping across reads
+import logging
 import numpy
 from operator import methodcaller
 import os
@@ -20,6 +21,12 @@ import pysam
 from pararead import  ParaReadProcessor
 
 MODES = ["dnase", "atac"]
+
+# Module-level fallback logger so class methods always have one available,
+# even when pararead workers re-import this module under multiprocessing
+# 'spawn' (macOS default). The __main__ block upgrades this to a
+# logmuse-configured logger for the parent process. (#266)
+_LOGGER = logging.getLogger(__name__)
 
 # A function object like this will be pickled by the parallel call to map,
 # So it cannot contain huge files or the pickling will limit everything.

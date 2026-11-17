@@ -151,21 +151,25 @@ That should do it!  Now we'll [install some **optional** packages](tutorial.md#1
 `PEPATAC` uses `R` to generate quality control and read/peak annotation plots, so you'll need to have R functional if you want these outputs. We have packaged all the `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `PEPATAC` package relies on a few additional packages which can be installed at the command line as follows:
 
 Note: if given error regarding `devtools` try: `apt install r-cran-devtools` before proceeding with installation.
-Note: if receiving an error for GenomicDistributionsData_0.0.2.tar.gz, download the file manually and install directly using `install.packages("local/path/to/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)`
+`GenomicDistributions` and `GenomicDistributionsData` are now on Bioconductor; install them with `BiocManager` (the old `install_github` / `big.databio.org` tarball route is deprecated).
 ```
-Rscript -e 'install.packages('argparser')'
+Rscript -e 'install.packages("argparser")'
 Rscript -e 'install.packages("devtools")'
 Rscript -e 'devtools::install_github("pepkit/pepr")'
 Rscript -e 'install.packages("BiocManager")'
-Rscript -e 'BiocManager::install("GenomicRanges")'
-Rscript -e 'devtools::install_github("databio/GenomicDistributions")'
-Rscript -e 'BiocManager::install(c("BSgenome", "GenomicFeatures", "ensembldb"))'
-Rscript -e 'install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.1.tar.gz", repos=NULL)'
+Rscript -e 'BiocManager::install(c("GenomicRanges", "BSgenome", "GenomicFeatures", "ensembldb"))'
+Rscript -e 'BiocManager::install(c("GenomicDistributions", "GenomicDistributionsData"))'
+# XML is a transitive dep of GenomicDistributions::getChromSizes(); install it
+# explicitly if chromosome/TSS-distance plots fail with "no package called 'XML'".
+Rscript -e 'install.packages("XML")'
+# optigrab was removed from CRAN in December 2025; install its last release from the CRAN archive.
+Rscript -e 'install.packages(c("stringi", "magrittr"))'
+Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/optigrab/optigrab_0.9.2.1.tar.gz", repos=NULL, type="source")'
 ```
 
 Then, install the `PEPATAC` package.  From the `pepatac/` directory:
 ```
-Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
+Rscript -e 'options(repos="https://cloud.r-project.org/"); devtools::install("PEPATACr", dependencies=TRUE)'
 ```
 
 Optionally, `PEPATAC` can mix and match tools for adapter removal, deduplication, and signal track generation. `FastQC`, if present, will be automatically run on input fastq files. `seqOutBias` can be used with the `--sob` argument to take into account mappability at a given read length, the Tn5 sequence bias, and to scale the sample signal tracks by the expected over observed cut frequency.
@@ -250,10 +254,12 @@ Before we analyze anything, we also need a reference genome. You can use our rec
 `PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must still be available natively. Therefore, we need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
 
 ```console
-pip install refgenie
+pip install "refgenie>=0.13.0,<1.0.0"
 export REFGENIE=/path/to/your_genome_folder/genome_config.yaml
 refgenie init -c $REFGENIE
 ```
+
+PEPATAC 0.14 uses the legacy refgenie line: refgenie 0.12 or 0.13, read through `refgenconf`. Genome folders made by either version work. Install the 0.13 command-line tool as shown; refgenie 0.12.1 cannot run alongside the `refgenconf` 0.13.1 that PEPATAC needs, and refgenie 1.0 is not supported until PEPATAC 0.15.
 
 Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
 
@@ -294,5 +300,5 @@ After setting up your environment to run `PEPATAC`, you can confirm which means 
 
 or from the web:
 ```console
-curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/master/checkinstall | bash
 ```

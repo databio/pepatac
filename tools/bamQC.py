@@ -11,12 +11,21 @@ __version__ = "0.1.0"
 __email__ = "jasonsmith@virginia.edu"
 
 from argparse import ArgumentParser
+import logging
 import os
 import sys
 import pararead
 import logmuse
 import pandas as _pd
 import numpy as np
+
+# Module-level fallback so class methods always have a logger, even when
+# pararead workers re-import this module under multiprocessing 'spawn'
+# (macOS default, and elsewhere when fork is unavailable). The __main__
+# block below upgrades this to a logmuse-configured logger for the
+# parent process.
+_LOGGER = logging.getLogger(__name__)
+
 
 class bamQC(pararead.ParaReadProcessor):
     def __init__(self, reads_filename, n_proc, out_filename, verbosity):

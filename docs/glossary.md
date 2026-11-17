@@ -29,12 +29,24 @@ The following files are included in default `PEPATAC` analyses:
 - **&lt;sample_name&gt;_peaks.xls**: An XLS formatted file containing call peak information with 1-based coordinates.
 - **&lt;sample_name&gt;_peaks.narrowPeak**: A BED6+4 format file containing peak locations, peak summits, p-values, and q-values.
 - **&lt;sample_name&gt;_summits.bed**: A BED format file containing the peak summit locations for each peak. Useful for finding motifs at these sites.
-- **&lt;sample_name&gt;_peaks_coverage.bed**: A BED format file containing the number of overlapping reads in each peak.  
+- **&lt;sample_name&gt;_peaks_coverage.bed**: An 8-column BED file with read coverage over the per-sample called peaks (output of `bedtools coverage -a <peaks> -b <dedup.bam>`, then normalized).  
   Column format:
     1. chromosome name
     2. start position of peak
     3. end position of peak
-    4. read count
+    4. number of reads overlapping the peak (`read_count`)
+    5. number of bases at depth ≥ 1 (`base_count`)
+    6. peak width
+    7. fraction of peak covered at depth ≥ 1
+    8. normalized counts: `base_count / sum(base_count) * 1e6` (RPM-style across the sample's peaks)
+- **&lt;sample_name&gt;_ref_peaks_coverage.bed**: A 15-column file produced when the pipeline is run with `--frip-ref-peaks <reference.narrowPeak>`. The reference narrowPeak coordinates are preserved (so all samples share an identical peak set), with read coverage and a normalized count appended. Suitable for direct cross-sample concatenation into a count matrix.  
+  Column format:
+    1–10. The 10 narrowPeak columns from the reference peak set: chrom, start, end, name, score, strand, signalValue, pValue, qValue, peak summit offset
+    11. number of reads overlapping the peak (`read_count`)
+    12. number of bases at depth ≥ 1 (`base_count`)
+    13. peak width
+    14. fraction of peak covered at depth ≥ 1
+    15. normalized counts: `base_count / sum(base_count) * 1e6`
 - **&lt;sample_name&gt;_peaks.bigBed**: A bigNarrowPeak (bigBed) formatted version of the narrowPeak file produced by `MACS2`. Check out the [bigNarrowPeak track format](https://genome.ucsc.edu/goldenpath/help/bigNarrowPeak.html) page for more information.
 
 ## QC output

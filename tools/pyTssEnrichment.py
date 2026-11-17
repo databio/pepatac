@@ -152,9 +152,10 @@ cols = int(options.u)+int(options.d)
 
 # split bedfile into chunks
 maxi=len(p1_ints)
-chunksize=maxi/int(options.c)
-chunks=maxi/chunksize
-starts=range(0,int(maxi),int(chunksize))
+# Floor of at least 1: with fewer TSS entries than cores the old
+# int(maxi/cores) was 0, and range(0, maxi, 0) raised ValueError.
+chunksize=max(1, int(maxi)//int(options.c))
+starts=range(0,int(maxi),chunksize)
 
 # parallel processed computation of matrix for each chunk
 if __name__ == "__main__":

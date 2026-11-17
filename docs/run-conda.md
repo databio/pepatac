@@ -10,18 +10,19 @@ git clone https://github.com/databio/pepatac.git
 
 ## 2: Install bioinformatic tools
 
-You will need some common bioinformatics tools installed: [bedtools (v2.25.0+)](http://bedtools.readthedocs.io/en/latest/), [bowtie2 (v2.2.9+)](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml), [preseq (v2.0+)](http://smithlabresearch.org/software/preseq/), [samblaster (v0.1.24+)](https://github.com/GregoryFaust/samblaster), [samtools (v1.7+)](http://www.htslib.org/), [skewer (v0.1.126+)](https://github.com/relipmoc/skewer), [UCSC tools](http://hgdownload.soe.ucsc.edu/admin/exe/) (wigToBigWig, bigWigCat, bedToBigBed), [pigz (v2.3.4+)](https://zlib.net/pigz/). 
-
-Optionally, `PEPATAC` can report on fastq quality ([FastQC](https://www.bioinformatics.babraham.ac.uk/projects/download.html#fastqc)) and utilize swappable tools for adapter removal ([trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)), deduplication ([picard](https://broadinstitute.github.io/picard/)), and signal track generation ([seqOutBias](https://github.com/guertinlab/seqOutBias), [bedGraphToBigWig](http://hgdownload.soe.ucsc.edu/admin/exe/), and [bigWigMerge](http://hgdownload.soe.ucsc.edu/admin/exe/)).
-
-Be prepared for this initial installation process to take more than an hour to complete.
-
-From the `pepatac/` repository directory:
+`conda` installs all the required tools for you — you do **not** need to install any of them by hand. From the `pepatac/` repository directory:
 ```{bash}
 conda env create -f requirements-conda.yml
 ```
+This creates the `pepatac` environment containing the required tools — `bedtools`, `bowtie2`, `samtools`, `preseq`, `samblaster`, `skewer`, `macs3`, `gtars`, `pigz`, and the UCSC utilities — alongside `FastQC` (fastq QC) and `picard` (deduplication). It also installs R with most of the R packages `PEPATAC` needs, and the Python packages from `requirements.txt`.
 
-Note: The subsequent steps all assume you have installed using `conda`.  Alternatively, you can [follow instructions to install each individual program natively](detailed-install.md).
+To use `picard` for deduplication (`--deduplicator picard`), point `PICARD` at its jar file after you activate the environment: `export PICARD=$(ls $CONDA_PREFIX/share/picard-*/picard.jar)`.
+
+`PEPATAC` also supports swappable alternatives that are *not* in the default environment: aligner `bwa`, trimmer `trimmomatic`, and peak callers `fseq`/`genrich`/`hmmratac`/`homer`, plus `seqOutBias` for signal tracks. Install any you need with `conda install -c bioconda <tool>`.
+
+Be prepared for this initial installation to take a while to complete.
+
+Note: the subsequent steps all assume you installed with `conda`. To install each program natively instead, [follow the detailed native-install instructions](detailed-install.md).
 
 ## 3. Install python packages
 
@@ -35,7 +36,7 @@ python -m pip install --ignore-installed --upgrade -r requirements.txt
 
 ## 4. Install R packages
 
-`PEPATAC` uses `R` to generate quality control and read/peak annotation plots. We have packaged the `pepatac` specific `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `PEPATACr` package relies on a few additional packages which can be installed to the `conda` environment.
+`PEPATAC` uses `R` to generate quality control and read/peak annotation plots. We have packaged the `pepatac` specific `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `conda` environment already has R and most of the packages `PEPATACr` needs, including `GenomicDistributions` and `GenomicDistributionsData`. Three packages are not on `conda`: `optigrab`, `pepr`, and `PEPATACr` itself.
 
 To ensure these packages are installed to the `pepatac` `conda` environment, make sure to point your `R_LIBS` environment variable to the `conda` environment `R` library. For example:
 ```{bash}
@@ -45,16 +46,13 @@ export R_LIBS="$CONDA_PREFIX/lib/R/library"
 export R_LIBS_USER="$CONDA_PREFIX/lib/R/library"
 ```
 
-From the `pepatac/` directory, open `R` and install the following packages:
-Note: if receiving an error for GenomicDistributionsData_0.0.2.tar.gz, download the file manually and install directly using `install.packages("local/path/to/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)`
+From the `pepatac/` directory, open `R` and install them.
+`optigrab` was removed from CRAN in December 2025, so install its last release from the CRAN archive:
 ```{R}
-install.packages('argparser')
-install.packages("optigrab")
-devtools::install_github("databio/GenomicDistributions")
-#increase the download.file time limits:
-options(timeout = max(1000, getOption("timeout")))
-install.packages("http://big.databio.org/GenomicDistributionsData/GenomicDistributionsData_0.0.2.tar.gz", repos=NULL)
-devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+install.packages("https://cran.r-project.org/src/contrib/Archive/optigrab/optigrab_0.9.2.1.tar.gz", repos = NULL, type = "source")
+install.packages("pepr")
+install.packages("PEPATACr", repos = NULL, type = "source")
 ```
 
 ## 5: Get genome assets
@@ -64,10 +62,12 @@ devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://clou
 `PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must still be available natively. Therefore, we need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
 
 ```console
-pip install refgenie
+pip install "refgenie>=0.13.0,<1.0.0"
 export REFGENIE=/path/to/your_genome_folder/genome_config.yaml
 refgenie init -c $REFGENIE
 ```
+
+PEPATAC 0.14 uses the legacy refgenie line: refgenie 0.12 or 0.13, read through `refgenconf`. Genome folders made by either version work. Install the 0.13 command-line tool as shown; refgenie 0.12.1 cannot run alongside the `refgenconf` 0.13.1 that PEPATAC needs, and refgenie 1.0 is not supported until PEPATAC 0.15.
 
 Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
 
@@ -100,15 +100,16 @@ Optional assets include:
 
 ## 6. Confirm installation 
 
-After setting up your environment to run `PEPATAC` with `conda`, you can confirm the pipeline is now executable with `conda` using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository...
+After setting up your environment to run `PEPATAC` with `conda`, you can confirm the pipeline is now executable with `conda` using the included `checkinstall` script. Activate the `pepatac` environment first. The script can either be run directly from the `pepatac/` repository...
 
 ```console
+conda activate pepatac
 ./checkinstall
 ```
 
 or from the web:
 ```console
-curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/master/checkinstall | bash
 ```
 
 ## 7: Use `looper` to run the sample processing pipeline
