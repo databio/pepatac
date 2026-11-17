@@ -73,6 +73,7 @@ All notable changes to this project will be documented in this file.
 - `tools/pepatac_summarizer/utils.py`: silence the pandas `fillna`/`replace` silent-downcasting `FutureWarning` (opt into `future.no_silent_downcasting` and downcast explicitly via `infer_objects`).
 - `tools/pepatac_summarizer`: `--frip-ref-peaks` builds the counts table on the reference peaks again, also with `--skip-consensus`. `--poverlap` is not supported and now logs a warning. [#324](https://github.com/databio/pepatac/issues/324)
 - `requirements.txt`: raise the `pipestat` floor to `>=0.13.1`; older versions fail on the 0.14 output schema. [#322](https://github.com/databio/pepatac/issues/322)
+- Replace the exported conda env with a short package list, so it installs again ([#321](https://github.com/databio/pepatac/issues/321))
 
 ### Removed
 - Old R-based `PEPATACr/tests/testthat/{testthat.R,helper-fixtures.R,test-summarizer.R,test-utilities.R,test-yamlToDT.R}` — superseded by the Python summarizer package and its test suite at `tests/test_summarizer.py` / `tests/test_summarizer_integration.py`.

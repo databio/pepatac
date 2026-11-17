@@ -14,7 +14,9 @@ git clone https://github.com/databio/pepatac.git
 ```{bash}
 conda env create -f requirements-conda.yml
 ```
-This creates the `pepatac` environment containing the required tools — `bedtools`, `bowtie2`, `samtools`, `preseq`, `samblaster`, `skewer`, `macs3`, `pigz`, and the UCSC utilities — alongside `FastQC` (fastq QC) and `picard` (deduplication).
+This creates the `pepatac` environment containing the required tools — `bedtools`, `bowtie2`, `samtools`, `preseq`, `samblaster`, `skewer`, `macs3`, `gtars`, `pigz`, and the UCSC utilities — alongside `FastQC` (fastq QC) and `picard` (deduplication). It also installs R with most of the R packages `PEPATAC` needs, and the Python packages from `requirements.txt`.
+
+To use `picard` for deduplication (`--deduplicator picard`), point `PICARD` at its jar file after you activate the environment: `export PICARD=$(ls $CONDA_PREFIX/share/picard-*/picard.jar)`.
 
 `PEPATAC` also supports swappable alternatives that are *not* in the default environment: aligner `bwa`, trimmer `trimmomatic`, and peak callers `fseq`/`genrich`/`hmmratac`/`homer`, plus `seqOutBias` for signal tracks. Install any you need with `conda install -c bioconda <tool>`.
 
@@ -34,7 +36,7 @@ python -m pip install --ignore-installed --upgrade -r requirements.txt
 
 ## 4. Install R packages
 
-`PEPATAC` uses `R` to generate quality control and read/peak annotation plots. We have packaged the `pepatac` specific `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `PEPATACr` package relies on a few additional packages which can be installed to the `conda` environment.
+`PEPATAC` uses `R` to generate quality control and read/peak annotation plots. We have packaged the `pepatac` specific `R` code into a supporting package called [PEPATACr](https://github.com/databio/pepatac/tree/master/PEPATACr). The `conda` environment already has R and most of the packages `PEPATACr` needs, including `GenomicDistributions` and `GenomicDistributionsData`. Three packages are not on `conda`: `optigrab`, `pepr`, and `PEPATACr` itself.
 
 To ensure these packages are installed to the `pepatac` `conda` environment, make sure to point your `R_LIBS` environment variable to the `conda` environment `R` library. For example:
 ```{bash}
@@ -44,20 +46,13 @@ export R_LIBS="$CONDA_PREFIX/lib/R/library"
 export R_LIBS_USER="$CONDA_PREFIX/lib/R/library"
 ```
 
-From the `pepatac/` directory, open `R` and install the following packages.
-`GenomicDistributions` and `GenomicDistributionsData` are now on Bioconductor,
-so install them via `BiocManager` (the old `install_github` /
-`big.databio.org` tarball route is deprecated):
+From the `pepatac/` directory, open `R` and install them.
+`optigrab` was removed from CRAN in December 2025, so install its last release from the CRAN archive:
 ```{R}
-install.packages('argparser')
-install.packages("optigrab")
-if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
-BiocManager::install(c("GenomicDistributions", "GenomicDistributionsData"))
-# XML is a transitive dependency of GenomicDistributions::getChromSizes();
-# install it explicitly if chromosome/TSS-distance plots fail with
-# "there is no package called 'XML'".
-install.packages("XML")
-devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+install.packages("https://cran.r-project.org/src/contrib/Archive/optigrab/optigrab_0.9.2.1.tar.gz", repos = NULL, type = "source")
+install.packages("pepr")
+install.packages("PEPATACr", repos = NULL, type = "source")
 ```
 
 ## 5: Get genome assets
@@ -105,15 +100,16 @@ Optional assets include:
 
 ## 6. Confirm installation 
 
-After setting up your environment to run `PEPATAC` with `conda`, you can confirm the pipeline is now executable with `conda` using the included `checkinstall` script.  This can either be run directly from the `pepatac/` repository...
+After setting up your environment to run `PEPATAC` with `conda`, you can confirm the pipeline is now executable with `conda` using the included `checkinstall` script. Activate the `pepatac` environment first. The script can either be run directly from the `pepatac/` repository...
 
 ```console
+conda activate pepatac
 ./checkinstall
 ```
 
 or from the web:
 ```console
-curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/master/checkinstall | bash
 ```
 
 ## 7: Use `looper` to run the sample processing pipeline

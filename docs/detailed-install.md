@@ -162,11 +162,14 @@ Rscript -e 'BiocManager::install(c("GenomicDistributions", "GenomicDistributions
 # XML is a transitive dep of GenomicDistributions::getChromSizes(); install it
 # explicitly if chromosome/TSS-distance plots fail with "no package called 'XML'".
 Rscript -e 'install.packages("XML")'
+# optigrab was removed from CRAN in December 2025; install its last release from the CRAN archive.
+Rscript -e 'install.packages(c("stringi", "magrittr"))'
+Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/optigrab/optigrab_0.9.2.1.tar.gz", repos=NULL, type="source")'
 ```
 
 Then, install the `PEPATAC` package.  From the `pepatac/` directory:
 ```
-Rscript -e 'devtools::install(file.path("PEPATACr/"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
+Rscript -e 'options(repos="https://cloud.r-project.org/"); devtools::install("PEPATACr", dependencies=TRUE)'
 ```
 
 Optionally, `PEPATAC` can mix and match tools for adapter removal, deduplication, and signal track generation. `FastQC`, if present, will be automatically run on input fastq files. `seqOutBias` can be used with the `--sob` argument to take into account mappability at a given read length, the Tn5 sequence bias, and to scale the sample signal tracks by the expected over observed cut frequency.
@@ -297,5 +300,5 @@ After setting up your environment to run `PEPATAC`, you can confirm which means 
 
 or from the web:
 ```console
-curl -sSL https://raw.githubusercontent.com/databio/pepatac/checkinstall | bash
+curl -sSL https://raw.githubusercontent.com/databio/pepatac/master/checkinstall | bash
 ```
