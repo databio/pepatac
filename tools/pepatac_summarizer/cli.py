@@ -73,13 +73,27 @@ def main():
                              "overlaps. Distinct peaks avoid read double-counting "
                              "in the counts step.")
     parser.add_argument("-F", "--frip-ref-peaks",
-                        help="Reference peak set for counts table")
+                        help="Reference peak set (narrowPeak/BED) to build "
+                             "the counts table on, instead of the consensus "
+                             "peaks")
     parser.add_argument("-V", "--poverlap", action="store_true",
-                        help="Calculate percentage overlap in counts table")
+                        help="Not supported by the Python summarizer; "
+                             "ignored with a warning")
     parser.add_argument("-Z", "--normalized", action="store_true",
                         help="Use normalized read counts")
 
     args = parser.parse_args()
+
+    ref_peaks = None
+    if args.frip_ref_peaks:
+        ref_peaks = Path(args.frip_ref_peaks).expanduser().resolve()
+        if not ref_peaks.is_file():
+            print(f"Error: --frip-ref-peaks file not found: {ref_peaks}")
+            return 1
+
+    if args.poverlap:
+        print("Warning: --poverlap is not supported by the Python summarizer "
+              "and is ignored.")
 
     project = peppy.Project(args.config)
     project_name = project.name
@@ -145,10 +159,18 @@ def main():
             recenter=args.recenter, distinct=args.distinct
         )
 
-    if not args.skip_table and consensus_files:
+    # A reference peak set replaces the consensus peaks for the counts table
+    # (as in the R summarizer), with or without --skip-consensus.
+    if ref_peaks is not None:
+        print(f"Using reference peak set for counts table: {ref_peaks}")
+        count_peaks = {g: str(ref_peaks) for g in sample_table["genome"].unique()}
+    else:
+        count_peaks = consensus_files
+
+    if not args.skip_table and count_peaks:
         calculate_peak_counts(
             sample_table, str(summary_dir), str(results_subdir), project_name,
-            consensus_files, normalized=args.normalized, poverlap=args.poverlap
+            count_peaks, normalized=args.normalized, poverlap=args.poverlap
         )
 
     print("Successfully produced project summary.")

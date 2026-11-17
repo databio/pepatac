@@ -1,13 +1,16 @@
 """Integration tests for the Python summarizer module with synthetic data."""
 
 import pytest
+import shutil
 import tempfile
 from pathlib import Path
 import sys
+import pandas as pd
 import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
 
+from pepatac_summarizer import cli
 from pepatac_summarizer.assets import create_assets_summary
 from pepatac_summarizer.consensus import calculate_consensus_peaks, collapse_peaks
 from pepatac_summarizer.plots import plot_complexity_curves
@@ -213,3 +216,65 @@ def test_recenter_false_keeps_called_coordinates(tmp_path):
         method="reproducible", min_score=0.0, recenter=False,
     )
     assert _consensus_start(files["hg38"]) == 1000
+
+
+# Reference peaks deliberately share no coordinates with the fixture's
+# per-sample peaks, so a table built on the consensus would not match.
+REF_PEAKS = [
+    ("chr1", 100, 600),
+    ("chr2", 7000, 7500),
+    ("chr22", 40000, 40500),
+]
+
+
+@pytest.mark.parametrize("skip_consensus", [True, False])
+def test_cli_frip_ref_peaks_builds_table_on_reference(
+        multi_sample_project, monkeypatch, capsys, skip_consensus):
+    """--frip-ref-peaks puts the counts table on the reference peaks, with or
+    without --skip-consensus (issue #324)."""
+    project = multi_sample_project
+    tmp_path = project["tmp_path"]
+    ref_file = tmp_path / "reference.narrowPeak"
+    ref_file.write_text("".join(
+        f"{c}\t{s}\t{e}\tref{i}\t100\t.\t10\t5\t3\t250\n"
+        for i, (c, s, e) in enumerate(REF_PEAKS)))
+
+    # Two Tn5 cuts in the first reference peak for every sample.
+    for sample in ["sample1", "sample2", "sample3"]:
+        exact = Path(project["results"]) / sample / "aligned_hg38_exact"
+        exact.mkdir()
+        (exact / f"{sample}_shift.bed").write_text(
+            "chr1\t150\t151\tN\t0\t+\nchr1\t300\t301\tN\t0\t-\n")
+
+    argv = ["pepatac_summarizer", project["config"], project["output"],
+            project["results"], "--frip-ref-peaks", str(ref_file),
+            "--poverlap"]
+    if skip_consensus:
+        argv.append("--skip-consensus")
+    monkeypatch.setattr(sys, "argv", argv)
+
+    assert cli.main() == 0
+    out = capsys.readouterr().out
+    assert "--poverlap is not supported by the Python summarizer" in out
+
+    summary_dir = Path(project["output"]) / "summary"
+    consensus = summary_dir / "test_project_hg38_consensusPeaks.narrowPeak"
+    assert consensus.exists() != skip_consensus
+
+    table = pd.read_csv(summary_dir / "test_project_hg38_peaks_coverage.tsv",
+                        sep="\t")
+    assert list(zip(table["chr"], table["start"], table["end"])) == REF_PEAKS
+    assert list(table.columns) == ["chr", "start", "end",
+                                   "sample1", "sample2", "sample3"]
+    if shutil.which("gtars"):
+        assert table.loc[0, ["sample1", "sample2", "sample3"]].tolist() == [2, 2, 2]
+
+
+def test_cli_frip_ref_peaks_missing_file_fails(multi_sample_project,
+                                               monkeypatch):
+    project = multi_sample_project
+    monkeypatch.setattr(sys, "argv", [
+        "pepatac_summarizer", project["config"], project["output"],
+        project["results"], "--frip-ref-peaks",
+        str(project["tmp_path"] / "missing.narrowPeak")])
+    assert cli.main() == 1
