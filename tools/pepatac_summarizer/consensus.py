@@ -8,11 +8,11 @@ Two selectable methods (``--consensus-method``):
     peak's overlap neighborhood (ORIGINAL boundaries, no merging), then
     keeping peaks present in ``>= min_samples`` samples with
     ``score >= min_score``. Use this to reproduce pre-existing consensus peak
-    sets exactly. This is the current default for backward compatibility; a
-    future release is expected to default to ``reproducible`` and eventually
-    drop ``legacy``.
+    sets exactly. The library functions below default to ``legacy`` (with
+    ``min_score=5``); the summarizer CLI, and so the project pipeline,
+    defaults to ``reproducible``.
 
-``reproducible`` (new)
+``reproducible`` (new; the CLI default)
     Same boundary-preserving grouping, but inclusion is gated by cross-sample
     REPRODUCIBILITY rather than a hard score floor. A peak that is called in a
     high fraction of samples is kept even if individually weak -- recovering
@@ -21,8 +21,16 @@ Two selectable methods (``--consensus-method``):
     called). ``min_score`` becomes an optional user floor that reproducibility
     overrides by default. Writes a confidence sidecar
     (``*_consensusPeaks_confidence.tsv``) with the reproducibility statistic
-    and sample count per peak. (Signal-centeredness / bimodality annotations
-    and optional summit-recentering are added once signal tracks are wired in.)
+    and sample count per peak.
+
+    When ``pyBigWig`` is installed and the per-sample coverage tracks exist
+    (``aligned_{genome}_exact/{sample}_exact_shift.bw``, else
+    ``aligned_{genome}/{sample}_smooth_shift.bw``), two more things happen:
+    the sidecar gains ``signal_offset``, ``bimodality`` and
+    ``high_confidence`` columns, and off-center peaks are recentered on the
+    combined signal max. Recentering is on by default (``recenter=True``;
+    ``--no-recenter`` on the CLI). Without pyBigWig or the tracks, both are
+    skipped with a message and peaks keep their called coordinates.
 
 Rationale for these choices is documented in dev/consensus_bakeoff/ (the
 four-method bake-off + ENCODE cCRE benchmark): ``legacy`` has the best
@@ -441,15 +449,17 @@ def calculate_consensus_peaks(
     min_olap=1,
     method=LEGACY,
     repro_cutoff=0.6,
-    recenter=False,
+    recenter=True,
     distinct="drop",
 ):
     """Calculate per-genome consensus peaks for the project.
 
     Writes ``{project}_{genome}_consensusPeaks.narrowPeak`` and, for the
     ``reproducible`` method, a ``{project}_{genome}_consensusPeaks_confidence.tsv``
-    sidecar. If ``recenter`` is set (reproducible + signal tracks available),
-    off-center peaks are shifted onto their signal max with an overlap-guard.
+    sidecar. ``recenter`` and ``distinct`` apply to ``reproducible`` only. With
+    ``recenter`` (the default, matching the CLI), off-center peaks are shifted
+    onto their signal max with an overlap-guard; this needs pyBigWig and the
+    per-sample coverage tracks, and is skipped with a message without them.
     Returns {genome -> consensus peak file}.
     """
     summary_path = Path(summary_dir)
@@ -497,13 +507,16 @@ def calculate_consensus_peaks(
         # Open per-sample signal tracks once (reproducible mode); used for both
         # optional recentering and the confidence annotations.
         bws = []
-        if method == REPRODUCIBLE and _HAVE_SIGNAL:
+        skipped = ("recentering + signal annotations" if recenter
+                   else "signal annotations")
+        if method == REPRODUCIBLE and not _HAVE_SIGNAL:
+            print(f"  (pyBigWig not installed; skipping {skipped})")
+        elif method == REPRODUCIBLE:
             tracks = _resolve_signal_tracks(results_path, sample_names, genome)
             if tracks:
                 bws = [pyBigWig.open(t) for t in tracks]
-            elif recenter:
-                print("  (no signal tracks found; skipping recentering + "
-                      "signal annotations)")
+            else:
+                print(f"  (no signal tracks found; skipping {skipped})")
 
         # Recentering + distinct are reproducible-mode refinements; legacy is
         # left byte-for-byte as the released method.

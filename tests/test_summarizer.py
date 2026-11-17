@@ -91,11 +91,12 @@ def test_collapse_peaks_single_file(sample_results):
     peak_file = sample_results / "sample1" / "peak_calling_hg38" / "sample1_peaks_normalized.narrowPeak"
     chrom_sizes = {"chr1": 248956422}
 
-    result = collapse_peaks(
+    lines, confidence = collapse_peaks(
         [str(peak_file)], ["sample1"], chrom_sizes,
         min_samples=2, min_score=5.0, min_olap=1
     )
-    assert len(result) == 0
+    assert lines == []
+    assert confidence == []
 
 
 def test_collapse_peaks_two_overlapping(tmp_path):
@@ -108,14 +109,17 @@ def test_collapse_peaks_two_overlapping(tmp_path):
 
     chrom_sizes = {"chr1": 248956422}
 
-    result = collapse_peaks(
+    lines, confidence = collapse_peaks(
         [str(peak1), str(peak2)], ["sample1", "sample2"], chrom_sizes,
         min_samples=2, min_score=5.0, min_olap=1
     )
 
-    assert len(result) == 1
+    assert len(lines) == 1
     # Best score should be 100
-    assert "100" in result[0]
+    assert lines[0].split("\t")[4] == "100"
+    # One sidecar row per consensus line, seen in both samples
+    assert len(confidence) == 1
+    assert confidence[0][4] == 2
 
 
 def test_collapse_peaks_non_overlapping(tmp_path):
@@ -128,12 +132,13 @@ def test_collapse_peaks_non_overlapping(tmp_path):
 
     chrom_sizes = {"chr1": 248956422}
 
-    result = collapse_peaks(
+    lines, confidence = collapse_peaks(
         [str(peak1), str(peak2)], ["sample1", "sample2"], chrom_sizes,
         min_samples=2, min_score=5.0, min_olap=1
     )
 
-    assert len(result) == 0
+    assert lines == []
+    assert confidence == []
 
 
 def test_collapse_peaks_min_score_filter(tmp_path):
@@ -146,9 +151,10 @@ def test_collapse_peaks_min_score_filter(tmp_path):
 
     chrom_sizes = {"chr1": 248956422}
 
-    result = collapse_peaks(
+    lines, confidence = collapse_peaks(
         [str(peak1), str(peak2)], ["sample1", "sample2"], chrom_sizes,
         min_samples=2, min_score=5.0, min_olap=1
     )
 
-    assert len(result) == 0
+    assert lines == []
+    assert confidence == []

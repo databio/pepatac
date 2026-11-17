@@ -151,7 +151,7 @@ def test_consensus_with_chr22_peaks(tmp_path):
 
     chrom_sizes = {"chr22": 50818468}
 
-    result = collapse_peaks(
+    lines, confidence = collapse_peaks(
         [str(peaks1), str(peaks2), str(peaks3)],
         ["s1", "s2", "s3"],
         chrom_sizes,
@@ -160,7 +160,56 @@ def test_consensus_with_chr22_peaks(tmp_path):
         min_olap=1
     )
 
-    assert len(result) >= 2
+    assert len(lines) >= 2
     # Check we got chr22 peaks
-    chr22_count = sum(1 for line in result if line.startswith("chr22"))
+    chr22_count = sum(1 for line in lines if line.startswith("chr22"))
     assert chr22_count >= 2
+    # One sidecar row per consensus line
+    assert len(confidence) == len(lines)
+
+
+def _recenter_project(tmp_path):
+    """Two samples sharing one 500 bp peak at chr1:1000-1500 whose coverage
+    piles up at 1400-1410, well off the peak center (1250)."""
+    pyBigWig = pytest.importorskip("pyBigWig")
+    results = tmp_path / "results"
+    for sample in ["s1", "s2"]:
+        peak_dir = results / sample / "peak_calling_hg38"
+        aligned_dir = results / sample / "aligned_hg38"
+        peak_dir.mkdir(parents=True)
+        aligned_dir.mkdir(parents=True)
+        (peak_dir / f"{sample}_peaks_normalized.narrowPeak").write_text(
+            "chr1\t1000\t1500\tp1\t50\t.\t20\t8\t4\t250\n"
+        )
+        bw = pyBigWig.open(str(aligned_dir / f"{sample}_smooth_shift.bw"), "w")
+        bw.addHeader([("chr1", 10000)])
+        bw.addEntries(["chr1"], [1400], ends=[1410], values=[10.0])
+        bw.close()
+    sample_table = {"sample_name": ["s1", "s2"], "genome": ["hg38", "hg38"]}
+    return sample_table, results
+
+
+def _consensus_start(consensus_file):
+    with open(consensus_file) as f:
+        return int(f.readline().split("\t")[1])
+
+
+def test_recenter_defaults_on_like_cli(tmp_path):
+    """The library's recenter default matches the CLI (--no-recenter is
+    store_false, so the CLI recenters unless told not to)."""
+    sample_table, results = _recenter_project(tmp_path)
+    files = calculate_consensus_peaks(
+        sample_table, str(tmp_path / "on"), str(results), "prj",
+        method="reproducible", min_score=0.0,
+    )
+    # Shifted so the 500 bp window centers on the signal max at 1400.
+    assert _consensus_start(files["hg38"]) == 1150
+
+
+def test_recenter_false_keeps_called_coordinates(tmp_path):
+    sample_table, results = _recenter_project(tmp_path)
+    files = calculate_consensus_peaks(
+        sample_table, str(tmp_path / "off"), str(results), "prj",
+        method="reproducible", min_score=0.0, recenter=False,
+    )
+    assert _consensus_start(files["hg38"]) == 1000

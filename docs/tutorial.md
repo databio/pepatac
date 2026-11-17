@@ -41,10 +41,13 @@ As described in the various installation guides, `PEPATAC` gets its reference
 files from [`refgenie`](https://refgenie.org) 1.0 or newer:
 
 ```console
-pip install "refgenie>=1.0.0a2"
+pip install "refgenie>=1.0.0a3"
 export REFGENIE_HOME_PATH=/path/to/your/pepatac_tutorial/refgenie_home
 refgenie init
 ```
+
+PEPATAC 0.15 requires refgenie 1.0 (version 1.0.0a3 or newer). It does not
+work with refgenie 0.12 or 0.13; if you need those, use PEPATAC 0.14.
 
 Add the `export` line to your `.bashrc` or `.profile` so it persists. Then
 download the assets. Replace `hg38` if needed:

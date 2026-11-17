@@ -53,13 +53,14 @@ def main():
                              "least this fraction of samples regardless of "
                              "score (default 0.6).")
     parser.add_argument("--no-recenter", action="store_false", dest="recenter",
-                        help="reproducible method: disable the default signal-max "
-                             "recentering of off-center consensus peaks. By "
-                             "default, off-center peaks are shifted onto their "
-                             "signal max (overlap-guarded, so a recenter never "
-                             "collides with a neighbor); this requires pyBigWig "
-                             "and the per-sample coverage tracks (it is skipped "
-                             "gracefully if they are absent).")
+                        help="reproducible method: turn off recentering, which "
+                             "is on by default. Recentering shifts off-center "
+                             "consensus peaks onto their combined signal max "
+                             "(overlap-guarded, so a shift never collides with "
+                             "a neighbor). It needs pyBigWig and each sample's "
+                             "*_exact_shift.bw or *_smooth_shift.bw coverage "
+                             "track; without them it is skipped with a "
+                             "message and peaks keep their called coordinates.")
     parser.add_argument("--distinct", choices=["none", "drop", "trim"],
                         default="drop",
                         help="reproducible method: make consensus peaks "

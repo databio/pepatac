@@ -8,27 +8,35 @@
 ```{console}
 usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   [--logdev] [-C CONFIG_FILE] [-O PARENT_OUTPUT_FOLDER]
-                  [-M MEMORY_LIMIT] [-P NUMBER_OF_CORES] [-S SAMPLE_NAME] -I
-                  INPUT_FILES [INPUT_FILES ...]
-                  [-I2 [INPUT_FILES2 [INPUT_FILES2 ...]]] -G GENOME_ASSEMBLY
-                  [-Q SINGLE_OR_PAIRED]
+                  [-M MEMORY_LIMIT] [-P NUMBER_OF_CORES]
+                  [--pipeline-name PIPELINE_NAME] [-S SAMPLE_NAME] -I
+                  INPUT_FILES [INPUT_FILES ...] [-I2 [INPUT_FILES2 ...]] -G
+                  GENOME_ASSEMBLY [-Q SINGLE_OR_PAIRED]
+                  [--pipestat-namespace PIPESTAT_NAMESPACE]
+                  [--pipestat-record-id PIPESTAT_RECORD_ID]
+                  [--pipestat-schema PIPESTAT_SCHEMA]
+                  [--pipestat-results-file PIPESTAT_RESULTS_FILE]
+                  [--pipestat-config PIPESTAT_CONFIG]
+                  [--pipestat-validate-results {true,false}]
+                  [--pipestat-additional-properties {true,false}]
                   [--trimmer {trimmomatic,pyadapt,skewer}]
                   [--aligner {bowtie2,bwa}]
                   [--deduplicator {picard,samblaster,samtools}]
-                  [--peak-caller {fseq,fseq2,genrich,hmmratac,homer,macs2}]
-                  [-gs GENOME_SIZE] [--peak-type {fixed,variable}]
-                  [--extend EXTEND] [--frip-ref-peaks FRIP_REF_PEAKS]
-                  [--motif] [--sob] [--no-scale] [--prioritize] [--keep]
-                  [--noFIFO] [--lite] [--skipqc]
+                  [--peak-caller {fseq,fseq2,genrich,hmmratac,homer,macs3}]
+                  [--qc-backend {r,gtars}] [--gtf GTF] [-gs GENOME_SIZE]
+                  [--peak-type {fixed,variable}] [--extend EXTEND]
+                  [--frip-ref-peaks FRIP_REF_PEAKS] [--motif] [--sob]
+                  [--no-scale] [--prioritize] [--keep] [--noFIFO] [--lite]
+                  [--skipqc] [--skip-dedup]
                   [--prealignment-names PREALIGNMENT_NAMES [PREALIGNMENT_NAMES ...]]
                   [--prealignment-index PREALIGNMENT_INDEX [PREALIGNMENT_INDEX ...]]
-                  --genome-index GENOME_INDEX --chrom-sizes CHROM_SIZES
-                  [--TSS-name TSS_NAME] [--blacklist BLACKLIST]
+                  --genome-index GENOME_INDEX [--fasta FASTA] --chrom-sizes
+                  CHROM_SIZES [--TSS-name TSS_NAME] [--blacklist BLACKLIST]
                   [--anno-name ANNO_NAME] [--search-file SEARCH_FILE] [-V]
 
-PEPATAC version 0.12.3
+PEPATAC version 0.14.0
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -R, --recover         Overwrite locks to recover from previous failed run
   -N, --new-start       Overwrite all results to start a fresh run
@@ -49,27 +57,57 @@ optional arguments:
                         [K|M|G|T].
   -P NUMBER_OF_CORES, --cores NUMBER_OF_CORES
                         Number of cores for parallelized processes
+  --pipeline-name PIPELINE_NAME
+                        Name of the pipeline
   -S SAMPLE_NAME, --sample-name SAMPLE_NAME
                         Name for sample to run
-  -I2 [INPUT_FILES2 [INPUT_FILES2 ...]], --input2 [INPUT_FILES2 [INPUT_FILES2 ...]]
+  -I2 [INPUT_FILES2 ...], --input2 [INPUT_FILES2 ...]
                         Secondary input files, such as read2
   -Q SINGLE_OR_PAIRED, --single-or-paired SINGLE_OR_PAIRED
                         Single- or paired-end sequencing protocol
+  --pipestat-namespace PIPESTAT_NAMESPACE
+                        Namespace to report into. This will be the DB table
+                        name if using DB as the object back-end
+  --pipestat-record-id PIPESTAT_RECORD_ID
+                        Record identifier to report for
+  --pipestat-schema PIPESTAT_SCHEMA
+                        Path to the output schema that formalizes the results
+                        structure
+  --pipestat-results-file PIPESTAT_RESULTS_FILE
+                        YAML file to report into, if file is used as the
+                        object back-end
+  --pipestat-config PIPESTAT_CONFIG
+                        Path to the configuration file
+  --pipestat-validate-results {true,false}
+                        Whether to validate results against the pipestat
+                        output schema. Omit to auto-detect based on schema
+                        presence.
+  --pipestat-additional-properties {true,false}
+                        Whether to allow results not defined in the pipestat
+                        output schema. Omit to use the schema's own
+                        additionalProperties setting.
   --trimmer {trimmomatic,pyadapt,skewer}
                         Name of read trimming program.
   --aligner {bowtie2,bwa}
                         Name of read aligner.
   --deduplicator {picard,samblaster,samtools}
                         Name of deduplicator program.
-  --peak-caller {fseq,fseq2,genrich,hmmratac,homer,macs2}
+  --peak-caller {fseq,fseq2,genrich,hmmratac,homer,macs3}
                         Name of peak caller.
+  --qc-backend {r,gtars}
+                        Backend for QC calculations: r (default, uses
+                        PEPATACr/GenomicDistributions) or gtars (fast Rust).
+  --gtf GTF             Path to GTF gene annotation file. Required for
+                        partition plots when using --qc-backend gtars.
+                        Download from GENCODE:
+                        gencode.v44.basic.annotation.gtf.gz
   -gs GENOME_SIZE, --genome-size GENOME_SIZE
                         Effective genome size. It can be 1.0e+9 or 1000000000:
                         e.g. human (2.7e9), mouse (1.87e9), C. elegans (9e7),
                         fruitfly (1.2e8). Default:2.7e9
   --peak-type {fixed,variable}
                         Call variable or fixed width peaks. Fixed width
-                        requires MACS2.
+                        requires MACS3.
   --extend EXTEND       How far to extend fixed width peaks up and downstream.
   --frip-ref-peaks FRIP_REF_PEAKS
                         Path to reference peak set (BED format) for
@@ -89,6 +127,9 @@ optional arguments:
                         space.
   --skipqc              Skip FastQC. Useful for bugs in FastQC that appear
                         with some sequence read files.
+  --skip-dedup          Skip duplicate removal. Recommended for protocols
+                        where duplicates are biologically meaningful (e.g.
+                        CUT&Tag, CUT&RUN).
   --prealignment-names PREALIGNMENT_NAMES [PREALIGNMENT_NAMES ...]
                         Space-delimited list of prealignment genome names to
                         align to before primary alignment.
@@ -100,6 +141,8 @@ optional arguments:
   --genome-index GENOME_INDEX
                         Path to primary genome index file. Either a bowtie2 or
                         bwa index.
+  --fasta FASTA         Path to primary genome fasta file. Required with
+                        --sob.
   --chrom-sizes CHROM_SIZES
                         Path to primary genome chromosome sizes file.
   --TSS-name TSS_NAME   Path to TSS annotation file.

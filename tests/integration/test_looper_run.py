@@ -5,7 +5,7 @@ configuration handoff by running PEPATAC via looper instead of direct execution.
 
 Prerequisites:
 - looper and pipestat installed (pip install looper pipestat)
-- bulker crate databio/pepatac:1.1.3 cached and active
+- bulker crate databio/pepatac:1.1.4 cached and active
 - .venv with refgenie installed (pip install refgenie)
 - Network access to refgenie server
 - RUN_INTEGRATION_TESTS=true
@@ -349,6 +349,43 @@ class TestLooperCheck:
         # Check that sample status is present
         # The exact structure depends on pipestat configuration
         assert len(result) > 0
+
+
+@pytest.fixture(scope="module")
+def run_looper_per_sample_stats(looper_test_config):
+    """Run the pipeline via looper with one stats.yaml per sample.
+
+    The other looper tests share one results.yaml. The docs and example
+    configs use `results_pipeline/{record_identifier}/stats.yaml`, which
+    piper 0.15.0 and 0.15.1 could not fill in (crash at the first result).
+    """
+    if not LOOPER_AVAILABLE:
+        pytest.skip("looper not installed")
+
+    with open(looper_test_config) as f:
+        looper_config = yaml.safe_load(f)
+    output_dir = os.path.join(os.path.dirname(looper_test_config), "results_per_sample")
+    looper_config["output_dir"] = output_dir
+    looper_config["pipestat"]["results_file_path"] = os.path.join(
+        output_dir, "results_pipeline", "{record_identifier}", "stats.yaml"
+    )
+    config_path = os.path.join(os.path.dirname(looper_test_config), ".looper_per_sample.yaml")
+    with open(config_path, "w") as f:
+        yaml.safe_dump(looper_config, f)
+
+    looper_main(test_args=["run", "--config", config_path, "-p", "local"])
+    return os.path.join(output_dir, "results_pipeline", SAMPLE_NAME)
+
+
+class TestLooperRunPerSampleStats:
+    """Test a looper run that writes one stats.yaml per sample."""
+
+    def test_per_sample_stats_yaml(self, run_looper_per_sample_stats):
+        """Results land in the sample's own stats.yaml."""
+        assert os.path.isfile(os.path.join(run_looper_per_sample_stats, "stats.yaml"))
+        stats = _read_stats(run_looper_per_sample_stats)
+        assert stats["Genome"] == GENOME_NAME
+        assert int(stats["Aligned_reads"]) > 0
 
 
 @pytest.fixture

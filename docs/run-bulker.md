@@ -37,10 +37,13 @@ so install `refgenie` 1.0 or newer on the host, point it at a folder, and
 initialize:
 
 ```console
-pip install "refgenie>=1.0.0a2"
+pip install "refgenie>=1.0.0a3"
 export REFGENIE_HOME_PATH=/path/to/your_refgenie_home
 refgenie init
 ```
+
+PEPATAC 0.15 requires refgenie 1.0 (version 1.0.0a3 or newer). It does not
+work with refgenie 0.12 or 0.13; if you need those, use PEPATAC 0.14.
 
 Add the `export` line to your `.bashrc` or `.profile` so it persists.
 
@@ -90,7 +93,7 @@ Check out [the `bulker` setup guide to install bulker](https://bulker.databio.or
 
 We've already produced a `bulker` crate for `PEPATAC` that bundles all software needed to run the pipeline.  Pre-cache this crate directly from the [`bulker registry`](http://hub.bulker.io/) (container images are pulled on first use):
 ```console
-bulker crate install databio/pepatac:1.1.3
+bulker crate install databio/pepatac:1.1.4
 ```
 
 ### 6. Activate the `PEPATAC` crate
@@ -98,7 +101,7 @@ bulker crate install databio/pepatac:1.1.3
 Now that we've loaded the `PEPATAC` crate, we need to activate that specific crate so its included tools are available.
 ```console
 
-bulker activate databio/pepatac:1.1.3
+bulker activate databio/pepatac:1.1.4
 
 ```
 Now, you can run any of the commands in the crate as if they were natively installed, **but they're actually running in containers**!

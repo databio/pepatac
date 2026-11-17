@@ -1194,10 +1194,21 @@ def main():
     ngstk.make_dir(QC_folder)
 
     bamQC = os.path.join(QC_folder, args.sample_name + "_bamQC.tsv")
-    cmd = tool_path("bamQC.py")
-    cmd += " -i " + mapping_genome_bam
-    cmd += " -c " + str(pm.cores)
-    cmd += " -o " + bamQC
+    if args.qc_backend == "gtars":
+        gtars_cmd_callable = ngstk.check_command("gtars")
+        if gtars_cmd_callable:
+            cmd = "gtars uniwig bamqc"
+            cmd += " -i " + mapping_genome_bam
+            cmd += " -o " + bamQC
+        else:
+            pm.fail_pipeline(RuntimeError(
+                "Could not call 'gtars'. "
+                "Confirm the required gtars tool is in your PATH."))
+    else:
+        cmd = tool_path("bamQC.py")
+        cmd += " -i " + mapping_genome_bam
+        cmd += " -c " + str(pm.cores)
+        cmd += " -o " + bamQC
 
     def report_bam_qc(bamqc_log):
         # Reported BAM QC metrics via the bamQC metrics file
@@ -2585,12 +2596,21 @@ def main():
                     pm.report_object("Peak chromosome distribution", chr_PDF,
                                      anchor_image=chr_PNG)
                 if not os.path.exists(TSSdist_PDF) or args.new_start:
-                    if (getattr(res, 'refgene_tss', None)
-                            and os.path.exists(res.refgene_tss)):
-                        plot_tss_distance(peak_output_file, res.refgene_tss,
-                                          TSSdist_PDF, TSSdist_PNG)
-                        pm.report_object("TSS distance distribution", TSSdist_PDF,
-                                         anchor_image=TSSdist_PNG)
+                    if res.refgene_tss and os.path.exists(res.refgene_tss):
+                        try:
+                            plot_tss_distance(peak_output_file, res.refgene_tss,
+                                              TSSdist_PDF, TSSdist_PNG)
+                        except RuntimeError as e:
+                            # gtars raises RuntimeError on a TSS file it cannot
+                            # parse (malformed or empty). Skip the plot rather
+                            # than fail the whole run, like the other TSS steps.
+                            pm.warning("Skipping TSS distance distribution "
+                                       "plot: could not read TSS annotation "
+                                       "{}: {}".format(res.refgene_tss, e))
+                        else:
+                            pm.report_object("TSS distance distribution",
+                                             TSSdist_PDF,
+                                             anchor_image=TSSdist_PNG)
                     else:
                         # No TSS annotation available. The TSS distance plot
                         # needs a TSS reference BED, which the pipeline gets

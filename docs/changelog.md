@@ -3,23 +3,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.14.0] -- 2026-05-19
+## [0.14.0] -- 2026-11-17
 
 ### Added
 - `--qc-backend` flag to select between gtars (Python/Rust) and R backends for QC plots; defaults to `r` for backward compatibility.
+- `--qc-backend gtars` also computes the library-complexity metrics (NRF, PBC1, PBC2) with `gtars uniwig bamqc` instead of `tools/bamQC.py`. gtars follows the ENCODE method and counts only read pairs with MAPQ >= 30, so its total and distinct pair counts, M1 and PBC2 (and NRF and PBC1 when a library has duplicates) can differ from the `r` backend's numbers. The default `r` backend is unchanged.
 - New Python `pepatac_summarizer` package replacing the R-based project summarizer.
-- Reproducibility-gated consensus peaks in `pepatac_summarizer`: `--consensus-method {legacy,reproducible}` (default `reproducible`), `--repro-cutoff`, `--no-recenter`, and `--distinct {none,drop,trim}`. The `reproducible` method rescues weak-but-reproducible peaks (recovering ~2.7× more ENCODE-cCRE overlaps at ~96% precision vs. the score-floor method), recenters peaks on the combined-signal max, and drops lower-confidence overlaps to a distinct fixed-width set. `legacy` exactly reproduces the previous `collapsePeaks` output for backward compatibility. Emits a per-peak confidence sidecar (`*_consensusPeaks_confidence.tsv`: reproducibility, signal-centeredness, bimodality).
+- Reproducibility-gated consensus peaks in `pepatac_summarizer`: `--consensus-method {legacy,reproducible}` (default `reproducible`), `--repro-cutoff`, `--no-recenter`, and `--distinct {none,drop,trim}`. The `reproducible` method rescues weak-but-reproducible peaks (recovering ~2.7× more ENCODE-cCRE overlaps at ~96% precision vs. the score-floor method), recenters off-center peaks on the combined-signal max (on by default; needs `pyBigWig` and the per-sample coverage tracks, and is skipped with a log message without them), and drops lower-confidence overlaps to a distinct fixed-width set. `legacy` exactly reproduces the previous `collapsePeaks` output for backward compatibility. Emits a per-peak confidence sidecar (`*_consensusPeaks_confidence.tsv`: reproducibility, signal-centeredness, bimodality).
+- `pipelines/pepatac_collator.py` passes `--consensus-method`, `--repro-cutoff`, `--no-recenter` and `--distinct` on to the Python summarizer, so `looper runp -x "..."` can set them. `--min-score` is passed only when set, so the summarizer's method-aware default (0 for `reproducible`, 5 for `legacy`) applies.
+- Report per-sample output files to pipestat as file links (`aligned_bam`, `exact_bw`, `smooth_bw`, `peak_file`, `summits_bed`, `coverage_file`) plus `Picard_est_lib_size`, and the project `consensus_peaks_file` and `counts_table`, with matching `pepatac_output_schema.yaml` entries.
 - `--skip-dedup` flag for protocols where duplicates are biologically meaningful (e.g. CUT&Tag, CUT&RUN). [#249](https://github.com/databio/pepatac/issues/249)
 - Configurable mitochondrial contig names via `parameters: mito_names` in `pepatac.yaml` (previously hardcoded), so custom assemblies (e.g. Ensembl `MT`, RefSeq accessions) can be supported without editing pipeline code; falls back to the prior default list when the key is absent.
-- Integration test suite under `tests/integration/`: `test_failure_detection`, `test_pipeline`, `test_looper_run`, `test_end_to_end` — 58 tests exercising the full pipeline against `databio/pepatac:1.1.3`, including regression coverage for the manual-paths-with-empty-`$REFGENIE` workflow ([#251](https://github.com/databio/pepatac/issues/251)).
+- Integration test suite under `tests/integration/`: `test_failure_detection`, `test_pipeline`, `test_looper_run`, `test_end_to_end`, which exercise the full pipeline against `databio/pepatac:1.1.4`, including regression coverage for the manual-paths-with-empty-`$REFGENIE` workflow ([#251](https://github.com/databio/pepatac/issues/251)).
 - PEPATACr regression tests for `peakCounts` extension-detection ([#218](https://github.com/databio/pepatac/issues/218), [#219](https://github.com/databio/pepatac/issues/219)) and `plotAnno` empty-input fallback ([#232](https://github.com/databio/pepatac/issues/232)).
 - Documentation: TSSE cutoff guidance with `refgene_anno` asset reference ([#235](https://github.com/databio/pepatac/issues/235)); custom adapter file usage ([#252](https://github.com/databio/pepatac/issues/252)); `$REFGENIE`-required workaround when using manual paths ([#251](https://github.com/databio/pepatac/issues/251)); `PEPATAC_completed.flag` handling in the count-table workflow ([#215](https://github.com/databio/pepatac/issues/215)); `TypeError: 'NoneType' object is not iterable` troubleshooting ([#216](https://github.com/databio/pepatac/issues/216)); `_peaks_coverage.bed` and `_ref_peaks_coverage.bed` column formats ([#233](https://github.com/databio/pepatac/issues/233)); "Running a non-refgenie genome through looper" subsection ([#231](https://github.com/databio/pepatac/issues/231)).
 
 ### Changed
 - Bump bulker crate to `databio/pepatac:1.1.4` (`rust-gtars` 0.6.0 → 0.9.0; `bowtie2` → 2.5.5).
 - `tools/pepatac_summarizer/consensus.py`: replace the gtars `reduce()`-based consensus (which merged overlapping peaks into bloated regions, contrary to the fixed-width design intent) with a pure-Python boundary-preserving method (no gtars dependency). See the new `--consensus-method` above.
-- Pin `gtars>=0.9.1` (Python binding, used by the `--qc-backend gtars` path) and `rust-gtars=0.9.0` in `requirements-conda.yml`, aligning every gtars reference with the 1.1.4 crate.
-- Add `pyBigWig` (reads per-sample coverage tracks for the reproducible-consensus confidence annotations and `--recenter`).
+- Pin the `gtars>=0.9.1` Python binding (used by the `--qc-backend gtars` plots) in `requirements.txt` and `requirements-conda.yml`, and the `rust-gtars=0.9.0` command-line tool in `requirements-conda.yml`, aligning every gtars reference with the 1.1.4 crate. The `rust-gtars` conda package has no Python module, so the conda env needs both.
+- Add `pyBigWig` to `requirements.txt` and `requirements-conda.yml` (reads per-sample coverage tracks for the reproducible-consensus confidence annotations and recentering).
+- `calculate_consensus_peaks()` now defaults to `recenter=True`, matching the summarizer CLI (the library previously defaulted to `False`).
+- Declare `matplotlib` in `requirements.txt` and `requirements-conda.yml`. The summarizer and the gtars QC backend import it; without it a clean environment could not even collect the test suite.
+- Raise `piper` to `>=0.15.2` in `requirements.txt` and `==0.15.2` in `requirements-conda.yml`, and `ubiquerg` to 0.9.3 in `requirements-conda.yml`. The old conda pins could not be installed together (`pipestat` 0.13.1 needs `ubiquerg>=0.9.1`), and `piper` 0.14.3 fails to import under `yacman` 1.0 (`No module named 'attmap'`). `piper` 0.15.0 and 0.15.1 crash at the first reported result when the looper config uses the per-sample `results_pipeline/{record_identifier}/stats.yaml` layout (`TypeError: 'NoneType' object is not subscriptable`); 0.15.2 fixes this.
+- Replace `refgenie==0.12.1` with `refgenie>=0.13.0,<1.0.0` in `requirements-conda.yml`. The refgenie 0.12.1 command-line tool cannot run with `refgenconf` 0.13.1 (every command raises `TypeError`). PEPATAC 0.14 supports the legacy refgenie 0.12/0.13 line only; refgenie 1.0 support comes in 0.15. The install docs now pin `refgenie>=0.13.0,<1.0.0` and say so.
 - Pin `refgenconf>=0.13.1` so installs land on the yacman-1.0-compatible refgenconf release; older `refgenconf` paired with current `yacman` raised `AttributeError: module 'yacman' has no attribute 'YacAttMap'` at pipeline import.
 - Pin `looper>=2.1.1` and `yacman>=1.0.0` (and align the `requirements-conda.yml` strict pins to match). `looper==2.0.1` paired with yacman 1.0+ raised `TypeError: YAMLConfigManager.__init__() takes from 1 to 4 positional arguments but 6 were given` from `looper/divvy.py:52`'s `ComputingConfiguration.__init__` because the yacman 1.0 constructor reduced its positional arg count; looper 2.1.1 handles the new signature.
 - Bump `requirements-conda.yml` strict pins for `pipestat==0.13.1` and `refgenconf==0.13.1` to match `requirements.txt`.
@@ -31,12 +38,17 @@ All notable changes to this project will be documented in this file.
 - `tools/PEPATAC.R`: required-library load failure now exits non-zero and surfaces the underlying `conditionMessage(e)` so callers can distinguish a missing package from a load-time failure (ABI mismatch, missing system library, etc.).
 - Docs (`docs/install.md`): drop dead `run-container.md` link; refresh intro now that containers were removed in 0.12.0 and the path is `bulker` / conda / native.
 - Docs (`tests/README.md`): note that bulker can dispatch to Docker *or* Singularity / Apptainer.
-- `tools/pepatac_summarizer/counts.py`: compute the project peak-counts table with `bedtools multicov` instead of `gtars.models.RegionSet.from_bam`/`count_overlaps`, which no released `gtars` (through 0.8.0) provides (the table was silently empty); revisit if a future `gtars` adds BAM→`RegionSet` support.
+- `tools/pepatac_summarizer/counts.py`: compute the project peak-counts table with `gtars fscoring` over each sample's Tn5-shifted `*_shift.bed`, the same signal the peaks were called from. It is about 75x faster than `bedtools multicov` on the BAMs and matches it at r ~ 0.999. This replaces the earlier `gtars.models.RegionSet.from_bam`/`count_overlaps` call, which no released `gtars` provided (the table was silently empty).
+- `tools/pepatac_summarizer/assets.py`: build the project assets summary from each sample's `assets.tsv` (the reference assets the run actually used), matching the R summarizer, instead of globbing output folders. Samples without one are skipped with a warning.
 - `pipelines/pepatac_collator.py`: put the pipeline's `tools/` on `PYTHONPATH` so the default Python `pepatac_summarizer` (a path-based package with no `setup.py`) resolves during `looper runp`.
 - `PEPATACr`: migrate deprecated ggplot2 `size` → `linewidth` in `theme_PEPATAC()` (deprecated as of ggplot2 3.4.0); declare `reshape2` in `DESCRIPTION` Imports (used by `reshape2::melt`).
 - `requirements-conda.yml`: explicitly pin `samtools` and `pigz` (previously present only as transitive dependencies).
 - `checkinstall`: use current Rust-bulker syntax (`bulker crate install` and `bulker exec <crate> -- …` in place of the removed `bulker load` / `bulker run`) and verify a crate tool rather than `pepatac.py --help`; evaluate the native-install check against a conda-stripped `PATH` so an active conda env can't report as a native install; add `PEPATAC_ENV` to target a conda env built at a custom prefix; skip blank lines when parsing `requirements.txt`.
 - Docs: install `GenomicDistributions` and `GenomicDistributionsData` via `BiocManager` in `run-conda.md` and `detailed-install.md` (both are on Bioconductor now; the `install_github` / `big.databio.org` tarball route is deprecated), noting `XML` as a transitive dependency of `getChromSizes()`; clarify in `run-conda.md` §2 that `conda env create -f requirements-conda.yml` installs all required tools; update `run-bulker.md` crate setup to `bulker crate install`.
+- Docs: rewrite `consensus_peaks.md` for the Python summarizer's default `reproducible` method, recentering and overlap removal, and how to pass options through `looper runp -x`; `run-bulker.md` installs crate 1.1.4; regenerate `usage.txt` and `docs/usage.md`.
+- `pipelines/pepatac_collator.py`: version now matches the pipeline (0.14.0; was 0.12.4).
+- Test scripts and test docs default to crate `databio/pepatac:1.1.4`.
+- Bump `pytest` to 9.0.3 in `requirements-test.txt`; anchor the pytest rootdir at the project root via `pytest.ini`.
 
 ### Fixed
 - `pipelines/pepatac.py` `_align()`: single-end + bwa branch referenced an undefined `cmd`; mirror the paired chain (minus `filter_pair`) for both `--keep` and no-keep paths. [#299](https://github.com/databio/pepatac/issues/299)
@@ -51,10 +63,20 @@ All notable changes to this project will be documented in this file.
 - `checkinstall`: three `curl`-into-variable bugs that stored file contents in a variable used as a path downstream; switch to `mktemp` + `curl -fsSL -o`. [#226](https://github.com/databio/pepatac/issues/226)
 - `pipelines/pepatac.py`: use raw strings in two `re.sub` patterns to silence Python 3.12 `SyntaxWarning: invalid escape sequence '\w'`.
 - Docs (`docs/faq.md`): expanded TSSE entry with `refgene_anno` source asset, hg38-tuned threshold caveat, and pointer at ENCODE ATAC-seq data standards. [#235](https://github.com/databio/pepatac/issues/235)
+- TSS enrichment no longer stops the run on an unusable TSS annotation: a missing annotation is skipped, a `pyTssEnrichment.py` run that writes no output skips the TSS score and plot with a warning, and `pyTssEnrichment.py` no longer raises `ValueError` when there are fewer TSSs than cores.
+- `--qc-backend gtars`: the TSS distance plot is skipped with guidance when no TSS annotation is available, and skipped with a warning when the TSS file cannot be parsed, instead of failing the run.
+- `pipelines/pepatac.py`: put the project root on `sys.path` so `tools.pepatac_qc_gtars` imports when `pepatac.py` runs as a script.
+- `tests/test_summarizer*.py`: update the `collapse_peaks` tests for its `(lines, confidence_rows)` return value.
 - `tools/pepatac_summarizer/utils.py`: silence the pandas `fillna`/`replace` silent-downcasting `FutureWarning` (opt into `future.no_silent_downcasting` and downcast explicitly via `infer_objects`).
 
 ### Removed
 - Old R-based `PEPATACr/tests/testthat/{testthat.R,helper-fixtures.R,test-summarizer.R,test-utilities.R,test-yamlToDT.R}` — superseded by the Python summarizer package and its test suite at `tests/test_summarizer.py` / `tests/test_summarizer_integration.py`.
+
+## [0.13.1] -- 2026-03-25
+- Update bulker crate to `databio/pepatac:1.1.1` (fix broken openjdk image).
+- Update test scripts for the Rust bulker CLI.
+- `pepatac_collator.py` / `PEPATACr`: pass the reference peak set (`--frip-ref-peaks`) through to the R summarizer's count table.
+- `PEPATACr`: read the newer object-style pipestat reports in sample `stats.yaml` files; add R summarizer tests.
 
 ## [0.13.0] -- 2026-03-06
 - Extract peak cleaning into separate script (`tools/clean_peaks.py`). Fix [#295](https://github.com/databio/pepatac/issues/295)

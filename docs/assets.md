@@ -33,10 +33,13 @@ this section.
 ### Install and initialize
 
 ```console
-pip install "refgenie>=1.0.0a2"
+pip install "refgenie>=1.0.0a3"
 export REFGENIE_HOME_PATH=/path/to/your_refgenie_home
 refgenie init
 ```
+
+PEPATAC 0.15 requires refgenie 1.0 (version 1.0.0a3 or newer). It does not
+work with refgenie 0.12 or 0.13; if you need those, use PEPATAC 0.14.
 
 `refgenie init` creates the database under `$REFGENIE_HOME_PATH` and subscribes
 you to the public asset server, so `refgenie listr` shows what you can download.
