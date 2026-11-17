@@ -5,7 +5,7 @@ PEPATAC Collator - ATAC-seq project-level pipeline
 
 __author__ = ["Jason Smith", "Michal Stolarczyk"]
 __email__ = "jasonsmith@virginia.edu"
-__version__ = "0.14.0"
+__version__ = "0.15.0"
 
 from argparse import ArgumentParser
 import os

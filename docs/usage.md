@@ -34,7 +34,7 @@ usage: pepatac.py [-h] [-R] [-N] [-D] [-F] [-T] [--silent] [--verbosity V]
                   CHROM_SIZES [--TSS-name TSS_NAME] [--blacklist BLACKLIST]
                   [--anno-name ANNO_NAME] [--search-file SEARCH_FILE] [-V]
 
-PEPATAC version 0.14.0
+PEPATAC version 0.15.0
 
 options:
   -h, --help            show this help message and exit

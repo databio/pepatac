@@ -3,6 +3,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.15.0] -- TBD
+
+### Changed
+- Move to refgenie 1.0. PEPATAC now requires `refgenie>=1.0.0a3` and no longer uses `refgenconf` or the legacy refgenie 0.12/0.13 line; both are dropped from `requirements.txt` and `requirements-conda.yml`. To keep using refgenie 0.12/0.13, stay on PEPATAC 0.14.
+- `sample_pipeline_interface.yaml`: the looper `pre_submit` hook is now `refgenie.integrations.looper.populate`, which ships with refgenie 1.0, in place of `refgenconf.looper_refgenie_populate`. It reads `$REFGENIE_DB_CONFIG_PATH` (`var_templates.refgenie_db_config`) instead of `$REFGENIE`, and falls back to refgenie's default database under `$REFGENIE_HOME_PATH` when that is unset.
+- `sample_pipeline_interface.yaml`: genome and prealignment indexes use the refgenie 1.0 seek keys `bowtie2_index.bowtie2_index` and `bwa_index.bwa_index`, which point straight at the index prefix, in place of `bowtie2_index.dir` and `bwa_index.dir`.
+- `pipelines/pepatac.yaml`: `genome_config` reads `${REFGENIE_DB_CONFIG_PATH}` instead of `${REFGENIE}`.
+- Docs: install, tutorial and asset pages use refgenie 1.0 commands (`REFGENIE_HOME_PATH`, `refgenie init`, `refgenie pull`), with a migration table from refgenie 0.12 in `docs/assets.md`. They also explain how to supply the TSS, blacklist and feature annotation files, which the public refgenie 1.0 server does not serve yet.
+
+### Fixed
+- `pipelines/pepatac.py`: when the deduplicator log yields no count (no output, or only whitespace), fall back to the aligned-read count instead of crashing. The old check used `and` where it needed `or`.
+
+### Removed
+- `pipelines/pepatac.py`: the unused `refgenconf` import, and the workaround that rewrote a `--genome-index` or `--prealignment-index` path ending in `.` into a full index prefix. refgenie 1.0 hands over the full prefix, so pass that.
+
 ## [0.14.0] -- 2026-11-17
 
 ### Added
