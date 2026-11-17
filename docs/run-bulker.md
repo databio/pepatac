@@ -19,7 +19,7 @@ git clone https://github.com/databio/pepatac.git
 
 ### 2. Install python package requirements
 
-`bulker` (next step) provides the bioinformatics tools (bowtie2, samtools, macs3, etc.) via containers, but `pepatac.py` itself is a Python script that needs its own deps (`pypiper`, `looper`, `refgenconf`, etc.). Install those into a Python 3.8+ environment:
+`bulker` (next step) provides the bioinformatics tools (bowtie2, samtools, macs3, etc.) via containers, but `pepatac.py` itself is a Python script that needs its own deps (`piper`, `looper`, `refgenie`, etc.). Install those into a Python 3.8+ environment:
 
 ```console
 pip install -r pepatac/requirements.txt
@@ -31,30 +31,43 @@ We [recommend `refgenie` to manage all required and optional genome assets](run-
 
 #### 3a. Initialize `refgenie` and download assets
 
-`PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Because assets are user-dependent, these files must still exist outside of a container system. Therefore, we need to [install and initialize a refgenie config file.](http://refgenie.databio.org/en/latest/install/). For example:
+`PEPATAC` can utilize [`refgenie`](https://refgenie.org) assets. Because assets
+are user-dependent, these files must still exist outside of a container system,
+so install `refgenie` 1.0 or newer on the host, point it at a folder, and
+initialize:
 
 ```console
-pip install refgenie
-export REFGENIE=/path/to/your_genome_folder/genome_config.yaml
-refgenie init -c $REFGENIE
+pip install "refgenie>=1.0.0a2"
+export REFGENIE_HOME_PATH=/path/to/your_refgenie_home
+refgenie init
 ```
 
-Add the `export REFGENIE` line to your `.bashrc` or `.profile` to ensure it persists. 
+Add the `export` line to your `.bashrc` or `.profile` so it persists.
 
-Next, pull the assets you need. Replace `hg38` in the example below if you need to use a different genome assembly. If these assets are not available automatically for your genome of interest, then you'll need to [build them](annotation.md).
+Next, download the assets you need. Replace `hg38` in the example below if you
+need to use a different genome assembly.
 
 ```console
-refgenie pull hg38/fasta hg38/bowtie2_index hg38/refgene_anno hg38/ensembl_gtf hg38/ensembl_rb
-refgenie build hg38/feat_annotation
+refgenie pull hg38/fasta hg38/bowtie2_index
 ```
 
-`PEPATAC` also requires a `bowtie2_index` *and* a `fasta` asset for any pre-alignment genome — pulling only the index will cause a `TypeError: 'NoneType' object is not iterable` from refgenconf's pre-submit hook (it iterates all registered assets for all genomes and fails on partial pulls):
+`PEPATAC` also requires a `bowtie2_index` *and* a `fasta` asset for every
+pre-alignment genome. Pull both, for each one you use:
 
 ```console
-refgenie pull rCRSd/bowtie2_index rCRSd/fasta
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
 ```
 
-If you use other prealignment genomes (e.g. `human_repeats`), pull both assets for each.
+If you use other prealignment genomes (e.g. `human_repeats`), do the same for
+each. A prealignment genome that is registered but missing its aligner index
+stops `looper` before the pipeline starts, with
+`UndefinedError: 'refgenie.core.paths.GenomePaths object' has no attribute
+'bowtie2_index'`.
+
+The TSS, blacklist and feature annotation files are not on the public asset
+server yet. You can either name them in your PEP, or build them yourself; see
+[Configure assets](assets.md) for both routes. If you used refgenie 0.12 before,
+that page also lists what changed.
 
 #### 3b. Download assets manually
 

@@ -37,34 +37,31 @@ Success! If you had any issues, feel free to [reach out to us with questions](co
 
 ## 2: Initialize `refgenie` and download assets
 
-> **NOTE (refgenie1 branch):** This branch targets [refgenie 1.0+](https://github.com/refgenie/refgenie1), which uses `$REFGENIE_DB_CONFIG_PATH` (not `$REFGENIE`) and replaces `refgenie pull` with `refgenie genome init` + `refgenie add`. See [`docs/assets.md`](assets.md) for the canonical refgenie 1.0 setup. The legacy commands below are kept for reference only.
-
-As described in the various installation guides, `PEPATAC` can utilize [`refgenie`](http://refgenie.databio.org/) assets. Refgenie 1.0 setup (this branch):
+As described in the various installation guides, `PEPATAC` gets its reference
+files from [`refgenie`](https://refgenie.org) 1.0 or newer:
 
 ```console
-pip install "refgenie>=1.0.0"
+pip install "refgenie>=1.0.0a2"
 export REFGENIE_HOME_PATH=/path/to/your/pepatac_tutorial/refgenie_home
-export REFGENIE_DB_CONFIG_PATH=$REFGENIE_HOME_PATH/refgenie_db_config.yaml
 refgenie init
 ```
 
-Register a genome and add assets. Replace `hg38` if needed:
+Add the `export` line to your `.bashrc` or `.profile` so it persists. Then
+download the assets. Replace `hg38` if needed:
 
 ```console
-refgenie genome init /path/to/hg38.fa --alias hg38
-refgenie add hg38/fasta            --recipe fasta
-refgenie add hg38/bowtie2_index    --recipe bowtie2_index
-refgenie add hg38/refgene_anno     --recipe refgene_anno
-refgenie add hg38/feat_annotation  --recipe feat_annotation
+refgenie pull hg38/fasta hg38/bowtie2_index
 ```
 
-`PEPATAC` also requires a `bowtie2_index` asset for any pre-alignment genomes:
+`PEPATAC` also requires `fasta` and `bowtie2_index` assets for any pre-alignment genomes:
 
 ```console
-refgenie genome init /path/to/rCRSd.fa --alias rCRSd
-refgenie add rCRSd/fasta         --recipe fasta
-refgenie add rCRSd/bowtie2_index --recipe bowtie2_index
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
 ```
+
+The TSS, blacklist and feature annotation files are not on the public asset
+server yet; [Configure assets](assets.md) shows how to supply them. If you used
+refgenie 0.12 before, that page also lists what changed.
 
 ## 3: Download tutorial read files
 

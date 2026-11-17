@@ -13,10 +13,16 @@ You have two options for using `refgenie` assemblies with `PEPATAC`. If you're u
 
 Pre-built genome indices exist for common genomes including: `hg38`, `hg19`, `mm10`, and `mm9`. You may [download the corresponding pre-indexed references](http://refgenie.databio.org/en/latest/download/) directly from the web or using `refgenie` on the command line.
 
-For example, build the `hg38` bowtie2 index (refgenie 1.0):
+For example, download the `hg38` bowtie2 index (refgenie 1.0):
 ```console
-refgenie genome init /path/to/hg38.fa --alias hg38
-refgenie add hg38/bowtie2_index --recipe bowtie2_index
+refgenie pull hg38/bowtie2_index
+```
+
+To build one for a genome the server does not carry, register the genome from
+its FASTA first:
+```console
+refgenie genome init /path/to/mygenome.fa --alias mygenome
+refgenie build mygenome/bowtie2_index
 ```
 
 ### Build custom `refgenie` assemblies
@@ -25,16 +31,22 @@ For complete and detailed information on indexing your own genomes and building 
 
 ## 2: Configure the pipeline to use `refgenie` assemblies
 
-Once you've registered assemblies and assets for all genomes you wish to use, the pipeline locates them via the refgenie 1.0 db config path:
+Once you have the assets for all the genomes you want to use, point the pipeline
+at your refgenie folder:
 
 ```
 export REFGENIE_HOME_PATH="/path/to/your_refgenie_home"
-export REFGENIE_DB_CONFIG_PATH="$REFGENIE_HOME_PATH/refgenie_db_config.yaml"
 ```
 
-(Add these to your `.bashrc` or `.profile` to ensure they persist.)
+(Add this to your `.bashrc` or `.profile` to ensure it persists.)
 
-The pipeline interface's `pre_submit` hook (`refgenie.looper_refgenie_populate_local`) reads `$REFGENIE_DB_CONFIG_PATH` from the environment and resolves all asset paths automatically.
+The pipeline interface's `pre_submit` hook,
+`refgenie.integrations.looper.populate`, then resolves every asset path for you,
+so a sample only needs `genome` and `prealignment_names`. The hook reads
+`$REFGENIE_DB_CONFIG_PATH` when you set it and otherwise falls back to
+refgenie's default, `$REFGENIE_HOME_PATH/refgenie_db_config.yaml`.
 
-> **NOTE (refgenie1 branch):** The legacy `$REFGENIE` env var (pointing at a YAML config) is replaced by `$REFGENIE_DB_CONFIG_PATH` (pointing at refgenie 1.0's db config YAML). Update any inherited `.bashrc` accordingly.
+> **Upgrading from refgenie 0.12:** the old `$REFGENIE` variable pointed at a
+> YAML config file and is no longer read. Set `$REFGENIE_HOME_PATH` instead, and
+> remove `$REFGENIE` from your shell startup files.
 

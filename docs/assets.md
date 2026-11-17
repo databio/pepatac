@@ -24,46 +24,94 @@
 
 ## Using `refgenie` managed assets
 
-`PEPATAC` (this branch) targets [refgenie 1.0+](https://github.com/refgenie/refgenie1) (the SQLModel-backed reimplementation), not legacy refgenie 0.12.x.
+`PEPATAC` uses [`refgenie`](https://refgenie.org) 1.0 or newer to find reference
+assets. refgenie 1.0 is a rewrite: it keeps a small database instead of a YAML
+config file, and it reads a different environment variable than refgenie 0.12
+did. If you have used refgenie before, read the migration note at the bottom of
+this section.
 
-`refgenie` 1.0 splits genome registration from asset acquisition: you first `refgenie genome init` from a FASTA, then `refgenie add` each asset (which builds it locally from the registered recipes, or pulls from a subscribed source).
-
-Install and initialize refgenie 1.0:
+### Install and initialize
 
 ```console
-pip install "refgenie>=1.0.0"
+pip install "refgenie>=1.0.0a2"
 export REFGENIE_HOME_PATH=/path/to/your_refgenie_home
-export REFGENIE_DB_CONFIG_PATH=$REFGENIE_HOME_PATH/refgenie_db_config.yaml
 refgenie init
 ```
 
-Add the `export REFGENIE_HOME_PATH` and `export REFGENIE_DB_CONFIG_PATH` lines to your `.bashrc` or `.profile` to ensure they persist. Note: legacy refgenie used `$REFGENIE` pointing at a YAML config; refgenie 1.0 uses `$REFGENIE_DB_CONFIG_PATH` pointing at the SQLite-backed db config. Update any inherited `.bashrc` accordingly.
+`refgenie init` creates the database under `$REFGENIE_HOME_PATH` and subscribes
+you to the public asset server, so `refgenie listr` shows what you can download.
+Add the `export REFGENIE_HOME_PATH` line to your `.bashrc` or `.profile` so it
+persists.
 
-Next, register a genome and add assets. Replace `hg38` if you need a different assembly:
+### Download the assets you need
 
-```console
-# Register a genome from a FASTA file
-refgenie genome init /path/to/hg38.fa --alias hg38
-
-# Add each asset (recipes ship in refgenie/recipes; subscribe to a source if pulling)
-refgenie add hg38/fasta            --recipe fasta
-refgenie add hg38/bowtie2_index    --recipe bowtie2_index
-refgenie add hg38/refgene_anno     --recipe refgene_anno
-refgenie add hg38/blacklist        --recipe blacklist
-refgenie add hg38/feat_annotation  --recipe feat_annotation
-```
-
-`PEPATAC` also requires a `bowtie2_index` asset for any prealignment genomes:
+Replace `hg38` below if you use a different assembly:
 
 ```console
-refgenie genome init /path/to/rCRSd.fa --alias rCRSd
-refgenie add rCRSd/fasta         --recipe fasta
-refgenie add rCRSd/bowtie2_index --recipe bowtie2_index
+refgenie pull hg38/fasta hg38/bowtie2_index
 ```
 
-If you prefer `bwa` for alignment, you would use a `bwa_index` recipe instead. (Note: the `bwa_index` and `tallymer_index` asset classes may not yet ship in `refgenie/recipes`; check that repo or build manually.)
+`PEPATAC` also needs a `fasta` and a `bowtie2_index` for every prealignment
+genome:
 
-Furthermore, you can [learn more about using `seqOutBias` and the required `tallymer_index` here](sob.md).
+```console
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
+```
+
+If you align with `bwa` instead of `bowtie2`, pull `hg38/bwa_index` in place of
+`hg38/bowtie2_index`.
+
+Check what you have with `refgenie list`, and see where a single asset landed
+with `refgenie seek hg38/bowtie2_index`.
+
+### Assets you have to build yourself
+
+The public server currently serves `fasta`, `fasta_index`, `bowtie2_index`,
+`bwa_index`, `hisat2_index` and `suffixerator_index`. It does **not** yet serve
+the three PEPATAC annotation assets (`refgene_anno`, `blacklist`,
+`feat_annotation`) or `tallymer_index`. You have two options.
+
+Option 1, the simpler one: skip refgenie for those files and name them directly
+in your PEP, as sample attributes `TSS_name`, `blacklist` and `anno_name` (see
+[Configure project files](peps.md)). PEPATAC only asks refgenie for an asset
+when the PEP does not already give it a path, so a missing asset is not an
+error.
+
+Option 2: register the recipe, then build. The recipes live in the
+[refgenie/recipes](https://github.com/refgenie/recipes/tree/refgenie1)
+repository on its `refgenie1` branch, and you add them by URL:
+
+```console
+BASE=https://raw.githubusercontent.com/refgenie/recipes/refgenie1
+refgenie asset-class add --source $BASE/asset_classes/refgene_anno_asset_class.yaml
+refgenie recipe add      --source $BASE/recipes/refgene_anno_asset_recipe.yaml
+refgenie build hg38/refgene_anno --files refgene=/path/to/refGene.txt.gz
+```
+
+`refgene_anno` needs a RefGene table such as
+[refGene.txt.gz](https://hgdownload.cse.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz),
+and `blacklist` needs a blacklist file such as
+[the ENCODE blacklist](https://github.com/Boyle-Lab/Blacklist). `feat_annotation`
+is built from the `ensembl_gtf` and `ensembl_rb` assets, so build those first.
+Add `--container` to run a recipe's commands in its own container image.
+
+You can also [learn more about using `seqOutBias` and the required
+`tallymer_index` here](sob.md).
+
+### Migrating from refgenie 0.12
+
+| refgenie 0.12 | refgenie 1.0 |
+|---|---|
+| `export REFGENIE=/path/genome_config.yaml` | `export REFGENIE_HOME_PATH=/path/to/refgenie_home` |
+| `refgenie init -c $REFGENIE` | `refgenie init` |
+| `refgenie pull hg38/fasta` | `refgenie pull hg38/fasta` (unchanged) |
+| asset directory seek key `bowtie2_index.dir` | index prefix seek key `bowtie2_index.bowtie2_index` |
+
+PEPATAC reads `$REFGENIE_DB_CONFIG_PATH` if you set it, and otherwise uses
+refgenie's own default, `$REFGENIE_HOME_PATH/refgenie_db_config.yaml`. Setting
+`REFGENIE_HOME_PATH` alone is enough. The old `$REFGENIE` variable is ignored;
+refgenie 1.0 prints a warning if it is still set, so remove it from your shell
+startup files.
 
 ### Example using `refgenie` managed assets
 
@@ -78,14 +126,18 @@ looper run examples/test_project/test_config_refgenie.yaml
 
 Assets may also be managed manually and specified directly to the pipeline.  While this frees you from needing `refgenie` installed and initialized, it does require a few more arguments to be specified.
 
-> **Note**: even when you provide every path manually, the pipeline interface (`sample_pipeline_interface.yaml`) currently runs a `refgenconf.looper_refgenie_populate` pre-submit hook that expands `$REFGENIE`. If `$REFGENIE` is unset you'll see `FileNotFoundError: [Errno 2] No such file or directory: '$REFGENIE'`. The simplest workaround is to point `$REFGENIE` at an empty refgenie config — the hook succeeds against an empty config, and your manual paths are used regardless:
+> **Note**: the pipeline interface (`sample_pipeline_interface.yaml`) always runs
+> the `refgenie.integrations.looper.populate` pre-submit hook, but you do not
+> need a populated refgenie database to use manual paths. If
+> `$REFGENIE_DB_CONFIG_PATH` is unset or empty, the hook falls back to
+> refgenie's default database, and your manual paths are used regardless. The
+> empty-config workaround that refgenie 0.12 required is no longer needed.
 >
-> ```console
-> refgenie init -c /tmp/empty_refgenie.yaml
-> export REFGENIE=/tmp/empty_refgenie.yaml
-> ```
->
-> A proper "no refgenie" path is on the roadmap; until then the empty-config workaround is the supported approach.
+> If you do set the variable, point it somewhere refgenie can actually create:
+> a path that does not exist yet is fine, as long as its parent directory is
+> writable. Otherwise refgenie fails before the pipeline starts, raising
+> `PermissionError` if the parent is not writable or `FileNotFoundError` if the
+> parent does not exist.
 
 ### Running a non-refgenie genome through `looper`
 
@@ -109,25 +161,40 @@ sample_modifiers:
 
 Each `sample.X` attribute short-circuits the corresponding `refgenie[sample.genome].X` lookup in `sample_pipeline_interface.yaml`, so refgenie is never queried for that genome. Samples using a refgenie-managed genome (e.g. `hg38`, `mm10`) and samples using a manually-managed genome can be processed in the same project.
 
-### Troubleshooting: `TypeError: 'NoneType' object is not iterable`
+### Troubleshooting: `looper` fails before the pipeline starts
 
-If `looper run` fails before the pipeline starts with this trace, ending in `refgenconf/populator.py` → `refgenconf/refgenconf.py` → `for seek_key_name in get_tag_seek_keys(tag_mapping)` → `TypeError: 'NoneType' object is not iterable`, the cause is **a refgenie genome with one or more incomplete assets**. The pre-submit hook iterates every asset for every registered genome, and one of them returned `None`. This commonly happens when prealignment genomes are partially pulled (e.g. `rCRSd/bowtie2_index` is pulled but `rCRSd/fasta` is not).
+If `looper run` fails with an error like
 
-To diagnose, list every asset in your refgenie config:
+```
+UndefinedError: 'refgenie.core.paths.GenomePaths object' has no attribute 'bowtie2_index'
+```
+
+the cause is **a prealignment genome that refgenie knows about but has no
+aligner index for**. Every genome you list in `prealignment_names` needs both a
+`fasta` and the index for the aligner you are using, and the pipeline interface
+asks for that index without checking first.
+
+To see what you actually have:
 
 ```console
 refgenie list -g rCRSd       # list assets for one genome
 refgenie list                # list all genomes
 ```
 
-Then pull anything missing — the most common gap is the prealignment FASTA:
+Then pull whatever is missing:
 
 ```console
-refgenie pull rCRSd/fasta
-refgenie pull human_repeats/fasta
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
+refgenie pull human_repeats/fasta human_repeats/bowtie2_index
 ```
 
-The unhelpful error message is upstream behavior in `refgenconf`; the eventual fix lives there.
+A genome that refgenie does not know about at all is handled gracefully: the
+interface guards every lookup with `sample.genome in refgenie`, so the sample's
+own attributes are used instead. See [Running a non-refgenie genome through
+`looper`](#running-a-non-refgenie-genome-through-looper) above.
+
+Under refgenie 0.12 the same situation produced `TypeError: 'NoneType' object is
+not iterable` from `refgenconf`. That code path is gone in refgenie 1.0.
 
 Custom blacklisted regions may be specified using the `--blacklist </path/to/your_blacklist.bed.gz>`. The blacklisted region file must simply be a `BED` formatted file to function correctly. The [`refgenie blacklist` asset](http://refgenie.databio.org/en/latest/available_assets/#blacklist) uses the [ENCODE blacklists](https://github.com/Boyle-Lab/Blacklist) by default.
 
@@ -141,7 +208,7 @@ The `feat_annotation` asset may also be directly specified using `--anno-name </
 
 ```yaml
 resources:
-  genome_config: ${REFGENIE}
+  genome_config: ${REFGENIE_DB_CONFIG_PATH}
   adapters: /path/to/your/adapters.fa
 ```
 

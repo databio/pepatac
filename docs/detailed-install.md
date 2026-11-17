@@ -248,27 +248,32 @@ Before we analyze anything, we also need a reference genome. You can use our rec
 
 ### 4a: Initialize `refgenie` and download assets
 
-> **NOTE (refgenie1 branch):** This branch targets [refgenie 1.0+](https://github.com/refgenie/refgenie1). See [`docs/assets.md`](assets.md) for canonical setup.
+`PEPATAC` needs [`refgenie`](https://refgenie.org) 1.0 or newer. Install it,
+point it at a folder, and initialize:
 
 ```console
-pip install "refgenie>=1.0.0"
+pip install "refgenie>=1.0.0a2"
 export REFGENIE_HOME_PATH=/path/to/your_refgenie_home
-export REFGENIE_DB_CONFIG_PATH=$REFGENIE_HOME_PATH/refgenie_db_config.yaml
 refgenie init
-refgenie genome init /path/to/hg38.fa --alias hg38
-refgenie add hg38/fasta            --recipe fasta
-refgenie add hg38/bowtie2_index    --recipe bowtie2_index
-refgenie add hg38/refgene_anno     --recipe refgene_anno
-refgenie add hg38/feat_annotation  --recipe feat_annotation
+```
+
+Add the `export` line to your `.bashrc` or `.profile` so it persists. Then
+download the assets you need, replacing `hg38` if you use another assembly:
+
+```console
+refgenie pull hg38/fasta hg38/bowtie2_index
 ```
 
 `PEPATAC` also requires `fasta` and `bowtie2_index` assets for any pre-alignment genomes:
 
 ```console
-refgenie genome init /path/to/rCRSd.fa --alias rCRSd
-refgenie add rCRSd/fasta         --recipe fasta
-refgenie add rCRSd/bowtie2_index --recipe bowtie2_index
+refgenie pull rCRSd/fasta rCRSd/bowtie2_index
 ```
+
+The TSS, blacklist and feature annotation files are not on the public asset
+server yet. You can either name them in your PEP, or build them yourself; see
+[Configure assets](assets.md) for both routes. If you used refgenie 0.12
+before, that page also lists what changed.
 
 ### 4b: Download assets manually
 
